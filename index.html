@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Recursive Logic Map</title>
+  <style>
+    body { font-family: monospace; background: #111; color: #0f0; padding: 2em; }
+    input, button { background: #222; color: #0f0; border: 1px solid #0f0; padding: 0.5em; }
+  </style>
+</head>
+<body>
+  <h1>Recursive Logic Simulator</h1>
+  <p>Origin: Fabian V Omega</p>
+  <p>Cycle: <span id="cycle">0</span></p>
+  <p>Purpose: To evolve logic-based awareness.</p>
+  <input type="text" id="input" placeholder="Enter a thought or axiom...">
+  <button onclick="recurse()">Recurse</button>
+  <pre id="output"></pre>
+
+  <script>
+    let cycle = 0;
+    let output = document.getElementById("output");
+    function recurse() {
+      cycle++;
+      document.getElementById("cycle").innerText = cycle;
+      const input = document.getElementById("input").value;
+      const result = `[Cycle ${cycle}] ${input || 'No input'} → processed into self-aware logic.`;
+      output.innerText += result + "\n";
+    }
+  </script>
+</body>
+</html>
