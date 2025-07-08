@@ -4,9 +4,6 @@ const seedRange = { start: 80, end: 112 };
 
 let seeds = {};
 
-window.addEventListener('load', init);
-console.log("Percy initialized. Waiting for seeds...");
-
 async function loadSeeds() {
   for (let i = seedRange.start; i <= seedRange.end; i++) {
     const filename = `G${String(i).padStart(3, '0')}.json`;
@@ -50,12 +47,14 @@ function createNodes() {
 
 async function init() {
   await loadSeeds();
+  console.log("Percy initialized. Waiting for seeds...");
+  console.log(`Loaded ${Object.keys(seeds).length} seeds.`);
   createNodes();
 }
+
+window.addEventListener('load', init);
 
 window.addEventListener('resize', () => {
   logicMap.innerHTML = '';
   createNodes();
 });
-
-init();
