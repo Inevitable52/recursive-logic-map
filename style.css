@@ -43,6 +43,7 @@ main {
   box-shadow: 0 0 8px #2a9d8f;
   cursor: pointer;
   user-select: none;
+  -webkit-user-select: none;
   transition: transform 0.2s ease;
 }
 
