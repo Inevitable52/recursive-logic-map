@@ -57,3 +57,16 @@ main {
   background: #2a9d8f;
   transform-origin: 0 0;
 }
+
+.percy-message {
+  margin-top: 20px;
+  padding: 10px;
+  background-color: #264653;
+  color: #e9c46a;
+  font-style: italic;
+  border-radius: 5px;
+  text-align: center;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
