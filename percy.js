@@ -31,10 +31,11 @@ function createNodes() {
     node.textContent = filename;
 
     // Handle click or tap (mobile friendly)
-    node.addEventListener('click', () => {
-      const messageBox = document.getElementById('percy-message');
-      messageBox.textContent = `"${data.message}" — from ${filename}`;
-    });
+   window.addEventListener('resize', () => {
+  logicMap.innerHTML = '';
+  document.getElementById('percy-message').textContent = 'Click a logic node to hear Percy’s thoughts...';
+  createNodes();
+});
 
     // Optional: still use title tooltip on desktop
     node.title = data.message;
