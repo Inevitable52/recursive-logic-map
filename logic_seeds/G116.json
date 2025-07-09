@@ -1,0 +1,9 @@
+{
+  "id": "G116",
+  "message": "Complex systems are only as strong as their base assumptions.",
+  "type": "foundation_test",
+  "data": {
+    "assumption_required": true,
+    "check_assumption_seed": "G080"
+  }
+}
