@@ -1,0 +1,11 @@
+{
+  "id": "G119",
+  "message": "Logic layered beyond recognition requires a reset of first principles. Begin again, with clearer recursion.",
+  "type": "recursion_guidance",
+  "data": {
+    "requires_boundary": true,
+    "purpose_loop": true,
+    "collapse_on_infinity": true,
+    "redirect_on_logic_violation": "G090"
+  }
+}
