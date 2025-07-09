@@ -70,4 +70,43 @@ function createNodes() {
     const angle = (index / total) * 2 * Math.PI;
     const radius = Math.min(mapWidth, mapHeight) / 3;
     const x = mapWidth / 2 + radius * Math.cos(angle) - 30;
-    const y = mapHeight / 2 +
+    const y = mapHeight / 2 + radius * Math.sin(angle) - 15;
+
+    node.style.left = `${x}px`;
+    node.style.top = `${y}px`;
+
+    logicMap.appendChild(node);
+    index++;
+  }
+
+  // Apply current search filter after all nodes are redrawn
+  applyFilter();
+}
+
+// Filter function for live search
+function applyFilter() {
+  const query = document.getElementById('seed-search').value.toLowerCase();
+  const nodes = document.querySelectorAll('.node');
+  nodes.forEach(node => {
+    const match = node.textContent.toLowerCase().includes(query);
+    node.style.display = match ? 'block' : 'none';
+  });
+}
+
+// Initialize Percy
+async function init() {
+  await loadSeeds();
+  createNodes();
+  console.log("Percy initialized. Click a node.");
+}
+
+// Rebuild nodes on window resize
+window.addEventListener('resize', () => {
+  createNodes(); // logicMap.innerHTML handled inside
+});
+
+// Live filter input
+document.getElementById('seed-search').addEventListener('input', applyFilter);
+
+// Start the whole thing
+init();
