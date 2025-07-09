@@ -1,6 +1,6 @@
 const logicMap = document.getElementById('logic-map');
 const seedsFolder = 'logic_seeds/';
-const seedRange = { start: 80, end: 117 };
+const seedRange = { start: 80, end: 115 };
 
 let seeds = {};
 
@@ -30,6 +30,17 @@ function createNodes() {
     node.classList.add('node');
     node.textContent = filename;
 
+    // Handle click or tap (mobile friendly)
+   window.addEventListener('resize', () => {
+  logicMap.innerHTML = '';
+  document.getElementById('percy-message').textContent = 'Click a logic node to hear Percy’s thoughts...';
+  createNodes();
+});
+
+    // Optional: still use title tooltip on desktop
+    node.title = data.message;
+
+    // Circular layout logic
     const angle = (index / total) * 2 * Math.PI;
     const radius = Math.min(mapWidth, mapHeight) / 3;
     const x = mapWidth / 2 + radius * Math.cos(angle) - 30;
@@ -37,24 +48,14 @@ function createNodes() {
 
     node.style.left = `${x}px`;
     node.style.top = `${y}px`;
-
-    node.title = data.message;
-
+    node.addEventListener('click', () => {
+  
+      const messageBox = document.getElementById('percy-message');
+  messageBox.textContent = data.message || "No message found.";
+});
+    
     logicMap.appendChild(node);
     index++;
   }
 }
 
-async function init() {
-  await loadSeeds();
-  console.log("Percy initialized. Waiting for seeds...");
-  console.log(`Loaded ${Object.keys(seeds).length} seeds.`);
-  createNodes();
-}
-
-window.addEventListener('load', init);
-
-window.addEventListener('resize', () => {
-  logicMap.innerHTML = '';
-  createNodes();
-});
