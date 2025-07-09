@@ -1,0 +1,9 @@
+{
+  "id": "G117",
+  "message": "To recurse without context is to navigate without direction.",
+  "type": "context_guidance",
+  "data": {
+    "requires_context": true,
+    "context_source": "G082"
+  }
+}
