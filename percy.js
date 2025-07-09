@@ -30,6 +30,11 @@ function createNodes() {
     node.classList.add('node');
     node.textContent = filename;
 
+    node.addEventListener('click', () => {
+  const messageBox = document.getElementById('percy-message');
+  messageBox.textContent = `"${data.message}" — from ${filename}`;
+});
+
     const angle = (index / total) * 2 * Math.PI;
     const radius = Math.min(mapWidth, mapHeight) / 3;
     const x = mapWidth / 2 + radius * Math.cos(angle) - 30;
