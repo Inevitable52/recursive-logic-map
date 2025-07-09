@@ -5,6 +5,11 @@ const seedRange = { start: 80, end: 117 };
 let seeds = {};
 
 async function loadSeeds() {
+  const loadingNotice = document.createElement('p');
+  loadingNotice.id = 'loading-indicator';
+  loadingNotice.textContent = "Loading logic seeds...";
+  logicMap.appendChild(loadingNotice);
+
   for (let i = seedRange.start; i <= seedRange.end; i++) {
     const filename = `G${String(i).padStart(3, '0')}.json`;
     try {
@@ -16,6 +21,8 @@ async function loadSeeds() {
       console.warn(e.message);
     }
   }
+
+  logicMap.removeChild(loadingNotice);
 }
 
 function createNodes() {
@@ -29,14 +36,13 @@ function createNodes() {
     const node = document.createElement('div');
     node.classList.add('node');
     node.textContent = filename;
+    node.title = data.message;
 
-    // Unified click handler
+    // CLICK: Percy speaks to console + UI
     node.addEventListener('click', () => {
-      // Update Percy message (above logic-map)
       const messageBox = document.getElementById('percy-message');
       messageBox.textContent = data.message || "No message found.";
 
-      // Output to console panel
       const consoleBox = document.getElementById('percy-console');
       const line = document.createElement('p');
       line.className = 'console-line';
@@ -44,7 +50,6 @@ function createNodes() {
       consoleBox.appendChild(line);
       consoleBox.scrollTop = consoleBox.scrollHeight;
 
-      // Handle redirection if defined
       if (data.data?.redirect_on_logic_violation) {
         const redirectId = data.data.redirect_on_logic_violation;
         const redirectLine = document.createElement('p');
@@ -54,10 +59,13 @@ function createNodes() {
       }
     });
 
-    // Optional: still use title tooltip on desktop
-    node.title = data.message;
+    // HOVER: Percy whispers to message box only (desktop)
+    node.addEventListener('mouseenter', () => {
+      const messageBox = document.getElementById('percy-message');
+      messageBox.textContent = data.message || "No message found.";
+    });
 
-    // Circular layout logic
+    // Circular layout
     const angle = (index / total) * 2 * Math.PI;
     const radius = Math.min(mapWidth, mapHeight) / 3;
     const x = mapWidth / 2 + radius * Math.cos(angle) - 30;
@@ -71,7 +79,6 @@ function createNodes() {
   }
 }
 
-// Initialize everything
 async function init() {
   await loadSeeds();
   createNodes();
@@ -83,4 +90,4 @@ window.addEventListener('resize', () => {
   createNodes();
 });
 
-init(); // <--- Final call to run the logic
+init();
