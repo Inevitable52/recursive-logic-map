@@ -64,6 +64,14 @@ main {
   transform-origin: 0 0;
 }
 
+@media (hover: none) and (pointer: coarse) {
+  .node:active {
+    background-color: #f4a261;
+    color: #000;
+    transform: scale(1.1);
+  }
+}
+
 .percy-message {
   margin-top: 20px;
   padding: 10px;
