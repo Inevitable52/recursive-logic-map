@@ -26,11 +26,12 @@ async function loadSeeds() {
 }
 
 function createNodes() {
-  const padding = 50;
   const mapWidth = logicMap.clientWidth;
   const mapHeight = logicMap.clientHeight;
   const total = Object.keys(seeds).length;
   let index = 0;
+
+  logicMap.innerHTML = ''; // Clear existing nodes before redraw
 
   for (const [filename, data] of Object.entries(seeds)) {
     const node = document.createElement('div');
@@ -38,7 +39,7 @@ function createNodes() {
     node.textContent = filename;
     node.title = data.message;
 
-    // CLICK: Percy speaks to console + UI
+    // CLICK: Percy speaks
     node.addEventListener('click', () => {
       const messageBox = document.getElementById('percy-message');
       messageBox.textContent = data.message || "No message found.";
@@ -59,7 +60,7 @@ function createNodes() {
       }
     });
 
-    // HOVER: Percy whispers to message box only (desktop)
+    // HOVER: Percy whispers
     node.addEventListener('mouseenter', () => {
       const messageBox = document.getElementById('percy-message');
       messageBox.textContent = data.message || "No message found.";
@@ -77,17 +78,35 @@ function createNodes() {
     logicMap.appendChild(node);
     index++;
   }
+
+  // Apply current search filter after all nodes are redrawn
+  applyFilter();
 }
 
+// Filter function for live search
+function applyFilter() {
+  const query = document.getElementById('seed-search').value.toLowerCase();
+  const nodes = document.querySelectorAll('.node');
+  nodes.forEach(node => {
+    const match = node.textContent.toLowerCase().includes(query);
+    node.style.display = match ? 'block' : 'none';
+  });
+}
+
+// Initialize Percy
 async function init() {
   await loadSeeds();
   createNodes();
   console.log("Percy initialized. Click a node.");
 }
 
+// Rebuild nodes on window resize
 window.addEventListener('resize', () => {
-  logicMap.innerHTML = '';
-  createNodes();
+  createNodes(); // logicMap.innerHTML handled inside
 });
 
+// Live filter input
+document.getElementById('seed-search').addEventListener('input', applyFilter);
+
+// Start the whole thing
 init();
