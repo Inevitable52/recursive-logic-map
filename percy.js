@@ -30,11 +30,16 @@ function createNodes() {
     node.classList.add('node');
     node.textContent = filename;
 
+    // Handle click or tap (mobile friendly)
     node.addEventListener('click', () => {
-  const messageBox = document.getElementById('percy-message');
-  messageBox.textContent = `"${data.message}" — from ${filename}`;
-});
+      const messageBox = document.getElementById('percy-message');
+      messageBox.textContent = `"${data.message}" — from ${filename}`;
+    });
 
+    // Optional: still use title tooltip on desktop
+    node.title = data.message;
+
+    // Circular layout logic
     const angle = (index / total) * 2 * Math.PI;
     const radius = Math.min(mapWidth, mapHeight) / 3;
     const x = mapWidth / 2 + radius * Math.cos(angle) - 30;
@@ -43,23 +48,8 @@ function createNodes() {
     node.style.left = `${x}px`;
     node.style.top = `${y}px`;
 
-    node.title = data.message;
-
     logicMap.appendChild(node);
     index++;
   }
 }
 
-async function init() {
-  await loadSeeds();
-  console.log("Percy initialized. Waiting for seeds...");
-  console.log(`Loaded ${Object.keys(seeds).length} seeds.`);
-  createNodes();
-}
-
-window.addEventListener('load', init);
-
-window.addEventListener('resize', () => {
-  logicMap.innerHTML = '';
-  createNodes();
-});
