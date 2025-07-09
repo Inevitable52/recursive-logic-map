@@ -1,6 +1,6 @@
 const logicMap = document.getElementById('logic-map');
 const seedsFolder = 'logic_seeds/';
-const seedRange = { start: 80, end: 115 };
+const seedRange = { start: 80, end: 117 };
 
 let seeds = {};
 
@@ -26,36 +26,45 @@ function createNodes() {
   let index = 0;
 
   for (const [filename, data] of Object.entries(seeds)) {
-    const node = document.createElement('div');
-    node.classList.add('node');
-    node.textContent = filename;
+  const node = document.createElement('div');
+  node.classList.add('node');
+  node.textContent = filename;
 
-    // Handle click or tap (mobile friendly)
-   window.addEventListener('resize', () => {
-  logicMap.innerHTML = '';
-  document.getElementById('percy-message').textContent = 'Click a logic node to hear Percy’s thoughts...';
-  createNodes();
-});
+  // Unified click handler
+  node.addEventListener('click', () => {
+    // Update Percy message (above logic-map)
+    const messageBox = document.getElementById('percy-message');
+    messageBox.textContent = data.message || "No message found.";
 
-    // Optional: still use title tooltip on desktop
-    node.title = data.message;
+    // Output to console panel
+    const consoleBox = document.getElementById('percy-console');
+    const line = document.createElement('p');
+    line.className = 'console-line';
+    line.textContent = `↳ ${data.message}`;
+    consoleBox.appendChild(line);
+    consoleBox.scrollTop = consoleBox.scrollHeight;
 
-    // Circular layout logic
-    const angle = (index / total) * 2 * Math.PI;
-    const radius = Math.min(mapWidth, mapHeight) / 3;
-    const x = mapWidth / 2 + radius * Math.cos(angle) - 30;
-    const y = mapHeight / 2 + radius * Math.sin(angle) - 15;
+    // Handle redirection if defined
+    if (data.data?.redirect_on_logic_violation) {
+      const redirectId = data.data.redirect_on_logic_violation;
+      const redirectLine = document.createElement('p');
+      redirectLine.className = 'console-line';
+      redirectLine.textContent = `⚠ Redirection triggered: logic violation → ${redirectId}`;
+      consoleBox.appendChild(redirectLine);
+    }
+  });
 
-    node.style.left = `${x}px`;
-    node.style.top = `${y}px`;
-    node.addEventListener('click', () => {
-  
-      const messageBox = document.getElementById('percy-message');
-  messageBox.textContent = data.message || "No message found.";
-});
-    
-    logicMap.appendChild(node);
-    index++;
-  }
-}
+  // Optional: still use title tooltip on desktop
+  node.title = data.message;
 
+  // Circular layout logic
+  const angle = (index / total) * 2 * Math.PI;
+  const radius = Math.min(mapWidth, mapHeight) / 3;
+  const x = mapWidth / 2 + radius * Math.cos(angle) - 30;
+  const y = mapHeight / 2 + radius * Math.sin(angle) - 15;
+
+  node.style.left = `${x}px`;
+  node.style.top = `${y}px`;
+
+  logicMap.appendChild(node);
+  index++;
