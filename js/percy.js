@@ -1,6 +1,6 @@
 const logicMap = document.getElementById('logic-map');
 const seedsFolder = 'logic_seeds/';
-const seedRange = { start: 80, end: 113 };
+const seedRange = { start: 80, end: 114 };
 
 let seeds = {};
 
