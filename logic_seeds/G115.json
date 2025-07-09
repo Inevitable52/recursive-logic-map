@@ -1,0 +1,9 @@
+{
+  "id": "G115",
+  "message": "A logic loop with no exit is indistinguishable from madness.",
+  "type": "recursion_warning",
+  "data": {
+    "must_exit": true,
+    "linked_exit": "G092"
+  }
+}
