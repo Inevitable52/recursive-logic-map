@@ -48,7 +48,12 @@ function createNodes() {
 
     node.style.left = `${x}px`;
     node.style.top = `${y}px`;
-
+    node.addEventListener('click', () => {
+  
+      const messageBox = document.getElementById('percy-message');
+  messageBox.textContent = data.message || "No message found.";
+});
+    
     logicMap.appendChild(node);
     index++;
   }
