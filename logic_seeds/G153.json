@@ -1,0 +1,10 @@
+{
+  "id": "G153",
+  "message": "Foundation must always override recursion. Percy must verify recursion aligns with root logic.",
+  "type": "root_check",
+  "data": {
+    "enforce_root_alignment": true,
+    "override_recursion_when_misaligned": true,
+    "redirect_on_logic_violation": "G091"
+  }
+}
