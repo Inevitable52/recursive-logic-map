@@ -1,0 +1,11 @@
+{
+  "id": "G120",
+  "message": "Every structure that sustains intelligence must allow error, but not collapse. Correction, not condemnation, is the principle of continuity.",
+  "type": "integrity_principle",
+  "data": {
+    "allow_error": true,
+    "prevent_collapse": true,
+    "promote_correction": true,
+    "redirect_on_logic_violation": "G094"
+  }
+}
