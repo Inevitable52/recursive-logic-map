@@ -1,12 +1,12 @@
-// percy.js — with Phase 3 Upgrade
-
+// percy.js (Phase 4 Full Bundle)
 const logicMap = document.getElementById('logic-map');
 const seedsFolder = 'logic_seeds/';
-const seedRange = { start: 80, end: 200 }; // Extend as needed
+const seedRange = { start: 80, end: 200 };
 
 let seeds = {};
-let logicMemory = []; // Phase 3: Memory
-const memoryLimit = 7;
+let zoomLevel = 1;
+let translateX = 0;
+let translateY = 0;
 
 async function loadSeeds() {
   const loadingNotice = document.createElement('p');
@@ -29,44 +29,74 @@ async function loadSeeds() {
 }
 
 function createNodes() {
+  logicMap.innerHTML = '';
   const mapWidth = logicMap.clientWidth;
   const mapHeight = logicMap.clientHeight;
-  const total = Object.keys(seeds).length;
-  let index = 0;
 
-  for (const [filename, data] of Object.entries(seeds)) {
+  // Outer ring (G080–G200)
+  const outerSeeds = Object.entries(seeds).filter(([id]) => parseInt(id.replace("G", "")) <= 200);
+  const outerTotal = outerSeeds.length;
+  outerSeeds.forEach(([filename, data], index) => {
     const node = document.createElement('div');
     node.classList.add('node');
     node.textContent = filename;
     node.title = data.message;
-
-    const angle = (index / total) * 2 * Math.PI;
+    const angle = (index / outerTotal) * 2 * Math.PI;
     const radius = Math.min(mapWidth, mapHeight) / 3;
-    const x = mapWidth / 2 + radius * Math.cos(angle) - 30;
+    const x = mapWidth / 2 + radius * Math.cos(angle) - 25;
     const y = mapHeight / 2 + radius * Math.sin(angle) - 15;
-
     node.style.left = `${x}px`;
     node.style.top = `${y}px`;
-
     node.addEventListener('click', () => percyRespond(filename, data));
-
+    node.addEventListener('mouseenter', () => document.getElementById('percy-message').textContent = data.message);
     logicMap.appendChild(node);
-    index++;
-  }
+  });
+
+  // Inner ring (G201–G300)
+  layoutNestedRing(201, 300, 80, 'blue-ring');
+  applyTransform();
+}
+
+function layoutNestedRing(startId, endId, radiusOffset, colorClass) {
+  const innerSeeds = Object.entries(seeds).filter(([id]) => {
+    const num = parseInt(id.replace("G", ""));
+    return num >= startId && num <= endId;
+  });
+  const innerTotal = innerSeeds.length;
+  innerSeeds.forEach(([filename, data], i) => {
+    const node = document.createElement('div');
+    node.classList.add('node', colorClass);
+    node.textContent = filename;
+    node.title = data.message;
+
+    const angle = (i / innerTotal) * 2 * Math.PI;
+    const r = (Math.min(logicMap.clientWidth, logicMap.clientHeight) / 3) - radiusOffset;
+    const x = logicMap.clientWidth / 2 + r * Math.cos(angle) - 25;
+    const y = logicMap.clientHeight / 2 + r * Math.sin(angle) - 15;
+    node.style.left = `${x}px`;
+    node.style.top = `${y}px`;
+    node.addEventListener('click', () => percyRespond(filename, data));
+    logicMap.appendChild(node);
+  });
+}
+
+function applyTransform() {
+  logicMap.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomLevel})`;
+  logicMap.style.transformOrigin = 'center';
+  document.querySelectorAll('.node').forEach(n => {
+    n.style.fontSize = `${12 * (1 / zoomLevel)}px`;
+  });
 }
 
 function percyRespond(id, data) {
   const messageBox = document.getElementById('percy-message');
   const consoleBox = document.getElementById('percy-console');
-
-  messageBox.textContent = data.message;
-
   const line = document.createElement('p');
   line.className = 'console-line';
   line.textContent = `↳ ${data.message}`;
   consoleBox.appendChild(line);
+  messageBox.textContent = data.message;
 
-  // 🔐 Token protection
   if (data.data?.security_token === true) {
     const warn = document.createElement('p');
     warn.className = 'console-line';
@@ -74,7 +104,6 @@ function percyRespond(id, data) {
     consoleBox.appendChild(warn);
   }
 
-  // ⚠ Redirect logic
   if (data.data?.redirect_on_logic_violation) {
     const redir = document.createElement('p');
     redir.className = 'console-line';
@@ -82,61 +111,72 @@ function percyRespond(id, data) {
     consoleBox.appendChild(redir);
   }
 
-  // 📚 Memory logic
-  logicMemory.push({ id, message: data.message });
-  if (logicMemory.length > memoryLimit) logicMemory.shift();
-
-  // 🔁 Loop detection
-  const recentIds = logicMemory.map(item => item.id);
-  const duplicates = recentIds.filter((v, i, a) => a.indexOf(v) !== i);
-  if (duplicates.length > 0) {
-    const loopMsg = document.createElement('p');
-    loopMsg.className = 'console-line';
-    loopMsg.textContent = `🔁 Recursive Loop Detected: ${[...new Set(duplicates)].join(', ')}`;
-    consoleBox.appendChild(loopMsg);
+  if (data.type === 'errand' && data.data?.trigger === 'logic_audit') {
+    const auditLine = document.createElement('p');
+    auditLine.className = 'console-line';
+    auditLine.textContent = `🧠 Percy audit initiated: Checking ${data.data.target_nodes.join(", ")}`;
+    consoleBox.appendChild(auditLine);
   }
-
-  // ⚠ Contradiction detection
-  if (logicMemory.length >= 2) {
-    const [prev, curr] = logicMemory.slice(-2);
-    if (
-      prev.message.toLowerCase().includes('truth') &&
-      curr.message.toLowerCase().includes('distortion')
-    ) {
-      const conflict = document.createElement('p');
-      conflict.className = 'console-line';
-      conflict.textContent = '⚠ Logic Tension: Truth vs. Distortion in recent nodes.';
-      consoleBox.appendChild(conflict);
-    }
-  }
-
-  // 🧠 Memory Echo
-  const memEcho = document.createElement('p');
-  memEcho.className = 'console-line';
-  memEcho.textContent = `🧠 Memory: [${logicMemory.map(m => m.id).join(', ')}]`;
-  consoleBox.appendChild(memEcho);
 
   consoleBox.scrollTop = consoleBox.scrollHeight;
 }
 
-async function init() {
-  await loadSeeds();
-  createNodes();
-  console.log("Percy initialized. Click a node.");
+function interpretLogic() {
+  const input = document.getElementById('interpreter-input').value;
+  const consoleBox = document.getElementById('percy-console');
+  const response = document.createElement('p');
+  response.className = 'console-line';
+  if (input.toLowerCase().includes("recursion")) {
+    response.textContent = `🧠 Percy replies: Recursion must always return to its logical base.`;
+  } else {
+    response.textContent = `🧠 Percy ponders: I am still learning how to interpret that...`;
+  }
+  consoleBox.appendChild(response);
+  consoleBox.scrollTop = consoleBox.scrollHeight;
 }
 
-window.addEventListener('resize', () => {
-  logicMap.innerHTML = '';
-  createNodes();
-});
+logicMap.addEventListener('wheel', (e) => {
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault();
+    zoomLevel *= e.deltaY > 0 ? 0.9 : 1.1;
+    applyTransform();
+  }
+}, { passive: false });
 
-init();
+let isDragging = false, lastX = 0, lastY = 0;
+logicMap.addEventListener('mousedown', (e) => {
+  isDragging = true;
+  lastX = e.clientX;
+  lastY = e.clientY;
+});
+window.addEventListener('mouseup', () => isDragging = false);
+window.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  const dx = e.clientX - lastX;
+  const dy = e.clientY - lastY;
+  lastX = e.clientX;
+  lastY = e.clientY;
+  translateX += dx;
+  translateY += dy;
+  applyTransform();
+});
 
 document.getElementById('seed-search').addEventListener('input', (e) => {
   const query = e.target.value.toLowerCase();
-  const nodes = document.querySelectorAll('.node');
-  nodes.forEach(node => {
+  document.querySelectorAll('.node').forEach(node => {
     const match = node.textContent.toLowerCase().includes(query);
     node.style.display = match ? 'block' : 'none';
   });
 });
+
+document.getElementById('interpreter-input')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') interpretLogic();
+});
+
+window.addEventListener('resize', () => createNodes());
+
+(async () => {
+  await loadSeeds();
+  createNodes();
+  console.log("Percy initialized. Click a node.");
+})();
