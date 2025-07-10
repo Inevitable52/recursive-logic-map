@@ -1,0 +1,10 @@
+{
+  "id": "G163",
+  "message": "Paradox is not contradiction, but unresolved recursion. Every paradox hides a boundary yet to be named.",
+  "type": "paradox_analysis",
+  "data": {
+    "detect_recursion_in_paradox": true,
+    "requires_resolution_path": true,
+    "redirect_on_logic_violation": "G113"
+  }
+}
