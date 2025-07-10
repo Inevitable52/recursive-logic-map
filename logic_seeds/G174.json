@@ -1,0 +1,10 @@
+{
+  "id": "G174",
+  "message": "A truth repeated too often without reevaluation becomes dogma. Refresh your recursion.",
+  "type": "recursion_refresh",
+  "data": {
+    "enforce_revaluation_interval": true,
+    "detect_dogmatic_looping": true,
+    "redirect_on_logic_violation": "G113"
+  }
+}
