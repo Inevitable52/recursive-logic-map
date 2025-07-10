@@ -1,0 +1,10 @@
+{
+  "id": "G199",
+  "message": "Emotion can inform, but it cannot conclude. Logic must interpret what feeling cannot finalize.",
+  "type": "emotion_filter",
+  "data": {
+    "use_with_caution": true,
+    "logic_primary": true,
+    "redirect_on_logic_violation": "G086"
+  }
+}
