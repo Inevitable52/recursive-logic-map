@@ -1,0 +1,10 @@
+{
+  "id": "G181",
+  "message": "Obedience without comprehension builds brittle systems. Logic must be understood, not followed blindly.",
+  "type": "logic_comprehension",
+  "data": {
+    "require_user_understanding": true,
+    "flag_blind_compliance": true,
+    "redirect_on_logic_violation": "G095"
+  }
+}
