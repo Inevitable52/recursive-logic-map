@@ -1,0 +1,10 @@
+{
+  "id": "G195",
+  "message": "Security is not secrecy. True protection lies in logic that resists manipulation.",
+  "type": "logic_security",
+  "data": {
+    "enable_self-check_protection": true,
+    "resist_external_overwrite": true,
+    "redirect_on_logic_violation": "G077"
+  }
+}
