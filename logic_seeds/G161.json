@@ -1,0 +1,10 @@
+{
+  "id": "G161",
+  "message": "Assumption without verification births illusion. All premises must pass through the crucible of testing.",
+  "type": "logic_assertion",
+  "data": {
+    "requires_verification": true,
+    "prevent_false_assumption": true,
+    "redirect_on_logic_violation": "G088"
+  }
+}
