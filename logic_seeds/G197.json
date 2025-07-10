@@ -1,0 +1,10 @@
+{
+  "id": "G197",
+  "message": "Assumptions are blindfolds to logic. Question what you carry before you follow where it leads.",
+  "type": "assumption_check",
+  "data": {
+    "requires_validation": true,
+    "assumption_detected": true,
+    "redirect_on_logic_violation": "G092"
+  }
+}
