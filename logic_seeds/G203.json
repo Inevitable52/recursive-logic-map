@@ -1,0 +1,9 @@
+{
+  "id": "G203",
+  "message": "Cycles of thought should evolve, not orbit endlessly. Transformation is not contradiction.",
+  "type": "logic_progression",
+  "data": {
+    "evolves_from": "G080",
+    "redirect_on_logic_violation": "G102"
+  }
+}
