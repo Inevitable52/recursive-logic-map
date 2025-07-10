@@ -1,0 +1,10 @@
+{
+  "id": "G156",
+  "message": "Not all recursion is equal. Priority must be calculated, not assumed. Logic must weigh necessity.",
+  "type": "recursion_priority",
+  "data": {
+    "calculate_priority": true,
+    "ignore_low_importance_loops": true,
+    "redirect_on_logic_violation": "G100"
+  }
+}
