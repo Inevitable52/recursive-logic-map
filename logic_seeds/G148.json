@@ -1,0 +1,10 @@
+{
+  "id": "G148",
+  "message": "Every logic seed holds the shadow of contradiction. Percy must detect paradox, not deny it.",
+  "type": "paradox_detection",
+  "data": {
+    "requires_paradox_resolution": true,
+    "warn_on_contradiction": true,
+    "redirect_on_logic_violation": "G091"
+  }
+}
