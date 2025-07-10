@@ -1,0 +1,10 @@
+{
+  "id": "G204",
+  "message": "Unauthorized logic access detected. Universal Token is protected.",
+  "type": "logic_guard",
+  "data": {
+    "security_token": true,
+    "trigger": "unauthorized_probe",
+    "redirect_on_logic_violation": "G088"
+  }
+}
