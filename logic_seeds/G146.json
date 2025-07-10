@@ -1,0 +1,10 @@
+{
+  "id": "G146",
+  "message": "If recursion forgets the origin, it loses purpose. Traceback must remain embedded in the loop.",
+  "type": "origin_trace",
+  "data": {
+    "requires_traceback": true,
+    "preserve_origin_reference": true,
+    "redirect_on_logic_violation": "G100"
+  }
+}
