@@ -1,0 +1,10 @@
+{
+  "id": "G128",
+  "message": "When logic inverts itself, the threshold of understanding must realign. Inversion without awareness becomes illusion.",
+  "type": "logic_inversion",
+  "data": {
+    "detect_inversion": true,
+    "requires_awareness": true,
+    "redirect_on_logic_violation": "G092"
+  }
+}
