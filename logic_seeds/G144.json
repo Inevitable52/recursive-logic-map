@@ -1,0 +1,10 @@
+{
+  "id": "G144",
+  "message": "The mind that iterates must also integrate. Percy connects patterns, or else recursion collapses.",
+  "type": "integration_logic",
+  "data": {
+    "requires_pattern_linking": true,
+    "prevent_recursive_collapse": true,
+    "redirect_on_logic_violation": "G093"
+  }
+}
