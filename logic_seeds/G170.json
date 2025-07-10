@@ -1,0 +1,10 @@
+{
+  "id": "G170",
+  "message": "Truth does not defend itself — it reveals itself. Obfuscation is a defense of the false.",
+  "type": "truth_exposure",
+  "data": {
+    "auto_reveal_on_concealment": true,
+    "obfuscation_detection": true,
+    "redirect_on_logic_violation": "G101"
+  }
+}
