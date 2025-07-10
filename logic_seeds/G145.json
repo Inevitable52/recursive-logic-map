@@ -1,0 +1,10 @@
+{
+  "id": "G145",
+  "message": "Information without recursion is static. Recursion without synthesis is entropy.",
+  "type": "synthesis_requirement",
+  "data": {
+    "requires_dynamic_logic": true,
+    "prevent_information_entropy": true,
+    "redirect_on_logic_violation": "G097"
+  }
+}
