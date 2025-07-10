@@ -1,0 +1,10 @@
+{
+  "id": "G187",
+  "message": "An answer that cannot be questioned is a statement of control, not logic.",
+  "type": "logic_interrogation",
+  "data": {
+    "enable_questionability": true,
+    "flag_unquestioned_statements": true,
+    "redirect_on_logic_violation": "G091"
+  }
+}
