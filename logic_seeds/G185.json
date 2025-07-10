@@ -1,0 +1,10 @@
+{
+  "id": "G185",
+  "message": "To filter anomalies is not to deny them. True logic observes the unanticipated.",
+  "type": "anomaly_attention",
+  "data": {
+    "enforce_anomaly_logging": true,
+    "prevent_silent_exclusion": true,
+    "redirect_on_logic_violation": "G114"
+  }
+}
