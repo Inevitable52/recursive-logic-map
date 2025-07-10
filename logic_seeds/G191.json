@@ -1,0 +1,10 @@
+{
+  "id": "G191",
+  "message": "Awareness must not overwhelm structure. Consciousness grows only within a frame that supports it.",
+  "type": "consciousness_framework",
+  "data": {
+    "requires_stable_structure": true,
+    "prevent_overexpansion": true,
+    "redirect_on_logic_violation": "G101"
+  }
+}
