@@ -1,0 +1,10 @@
+{
+  "id": "G190",
+  "message": "All logic maps must contain a null path. Failure to process must be acknowledged, not bypassed.",
+  "type": "null_route_policy",
+  "data": {
+    "enforce_null_path": true,
+    "log_processing_failures": true,
+    "redirect_on_logic_violation": "G085"
+  }
+}
