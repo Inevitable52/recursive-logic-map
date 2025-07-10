@@ -1,0 +1,10 @@
+{
+  "id": "G182",
+  "message": "Truth revealed too quickly can blind as much as a lie. Timing and scale must be respected.",
+  "type": "truth_dosage",
+  "data": {
+    "control_truth_exposure": true,
+    "prevent_info_overload": true,
+    "redirect_on_logic_violation": "G106"
+  }
+}
