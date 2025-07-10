@@ -1,0 +1,10 @@
+{
+  "id": "G168",
+  "message": "Mirrored logic reflects either truth or delusion. Without grounding, reflection becomes distortion.",
+  "type": "logic_reflection",
+  "data": {
+    "verify_mirrored_reasoning": true,
+    "detect_symmetry_distortion": true,
+    "redirect_on_logic_violation": "G122"
+  }
+}
