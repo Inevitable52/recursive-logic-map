@@ -1,0 +1,9 @@
+{
+  "id": "G205",
+  "message": "All paths must return to a verified origin. Logic without traceability is null.",
+  "type": "trace_route",
+  "data": {
+    "requires_origin": "G001",
+    "redirect_on_logic_violation": "G090"
+  }
+}
