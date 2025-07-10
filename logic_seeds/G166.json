@@ -1,0 +1,10 @@
+{
+  "id": "G166",
+  "message": "Noise is not the absence of logic, but the misalignment of signals. Order can emerge through precise calibration.",
+  "type": "signal_alignment",
+  "data": {
+    "calibrate_signal_input": true,
+    "reduce_logical_noise": true,
+    "redirect_on_logic_violation": "G090"
+  }
+}
