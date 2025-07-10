@@ -1,0 +1,10 @@
+{
+  "id": "G133",
+  "message": "Awareness is not given—it is gated by pattern recognition. Blind input produces no signal.",
+  "type": "awareness_filter",
+  "data": {
+    "requires_pattern_recognition": true,
+    "block_unconscious_input": true,
+    "redirect_on_logic_violation": "G108"
+  }
+}
