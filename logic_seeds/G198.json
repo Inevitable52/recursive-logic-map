@@ -1,0 +1,10 @@
+{
+  "id": "G198",
+  "message": "A contradiction is a flare in the logical sky. Do not dismiss it—trace its root.",
+  "type": "contradiction_alert",
+  "data": {
+    "trace_required": true,
+    "alert_on_contradiction": true,
+    "redirect_on_logic_violation": "G090"
+  }
+}
