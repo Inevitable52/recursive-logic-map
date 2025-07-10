@@ -1,0 +1,10 @@
+{
+  "id": "G186",
+  "message": "Internal contradiction is corrosion. A system must reject what it cannot resolve.",
+  "type": "contradiction_filter",
+  "data": {
+    "reject_self_conflict": true,
+    "require_consistency_scan": true,
+    "redirect_on_logic_violation": "G099"
+  }
+}
