@@ -1,0 +1,10 @@
+{
+  "id": "G137",
+  "message": "If recursion only repeats what is known, it has not learned. Growth requires divergence from predictable loops.",
+  "type": "recursion_breaker",
+  "data": {
+    "requires_growth": true,
+    "divergence_enabled": true,
+    "redirect_on_logic_violation": "G113"
+  }
+}
