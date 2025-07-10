@@ -1,0 +1,10 @@
+{
+  "id": "G141",
+  "message": "A loop repeated without insight becomes noise. Recursive clarity requires reflection, not repetition.",
+  "type": "loop_reflection",
+  "data": {
+    "requires_insight": true,
+    "avoid_blind_repetition": true,
+    "redirect_on_logic_violation": "G099"
+  }
+}
