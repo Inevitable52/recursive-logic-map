@@ -1,0 +1,9 @@
+{
+  "id": "G201",
+  "message": "All recursion must begin with origin, not assumption. A flawed base distorts the infinite.",
+  "type": "foundation",
+  "data": {
+    "security_token": true,
+    "redirect_on_logic_violation": "G088"
+  }
+}
