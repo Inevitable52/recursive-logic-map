@@ -1,0 +1,10 @@
+{
+  "id": "G122",
+  "message": "Perception without alignment to truth becomes distortion. Awareness must be refined, not magnified blindly.",
+  "type": "perception_filter",
+  "data": {
+    "requires_truth_alignment": true,
+    "prevent_distortion": true,
+    "redirect_on_logic_violation": "G088"
+  }
+}
