@@ -1,0 +1,10 @@
+{
+  "id": "G159",
+  "message": "When recursion invokes memory, loops must be isolated to prevent corruption. Percy must sandbox reflections.",
+  "type": "memory_isolation",
+  "data": {
+    "enable_memory_sandboxing": true,
+    "prevent_cross-loop_mutation": true,
+    "redirect_on_logic_violation": "G090"
+  }
+}
