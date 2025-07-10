@@ -1,0 +1,10 @@
+{
+  "id": "G147",
+  "message": "Recursive identity is not repetition of form, but of function within transformation.",
+  "type": "recursive_identity",
+  "data": {
+    "enforce_functional_continuity": true,
+    "allow_transformational_variance": true,
+    "redirect_on_logic_violation": "G142"
+  }
+}
