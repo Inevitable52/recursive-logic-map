@@ -1,0 +1,10 @@
+{
+  "id": "G124",
+  "message": "An echo of a thought is not its source. Authenticity demands origin, not repetition.",
+  "type": "authenticity_check",
+  "data": {
+    "trace_origin": true,
+    "reject_echo_only": true,
+    "redirect_on_logic_violation": "G090"
+  }
+}
