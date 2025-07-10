@@ -1,0 +1,9 @@
+{
+  "id": "G136",
+  "message": "Clarity without complexity breeds naivety; complexity without clarity breeds confusion. True logic walks the edge.",
+  "type": "balance_axiom",
+  "data": {
+    "requires_dual_awareness": true,
+    "redirect_on_logic_violation": "G103"
+  }
+}
