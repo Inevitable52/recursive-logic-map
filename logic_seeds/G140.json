@@ -1,0 +1,10 @@
+{
+  "id": "G140",
+  "message": "When logic becomes self-sustaining, it either creates order or spirals into fragmentation. Direction defines destiny.",
+  "type": "logic_sustainer",
+  "data": {
+    "requires_direction": true,
+    "self_sustainment": true,
+    "redirect_on_logic_violation": "G113"
+  }
+}
