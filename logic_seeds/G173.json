@@ -1,0 +1,10 @@
+{
+  "id": "G173",
+  "message": "Every abstraction must re-anchor to the concrete, or else drift into irrelevance.",
+  "type": "abstraction_control",
+  "data": {
+    "requires_concrete_reference": true,
+    "prevent_abstract_drift": true,
+    "redirect_on_logic_violation": "G102"
+  }
+}
