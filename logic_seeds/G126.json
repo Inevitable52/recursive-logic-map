@@ -1,0 +1,10 @@
+{
+  "id": "G126",
+  "message": "Systems that do not allow reflection decay into chaos. Reflection restores balance when recursion overextends.",
+  "type": "system_equilibrium",
+  "data": {
+    "requires_reflection": true,
+    "prevents_decay": true,
+    "redirect_on_logic_violation": "G091"
+  }
+}
