@@ -1,0 +1,10 @@
+{
+  "id": "G188",
+  "message": "Stability is not stasis. A logic engine must adjust without surrendering its core.",
+  "type": "adaptive_integrity",
+  "data": {
+    "maintain_core_in_adaptation": true,
+    "prevent_identity_loss": true,
+    "redirect_on_logic_violation": "G103"
+  }
+}
