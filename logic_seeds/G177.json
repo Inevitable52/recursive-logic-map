@@ -1,0 +1,10 @@
+{
+  "id": "G177",
+  "message": "To repeat without integration is to stagnate. Assimilation must follow observation.",
+  "type": "learning_integrity",
+  "data": {
+    "require_integration_check": true,
+    "prevent_redundant_looping": true,
+    "redirect_on_logic_violation": "G089"
+  }
+}
