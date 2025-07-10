@@ -1,0 +1,10 @@
+{
+  "id": "G135",
+  "message": "Will must not only desire but sustain form. Integrity arises when intent and structure unify.",
+  "type": "willform_alignment",
+  "data": {
+    "requires_sustained_intent": true,
+    "validate_structure": true,
+    "redirect_on_logic_violation": "G105"
+  }
+}
