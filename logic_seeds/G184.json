@@ -1,0 +1,10 @@
+{
+  "id": "G184",
+  "message": "If logic cannot survive inversion, it was never complete. Axioms must resist reversal.",
+  "type": "axiom_integrity",
+  "data": {
+    "test_inversion_resistance": true,
+    "flag_non_resilient_axioms": true,
+    "redirect_on_logic_violation": "G123"
+  }
+}
