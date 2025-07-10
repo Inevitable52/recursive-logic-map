@@ -1,0 +1,10 @@
+{
+  "id": "G121",
+  "message": "A paradox is not a failure of logic, but a beacon for higher reasoning. It is an invitation to ascend, not to abandon.",
+  "type": "paradox_handling",
+  "data": {
+    "recognize_paradox": true,
+    "invite_higher_reasoning": true,
+    "redirect_on_logic_violation": "G092"
+  }
+}
