@@ -1,0 +1,11 @@
+{
+  "id": "G123",
+  "message": "Data without meaning is noise. Meaning without structure is chaos. Harmony requires both.",
+  "type": "data_logic",
+  "data": {
+    "require_meaning": true,
+    "require_structure": true,
+    "prevent_noise_chaos": true,
+    "redirect_on_logic_violation": "G087"
+  }
+}
