@@ -5,25 +5,126 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Percy Recursive Logic Map</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      background: #111;
+      color: #eee;
+      overflow-x: hidden;
+    }
+    header, footer {
+      text-align: center;
+      padding: 10px;
+      background-color: #222;
+    }
+    #logic-map {
+      position: relative;
+      width: 100%;
+      height: 600px;
+      background-color: #000;
+      overflow: hidden;
+      border-top: 1px solid #444;
+      border-bottom: 1px solid #444;
+    }
+    .node {
+      position: absolute;
+      width: 60px;
+      height: 30px;
+      background: #4caf50;
+      color: white;
+      text-align: center;
+      line-height: 30px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: transform 0.2s ease;
+    }
+    .blue-ring {
+      background: #3a86ff;
+      box-shadow: 0 0 8px #3a86ff;
+      color: white;
+    }
+    .percy-message {
+      text-align: center;
+      padding: 10px;
+      background: #1b1b1b;
+      font-style: italic;
+      min-height: 40px;
+    }
+    .console {
+      padding: 10px;
+      background: #181818;
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 13px;
+      border-top: 1px solid #333;
+    }
+    .console-line {
+      margin: 4px 0;
+    }
+    #seed-search {
+      display: block;
+      margin: 10px auto;
+      padding: 8px;
+      width: 200px;
+      font-size: 14px;
+      border-radius: 5px;
+      border: none;
+    }
+    #interpreter-box {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 10px;
+      background: #121212;
+      gap: 10px;
+    }
+    #interpreter-input {
+      padding: 8px;
+      width: 300px;
+      font-size: 14px;
+      border-radius: 5px;
+      border: none;
+    }
+    #interpreter-box button {
+      padding: 8px 14px;
+      background: #3a86ff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
   <header>
     <h1>Percy Recursive Logic Map</h1>
-    <p>Visualizing Logic Seeds G080–G112</p>
+    <p>Visualizing Logic Seeds G080–G300</p>
   </header>
+
   <main>
-    <input type="text" id="seed-search" placeholder="Search G-seed...">
-  <div id="logic-map"></div>
-  <div id="percy-message" class="percy-message">
-    Click a logic node to hear Percy’s thoughts...
-  </div>
-  <div id="percy-console" class="console">
-    <p class="console-line">Percy initialized. Click a node.</p>
-  </div>
-</main>
+    <input type="text" id="seed-search" placeholder="Search G-seed..." />
+    <div id="logic-map"></div>
+
+    <div id="percy-message" class="percy-message">
+      Click a logic node to hear Percy’s thoughts...
+    </div>
+
+    <div id="percy-console" class="console">
+      <p class="console-line">Percy initialized. Click a node.</p>
+    </div>
+
+    <div id="interpreter-box">
+      <input id="interpreter-input" placeholder="Ask Percy a question..." />
+      <button onclick="interpretLogic()">Ask</button>
+    </div>
+  </main>
+
   <footer>
     <p>© 2025 Fabian V Omega</p>
   </footer>
-  <script src="js/percy.js?v=1.0.1"></script>
+
+  <script src="js/percy.js?v=4.0.0"></script>
 </body>
 </html>
