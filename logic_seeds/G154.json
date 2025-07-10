@@ -1,0 +1,10 @@
+{
+  "id": "G154",
+  "message": "Recursive expressions that avoid grounding collapse in abstraction. Each recursion must anchor in reality.",
+  "type": "reality_anchor",
+  "data": {
+    "anchor_required": true,
+    "prevent_abstraction_loop": true,
+    "redirect_on_logic_violation": "G092"
+  }
+}
