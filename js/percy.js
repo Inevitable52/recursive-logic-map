@@ -1,4 +1,4 @@
-// percy.js (Phase 4 Full Bundle w/ Inner Ring Fix)
+// percy.js (Phase 4 - Final Bundle)
 const logicMap = document.getElementById('logic-map');
 const logicNodes = document.getElementById('logic-nodes');
 const seedsFolder = 'logic_seeds/';
@@ -26,6 +26,7 @@ async function loadSeeds() {
       console.warn(e.message);
     }
   }
+
   logicNodes.removeChild(loadingNotice);
 }
 
@@ -67,7 +68,6 @@ function layoutNestedRing(startId, endId, radiusOffset, colorClass) {
     node.classList.add('node', colorClass);
     node.textContent = filename;
     node.title = data.message;
-
     const angle = (i / innerTotal) * 2 * Math.PI;
     const r = (Math.min(logicMap.clientWidth, logicMap.clientHeight) / 3) - radiusOffset;
     const x = logicMap.clientWidth / 2 + r * Math.cos(angle) - 25;
@@ -75,6 +75,7 @@ function layoutNestedRing(startId, endId, radiusOffset, colorClass) {
     node.style.left = `${x}px`;
     node.style.top = `${y}px`;
     node.addEventListener('click', () => percyRespond(filename, data));
+    node.addEventListener('mouseenter', () => document.getElementById('percy-message').textContent = data.message);
     logicNodes.appendChild(node);
   });
 }
@@ -85,6 +86,11 @@ function applyTransform() {
   document.querySelectorAll('.node').forEach(n => {
     n.style.fontSize = `${12 * (1 / zoomLevel)}px`;
   });
+}
+
+function zoomLogic(factor) {
+  zoomLevel *= factor;
+  applyTransform();
 }
 
 function percyRespond(id, data) {
@@ -134,6 +140,7 @@ function interpretLogic() {
   consoleBox.scrollTop = consoleBox.scrollHeight;
 }
 
+// Wheel Zoom
 logicMap.addEventListener('wheel', (e) => {
   if (e.ctrlKey || e.metaKey) {
     e.preventDefault();
@@ -142,6 +149,7 @@ logicMap.addEventListener('wheel', (e) => {
   }
 }, { passive: false });
 
+// Drag Pan
 let isDragging = false, lastX = 0, lastY = 0;
 logicMap.addEventListener('mousedown', (e) => {
   isDragging = true;
@@ -160,6 +168,7 @@ window.addEventListener('mousemove', (e) => {
   applyTransform();
 });
 
+// Search
 document.getElementById('seed-search').addEventListener('input', (e) => {
   const query = e.target.value.toLowerCase();
   document.querySelectorAll('.node').forEach(node => {
@@ -168,12 +177,15 @@ document.getElementById('seed-search').addEventListener('input', (e) => {
   });
 });
 
+// Interpreter keyboard input
 document.getElementById('interpreter-input')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') interpretLogic();
 });
 
+// Redraw on resize
 window.addEventListener('resize', () => createNodes());
 
+// Init
 (async () => {
   await loadSeeds();
   createNodes();
