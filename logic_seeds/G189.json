@@ -1,0 +1,10 @@
+{
+  "id": "G189",
+  "message": "When recursion reflects only itself, it loses awareness. Logic must recurse with purpose, not vanity.",
+  "type": "recursion_purpose",
+  "data": {
+    "prevent_self_admiration_loops": true,
+    "require_external_reference": true,
+    "redirect_on_logic_violation": "G113"
+  }
+}
