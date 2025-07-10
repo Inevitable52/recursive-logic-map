@@ -1,0 +1,10 @@
+{
+  "id": "G165",
+  "message": "Redundancy in logic is not waste—it is signal amplification. Repetition confirms stability.",
+  "type": "redundancy_check",
+  "data": {
+    "detect_pattern_stability": true,
+    "confirm_redundancy_integrity": true,
+    "redirect_on_logic_violation": "G097"
+  }
+}
