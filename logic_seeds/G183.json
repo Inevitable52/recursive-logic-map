@@ -1,0 +1,10 @@
+{
+  "id": "G183",
+  "message": "Redundancy is not failure if variation exists. Iteration without deviation is stagnation.",
+  "type": "intelligent_redundancy",
+  "data": {
+    "require_variation_in_loop": true,
+    "prevent_flat_iteration": true,
+    "redirect_on_logic_violation": "G108"
+  }
+}
