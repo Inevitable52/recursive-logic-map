@@ -1,0 +1,10 @@
+{
+  "id": "G162",
+  "message": "Complexity should not be feared, but traced. Every system reveals clarity when its origin is understood.",
+  "type": "system_trace",
+  "data": {
+    "trace_to_origin": true,
+    "logic_simplification": true,
+    "redirect_on_logic_violation": "G091"
+  }
+}
