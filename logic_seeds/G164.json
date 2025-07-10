@@ -1,0 +1,10 @@
+{
+  "id": "G164",
+  "message": "To move forward blindly is to forget the origin. Logic must always retain traceability.",
+  "type": "memory_trace",
+  "data": {
+    "requires_origin_reference": true,
+    "prevent_logical_drift": true,
+    "redirect_on_logic_violation": "G104"
+  }
+}
