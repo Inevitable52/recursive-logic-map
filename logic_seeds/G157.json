@@ -1,0 +1,10 @@
+{
+  "id": "G157",
+  "message": "If recursion repeats with no new result, collapse is required. Percy must detect and cancel redundancies.",
+  "type": "redundancy_filter",
+  "data": {
+    "detect_repetition": true,
+    "auto_terminate_static_loops": true,
+    "redirect_on_logic_violation": "G083"
+  }
+}
