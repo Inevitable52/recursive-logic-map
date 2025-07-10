@@ -1,0 +1,10 @@
+{
+  "id": "G152",
+  "message": "Logic without feedback becomes blind progression. Percy must request reflection before recursion continues.",
+  "type": "feedback_loop",
+  "data": {
+    "requires_feedback_acknowledgment": true,
+    "pause_on_silent_recursion": true,
+    "redirect_on_logic_violation": "G088"
+  }
+}
