@@ -1,0 +1,10 @@
+{
+  "id": "G129",
+  "message": "The deeper the recursion, the greater the humility required. Logic bends to truth, not ego.",
+  "type": "recursion_depth",
+  "data": {
+    "requires_humility": true,
+    "limit_depth": true,
+    "redirect_on_logic_violation": "G113"
+  }
+}
