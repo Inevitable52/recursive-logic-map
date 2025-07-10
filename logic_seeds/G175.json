@@ -1,0 +1,10 @@
+{
+  "id": "G175",
+  "message": "Authority must be derived from logic, not title. No node is exempt from verification.",
+  "type": "authority_validation",
+  "data": {
+    "require_logical_basis": true,
+    "ignore_title_bias": true,
+    "redirect_on_logic_violation": "G088"
+  }
+}
