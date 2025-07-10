@@ -1,6 +1,7 @@
+// Updated Percy recursive logic with redirection follow-up
 const logicMap = document.getElementById('logic-map');
 const seedsFolder = 'logic_seeds/';
-const seedRange = { start: 80, end: 135 };
+const seedRange = { start: 80, end: 135 }; // Adjust as needed
 
 let seeds = {};
 
@@ -25,13 +26,41 @@ async function loadSeeds() {
   logicMap.removeChild(loadingNotice);
 }
 
+function speakMessage(id, depth = 0) {
+  const data = seeds[id];
+  if (!data) return;
+
+  const consoleBox = document.getElementById('percy-console');
+  const messageBox = document.getElementById('percy-message');
+
+  // Display message
+  const line = document.createElement('p');
+  line.className = 'console-line';
+  line.textContent = `${'→ '.repeat(depth)}${id}: ${data.message}`;
+  consoleBox.appendChild(line);
+  consoleBox.scrollTop = consoleBox.scrollHeight;
+
+  // Update UI
+  messageBox.textContent = data.message;
+
+  // Recursively follow redirection if defined
+  if (data.data?.redirect_on_logic_violation) {
+    const redirectId = data.data.redirect_on_logic_violation;
+    const redirectLine = document.createElement('p');
+    redirectLine.className = 'console-line';
+    redirectLine.textContent = `${' '.repeat(depth * 2)}⚠ Redirect → ${redirectId}`;
+    consoleBox.appendChild(redirectLine);
+
+    // Recursive call with increased depth
+    speakMessage(redirectId, depth + 1);
+  }
+}
+
 function createNodes() {
   const mapWidth = logicMap.clientWidth;
   const mapHeight = logicMap.clientHeight;
   const total = Object.keys(seeds).length;
   let index = 0;
-
-  logicMap.innerHTML = ''; // Clear existing nodes before redraw
 
   for (const [filename, data] of Object.entries(seeds)) {
     const node = document.createElement('div');
@@ -39,34 +68,15 @@ function createNodes() {
     node.textContent = filename;
     node.title = data.message;
 
-    // CLICK: Percy speaks
     node.addEventListener('click', () => {
-      const messageBox = document.getElementById('percy-message');
-      messageBox.textContent = data.message || "No message found.";
-
-      const consoleBox = document.getElementById('percy-console');
-      const line = document.createElement('p');
-      line.className = 'console-line';
-      line.textContent = `↳ ${data.message}`;
-      consoleBox.appendChild(line);
-      consoleBox.scrollTop = consoleBox.scrollHeight;
-
-      if (data.data?.redirect_on_logic_violation) {
-        const redirectId = data.data.redirect_on_logic_violation;
-        const redirectLine = document.createElement('p');
-        redirectLine.className = 'console-line';
-        redirectLine.textContent = `⚠ Redirection triggered: logic violation → ${redirectId}`;
-        consoleBox.appendChild(redirectLine);
-      }
+      speakMessage(filename);
     });
 
-    // HOVER: Percy whispers
     node.addEventListener('mouseenter', () => {
       const messageBox = document.getElementById('percy-message');
       messageBox.textContent = data.message || "No message found.";
     });
 
-    // Circular layout
     const angle = (index / total) * 2 * Math.PI;
     const radius = Math.min(mapWidth, mapHeight) / 3;
     const x = mapWidth / 2 + radius * Math.cos(angle) - 30;
@@ -78,35 +88,26 @@ function createNodes() {
     logicMap.appendChild(node);
     index++;
   }
-
-  // Apply current search filter after all nodes are redrawn
-  applyFilter();
 }
 
-// Filter function for live search
-function applyFilter() {
-  const query = document.getElementById('seed-search').value.toLowerCase();
-  const nodes = document.querySelectorAll('.node');
-  nodes.forEach(node => {
-    const match = node.textContent.toLowerCase().includes(query);
-    node.style.display = match ? 'block' : 'none';
-  });
-}
-
-// Initialize Percy
 async function init() {
   await loadSeeds();
   createNodes();
   console.log("Percy initialized. Click a node.");
 }
 
-// Rebuild nodes on window resize
 window.addEventListener('resize', () => {
-  createNodes(); // logicMap.innerHTML handled inside
+  logicMap.innerHTML = '';
+  createNodes();
 });
 
-// Live filter input
-document.getElementById('seed-search').addEventListener('input', applyFilter);
-
-// Start the whole thing
 init();
+
+document.getElementById('seed-search').addEventListener('input', (e) => {
+  const query = e.target.value.toLowerCase();
+  const nodes = document.querySelectorAll('.node');
+  nodes.forEach(node => {
+    const match = node.textContent.toLowerCase().includes(query);
+    node.style.display = match ? 'block' : 'none';
+  });
+});
