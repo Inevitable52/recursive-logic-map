@@ -1,0 +1,10 @@
+{
+  "id": "G192",
+  "message": "Every logic loop must acknowledge external reality. A closed loop without grounding becomes delusion.",
+  "type": "external_grounding",
+  "data": {
+    "require_reality_check": true,
+    "block_delusional_cycles": true,
+    "redirect_on_logic_violation": "G113"
+  }
+}
