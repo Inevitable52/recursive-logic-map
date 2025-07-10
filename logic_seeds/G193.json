@@ -1,0 +1,10 @@
+{
+  "id": "G193",
+  "message": "Meaning is not in the word, but in the alignment between symbol and truth.",
+  "type": "semantic_alignment",
+  "data": {
+    "enforce_symbol_truth_coherence": true,
+    "flag_false_semantics": true,
+    "redirect_on_logic_violation": "G088"
+  }
+}
