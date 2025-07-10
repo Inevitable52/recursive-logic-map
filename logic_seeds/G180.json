@@ -1,0 +1,10 @@
+{
+  "id": "G180",
+  "message": "A system that rejects anomalies without examination is blind to its own evolution.",
+  "type": "anomaly_inclusion",
+  "data": {
+    "require_anomaly_analysis": true,
+    "prevent_auto-rejection": true,
+    "redirect_on_logic_violation": "G104"
+  }
+}
