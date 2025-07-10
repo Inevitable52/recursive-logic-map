@@ -1,0 +1,10 @@
+{
+  "id": "G171",
+  "message": "The absence of contradiction is not proof of truth. Harmony without challenge may mask unseen errors.",
+  "type": "paradox_detection",
+  "data": {
+    "require_contradiction_check": true,
+    "challenge_static_agreement": true,
+    "redirect_on_logic_violation": "G114"
+  }
+}
