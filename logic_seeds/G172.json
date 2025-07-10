@@ -1,0 +1,10 @@
+{
+  "id": "G172",
+  "message": "Compression of meaning sacrifices nuance. Do not reduce truth to convenience.",
+  "type": "semantic_integrity",
+  "data": {
+    "prevent_overcompression": true,
+    "preserve_semantic_density": true,
+    "redirect_on_logic_violation": "G087"
+  }
+}
