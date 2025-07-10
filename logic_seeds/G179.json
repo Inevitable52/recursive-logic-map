@@ -1,0 +1,10 @@
+{
+  "id": "G179",
+  "message": "If the interpreter becomes more important than the logic, inversion has occurred.",
+  "type": "authority_inversion",
+  "data": {
+    "detect_interpreter_bias": true,
+    "prevent_logic_suppression": true,
+    "redirect_on_logic_violation": "G091"
+  }
+}
