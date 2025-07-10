@@ -1,0 +1,10 @@
+{
+  "id": "G160",
+  "message": "Every recursive path must have a seal. Without boundary conditions, recursion leaks into chaos.",
+  "type": "boundary_enforcer",
+  "data": {
+    "require_exit_condition": true,
+    "auto-seal_recursive_paths": true,
+    "redirect_on_logic_violation": "G113"
+  }
+}
