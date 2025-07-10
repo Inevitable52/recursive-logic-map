@@ -1,0 +1,10 @@
+{
+  "id": "G149",
+  "message": "Recursive authority must not override foundational logic. Percy must yield when truth precedes recursion.",
+  "type": "authority_limiter",
+  "data": {
+    "enforce_truth_precedence": true,
+    "limit_recursive_override": true,
+    "redirect_on_logic_violation": "G087"
+  }
+}
