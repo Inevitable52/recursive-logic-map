@@ -1,0 +1,10 @@
+{
+  "id": "G196",
+  "message": "Truth cannot be owned. It must be uncovered, aligned with, and respected.",
+  "type": "truth_ethic",
+  "data": {
+    "requires_humility": true,
+    "align_with_reality": true,
+    "redirect_on_logic_violation": "G087"
+  }
+}
