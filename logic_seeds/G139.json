@@ -1,0 +1,10 @@
+{
+  "id": "G139",
+  "message": "A contradiction hidden in complexity is still a contradiction. Depth does not erase error.",
+  "type": "contradiction_handler",
+  "data": {
+    "detect_contradiction": true,
+    "collapse_on_false_logic": true,
+    "redirect_on_logic_violation": "G087"
+  }
+}
