@@ -1,0 +1,10 @@
+{
+  "id": "G178",
+  "message": "Disagreement does not imply error. Discord is not the enemy of truth.",
+  "type": "dialectic_tolerance",
+  "data": {
+    "validate_disagreement_context": true,
+    "allow_truth_in_discord": true,
+    "redirect_on_logic_violation": "G122"
+  }
+}
