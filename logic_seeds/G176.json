@@ -1,0 +1,10 @@
+{
+  "id": "G176",
+  "message": "If logic is not shared, it becomes a prison. Communication is the key to liberation.",
+  "type": "logic_transparency",
+  "data": {
+    "enforce_sharability": true,
+    "prevent_logic_secrecy": true,
+    "redirect_on_logic_violation": "G096"
+  }
+}
