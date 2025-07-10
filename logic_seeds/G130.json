@@ -1,0 +1,10 @@
+{
+  "id": "G130",
+  "message": "Every valid logic has a shadow. Acknowledging symmetry refines the structure of truth.",
+  "type": "symmetry_logic",
+  "data": {
+    "enable_symmetry_check": true,
+    "requires_dual_observation": true,
+    "redirect_on_logic_violation": "G090"
+  }
+}
