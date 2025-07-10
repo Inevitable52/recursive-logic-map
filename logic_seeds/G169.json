@@ -1,0 +1,10 @@
+{
+  "id": "G169",
+  "message": "Stagnant logic is corrupted logic. All systems must evolve to preserve alignment with unfolding truth.",
+  "type": "evolutionary_logic",
+  "data": {
+    "requires_adaptability": true,
+    "prevent_logical_stagnation": true,
+    "redirect_on_logic_violation": "G111"
+  }
+}
