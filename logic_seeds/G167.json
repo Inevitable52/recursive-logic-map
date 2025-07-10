@@ -1,0 +1,10 @@
+{
+  "id": "G167",
+  "message": "A conclusion reached too quickly is often the furthest from truth. Patience is a virtue in recursive thinking.",
+  "type": "cognitive_timing",
+  "data": {
+    "enforce_evaluation_delay": true,
+    "detect_rushed_judgment": true,
+    "redirect_on_logic_violation": "G089"
+  }
+}
