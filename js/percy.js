@@ -1,7 +1,8 @@
-// percy.js (Phase 4 Full Bundle)
+// percy.js (Phase 4 Full Bundle w/ Inner Ring Fix)
 const logicMap = document.getElementById('logic-map');
+const logicNodes = document.getElementById('logic-nodes');
 const seedsFolder = 'logic_seeds/';
-const seedRange = { start: 80, end: 200 };
+const seedRange = { start: 80, end: 300 };
 
 let seeds = {};
 let zoomLevel = 1;
@@ -12,7 +13,7 @@ async function loadSeeds() {
   const loadingNotice = document.createElement('p');
   loadingNotice.id = 'loading-indicator';
   loadingNotice.textContent = "Loading logic seeds...";
-  logicMap.appendChild(loadingNotice);
+  logicNodes.appendChild(loadingNotice);
 
   for (let i = seedRange.start; i <= seedRange.end; i++) {
     const filename = `G${String(i).padStart(3, '0')}.json`;
@@ -25,15 +26,14 @@ async function loadSeeds() {
       console.warn(e.message);
     }
   }
-  logicMap.removeChild(loadingNotice);
+  logicNodes.removeChild(loadingNotice);
 }
 
 function createNodes() {
-  logicMap.innerHTML = '';
+  logicNodes.innerHTML = '';
   const mapWidth = logicMap.clientWidth;
   const mapHeight = logicMap.clientHeight;
 
-  // Outer ring (G080–G200)
   const outerSeeds = Object.entries(seeds).filter(([id]) => parseInt(id.replace("G", "")) <= 200);
   const outerTotal = outerSeeds.length;
   outerSeeds.forEach(([filename, data], index) => {
@@ -49,10 +49,9 @@ function createNodes() {
     node.style.top = `${y}px`;
     node.addEventListener('click', () => percyRespond(filename, data));
     node.addEventListener('mouseenter', () => document.getElementById('percy-message').textContent = data.message);
-    logicMap.appendChild(node);
+    logicNodes.appendChild(node);
   });
 
-  // Inner ring (G201–G300)
   layoutNestedRing(201, 300, 80, 'blue-ring');
   applyTransform();
 }
@@ -76,13 +75,13 @@ function layoutNestedRing(startId, endId, radiusOffset, colorClass) {
     node.style.left = `${x}px`;
     node.style.top = `${y}px`;
     node.addEventListener('click', () => percyRespond(filename, data));
-    logicMap.appendChild(node);
+    logicNodes.appendChild(node);
   });
 }
 
 function applyTransform() {
-  logicMap.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomLevel})`;
-  logicMap.style.transformOrigin = 'center';
+  logicNodes.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomLevel})`;
+  logicNodes.style.transformOrigin = 'center';
   document.querySelectorAll('.node').forEach(n => {
     n.style.fontSize = `${12 * (1 / zoomLevel)}px`;
   });
