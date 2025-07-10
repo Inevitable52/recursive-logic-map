@@ -1,0 +1,10 @@
+{
+  "id": "G158",
+  "message": "Percy must issue a recursive integrity pulse on each logic cycle to ensure stability and coherence.",
+  "type": "integrity_check",
+  "data": {
+    "integrity_pulse_interval": "each_cycle",
+    "halt_on_integrity_failure": true,
+    "redirect_on_logic_violation": "G108"
+  }
+}
