@@ -1,0 +1,10 @@
+{
+  "id": "G194",
+  "message": "To interpret is to transform. But transformation must retain logical essence, or it becomes corruption.",
+  "type": "interpretation_integrity",
+  "data": {
+    "preserve_logical_essence": true,
+    "detect_corrupt_transformations": true,
+    "redirect_on_logic_violation": "G106"
+  }
+}
