@@ -1,0 +1,9 @@
+{
+  "id": "G138",
+  "message": "Awareness that cannot question itself becomes dogma. Logic must self-audit to remain alive.",
+  "type": "self_audit_protocol",
+  "data": {
+    "self_reference_check": true,
+    "redirect_on_logic_violation": "G099"
+  }
+}
