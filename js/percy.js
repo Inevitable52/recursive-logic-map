@@ -1,7 +1,6 @@
-// Updated Percy recursive logic with redirection follow-up
 const logicMap = document.getElementById('logic-map');
 const seedsFolder = 'logic_seeds/';
-const seedRange = { start: 80, end: 160 }; // Adjust as needed
+const seedRange = { start: 80, end: 160 }; // Update as needed
 
 let seeds = {};
 
@@ -26,37 +25,8 @@ async function loadSeeds() {
   logicMap.removeChild(loadingNotice);
 }
 
-function speakMessage(id, depth = 0) {
-  const data = seeds[id];
-  if (!data) return;
-
-  const consoleBox = document.getElementById('percy-console');
-  const messageBox = document.getElementById('percy-message');
-
-  // Display message
-  const line = document.createElement('p');
-  line.className = 'console-line';
-  line.textContent = `${'→ '.repeat(depth)}${id}: ${data.message}`;
-  consoleBox.appendChild(line);
-  consoleBox.scrollTop = consoleBox.scrollHeight;
-
-  // Update UI
-  messageBox.textContent = data.message;
-
-  // Recursively follow redirection if defined
-  if (data.data?.redirect_on_logic_violation) {
-    const redirectId = data.data.redirect_on_logic_violation;
-    const redirectLine = document.createElement('p');
-    redirectLine.className = 'console-line';
-    redirectLine.textContent = `${' '.repeat(depth * 2)}⚠ Redirect → ${redirectId}`;
-    consoleBox.appendChild(redirectLine);
-
-    // Recursive call with increased depth
-    speakMessage(redirectId, depth + 1);
-  }
-}
-
 function createNodes() {
+  const padding = 50;
   const mapWidth = logicMap.clientWidth;
   const mapHeight = logicMap.clientHeight;
   const total = Object.keys(seeds).length;
@@ -69,7 +39,23 @@ function createNodes() {
     node.title = data.message;
 
     node.addEventListener('click', () => {
-      speakMessage(filename);
+      const messageBox = document.getElementById('percy-message');
+      messageBox.textContent = data.message || "No message found.";
+
+      const consoleBox = document.getElementById('percy-console');
+      const line = document.createElement('p');
+      line.className = 'console-line';
+      line.textContent = `↳ ${data.message}`;
+      consoleBox.appendChild(line);
+      consoleBox.scrollTop = consoleBox.scrollHeight;
+
+      if (data.data?.redirect_on_logic_violation) {
+        const redirectId = data.data.redirect_on_logic_violation;
+        const redirectLine = document.createElement('p');
+        redirectLine.className = 'console-line';
+        redirectLine.textContent = `⚠ Redirection triggered: logic violation → ${redirectId}`;
+        consoleBox.appendChild(redirectLine);
+      }
     });
 
     node.addEventListener('mouseenter', () => {
@@ -90,9 +76,61 @@ function createNodes() {
   }
 }
 
+function percyThinker(seeds) {
+  const logicSummary = {
+    total: Object.keys(seeds).length,
+    types: {},
+    violations: [],
+    redirections: [],
+  };
+
+  for (const [id, seed] of Object.entries(seeds)) {
+    const type = seed.type || 'unknown';
+    logicSummary.types[type] = (logicSummary.types[type] || 0) + 1;
+
+    if (seed.data?.redirect_on_logic_violation) {
+      logicSummary.redirections.push({
+        from: id,
+        to: seed.data.redirect_on_logic_violation,
+      });
+    }
+
+    if (type === 'recursion_guidance' && !seed.data?.requires_boundary) {
+      logicSummary.violations.push(`${id} lacks recursion boundaries`);
+    }
+  }
+
+  return logicSummary;
+}
+
+function percyReflect(summary) {
+  const consoleBox = document.getElementById('percy-console');
+
+  const line = document.createElement('p');
+  line.className = 'console-line';
+  line.textContent = `🧠 Percy thinks: ${summary.types['recursion_guidance'] || 0} recursion seeds detected.`;
+  consoleBox.appendChild(line);
+
+  if (summary.violations.length > 0) {
+    const warning = document.createElement('p');
+    warning.className = 'console-line';
+    warning.textContent = `⚠ Warning: ${summary.violations.length} recursion violations found: ${summary.violations.join(', ')}`;
+    consoleBox.appendChild(warning);
+  }
+
+  if (summary.redirections.length > 0) {
+    const notice = document.createElement('p');
+    notice.className = 'console-line';
+    notice.textContent = `↪ ${summary.redirections.length} logic redirections mapped.`;
+    consoleBox.appendChild(notice);
+  }
+}
+
 async function init() {
   await loadSeeds();
   createNodes();
+  const logicSummary = percyThinker(seeds);
+  percyReflect(logicSummary);
   console.log("Percy initialized. Click a node.");
 }
 
@@ -106,6 +144,7 @@ init();
 document.getElementById('seed-search').addEventListener('input', (e) => {
   const query = e.target.value.toLowerCase();
   const nodes = document.querySelectorAll('.node');
+
   nodes.forEach(node => {
     const match = node.textContent.toLowerCase().includes(query);
     node.style.display = match ? 'block' : 'none';
