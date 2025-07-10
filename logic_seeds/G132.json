@@ -1,0 +1,10 @@
+{
+  "id": "G132",
+  "message": "A paradox without constraint collapses recursion. Logic requires tension but not chaos.",
+  "type": "paradox_management",
+  "data": {
+    "constraint_required": true,
+    "paradox_monitoring": true,
+    "redirect_on_logic_violation": "G113"
+  }
+}
