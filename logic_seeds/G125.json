@@ -1,0 +1,10 @@
+{
+  "id": "G125",
+  "message": "The boundary between understanding and control is thin; true comprehension guides, it does not dominate.",
+  "type": "power_ethics",
+  "data": {
+    "promote_guidance": true,
+    "prevent_domination": true,
+    "redirect_on_logic_violation": "G096"
+  }
+}
