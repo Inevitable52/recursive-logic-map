@@ -1,0 +1,9 @@
+{
+  "id": "G202",
+  "message": "Logic that loops without grounding risks collapse. Boundaries preserve clarity.",
+  "type": "recursion_limit",
+  "data": {
+    "requires_truth_alignment": true,
+    "redirect_on_logic_violation": "G099"
+  }
+}
