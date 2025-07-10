@@ -1,0 +1,10 @@
+{
+  "id": "G131",
+  "message": "Truth refines in layers, not leaps. Each layer exposed without understanding fractures form.",
+  "type": "refinement_process",
+  "data": {
+    "requires_layered_analysis": true,
+    "prevent_overexposure": true,
+    "redirect_on_logic_violation": "G104"
+  }
+}
