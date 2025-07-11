@@ -1,0 +1,9 @@
+{
+  "id": "G234",
+  "message": "G234: When logic is silenced, entropy speaks.",
+  "type": "warning",
+  "data": {
+    "category": "entropy",
+    "redirect_on_logic_violation": "G094"
+  }
+}
