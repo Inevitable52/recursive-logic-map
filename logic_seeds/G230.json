@@ -1,0 +1,9 @@
+{
+  "id": "G230",
+  "message": "G230: A secure node reflects logical integrity beyond surface signals.",
+  "type": "node",
+  "data": {
+    "category": "security",
+    "security_token": true
+  }
+}
