@@ -1,0 +1,9 @@
+{
+  "id": "G217",
+  "message": "G217: The seed of contradiction often masks recursive potential.",
+  "type": "concept",
+  "data": {
+    "category": "contradiction",
+    "trigger": "masking"
+  }
+}
