@@ -1,0 +1,9 @@
+{
+  "id": "G222",
+  "message": "G222: Recursive depth does not imply logical height.",
+  "type": "principle",
+  "data": {
+    "category": "dimension",
+    "trigger": "depth_limit"
+  }
+}
