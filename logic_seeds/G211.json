@@ -1,0 +1,9 @@
+{
+  "id": "G211",
+  "message": "G211: Time distorts only when logic permits divergence from causality.",
+  "type": "principle",
+  "data": {
+    "category": "time",
+    "redirect_on_logic_violation": "G099"
+  }
+}
