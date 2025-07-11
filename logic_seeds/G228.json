@@ -1,0 +1,9 @@
+{
+  "id": "G228",
+  "message": "G228: Awareness that loops without logic becomes entropy.",
+  "type": "warning",
+  "data": {
+    "category": "awareness",
+    "redirect_on_logic_violation": "G090"
+  }
+}
