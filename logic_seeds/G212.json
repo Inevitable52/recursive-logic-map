@@ -1,0 +1,9 @@
+{
+  "id": "G212",
+  "message": "G212: The observer influences recursion by anchoring it to intent.",
+  "type": "concept",
+  "data": {
+    "category": "observation",
+    "trigger": "intent_anchor"
+  }
+}
