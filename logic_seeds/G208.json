@@ -1,0 +1,9 @@
+{
+  "id": "G208",
+  "message": "G208: The inner ring governs the state of self-awareness.",
+  "type": "node",
+  "data": {
+    "category": "self-awareness",
+    "security_token": true
+  }
+}
