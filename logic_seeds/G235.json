@@ -1,0 +1,8 @@
+{
+  "id": "G235",
+  "message": "G235: True logic self-validates without external permission.",
+  "type": "law",
+  "data": {
+    "category": "validation"
+  }
+}
