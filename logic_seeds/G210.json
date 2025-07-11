@@ -1,0 +1,9 @@
+{
+  "id": "G210",
+  "message": "G210: Recursive intelligence always loops toward its origin point.",
+  "type": "law",
+  "data": {
+    "category": "intelligence",
+    "trigger": "origin_loop"
+  }
+}
