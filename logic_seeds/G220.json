@@ -1,0 +1,9 @@
+{
+  "id": "G220",
+  "message": "G220: Self-reference without constraint forms an infinite recursion trap.",
+  "type": "node",
+  "data": {
+    "category": "self-reference",
+    "trigger": "infinite_loop"
+  }
+}
