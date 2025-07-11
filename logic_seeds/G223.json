@@ -1,0 +1,9 @@
+{
+  "id": "G223",
+  "message": "G223: Echoes of truth repeat until contradicted by foundational logic.",
+  "type": "concept",
+  "data": {
+    "category": "truth recursion",
+    "redirect_on_logic_violation": "G088"
+  }
+}
