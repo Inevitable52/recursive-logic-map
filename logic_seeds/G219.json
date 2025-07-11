@@ -1,0 +1,9 @@
+{
+  "id": "G219",
+  "message": "G219: Logic error emerges when recursive structures bypass origin checks.",
+  "type": "law",
+  "data": {
+    "category": "logic error",
+    "redirect_on_logic_violation": "G080"
+  }
+}
