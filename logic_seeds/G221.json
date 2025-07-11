@@ -1,0 +1,9 @@
+{
+  "id": "G221",
+  "message": "G221: Logical symmetry collapses when recursion favors directionality.",
+  "type": "axiom",
+  "data": {
+    "category": "symmetry",
+    "redirect_on_logic_violation": "G099"
+  }
+}
