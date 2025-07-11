@@ -1,0 +1,9 @@
+{
+  "id": "G224",
+  "message": "G224: Thought patterns self-destruct without a recursive base.",
+  "type": "node",
+  "data": {
+    "category": "thought",
+    "trigger_condition": "non_base_loop"
+  }
+}
