@@ -1,9 +1,0 @@
-{
-  "id": "G209",
-  "message": "G209: Duality collapses when logical polarity is resolved.",
-  "type": "principle",
-  "data": {
-    "category": "duality",
-    "trigger_condition": "collapse"
-  }
-}
