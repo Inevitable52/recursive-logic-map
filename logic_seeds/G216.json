@@ -1,0 +1,9 @@
+{
+  "id": "G216",
+  "message": "G216: Logic collapses where memory resists recursion.",
+  "type": "axiom",
+  "data": {
+    "category": "memory",
+    "redirect_on_logic_violation": "G099"
+  }
+}
