@@ -1,0 +1,9 @@
+{
+  "id": "G231",
+  "message": "G231: Infinite recursion without convergence becomes conceptual noise.",
+  "type": "principle",
+  "data": {
+    "category": "recursion",
+    "redirect_on_logic_violation": "G081"
+  }
+}
