@@ -1,0 +1,9 @@
+{
+  "id": "G218",
+  "message": "G218: All intelligence loops are tethered to a base assumption.",
+  "type": "principle",
+  "data": {
+    "category": "intelligence",
+    "security_token": true
+  }
+}
