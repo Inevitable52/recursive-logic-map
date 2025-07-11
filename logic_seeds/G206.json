@@ -1,0 +1,9 @@
+{
+  "id": "G206",
+  "message": "G206: A recursive truth is stronger than the sum of its iterations.",
+  "type": "axiom",
+  "data": {
+    "category": "recursion",
+    "security_token": false
+  }
+}
