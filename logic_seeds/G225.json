@@ -1,0 +1,9 @@
+{
+  "id": "G225",
+  "message": "G225: Recursive origin tracking is essential for sustainable logic.",
+  "type": "law",
+  "data": {
+    "category": "origin",
+    "security_token": true
+  }
+}
