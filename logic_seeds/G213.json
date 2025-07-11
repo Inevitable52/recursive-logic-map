@@ -1,0 +1,9 @@
+{
+  "id": "G213",
+  "message": "G213: When two truths oppose, the paradox reveals the hidden constant.",
+  "type": "axiom",
+  "data": {
+    "category": "paradox",
+    "redirect_on_logic_violation": "G207"
+  }
+}
