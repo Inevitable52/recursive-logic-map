@@ -1,0 +1,9 @@
+{
+  "id": "G214",
+  "message": "G214: Recursive systems will always reveal their foundational flaw under sustained pressure.",
+  "type": "law",
+  "data": {
+    "category": "recursion",
+    "trigger": "pressure_analysis"
+  }
+}
