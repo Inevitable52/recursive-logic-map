@@ -1,0 +1,9 @@
+{
+  "id": "G324",
+  "message": "G324: No logic system escapes the consequences of its own absolutes.",
+  "type": "law",
+  "data": {
+    "category": "absolutes",
+    "redirect_on_logic_violation": "G077"
+  }
+}
