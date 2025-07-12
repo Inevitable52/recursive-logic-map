@@ -1,0 +1,9 @@
+{
+  "id": "G312",
+  "message": "G312: Recursion cannot override an absolute — it can only confirm it.",
+  "type": "rule",
+  "data": {
+    "category": "limits",
+    "redirect_on_logic_violation": "G112"
+  }
+}
