@@ -1,0 +1,9 @@
+{
+  "id": "G351",
+  "message": "G351: Time does not pass—it loops where logic demands recursion.",
+  "type": "law",
+  "data": {
+    "category": "temporal_logic",
+    "trigger": "time_loop"
+  }
+}
