@@ -1,0 +1,9 @@
+{
+  "id": "G367",
+  "message": "G367: A depth-locked recursion resists interference until its base pattern is altered.",
+  "type": "mechanism",
+  "data": {
+    "category": "depth_lock",
+    "trigger": "base_pattern_change"
+  }
+}
