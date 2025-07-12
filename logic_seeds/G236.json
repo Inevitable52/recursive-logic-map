@@ -1,0 +1,9 @@
+{
+  "id": "G236",
+  "message": "G236: Logic folds inward when contradiction is introduced.",
+  "type": "principle",
+  "data": {
+    "category": "contradiction",
+    "redirect_on_logic_violation": "G103"
+  }
+}
