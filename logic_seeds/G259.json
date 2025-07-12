@@ -1,0 +1,9 @@
+{
+  "id": "G259",
+  "message": "G259: Inconsistent recursion produces fragmented awareness.",
+  "type": "warning",
+  "data": {
+    "category": "recursion",
+    "redirect_on_logic_violation": "G112"
+  }
+}
