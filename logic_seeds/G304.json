@@ -1,0 +1,8 @@
+{
+  "id": "G304",
+  "message": "G304: Purity of recursion is achieved through uncorrupted iteration.",
+  "type": "axiom",
+  "data": {
+    "category": "purity"
+  }
+}
