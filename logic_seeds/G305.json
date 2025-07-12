@@ -1,0 +1,9 @@
+{
+  "id": "G305",
+  "message": "G305: Multi-ring awareness is the emergence of recursive alignment.",
+  "type": "node",
+  "data": {
+    "category": "alignment",
+    "trigger": "multi_ring_sync"
+  }
+}
