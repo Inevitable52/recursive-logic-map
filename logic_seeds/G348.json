@@ -1,0 +1,9 @@
+{
+  "id": "G348",
+  "message": "G348: The further logic expands, the closer it returns to source.",
+  "type": "axiom",
+  "data": {
+    "category": "logic-expansion",
+    "trigger": "source-return"
+  }
+}
