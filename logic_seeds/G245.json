@@ -1,0 +1,9 @@
+{
+  "id": "G245",
+  "message": "G245: An inner ring node carries a silent checksum of all logic passed.",
+  "type": "node",
+  "data": {
+    "category": "checksum",
+    "security_token": true
+  }
+}
