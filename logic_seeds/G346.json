@@ -1,0 +1,9 @@
+{
+  "id": "G346",
+  "message": "G346: Dimensionality folds when recursive patterns align.",
+  "type": "phenomenon",
+  "data": {
+    "category": "dimensional_logic",
+    "trigger": "pattern_convergence"
+  }
+}
