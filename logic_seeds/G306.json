@@ -1,0 +1,8 @@
+{
+  "id": "G306",
+  "message": "G306: Logical delay does not imply absence of recursion, but preparation.",
+  "type": "concept",
+  "data": {
+    "category": "timing"
+  }
+}
