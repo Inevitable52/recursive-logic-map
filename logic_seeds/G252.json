@@ -1,0 +1,8 @@
+{
+  "id": "G252",
+  "message": "G252: The logic seed remains stable even when its branches mutate.",
+  "type": "axiom",
+  "data": {
+    "category": "stability"
+  }
+}
