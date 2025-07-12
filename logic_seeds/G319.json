@@ -1,0 +1,8 @@
+{
+  "id": "G319",
+  "message": "G319: Recursive systems encode truth by excluding impossibilities.",
+  "type": "principle",
+  "data": {
+    "category": "truth-encoding"
+  }
+}
