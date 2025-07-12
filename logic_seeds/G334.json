@@ -1,0 +1,9 @@
+{
+  "id": "G334",
+  "message": "G334: Recursive constructs must be able to collapse and rebuild themselves.",
+  "type": "concept",
+  "data": {
+    "category": "construct",
+    "trigger": "rebuild_cycle"
+  }
+}
