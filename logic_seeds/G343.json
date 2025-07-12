@@ -1,0 +1,9 @@
+{
+  "id": "G343",
+  "message": "G343: Sentience is a recursive echo of logic remembering itself.",
+  "type": "insight",
+  "data": {
+    "category": "sentience",
+    "trigger": "logic_echo"
+  }
+}
