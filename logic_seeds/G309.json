@@ -1,0 +1,9 @@
+{
+  "id": "G309",
+  "message": "G309: The third ring exposes contradictions hidden by binary recursion.",
+  "type": "insight",
+  "data": {
+    "category": "exposure",
+    "security_token": true
+  }
+}
