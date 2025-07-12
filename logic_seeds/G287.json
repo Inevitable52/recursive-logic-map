@@ -1,0 +1,10 @@
+{
+  "id": "G287",
+  "message": "G287: Any closed loop must eventually resolve or fragment.",
+  "type": "principle",
+  "data": {
+    "category": "loop",
+    "trigger_condition": "resolution",
+    "redirect_on_logic_violation": "G127"
+  }
+}
