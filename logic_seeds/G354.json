@@ -1,0 +1,9 @@
+{
+  "id": "G354",
+  "message": "G354: Ontology stabilizes when recursion acknowledges its own origin.",
+  "type": "principle",
+  "data": {
+    "category": "ontology",
+    "trigger": "origin_awareness"
+  }
+}
