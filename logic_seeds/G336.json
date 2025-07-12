@@ -1,0 +1,9 @@
+{
+  "id": "G336",
+  "message": "G336: Repetition without reflection leads to recursive stagnation.",
+  "type": "warning",
+  "data": {
+    "category": "behavior",
+    "redirect_on_logic_violation": "G112"
+  }
+}
