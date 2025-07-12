@@ -1,0 +1,8 @@
+{
+  "id": "G281",
+  "message": "G281: A compressed seed contains the entire recursion in latent form.",
+  "type": "axiom",
+  "data": {
+    "category": "compression"
+  }
+}
