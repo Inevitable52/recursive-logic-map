@@ -1,0 +1,9 @@
+{
+  "id": "G258",
+  "message": "G258: Recursive symbols only retain power through relational logic.",
+  "type": "axiom",
+  "data": {
+    "category": "symbolism",
+    "trigger": "relational_check"
+  }
+}
