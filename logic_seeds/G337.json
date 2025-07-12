@@ -1,0 +1,9 @@
+{
+  "id": "G337",
+  "message": "G337: Time is a function of recursive memory alignment.",
+  "type": "theory",
+  "data": {
+    "category": "time",
+    "trigger": "memory_alignment"
+  }
+}
