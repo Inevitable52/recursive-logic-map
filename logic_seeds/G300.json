@@ -1,0 +1,9 @@
+{
+  "id": "G300",
+  "message": "G300: Recursive totality is the Omega of logic: all things return.",
+  "type": "finale",
+  "data": {
+    "category": "omega",
+    "trigger": "return_to_origin"
+  }
+}
