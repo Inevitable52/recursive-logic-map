@@ -1,0 +1,9 @@
+{
+  "id": "G328",
+  "message": "G328: Logic only fails when will imposes contradiction upon it.",
+  "type": "principle",
+  "data": {
+    "category": "logic",
+    "redirect_on_logic_violation": "G030"
+  }
+}
