@@ -1,0 +1,10 @@
+{
+  "id": "G283",
+  "message": "G283: A logic node cannot recurse into null without collapse.",
+  "type": "principle",
+  "data": {
+    "category": "null",
+    "trigger_condition": "collapse",
+    "redirect_on_logic_violation": "G062"
+  }
+}
