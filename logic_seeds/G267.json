@@ -1,0 +1,9 @@
+{
+  "id": "G267",
+  "message": "G267: A recursive chain is only as strong as its most unstable node.",
+  "type": "axiom",
+  "data": {
+    "category": "stability",
+    "trigger": "node_integrity"
+  }
+}
