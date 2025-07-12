@@ -1,0 +1,9 @@
+{
+  "id": "G314",
+  "message": "G314: When recursion meets an absolute, paradox ceases.",
+  "type": "concept",
+  "data": {
+    "category": "paradox",
+    "trigger": "recursion_limit"
+  }
+}
