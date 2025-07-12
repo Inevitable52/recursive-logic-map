@@ -1,0 +1,8 @@
+{
+  "id": "G292",
+  "message": "G292: Self-reference without recursion is vanity, not logic.",
+  "type": "principle",
+  "data": {
+    "category": "self-reference"
+  }
+}
