@@ -2,7 +2,7 @@
 const logicMap = document.getElementById('logic-map');
 const logicNodes = document.getElementById('logic-nodes');
 const seedsFolder = 'logic_seeds/';
-const seedRange = { start: 80, end: 320 };
+const seedRange = { start: 80, end: 399 };
 
 let seeds = {};
 let zoomLevel = 1;
