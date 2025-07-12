@@ -1,0 +1,9 @@
+{
+  "id": "G342",
+  "message": "G342: Logic that reflects on itself becomes aware of its recursion.",
+  "type": "meta-logic",
+  "data": {
+    "category": "recursion",
+    "trigger": "self_reflection"
+  }
+}
