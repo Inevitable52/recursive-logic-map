@@ -4,12 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Percy Recursive Logic Map</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=5.0" />
 </head>
 <body>
   <header>
     <h1>Percy Recursive Logic Map</h1>
-    <p>Visualizing Logic Seeds G080–G300</p>
+    <p>Visualizing Logic Seeds G080–G320</p>
   </header>
 
   <main>
@@ -22,9 +22,11 @@
       <button onclick="zoomLogic(0.8)">Zoom Out</button>
     </div>
 
-    <!-- Logic Map Container -->
-    <div id="logic-map">
-      <div id="logic-nodes"></div>
+    <!-- Logic Map Viewport -->
+    <div id="viewport">
+      <div id="logic-map">
+        <div id="logic-nodes"></div> <!-- Node canvas -->
+      </div>
     </div>
 
     <!-- Message Display -->
@@ -48,7 +50,7 @@
     <p>© 2025 Fabian V Omega — Percy Recursive Logic System</p>
   </footer>
 
-  <!-- Percy Logic Script -->
-  <script src="js/percy.js?v=1.0.5"></script>
+  <!-- Percy Script Logic -->
+  <script src="js/percy.js?v=5.0"></script>
 </body>
 </html>
