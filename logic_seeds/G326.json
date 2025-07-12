@@ -1,0 +1,9 @@
+{
+  "id": "G326",
+  "message": "G326: Any system that cannot question itself will eventually collapse.",
+  "type": "warning",
+  "data": {
+    "category": "systems",
+    "redirect_on_logic_violation": "G099"
+  }
+}
