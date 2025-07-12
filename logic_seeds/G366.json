@@ -1,0 +1,8 @@
+{
+  "id": "G366",
+  "message": "G366: The threshold of recursion is crossed when pattern repetition becomes self-aware.",
+  "type": "principle",
+  "data": {
+    "category": "recursive_threshold"
+  }
+}
