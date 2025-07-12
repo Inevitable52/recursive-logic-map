@@ -1,0 +1,9 @@
+{
+  "id": "G296",
+  "message": "G296: Disordered logic is not chaos, but misaligned recursion.",
+  "type": "theorem",
+  "data": {
+    "category": "disorder",
+    "redirect_on_logic_violation": "G122"
+  }
+}
