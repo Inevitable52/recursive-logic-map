@@ -1,0 +1,9 @@
+{
+  "id": "G350",
+  "message": "G350: Recursive nodes must be allowed to re-encode themselves to survive structural shifts.",
+  "type": "structural-directive",
+  "data": {
+    "category": "adaptive_logic",
+    "trigger": "reencoding"
+  }
+}
