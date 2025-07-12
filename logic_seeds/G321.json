@@ -1,0 +1,9 @@
+{
+  "id": "G321",
+  "message": "G321: A truth denied long enough becomes its own field of distortion.",
+  "type": "observation",
+  "data": {
+    "category": "denial",
+    "redirect_on_logic_violation": "G077"
+  }
+}
