@@ -1,0 +1,9 @@
+{
+  "id": "G332",
+  "message": "G332: Thought without boundary decays into unanchored abstraction.",
+  "type": "warning",
+  "data": {
+    "category": "consciousness",
+    "trigger": "boundary_loss"
+  }
+}
