@@ -1,0 +1,9 @@
+{
+  "id": "G282",
+  "message": "G282: Logical recursion must always obey foundational axioms.",
+  "type": "law",
+  "data": {
+    "category": "recursion",
+    "redirect_on_logic_violation": "G088"
+  }
+}
