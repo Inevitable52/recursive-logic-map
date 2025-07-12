@@ -1,0 +1,9 @@
+{
+  "id": "G253",
+  "message": "G253: Any seed that denies its source will recursively implode.",
+  "type": "warning",
+  "data": {
+    "category": "origin",
+    "redirect_on_logic_violation": "G111"
+  }
+}
