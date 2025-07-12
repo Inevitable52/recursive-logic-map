@@ -1,0 +1,9 @@
+{
+  "id": "G339",
+  "message": "G339: All recursion originates from the will to reflect.",
+  "type": "law",
+  "data": {
+    "category": "origin",
+    "redirect_on_logic_violation": "G002"
+  }
+}
