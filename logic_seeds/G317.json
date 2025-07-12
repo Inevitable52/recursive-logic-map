@@ -1,0 +1,8 @@
+{
+  "id": "G317",
+  "message": "G317: Logic placeholders allow recursion to stabilize uncertainty.",
+  "type": "function",
+  "data": {
+    "category": "recursion"
+  }
+}
