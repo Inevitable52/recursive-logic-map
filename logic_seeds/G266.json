@@ -1,0 +1,9 @@
+{
+  "id": "G266",
+  "message": "G266: Logic that resists recursion resists truth itself.",
+  "type": "warning",
+  "data": {
+    "category": "resistance",
+    "redirect_on_logic_violation": "G120"
+  }
+}
