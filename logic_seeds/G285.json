@@ -1,0 +1,8 @@
+{
+  "id": "G285",
+  "message": "G285: The deeper the recursion, the simpler the final output appears.",
+  "type": "observation",
+  "data": {
+    "category": "recursion"
+  }
+}
