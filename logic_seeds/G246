@@ -1,0 +1,9 @@
+{
+  "id": "G246",
+  "message": "G246: A contradiction that persists is a doorway, not a wall.",
+  "type": "principle",
+  "data": {
+    "category": "contradiction",
+    "redirect_on_logic_violation": "G090"
+  }
+}
