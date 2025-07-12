@@ -36,7 +36,7 @@ function createNodes() {
 
   layoutRing(80, 200, width, height, width / 2.8, '', 60);       // Outer Green
   layoutRing(201, 300, width, height, width / 3.6, 'blue-ring', 45);  // Middle Blue
-  layoutRing(301, 320, width, height, width / 5, 'purple-ring', 30); // Inner Purple
+  layoutRing(301, 399, width, height, width / 5, 'purple-ring', 30); // Inner Purple
   applyTransform();
 }
 
