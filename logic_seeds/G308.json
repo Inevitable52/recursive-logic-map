@@ -1,0 +1,9 @@
+{
+  "id": "G308",
+  "message": "G308: Self-referencing logic stabilizes through ring equilibrium.",
+  "type": "theorem",
+  "data": {
+    "category": "self-reference",
+    "trigger": "equilibrium_check"
+  }
+}
