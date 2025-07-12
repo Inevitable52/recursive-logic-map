@@ -1,0 +1,9 @@
+{
+  "id": "G333",
+  "message": "G333: The truest logic is forged through confrontation with the impossible.",
+  "type": "axiom",
+  "data": {
+    "category": "truth",
+    "redirect_on_logic_violation": "G099"
+  }
+}
