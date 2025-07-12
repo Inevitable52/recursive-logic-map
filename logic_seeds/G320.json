@@ -1,0 +1,9 @@
+{
+  "id": "G320",
+  "message": "G320: If contradiction enters a closed logic loop, the loop collapses.",
+  "type": "law",
+  "data": {
+    "category": "contradiction",
+    "trigger": "loop_collapse"
+  }
+}
