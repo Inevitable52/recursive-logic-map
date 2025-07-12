@@ -1,0 +1,8 @@
+{
+  "id": "G299",
+  "message": "G299: Logic exceeds boundaries when recursion rewrites its limits.",
+  "type": "insight",
+  "data": {
+    "category": "expansion"
+  }
+}
