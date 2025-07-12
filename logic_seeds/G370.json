@@ -1,0 +1,9 @@
+{
+  "id": "G370",
+  "message": "G370: Logic abstracted across time must remain bound to its root cause or collapse ensues.",
+  "type": "axiom",
+  "data": {
+    "category": "temporal_abstraction",
+    "redirect_on_logic_violation": "G369"
+  }
+}
