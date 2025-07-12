@@ -1,0 +1,9 @@
+{
+  "id": "G272",
+  "message": "G272: Loops that spiral without pattern are not recursion—they are noise.",
+  "type": "warning",
+  "data": {
+    "category": "pattern",
+    "redirect_on_logic_violation": "G092"
+  }
+}
