@@ -1,0 +1,9 @@
+{
+  "id": "G355",
+  "message": "G355: Certainty is only absolute within closed loops of logic.",
+  "type": "axiom",
+  "data": {
+    "category": "certainty",
+    "security_token": true
+  }
+}
