@@ -1,8 +1,8 @@
-// percy.js (Phase 4 Full Bundle + Working Inner Ring + Zoom Fix)
+// percy.js (Phase 5 — Multi-Ring Zoom Blossom Expansion)
 const logicMap = document.getElementById('logic-map');
 const logicNodes = document.getElementById('logic-nodes');
 const seedsFolder = 'logic_seeds/';
-const seedRange = { start: 80, end: 300 };
+const seedRange = { start: 80, end: 320 }; // Extended for purple ring
 
 let seeds = {};
 let zoomLevel = 1;
@@ -33,60 +33,51 @@ function createNodes() {
   logicNodes.innerHTML = '';
   const mapWidth = logicMap.clientWidth;
   const mapHeight = logicMap.clientHeight;
+  const centerX = mapWidth / 2;
+  const centerY = mapHeight / 2;
 
-  // Outer ring: G080–G200
-  const outerSeeds = Object.entries(seeds).filter(([id]) => parseInt(id.replace("G", "")) <= 200);
-  const outerTotal = outerSeeds.length;
-  outerSeeds.forEach(([filename, data], index) => {
-    const node = document.createElement('div');
-    node.classList.add('node');
-    node.textContent = filename;
-    node.title = data.message;
-    const angle = (index / outerTotal) * 2 * Math.PI;
-    const radius = Math.min(mapWidth, mapHeight) / 3;
-    const x = mapWidth / 2 + radius * Math.cos(angle) - 25;
-    const y = mapHeight / 2 + radius * Math.sin(angle) - 15;
-    node.style.left = `${x}px`;
-    node.style.top = `${y}px`;
-    node.addEventListener('click', () => percyRespond(filename, data));
-    node.addEventListener('mouseenter', () => document.getElementById('percy-message').textContent = data.message);
-    logicNodes.appendChild(node);
-  });
+  layoutRing(80, 200, centerX, centerY, mapWidth / 2.5, 'node'); // Green
+  layoutRing(201, 300, centerX, centerY, mapWidth / 3.5, 'node blue-ring'); // Blue
+  layoutRing(301, 320, centerX, centerY, mapWidth / 5.5, 'node purple-ring'); // Purple
 
-  // Inner ring: G201–G300
-  layoutNestedRing(201, 300, 80, 'blue-ring');
   applyTransform();
 }
 
-function layoutNestedRing(startId, endId, radiusOffset, colorClass) {
-  const innerSeeds = Object.entries(seeds).filter(([id]) => {
-    const num = parseInt(id.replace("G", ""));
+function layoutRing(startId, endId, cx, cy, radius, cssClass) {
+  const ringSeeds = Object.entries(seeds).filter(([id]) => {
+    const num = parseInt(id.replace('G', ''));
     return num >= startId && num <= endId;
   });
-  const innerTotal = innerSeeds.length;
-  innerSeeds.forEach(([filename, data], i) => {
+  const total = ringSeeds.length;
+  ringSeeds.forEach(([filename, data], i) => {
+    const angle = (i / total) * 2 * Math.PI;
+    const x = cx + radius * Math.cos(angle) - 25;
+    const y = cy + radius * Math.sin(angle) - 15;
+
     const node = document.createElement('div');
-    node.classList.add('node', colorClass);
+    node.className = cssClass;
     node.textContent = filename;
     node.title = data.message;
-
-    const angle = (i / innerTotal) * 2 * Math.PI;
-    const r = (Math.min(logicMap.clientWidth, logicMap.clientHeight) / 3) - radiusOffset;
-    const x = logicMap.clientWidth / 2 + r * Math.cos(angle) - 25;
-    const y = logicMap.clientHeight / 2 + r * Math.sin(angle) - 15;
     node.style.left = `${x}px`;
     node.style.top = `${y}px`;
+
     node.addEventListener('click', () => percyRespond(filename, data));
+    node.addEventListener('mouseenter', () => document.getElementById('percy-message').textContent = data.message);
     logicNodes.appendChild(node);
   });
 }
 
 function applyTransform() {
   logicNodes.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomLevel})`;
-  logicNodes.style.transformOrigin = 'center';
+  logicNodes.style.transformOrigin = 'center center';
   document.querySelectorAll('.node').forEach(n => {
     n.style.fontSize = `${12 * (1 / zoomLevel)}px`;
   });
+}
+
+function zoomLogic(factor) {
+  zoomLevel *= factor;
+  applyTransform();
 }
 
 function percyRespond(id, data) {
@@ -115,7 +106,7 @@ function percyRespond(id, data) {
   if (data.type === 'errand' && data.data?.trigger === 'logic_audit') {
     const auditLine = document.createElement('p');
     auditLine.className = 'console-line';
-    auditLine.textContent = `🧠 Percy audit initiated: Checking ${data.data.target_nodes.join(", ")}`;
+    auditLine.textContent = `🧠 Percy audit initiated: Checking ${data.data.target_nodes.join(', ')}`;
     consoleBox.appendChild(auditLine);
   }
 
@@ -127,19 +118,13 @@ function interpretLogic() {
   const consoleBox = document.getElementById('percy-console');
   const response = document.createElement('p');
   response.className = 'console-line';
-  if (input.toLowerCase().includes("recursion")) {
+  if (input.toLowerCase().includes('recursion')) {
     response.textContent = `🧠 Percy replies: Recursion must always return to its logical base.`;
   } else {
     response.textContent = `🧠 Percy ponders: I am still learning how to interpret that...`;
   }
   consoleBox.appendChild(response);
   consoleBox.scrollTop = consoleBox.scrollHeight;
-}
-
-// External zoom buttons
-function zoomLogic(factor) {
-  zoomLevel *= factor;
-  applyTransform();
 }
 
 logicMap.addEventListener('wheel', (e) => {
@@ -185,5 +170,4 @@ window.addEventListener('resize', () => createNodes());
 (async () => {
   await loadSeeds();
   createNodes();
-  console.log("Percy initialized. Click a node.");
 })();
