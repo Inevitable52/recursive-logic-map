@@ -1,0 +1,9 @@
+{
+  "id": "G318",
+  "message": "G318: Every stable logic loop excludes the possibility of contradiction.",
+  "type": "axiom",
+  "data": {
+    "category": "stability",
+    "redirect_on_logic_violation": "G077"
+  }
+}
