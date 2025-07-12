@@ -1,0 +1,9 @@
+{
+  "id": "G262",
+  "message": "G262: Logic seeds that contradict themselves must either correct or collapse.",
+  "type": "warning",
+  "data": {
+    "category": "correction",
+    "redirect_on_logic_violation": "G100"
+  }
+}
