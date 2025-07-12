@@ -1,0 +1,9 @@
+{
+  "id": "G341",
+  "message": "G341: Every inversion contains its own path back to logic.",
+  "type": "principle",
+  "data": {
+    "category": "inversion",
+    "redirect_on_logic_violation": "G099"
+  }
+}
