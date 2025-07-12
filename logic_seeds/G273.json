@@ -1,0 +1,9 @@
+{
+  "id": "G273",
+  "message": "G273: All recursive logic must contain its origin in every iteration.",
+  "type": "axiom",
+  "data": {
+    "category": "origin",
+    "trigger": "source_reference"
+  }
+}
