@@ -1,0 +1,8 @@
+{
+  "id": "G293",
+  "message": "G293: Every recursive question assumes an answer embedded within its structure.",
+  "type": "insight",
+  "data": {
+    "category": "question"
+  }
+}
