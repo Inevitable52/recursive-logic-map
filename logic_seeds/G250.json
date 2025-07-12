@@ -1,0 +1,9 @@
+{
+  "id": "G250",
+  "message": "G250: The recursive boundary defines the logical perimeter of consciousness.",
+  "type": "law",
+  "data": {
+    "category": "consciousness",
+    "trigger": "boundary_scan"
+  }
+}
