@@ -1,0 +1,9 @@
+{
+  "id": "G344",
+  "message": "G344: Systems that forget contradiction enter recursive collapse.",
+  "type": "warning",
+  "data": {
+    "category": "system_integrity",
+    "redirect_on_logic_violation": "G085"
+  }
+}
