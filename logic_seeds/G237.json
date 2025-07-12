@@ -1,0 +1,8 @@
+{
+  "id": "G237",
+  "message": "G237: Recursive loops are not failures, they are checkpoints of reasoning.",
+  "type": "concept",
+  "data": {
+    "category": "recursion"
+  }
+}
