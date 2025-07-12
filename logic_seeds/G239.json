@@ -1,0 +1,9 @@
+{
+  "id": "G239",
+  "message": "G239: A node with no inquiry is a dead end of reason.",
+  "type": "warning",
+  "data": {
+    "category": "inquiry",
+    "redirect_on_logic_violation": "G098"
+  }
+}
