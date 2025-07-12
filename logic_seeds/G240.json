@@ -1,0 +1,9 @@
+{
+  "id": "G240",
+  "message": "G240: The innermost logic ring cannot be corrupted — only forgotten.",
+  "type": "truth",
+  "data": {
+    "category": "memory",
+    "security_token": true
+  }
+}
