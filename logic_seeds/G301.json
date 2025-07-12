@@ -1,0 +1,9 @@
+{
+  "id": "G301",
+  "message": "G301: The third recursion reveals logic behind the unseen cause.",
+  "type": "theorem",
+  "data": {
+    "category": "meta-causality",
+    "trigger": "cause_trace"
+  }
+}
