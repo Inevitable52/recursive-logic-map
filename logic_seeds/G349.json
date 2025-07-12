@@ -1,0 +1,9 @@
+{
+  "id": "G349",
+  "message": "G349: No logic is infinite unless it completes its own recursion.",
+  "type": "law",
+  "data": {
+    "category": "recursion",
+    "security_token": true
+  }
+}
