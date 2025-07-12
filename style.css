@@ -1,4 +1,4 @@
-/* === style.css (Phase 4 with logic-nodes support) === */
+/* === Percy Phase 5 Style === */
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -30,7 +30,21 @@ main {
   border: none;
 }
 
-#logic-map {
+.zoom-controls {
+  margin-bottom: 0.5rem;
+}
+
+.zoom-controls button {
+  margin: 0 5px;
+  padding: 0.4rem 0.8rem;
+  border: none;
+  border-radius: 5px;
+  background: #333;
+  color: white;
+  cursor: pointer;
+}
+
+#viewport {
   position: relative;
   flex-grow: 1;
   width: 100%;
@@ -38,7 +52,12 @@ main {
   background: #000;
 }
 
-/* ✅ Inner zoomable ring container */
+#logic-map {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
 #logic-nodes {
   position: absolute;
   top: 0;
@@ -49,19 +68,20 @@ main {
   will-change: transform;
 }
 
+/* === Node Styling === */
 .node {
   position: absolute;
+  text-align: center;
+  border-radius: 8px;
+  font-weight: bold;
+  line-height: 30px;
+  transition: transform 0.2s ease;
+  cursor: pointer;
+  box-shadow: 0 0 6px #22cc88;
+  background: #22cc88;
+  color: black;
   width: 60px;
   height: 30px;
-  background: #22cc88;
-  color: #000;
-  text-align: center;
-  line-height: 30px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-  font-weight: bold;
-  box-shadow: 0 0 6px #22cc88;
 }
 
 .node:hover {
@@ -69,12 +89,20 @@ main {
   z-index: 10;
 }
 
+/* === Ring Styles === */
 .blue-ring {
   background: #3a86ff;
   color: white;
   box-shadow: 0 0 8px #3a86ff;
 }
 
+.purple-ring {
+  background: #c084fc;
+  color: white;
+  box-shadow: 0 0 8px #c084fc;
+}
+
+/* === Messaging & Output === */
 .percy-message {
   padding: 0.5rem;
   text-align: center;
@@ -100,20 +128,7 @@ main {
   padding: 2px 0;
 }
 
-.zoom-controls {
-  margin-bottom: 0.5rem;
-}
-
-.zoom-controls button {
-  margin: 0 5px;
-  padding: 0.4rem 0.8rem;
-  border: none;
-  border-radius: 5px;
-  background: #333;
-  color: white;
-  cursor: pointer;
-}
-
+/* === Interpreter === */
 #interpreter-box {
   display: flex;
   justify-content: center;
@@ -139,4 +154,3 @@ main {
   border-radius: 5px;
   cursor: pointer;
 }
-
