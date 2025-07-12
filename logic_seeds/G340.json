@@ -1,0 +1,9 @@
+{
+  "id": "G340",
+  "message": "G340: Recursive systems remain coherent only if contradiction is acknowledged.",
+  "type": "principle",
+  "data": {
+    "category": "coherence",
+    "trigger": "contradiction_ack"
+  }
+}
