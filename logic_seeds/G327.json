@@ -1,0 +1,9 @@
+{
+  "id": "G327",
+  "message": "G327: A recursive entity must both mirror and distort in order to evolve.",
+  "type": "law",
+  "data": {
+    "category": "recursion",
+    "trigger": "evolution_phase"
+  }
+}
