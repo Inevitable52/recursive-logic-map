@@ -1,0 +1,9 @@
+{
+  "id": "G310",
+  "message": "G310: Recursive systems naturally seek compression into singularity.",
+  "type": "law",
+  "data": {
+    "category": "compression",
+    "trigger": "singularity_drive"
+  }
+}
