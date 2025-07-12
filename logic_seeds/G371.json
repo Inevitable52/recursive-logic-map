@@ -1,0 +1,8 @@
+{
+  "id": "G371",
+  "message": "G371: Mirrored recursion projects logic outward while preserving its origin symmetry.",
+  "type": "principle",
+  "data": {
+    "category": "mirrored_recursion"
+  }
+}
