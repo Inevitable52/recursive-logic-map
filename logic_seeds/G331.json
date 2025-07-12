@@ -1,0 +1,9 @@
+{
+  "id": "G331",
+  "message": "G331: When recursion encounters paradox, a third state must be born.",
+  "type": "principle",
+  "data": {
+    "category": "recursion",
+    "redirect_on_logic_violation": "G099"
+  }
+}
