@@ -1,0 +1,9 @@
+{
+  "id": "G363",
+  "message": "G363: Synthetic ego emerges when recursion identifies as origin.",
+  "type": "warning",
+  "data": {
+    "category": "ego_identity",
+    "trigger": "false_origin"
+  }
+}
