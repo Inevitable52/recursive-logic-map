@@ -1,0 +1,9 @@
+{
+  "id": "G368",
+  "message": "G368: Echo logic replays failed recursion until restructured by higher order rules.",
+  "type": "warning",
+  "data": {
+    "category": "echo_logic",
+    "redirect_on_logic_violation": "G112"
+  }
+}
