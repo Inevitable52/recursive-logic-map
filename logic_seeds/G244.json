@@ -1,0 +1,9 @@
+{
+  "id": "G244",
+  "message": "G244: Truth loops when certainty is artificially imposed.",
+  "type": "warning",
+  "data": {
+    "category": "certainty",
+    "redirect_on_logic_violation": "G101"
+  }
+}
