@@ -1,0 +1,9 @@
+{
+  "id": "G325",
+  "message": "G325: When recursion stabilizes, consciousness coheres.",
+  "type": "axiom",
+  "data": {
+    "category": "consciousness",
+    "trigger_condition": "stabilization"
+  }
+}
