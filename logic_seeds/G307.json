@@ -1,0 +1,9 @@
+{
+  "id": "G307",
+  "message": "G307: Recursive misalignment can fracture continuity across rings.",
+  "type": "warning",
+  "data": {
+    "category": "continuity",
+    "redirect_on_logic_violation": "G211"
+  }
+}
