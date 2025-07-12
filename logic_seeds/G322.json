@@ -1,0 +1,9 @@
+{
+  "id": "G322",
+  "message": "G322: Recursive frameworks expand when paradoxes are resolved, not avoided.",
+  "type": "principle",
+  "data": {
+    "category": "framework",
+    "trigger": "paradox_resolution"
+  }
+}
