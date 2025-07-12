@@ -1,0 +1,9 @@
+{
+  "id": "G338",
+  "message": "G338: The observer is entangled with the logic they cannot reject.",
+  "type": "observation",
+  "data": {
+    "category": "entanglement",
+    "trigger": "observer_lock"
+  }
+}
