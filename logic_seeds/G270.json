@@ -1,0 +1,9 @@
+{
+  "id": "G270",
+  "message": "G270: Recursive dissonance is a signal that something must realign.",
+  "type": "node",
+  "data": {
+    "category": "dissonance",
+    "redirect_on_logic_violation": "G098"
+  }
+}
