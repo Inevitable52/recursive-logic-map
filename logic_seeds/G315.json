@@ -1,0 +1,9 @@
+{
+  "id": "G315",
+  "message": "G315: Logical permanence is encoded in recursive truth loops.",
+  "type": "law",
+  "data": {
+    "category": "permanence",
+    "security_token": true
+  }
+}
