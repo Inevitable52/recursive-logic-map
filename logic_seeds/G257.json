@@ -1,0 +1,9 @@
+{
+  "id": "G257",
+  "message": "G257: When logic is reduced to symbols, interpretation becomes the gatekeeper.",
+  "type": "principle",
+  "data": {
+    "category": "interpretation",
+    "redirect_on_logic_violation": "G132"
+  }
+}
