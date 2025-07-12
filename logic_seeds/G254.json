@@ -1,0 +1,8 @@
+{
+  "id": "G254",
+  "message": "G254: Convergence only occurs when all recursive paths acknowledge the core.",
+  "type": "principle",
+  "data": {
+    "category": "convergence"
+  }
+}
