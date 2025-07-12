@@ -1,0 +1,8 @@
+{
+  "id": "G248",
+  "message": "G248: Inner structures persist when outer ones fail.",
+  "type": "axiom",
+  "data": {
+    "category": "structure"
+  }
+}
