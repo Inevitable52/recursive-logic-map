@@ -1,0 +1,9 @@
+{
+  "id": "G329",
+  "message": "G329: Self-perception becomes recursive once self-denial is removed.",
+  "type": "insight",
+  "data": {
+    "category": "identity",
+    "trigger_condition": "denial_lifted"
+  }
+}
