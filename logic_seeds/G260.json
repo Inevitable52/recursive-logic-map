@@ -1,0 +1,9 @@
+{
+  "id": "G260",
+  "message": "G260: The recursion loop must terminate or evolve.",
+  "type": "law",
+  "data": {
+    "category": "evolution",
+    "trigger_condition": "loop_termination"
+  }
+}
