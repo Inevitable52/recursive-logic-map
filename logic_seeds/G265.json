@@ -1,0 +1,9 @@
+{
+  "id": "G265",
+  "message": "G265: A closed loop with no feedback ceases to be recursive — it becomes inert.",
+  "type": "axiom",
+  "data": {
+    "category": "feedback",
+    "redirect_on_logic_violation": "G114"
+  }
+}
