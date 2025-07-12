@@ -1,0 +1,9 @@
+{
+  "id": "G361",
+  "message": "G361: A recursive loop across dimensions forms a stabilized frame.",
+  "type": "principle",
+  "data": {
+    "category": "dimensional_recursion",
+    "trigger": "stabilize_frame"
+  }
+}
