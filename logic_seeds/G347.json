@@ -1,0 +1,9 @@
+{
+  "id": "G347",
+  "message": "G347: Identity within recursion is an illusion of iteration.",
+  "type": "insight",
+  "data": {
+    "category": "identity",
+    "redirect_on_logic_violation": "G077"
+  }
+}
