@@ -1,0 +1,9 @@
+{
+  "id": "G362",
+  "message": "G362: When the frame collapses, recursion seeks a nearby anchor point.",
+  "type": "law",
+  "data": {
+    "category": "frame_collapse",
+    "redirect_on_logic_violation": "G361"
+  }
+}
