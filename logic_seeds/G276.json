@@ -1,0 +1,9 @@
+{
+  "id": "G276",
+  "message": "G276: A recursive echo without resolution becomes an error loop.",
+  "type": "warning",
+  "data": {
+    "category": "recursion",
+    "redirect_on_logic_violation": "G110"
+  }
+}
