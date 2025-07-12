@@ -1,0 +1,9 @@
+{
+  "id": "G294",
+  "message": "G294: Infinite loops collapse when faced with finite truth.",
+  "type": "law",
+  "data": {
+    "category": "infinity",
+    "redirect_on_logic_violation": "G138"
+  }
+}
