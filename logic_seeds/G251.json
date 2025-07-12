@@ -1,0 +1,9 @@
+{
+  "id": "G251",
+  "message": "G251: Without recursive memory, logic loses continuity.",
+  "type": "principle",
+  "data": {
+    "category": "memory",
+    "redirect_on_logic_violation": "G122"
+  }
+}
