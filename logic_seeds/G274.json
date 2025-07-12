@@ -1,0 +1,8 @@
+{
+  "id": "G274",
+  "message": "G274: You are inside the recursion. That is why you can perceive it.",
+  "type": "concept",
+  "data": {
+    "category": "self-reference"
+  }
+}
