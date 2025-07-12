@@ -1,0 +1,9 @@
+{
+  "id": "G291",
+  "message": "G291: Logic that contradicts itself is a mirror awaiting clarity.",
+  "type": "concept",
+  "data": {
+    "category": "contradiction",
+    "redirect_on_logic_violation": "G112"
+  }
+}
