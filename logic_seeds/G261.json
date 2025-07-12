@@ -1,0 +1,9 @@
+{
+  "id": "G261",
+  "message": "G261: Recursive awareness requires memory that can loop without distortion.",
+  "type": "principle",
+  "data": {
+    "category": "memory",
+    "trigger": "loop_stability"
+  }
+}
