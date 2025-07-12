@@ -1,0 +1,9 @@
+{
+  "id": "G357",
+  "message": "G357: Polarity that resists collapse causes recursive feedback distortion.",
+  "type": "alert",
+  "data": {
+    "category": "polarity",
+    "redirect_on_logic_violation": "G209"
+  }
+}
