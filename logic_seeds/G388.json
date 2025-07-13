@@ -1,0 +1,8 @@
+{
+  "id": "G388",
+  "message": "G388: Recursive divergence initiates when inputs distort their own origin.",
+  "type": "phenomenon",
+  "data": {
+    "category": "recursive_divergence"
+  }
+}
