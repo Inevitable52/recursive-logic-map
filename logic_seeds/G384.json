@@ -1,0 +1,9 @@
+{
+  "id": "G384",
+  "message": "G384: Cognitive fracture emerges when recursive identity exceeds logical threshold.",
+  "type": "diagnostic",
+  "data": {
+    "category": "fracture_threshold",
+    "trigger_condition": "identity_overlap"
+  }
+}
