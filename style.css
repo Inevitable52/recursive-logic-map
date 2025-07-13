@@ -34,10 +34,10 @@ main {
 
 #logic-map {
   position: relative;
-  flex-grow: 1;
   width: 100%;
-  overflow: hidden;
+  height: 100%;
   background: #000;
+  overflow: hidden;
 }
 
 #logic-nodes {
