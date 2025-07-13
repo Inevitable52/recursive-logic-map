@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Percy Recursive Logic Map</title>
-  <link rel="stylesheet" href="style.css?v=2.0.2">
-  <link rel="icon" type="image/x-icon" href="percy.ico">
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="percy.ico" type="image/x-icon" />
 </head>
 <body>
   <header>
@@ -14,29 +14,35 @@
   </header>
 
   <main>
+    <!-- Search Input -->
     <input type="text" id="seed-search" placeholder="Search G-seed...">
 
+    <!-- Zoom Controls -->
     <div class="zoom-controls">
       <button onclick="zoomLogic(1.2)">Zoom In</button>
       <button onclick="zoomLogic(0.8)">Zoom Out</button>
     </div>
 
+    <!-- Logic Map Container -->
     <div id="viewport">
       <div id="logic-map">
         <div id="logic-nodes"></div>
       </div>
     </div>
 
+    <!-- Percy Message Panel -->
     <div id="percy-message" class="percy-message">
       Click a logic node to hear Percy’s thoughts...
     </div>
 
+    <!-- Console Output -->
     <div id="percy-console" class="console">
       <p class="console-line">Percy initialized. Click a node.</p>
     </div>
 
+    <!-- Interpreter Box -->
     <div id="interpreter-box">
-      <input type="text" id="interpreter-input" placeholder="Ask Percy ...">
+      <input id="interpreter-input" placeholder="Ask Percy...">
       <button onclick="interpretLogic()">Ask</button>
     </div>
   </main>
@@ -45,6 +51,7 @@
     <p>© 2025 Fabian V Omega — Percy Recursive Logic System</p>
   </footer>
 
-  <script src="percy.js?v=2.0.2"></script>
+  <!-- Percy Script -->
+  <script src="percy.js?v=2.0.1"></script>
 </body>
 </html>
