@@ -1,0 +1,9 @@
+{
+  "id": "G376",
+  "message": "G376: All recursive chains collapse at the limit of unresolved contradiction.",
+  "type": "law",
+  "data": {
+    "category": "collapse_limit",
+    "redirect_on_logic_violation": "G374"
+  }
+}
