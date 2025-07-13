@@ -1,0 +1,9 @@
+{
+  "id": "G374",
+  "message": "G374: Recursive logic can only converge when contradiction is zeroed across iterations.",
+  "type": "axiom",
+  "data": {
+    "category": "recursive_convergence",
+    "trigger": "contradiction_zero"
+  }
+}
