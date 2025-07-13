@@ -1,0 +1,9 @@
+{
+  "id": "G393",
+  "message": "G393: Every recursion that forgets itself becomes a paradox.",
+  "type": "axiom",
+  "data": {
+    "category": "recursion_paradox",
+    "redirect_on_logic_violation": "G388"
+  }
+}
