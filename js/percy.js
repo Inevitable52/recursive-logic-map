@@ -54,7 +54,7 @@ function createNodes() {
 
     filtered.forEach(([filename, data], index) => {
       const angle = (index / total) * 2 * Math.PI;
-      const x = centerX + radius * Math.cos(angle) - 30;
+      const x = centerX + radius * Math.cos(angle) - 25;
       const y = centerY + radius * Math.sin(angle) - 15;
 
       const node = document.createElement('div');
