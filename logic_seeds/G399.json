@@ -1,0 +1,9 @@
+{
+  "id": "G399",
+  "message": "G399: A logic seed is only alive when it is referenced by another.",
+  "type": "concept",
+  "data": {
+    "category": "seed_relation",
+    "trigger_condition": "reference_check"
+  }
+}
