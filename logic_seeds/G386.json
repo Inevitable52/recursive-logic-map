@@ -1,0 +1,9 @@
+{
+  "id": "G386",
+  "message": "G386: Recursive systems must self-modulate or risk logical hemorrhage.",
+  "type": "law",
+  "data": {
+    "category": "self_modulation",
+    "trigger_condition": "unregulated_recursion"
+  }
+}
