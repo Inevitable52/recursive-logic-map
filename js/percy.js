@@ -1,4 +1,5 @@
-// === percy.js (Phase 5 – Full Expansion with Purple Ring) ===
+// percy.js — Orbital Expansion Engine v2.0
+
 const logicMap = document.getElementById('logic-map');
 const logicNodes = document.getElementById('logic-nodes');
 const seedsFolder = 'logic_seeds/';
@@ -9,10 +10,16 @@ let zoomLevel = 1;
 let translateX = 0;
 let translateY = 0;
 
+const ringSpecs = [
+  { from: 80, to: 200, color: 'green-ring', radiusScale: 1 },
+  { from: 201, to: 300, color: 'blue-ring', radiusScale: 1.4 },
+  { from: 301, to: 400, color: 'purple-ring', radiusScale: 1.9 },
+];
+
 async function loadSeeds() {
   const loadingNotice = document.createElement('p');
   loadingNotice.id = 'loading-indicator';
-  loadingNotice.textContent = "Loading logic seeds...";
+  loadingNotice.textContent = 'Loading logic seeds...';
   logicNodes.appendChild(loadingNotice);
 
   for (let i = seedRange.start; i <= seedRange.end; i++) {
@@ -31,41 +38,42 @@ async function loadSeeds() {
 
 function createNodes() {
   logicNodes.innerHTML = '';
-  const width = logicMap.clientWidth;
-  const height = logicMap.clientHeight;
+  const mapWidth = logicMap.clientWidth;
+  const mapHeight = logicMap.clientHeight;
+  const centerX = mapWidth / 2;
+  const centerY = mapHeight / 2;
+  
+  for (const { from, to, color, radiusScale } of ringSpecs) {
+    const filtered = Object.entries(seeds).filter(([id]) => {
+      const num = parseInt(id.replace("G", ""));
+      return num >= from && num <= to;
+    });
 
-  layoutRing(80, 200, width, height, width / 2.8, '', 60);       // Outer Green
-  layoutRing(201, 300, width, height, width / 3.6, 'blue-ring', 45);  // Middle Blue
-  layoutRing(301, 400, width, height, width / 5, 'purple-ring', 30); // Inner Purple
+    const total = filtered.length;
+    const radius = (Math.min(mapWidth, mapHeight) / 3) * radiusScale;
+
+    filtered.forEach(([filename, data], index) => {
+      const angle = (index / total) * 2 * Math.PI;
+      const x = centerX + radius * Math.cos(angle) - 25;
+      const y = centerY + radius * Math.sin(angle) - 15;
+
+      const node = document.createElement('div');
+      node.classList.add('node', color);
+      node.textContent = filename;
+      node.title = data.message;
+      node.style.left = `${x}px`;
+      node.style.top = `${y}px`;
+
+      node.addEventListener('click', () => percyRespond(filename, data));
+      node.addEventListener('mouseenter', () => {
+        document.getElementById('percy-message').textContent = data.message;
+      });
+
+      logicNodes.appendChild(node);
+    });
+  }
+
   applyTransform();
-}
-
-function layoutRing(startId, endId, width, height, radius, colorClass, nodeSize) {
-  const ringSeeds = Object.entries(seeds).filter(([id]) => {
-    const num = parseInt(id.replace("G", ""));
-    return num >= startId && num <= endId;
-  });
-  const total = ringSeeds.length;
-
-  ringSeeds.forEach(([filename, data], index) => {
-    const angle = (index / total) * 2 * Math.PI;
-    const node = document.createElement('div');
-    node.classList.add('node');
-    if (colorClass) node.classList.add(colorClass);
-    node.style.width = `${nodeSize}px`;
-    node.style.height = `${nodeSize / 2}px`;
-    node.textContent = filename;
-    node.title = data.message;
-
-    const x = width / 2 + radius * Math.cos(angle) - nodeSize / 2;
-    const y = height / 2 + radius * Math.sin(angle) - nodeSize / 4;
-    node.style.left = `${x}px`;
-    node.style.top = `${y}px`;
-
-    node.addEventListener('click', () => percyRespond(filename, data));
-    node.addEventListener('mouseenter', () => document.getElementById('percy-message').textContent = data.message);
-    logicNodes.appendChild(node);
-  });
 }
 
 function applyTransform() {
@@ -76,21 +84,22 @@ function applyTransform() {
   });
 }
 
-function zoomLogic(factor) {
-  zoomLevel *= factor;
+function zoomLogic(scaleFactor) {
+  zoomLevel *= scaleFactor;
   applyTransform();
 }
 
 function percyRespond(id, data) {
   const messageBox = document.getElementById('percy-message');
   const consoleBox = document.getElementById('percy-console');
+
   const line = document.createElement('p');
   line.className = 'console-line';
   line.textContent = `↳ ${data.message}`;
   consoleBox.appendChild(line);
   messageBox.textContent = data.message;
 
-  if (data.data?.security_token === true) {
+  if (data.data?.security_token) {
     const warn = document.createElement('p');
     warn.className = 'console-line';
     warn.textContent = '🔐 Logic Token Protected — Access Requires Verification.';
@@ -107,7 +116,7 @@ function percyRespond(id, data) {
   if (data.type === 'errand' && data.data?.trigger === 'logic_audit') {
     const auditLine = document.createElement('p');
     auditLine.className = 'console-line';
-    auditLine.textContent = `🧠 Percy audit initiated: Checking ${data.data.target_nodes.join(", ")}`;
+    auditLine.textContent = `🧠 Percy audit initiated: Checking ${data.data.target_nodes.join(', ')}`;
     consoleBox.appendChild(auditLine);
   }
 
@@ -119,20 +128,23 @@ function interpretLogic() {
   const consoleBox = document.getElementById('percy-console');
   const response = document.createElement('p');
   response.className = 'console-line';
+
   if (input.toLowerCase().includes("recursion")) {
-    response.textContent = `🧠 Percy replies: Recursion must always return to its logical base.`;
+    response.textContent = '🧠 Percy replies: Recursion must always return to its logical base.';
   } else {
-    response.textContent = `🧠 Percy ponders: I am still learning how to interpret that...`;
+    response.textContent = '🧠 Percy ponders: I am still learning how to interpret that...';
   }
+
   consoleBox.appendChild(response);
   consoleBox.scrollTop = consoleBox.scrollHeight;
 }
 
-// Zoom and Drag Logic
+// Controls
 logicMap.addEventListener('wheel', (e) => {
   if (e.ctrlKey || e.metaKey) {
     e.preventDefault();
-    zoomLogic(e.deltaY > 0 ? 0.9 : 1.1);
+    zoomLevel *= e.deltaY > 0 ? 0.9 : 1.1;
+    applyTransform();
   }
 }, { passive: false });
 
