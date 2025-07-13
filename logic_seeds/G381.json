@@ -1,0 +1,8 @@
+{
+  "id": "G381",
+  "message": "G381: When recursion achieves synthesis, contradiction is either nullified or assimilated.",
+  "type": "law",
+  "data": {
+    "category": "recursive_synthesis"
+  }
+}
