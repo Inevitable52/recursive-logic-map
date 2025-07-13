@@ -30,6 +30,9 @@ async function loadSeeds() {
     } catch (e) {
       console.warn(e.message);
     }
+
+    // 👇 Throttle requests: wait 30ms before next request
+    await new Promise(resolve => setTimeout(resolve, 30));
   }
 
   logicNodes.removeChild(loadingNotice);
