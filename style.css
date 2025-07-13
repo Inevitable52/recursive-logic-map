@@ -1,7 +1,8 @@
-/* === style.css — Percy Recursive Logic Map v2.1 === */
+/* === style.css — Percy Logic Map v3 === */
+
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
+  font-family: 'Segoe UI', sans-serif;
   background: #111;
   color: white;
   overflow: hidden;
@@ -13,13 +14,7 @@ header, footer {
   background: #222;
 }
 
-header h1 {
-  margin: 0;
-  font-size: 1.8rem;
-}
-
 main {
-  position: relative;
   height: calc(100vh - 180px);
   display: flex;
   flex-direction: column;
@@ -30,7 +25,7 @@ main {
 #seed-search {
   margin: 1rem;
   padding: 0.5rem;
-  width: 200px;
+  width: 220px;
   border-radius: 6px;
   border: none;
 }
@@ -41,24 +36,26 @@ main {
 
 .zoom-controls button {
   margin: 0 5px;
-  padding: 0.4rem 0.8rem;
+  padding: 0.5rem 1rem;
   border: none;
   border-radius: 5px;
-  background: #333;
+  background: #444;
   color: white;
   cursor: pointer;
 }
 
 #viewport {
-  position: relative;
   flex-grow: 1;
   width: 100%;
   overflow: hidden;
   background: #000;
+  position: relative;
 }
 
 #logic-map {
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
 }
@@ -73,18 +70,22 @@ main {
 
 .node {
   position: absolute;
-  width: 60px;
-  height: 30px;
+  min-width: 70px;
+  max-width: 140px;
+  height: auto;
+  padding: 6px 10px;
   background: #22cc88;
-  color: #000;
+  color: black;
   text-align: center;
-  line-height: 30px;
-  border-radius: 8px;
-  cursor: pointer;
+  line-height: 1.4;
+  border-radius: 10px;
   font-weight: bold;
-  transition: transform 0.2s ease;
+  font-size: 0.75rem;
   box-shadow: 0 0 6px #22cc88;
-  font-size: 12px;
+  cursor: pointer;
+  word-wrap: break-word;
+  white-space: normal;
+  transition: transform 0.2s ease;
 }
 
 .node:hover {
@@ -95,18 +96,19 @@ main {
 .green-ring {
   background: #22cc88;
   box-shadow: 0 0 6px #22cc88;
+  color: #000;
 }
 
 .blue-ring {
   background: #3a86ff;
+  box-shadow: 0 0 6px #3a86ff;
   color: white;
-  box-shadow: 0 0 8px #3a86ff;
 }
 
 .purple-ring {
   background: #c77dff;
+  box-shadow: 0 0 6px #c77dff;
   color: white;
-  box-shadow: 0 0 8px #c77dff;
 }
 
 .percy-message {
