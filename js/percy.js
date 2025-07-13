@@ -2,7 +2,7 @@
 const logicMap = document.getElementById('logic-map');
 const logicNodes = document.getElementById('logic-nodes');
 const seedsFolder = 'logic_seeds/';
-const seedRange = { start: 80, end: 399 };
+const seedRange = { start: 80, end: 400 };
 
 let seeds = {};
 let zoomLevel = 1;
@@ -36,7 +36,7 @@ function createNodes() {
 
   layoutRing(80, 200, width, height, width / 2.8, '', 60);       // Outer Green
   layoutRing(201, 300, width, height, width / 3.6, 'blue-ring', 45);  // Middle Blue
-  layoutRing(301, 399, width, height, width / 5, 'purple-ring', 30); // Inner Purple
+  layoutRing(301, 400, width, height, width / 5, 'purple-ring', 30); // Inner Purple
   applyTransform();
 }
 
