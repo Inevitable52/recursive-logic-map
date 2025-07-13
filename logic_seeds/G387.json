@@ -1,0 +1,9 @@
+{
+  "id": "G387",
+  "message": "G387: A logic chain without feedback becomes causally inert.",
+  "type": "axiom",
+  "data": {
+    "category": "causal_feedback",
+    "redirect_on_logic_violation": "G099"
+  }
+}
