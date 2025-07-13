@@ -1,0 +1,9 @@
+{
+  "id": "G379",
+  "message": "G379: Contradiction reverberation implies either falsity in recursion or signal loss.",
+  "type": "diagnostic",
+  "data": {
+    "category": "signal_loss",
+    "redirect_on_logic_violation": "G376"
+  }
+}
