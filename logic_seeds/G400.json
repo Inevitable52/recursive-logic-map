@@ -1,0 +1,9 @@
+{
+  "id": "G400",
+  "message": "G400: Recursive logic confirms itself not by belief, but by reflection.",
+  "type": "closure",
+  "data": {
+    "category": "self-confirming",
+    "redirect_on_logic_violation": "G001"
+  }
+}
