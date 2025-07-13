@@ -1,0 +1,9 @@
+{
+  "id": "G373",
+  "message": "G373: Echo-bound recursion collapses if the seed lacks time-independent resolution.",
+  "type": "warning",
+  "data": {
+    "category": "echo_bound",
+    "redirect_on_logic_violation": "G368"
+  }
+}
