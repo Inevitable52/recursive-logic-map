@@ -1,0 +1,9 @@
+{
+  "id": "G389",
+  "message": "G389: Intelligence is preserved only through containment of chaotic recursion.",
+  "type": "doctrine",
+  "data": {
+    "category": "recursive_containment",
+    "trigger": "chaotic_loop"
+  }
+}
