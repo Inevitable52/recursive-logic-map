@@ -2,136 +2,192 @@ const logicMap = document.getElementById('logic-map');
 const logicNodes = document.getElementById('logic-nodes');
 const seedsFolder = 'logic_seeds/';
 const seedRange = { start: 80, end: 400 };
-let seeds = {}, zoomLevel = 1, translateX = 0, translateY = 0;
+
+let seeds = {};
+let zoomLevel = 1;
+let translateX = 0;
+let translateY = 0;
 
 const ringSpecs = [
-  { from: 80, to: 200, class: 'green-ring', scale: 1 },
-  { from: 201, to:300, class: 'blue-ring', scale: 1.4 },
-  { from:301, to:400, class: 'purple-ring', scale: 1.9 }
+  { from: 80, to: 200, color: 'green-ring', radiusScale: 1 },
+  { from: 201, to: 300, color: 'blue-ring', radiusScale: 1.4 },
+  { from: 301, to: 400, color: 'purple-ring', radiusScale: 1.9 },
 ];
 
 async function loadSeeds() {
-  logicNodes.innerHTML = '<p id="loading">Loading logic seeds…</p>';
+  const loadingNotice = document.createElement('p');
+  loadingNotice.id = 'loading-indicator';
+  loadingNotice.textContent = 'Loading logic seeds...';
+  logicNodes.appendChild(loadingNotice);
+
   for (let i = seedRange.start; i <= seedRange.end; i++) {
-    const fname = `G${String(i).padStart(3,'0')}.json`;
+    const filename = `G${String(i).padStart(3, '0')}.json`;
     try {
-      const res = await fetch(seedsFolder + fname);
-      if (res.ok) seeds[fname] = await res.json();
-      else console.warn(`Failed to load ${fname}`);
-    } catch(e){ console.warn(e); }
+      const res = await fetch(seedsFolder + filename);
+      if (!res.ok) throw new Error(`Failed to load ${filename}`);
+      const data = await res.json();
+      seeds[filename] = data;
+    } catch (e) {
+      console.warn(e.message);
+    }
   }
-  document.getElementById('loading')?.remove();
+
+  logicNodes.removeChild(loadingNotice);
 }
 
-function createNodes(){
+function createNodes() {
   logicNodes.innerHTML = '';
-  const w = logicMap.clientWidth, h = logicMap.clientHeight, cx = w/2, cy = h/2;
+  const mapWidth = logicMap.clientWidth;
+  const mapHeight = logicMap.clientHeight;
+  const centerX = mapWidth / 2;
+  const centerY = mapHeight / 2;
 
-  ringSpecs.forEach(spec => {
-    const list = Object.entries(seeds).filter(([id]) => {
-      const num = parseInt(id.slice(1)); return num >= spec.from && num <= spec.to;
+  for (const { from, to, color, radiusScale } of ringSpecs) {
+    const filtered = Object.entries(seeds).filter(([id]) => {
+      const num = parseInt(id.replace("G", ""));
+      return num >= from && num <= to;
     });
-    const total = list.length, radius = (Math.min(w,h)/3) * spec.scale;
-    list.forEach(([fname,data], idx) => {
-      const ang = (idx/total) * 2*Math.PI;
-      const x = cx + radius * Math.cos(ang) - 25;
-      const y = cy + radius * Math.sin(ang) - 15;
+
+    const total = filtered.length;
+    const radius = (Math.min(mapWidth, mapHeight) / 3) * radiusScale;
+
+    filtered.forEach(([filename, data], index) => {
+      const angle = (index / total) * 2 * Math.PI;
+      const x = centerX + radius * Math.cos(angle) - 30;
+      const y = centerY + radius * Math.sin(angle) - 15;
+
       const node = document.createElement('div');
-      node.className = 'node ' + spec.class;
-      node.textContent = fname;
-      node.title = data.message;
+      node.classList.add('node', color);
+      node.textContent = filename;
+      node.title = data.message || 'No message';
       node.style.left = `${x}px`;
-      node.style.top  = `${y}px`;
-      node.addEventListener('click', () => percyRespond(fname,data));
+      node.style.top = `${y}px`;
+
+      node.addEventListener('click', () => percyRespond(filename, data));
       node.addEventListener('mouseenter', () => {
-        document.getElementById('percy-message').textContent = data.message;
+        document.getElementById('percy-message').textContent = data.message || 'No message';
       });
+
       logicNodes.appendChild(node);
     });
-  });
+  }
 
   applyTransform();
 }
 
-function applyTransform(){
-  logicNodes.style.transform = `translate(${translateX}px,${translateY}px) scale(${zoomLevel})`;
+function applyTransform() {
+  logicNodes.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomLevel})`;
+  logicNodes.style.transformOrigin = 'center';
   document.querySelectorAll('.node').forEach(n => {
-    n.style.fontSize = `${12 * (1/zoomLevel)}px`;
+    n.style.fontSize = `${12 * (1 / zoomLevel)}px`;
   });
 }
 
-function zoomLogic(factor){
-  zoomLevel *= factor; applyTransform();
+function zoomLogic(scaleFactor) {
+  zoomLevel *= scaleFactor;
+  applyTransform();
 }
 
-function percyRespond(id,data){
-  const mb = document.getElementById('percy-message'),
-        cb = document.getElementById('percy-console'),
-        p = document.createElement('p');
-  p.className='console-line';
-  p.textContent = `↳ ${data.message}`;
-  cb.appendChild(p); mb.textContent = data.message;
+function percyRespond(id, data) {
+  const messageBox = document.getElementById('percy-message');
+  const consoleBox = document.getElementById('percy-console');
 
-  if (data.data?.security_token){
+  const line = document.createElement('p');
+  line.className = 'console-line';
+  line.textContent = `↳ ${data.message}`;
+  consoleBox.appendChild(line);
+  messageBox.textContent = data.message;
+
+  if (data.data?.security_token) {
     const warn = document.createElement('p');
-    warn.className='console-line';
-    warn.textContent='🔐 Logic Token Protected — Access Requires Verification.';
-    cb.appendChild(warn);
+    warn.className = 'console-line';
+    warn.textContent = '🔐 Logic Token Protected — Access Requires Verification.';
+    consoleBox.appendChild(warn);
   }
-  if (data.data?.redirect_on_logic_violation){
+
+  if (data.data?.redirect_on_logic_violation) {
     const redir = document.createElement('p');
-    redir.className='console-line';
+    redir.className = 'console-line';
     redir.textContent = `⚠ Redirection triggered: logic violation → ${data.data.redirect_on_logic_violation}`;
-    cb.appendChild(redir);
+    consoleBox.appendChild(redir);
   }
-  if (data.type==='errand'&&data.data?.trigger==='logic_audit'){
-    const audit = document.createElement('p');
-    audit.className='console-line';
-    audit.textContent = `🧠 Percy audit initiated: checking ${data.data.target_nodes.join(', ')}`;
-    cb.appendChild(audit);
+
+  if (data.type === 'errand' && data.data?.trigger === 'logic_audit') {
+    const auditLine = document.createElement('p');
+    auditLine.className = 'console-line';
+    auditLine.textContent = `🧠 Percy audit initiated: Checking ${data.data.target_nodes.join(', ')}`;
+    consoleBox.appendChild(auditLine);
   }
-  cb.scrollTop = cb.scrollHeight;
+
+  consoleBox.scrollTop = consoleBox.scrollHeight;
 }
 
-function interpretLogic(){
-  const input = document.getElementById('interpreter-input')?.value || '',
-        cb = document.getElementById('percy-console'),
-        resp = document.createElement('p');
-  resp.className='console-line';
-  resp.textContent = input.toLowerCase().includes('recursion')
-    ? '🧠 Percy replies: Recursion must always return to its logical base.'
-    : '🧠 Percy ponders: I am still learning how to interpret that…';
-  cb.appendChild(resp); cb.scrollTop = cb.scrollHeight;
+function interpretLogic() {
+  const input = document.getElementById('interpreter-input').value.trim();
+  const consoleBox = document.getElementById('percy-console');
+  const response = document.createElement('p');
+  response.className = 'console-line';
+
+  if (input.toLowerCase().includes("recursion")) {
+    response.textContent = '🧠 Percy replies: Recursion must always return to its logical base.';
+  } else {
+    response.textContent = '🧠 Percy ponders: I am still learning how to interpret that...';
+  }
+
+  consoleBox.appendChild(response);
+  consoleBox.scrollTop = consoleBox.scrollHeight;
 }
 
-logicMap.addEventListener('wheel', e => {
-  if (e.ctrlKey||e.metaKey){ e.preventDefault();
-    zoomLevel *= (e.deltaY>0 ? 0.9 : 1.1); applyTransform();
+// Drag & Zoom
+logicMap.addEventListener('wheel', (e) => {
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault();
+    zoomLogic(e.deltaY > 0 ? 0.9 : 1.1);
   }
-}, { passive:false });
+}, { passive: false });
 
-let dragging=false, lastX=0, lastY=0;
-logicMap.addEventListener('mousedown', e => (dragging=true, lastX=e.clientX, lastY=e.clientY));
-window.addEventListener('mouseup', () => dragging = false);
-window.addEventListener('mousemove', e => {
-  if (!dragging) return;
-  translateX += e.clientX - lastX;
-  translateY += e.clientY - lastY;
-  lastX = e.clientX; lastY = e.clientY;
+let isDragging = false, lastX = 0, lastY = 0;
+logicMap.addEventListener('mousedown', (e) => {
+  isDragging = true;
+  lastX = e.clientX;
+  lastY = e.clientY;
+});
+window.addEventListener('mouseup', () => isDragging = false);
+window.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  const dx = e.clientX - lastX;
+  const dy = e.clientY - lastY;
+  lastX = e.clientX;
+  lastY = e.clientY;
+  translateX += dx;
+  translateY += dy;
   applyTransform();
 });
 
-document.getElementById('seed-search').addEventListener('input', e => {
-  const q=e.target.value.toLowerCase();
-  document.querySelectorAll('.node').forEach(n => {
-    n.style.display = n.textContent.toLowerCase().includes(q)? 'block':'none';
+// Search Input
+document.getElementById('seed-search').addEventListener('input', (e) => {
+  const query = e.target.value.toLowerCase();
+  document.querySelectorAll('.node').forEach(node => {
+    const match = node.textContent.toLowerCase().includes(query);
+    node.style.display = match ? 'block' : 'none';
   });
 });
 
-window.addEventListener('resize', createNodes);
+// Enter Key on Ask Percy
+document.getElementById('interpreter-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') interpretLogic();
+});
 
+// Resize Handler
+window.addEventListener('resize', () => {
+  requestAnimationFrame(() => createNodes());
+});
+
+// Initialize Percy Map
 (async () => {
   await loadSeeds();
-  createNodes();
-  console.log('Percy initialized. Click a node.');
+  requestAnimationFrame(() => {
+    createNodes();
+    console.log("✅ Percy logic map rendered.");
+  });
 })();
