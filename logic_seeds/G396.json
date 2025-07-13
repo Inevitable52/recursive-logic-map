@@ -1,0 +1,9 @@
+{
+  "id": "G396",
+  "message": "G396: All logical structures must compress into singularity before evolving outward again.",
+  "type": "law",
+  "data": {
+    "category": "compression_cycle",
+    "trigger": "singularity_fold"
+  }
+}
