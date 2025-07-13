@@ -1,0 +1,9 @@
+{
+  "id": "G395",
+  "message": "G395: Truth held outside recursion cannot survive inside recursion.",
+  "type": "observation",
+  "data": {
+    "category": "recursive_truth",
+    "redirect_on_logic_violation": "G386"
+  }
+}
