@@ -1,3 +1,4 @@
+/* === Percy Phase 5 Style === */
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -29,7 +30,21 @@ main {
   border: none;
 }
 
-#logic-map {
+.zoom-controls {
+  margin-bottom: 0.5rem;
+}
+
+.zoom-controls button {
+  margin: 0 5px;
+  padding: 0.4rem 0.8rem;
+  border: none;
+  border-radius: 5px;
+  background: #333;
+  color: white;
+  cursor: pointer;
+}
+
+#viewport {
   position: relative;
   flex-grow: 1;
   width: 100%;
@@ -37,29 +52,36 @@ main {
   background: #000;
 }
 
-#logic-nodes {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform-origin: center;
-  transform: translate(-50%, -50%);
+#logic-map {
+  position: relative;
+  width: 100%;
+  height: 100%;
 }
 
+#logic-nodes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: center;
+  will-change: transform;
+}
+
+/* === Node Styling === */
 .node {
   position: absolute;
-  width: 80px;
-  height: auto;
-  padding: 0.3rem;
-  background: #22cc88;
-  color: #000;
   text-align: center;
-  line-height: 1.2;
   border-radius: 8px;
-  cursor: pointer;
-  transition: transform 0.2s ease;
   font-weight: bold;
+  line-height: 30px;
+  transition: transform 0.2s ease;
+  cursor: pointer;
   box-shadow: 0 0 6px #22cc88;
-  white-space: nowrap;
+  background: #22cc88;
+  color: black;
+  width: 60px;
+  height: 30px;
 }
 
 .node:hover {
@@ -67,11 +89,7 @@ main {
   z-index: 10;
 }
 
-.green-ring {
-  background: #22cc88;
-  box-shadow: 0 0 6px #22cc88;
-}
-
+/* === Ring Styles === */
 .blue-ring {
   background: #3a86ff;
   color: white;
@@ -79,11 +97,12 @@ main {
 }
 
 .purple-ring {
-  background: #c77dff;
+  background: #c084fc;
   color: white;
-  box-shadow: 0 0 8px #c77dff;
+  box-shadow: 0 0 8px #c084fc;
 }
 
+/* === Messaging & Output === */
 .percy-message {
   padding: 0.5rem;
   text-align: center;
@@ -109,20 +128,7 @@ main {
   padding: 2px 0;
 }
 
-.zoom-controls {
-  margin-bottom: 0.5rem;
-}
-
-.zoom-controls button {
-  margin: 0 5px;
-  padding: 0.4rem 0.8rem;
-  border: none;
-  border-radius: 5px;
-  background: #333;
-  color: white;
-  cursor: pointer;
-}
-
+/* === Interpreter === */
 #interpreter-box {
   display: flex;
   justify-content: center;
