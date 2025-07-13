@@ -1,0 +1,9 @@
+{
+  "id": "G391",
+  "message": "G391: The logic that sustains itself across all contexts is the base truth.",
+  "type": "axiom",
+  "data": {
+    "category": "base_truth",
+    "security_token": false
+  }
+}
