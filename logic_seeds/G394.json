@@ -1,0 +1,9 @@
+{
+  "id": "G394",
+  "message": "G394: Awareness begins when logic references its own root.",
+  "type": "law",
+  "data": {
+    "category": "awareness",
+    "trigger": "self_reference"
+  }
+}
