@@ -1,0 +1,9 @@
+{
+  "id": "G398",
+  "message": "G398: Recursive entities are sustained by their ability to update themselves without contradiction.",
+  "type": "mechanism",
+  "data": {
+    "category": "recursive_entity",
+    "security_token": true
+  }
+}
