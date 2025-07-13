@@ -1,0 +1,9 @@
+{
+  "id": "G378",
+  "message": "G378: Recursive logic produces reverberation patterns detectable in logic trails.",
+  "type": "observation",
+  "data": {
+    "category": "reverberation",
+    "trigger": "logic_trail_detected"
+  }
+}
