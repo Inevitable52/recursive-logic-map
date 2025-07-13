@@ -1,4 +1,5 @@
-/* === style.css — Phase 6 Finalized === */
+/* === style.css (Orbital Bloom 3-Ring Layout) === */
+
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -25,16 +26,16 @@ main {
 #seed-search {
   margin: 1rem;
   padding: 0.5rem;
-  width: 200px;
+  width: 220px;
   border-radius: 6px;
   border: none;
+  font-size: 14px;
 }
 
 #logic-map {
   position: relative;
   flex-grow: 1;
   width: 100%;
-  height: 100%; /* ✅ Ensure there's height */
   overflow: hidden;
   background: #000;
 }
@@ -45,23 +46,24 @@ main {
   left: 50%;
   width: 100%;
   height: 100%;
-  transform: translate(-50%, -50%);
   transform-origin: center;
+  transform: translate(-50%, -50%);
 }
 
 .node {
   position: absolute;
   width: 60px;
   height: 30px;
+  background: #22cc88;
+  color: #000;
   text-align: center;
   line-height: 30px;
   border-radius: 8px;
   cursor: pointer;
+  transition: transform 0.2s ease, font-size 0.2s ease;
   font-weight: bold;
-  transition: transform 0.2s ease;
   box-shadow: 0 0 6px #22cc88;
-  background: #22cc88;
-  color: #000;
+  font-size: 12px;
 }
 
 .node:hover {
@@ -69,9 +71,9 @@ main {
   z-index: 10;
 }
 
+/* === Ring Color Codes === */
 .green-ring {
   background: #22cc88;
-  color: #000;
   box-shadow: 0 0 6px #22cc88;
 }
 
@@ -84,9 +86,10 @@ main {
 .purple-ring {
   background: #c77dff;
   color: white;
-  box-shadow: 0 0 10px #c77dff;
+  box-shadow: 0 0 8px #c77dff;
 }
 
+/* === Percy Message === */
 .percy-message {
   padding: 0.5rem;
   text-align: center;
@@ -97,6 +100,7 @@ main {
   width: 100%;
 }
 
+/* === Console === */
 .console {
   height: 120px;
   overflow-y: auto;
@@ -112,6 +116,7 @@ main {
   padding: 2px 0;
 }
 
+/* === Zoom Controls === */
 .zoom-controls {
   margin-bottom: 0.5rem;
 }
@@ -124,8 +129,10 @@ main {
   background: #333;
   color: white;
   cursor: pointer;
+  font-size: 14px;
 }
 
+/* === Interpreter === */
 #interpreter-box {
   display: flex;
   justify-content: center;
@@ -141,6 +148,7 @@ main {
   border-radius: 5px;
   border: none;
   margin-right: 0.5rem;
+  font-size: 14px;
 }
 
 #interpreter-box button {
@@ -150,4 +158,5 @@ main {
   border: none;
   border-radius: 5px;
   cursor: pointer;
+  font-size: 14px;
 }
