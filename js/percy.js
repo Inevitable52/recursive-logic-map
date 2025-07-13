@@ -1,3 +1,5 @@
+// percy.js — Omega Bloom Loader v2.1 (throttled)
+
 const logicMap = document.getElementById('logic-map');
 const logicNodes = document.getElementById('logic-nodes');
 const seedsFolder = 'logic_seeds/';
@@ -31,7 +33,7 @@ async function loadSeeds() {
       console.warn(e.message);
     }
 
-    // 👇 Throttle requests: wait 30ms before next request
+    // ⚠ Throttle to avoid browser blocking too many parallel fetches
     await new Promise(resolve => setTimeout(resolve, 30));
   }
 
@@ -62,13 +64,13 @@ function createNodes() {
       const node = document.createElement('div');
       node.classList.add('node', color);
       node.textContent = filename;
-      node.title = data.message || 'No message';
+      node.title = data.message;
       node.style.left = `${x}px`;
       node.style.top = `${y}px`;
 
       node.addEventListener('click', () => percyRespond(filename, data));
       node.addEventListener('mouseenter', () => {
-        document.getElementById('percy-message').textContent = data.message || 'No message';
+        document.getElementById('percy-message').textContent = data.message;
       });
 
       logicNodes.appendChild(node);
@@ -126,7 +128,7 @@ function percyRespond(id, data) {
 }
 
 function interpretLogic() {
-  const input = document.getElementById('interpreter-input').value.trim();
+  const input = document.getElementById('interpreter-input').value;
   const consoleBox = document.getElementById('percy-console');
   const response = document.createElement('p');
   response.className = 'console-line';
@@ -141,11 +143,11 @@ function interpretLogic() {
   consoleBox.scrollTop = consoleBox.scrollHeight;
 }
 
-// Drag & Zoom
 logicMap.addEventListener('wheel', (e) => {
   if (e.ctrlKey || e.metaKey) {
     e.preventDefault();
-    zoomLogic(e.deltaY > 0 ? 0.9 : 1.1);
+    zoomLevel *= e.deltaY > 0 ? 0.9 : 1.1;
+    applyTransform();
   }
 }, { passive: false });
 
@@ -167,7 +169,6 @@ window.addEventListener('mousemove', (e) => {
   applyTransform();
 });
 
-// Search Input
 document.getElementById('seed-search').addEventListener('input', (e) => {
   const query = e.target.value.toLowerCase();
   document.querySelectorAll('.node').forEach(node => {
@@ -176,21 +177,14 @@ document.getElementById('seed-search').addEventListener('input', (e) => {
   });
 });
 
-// Enter Key on Ask Percy
-document.getElementById('interpreter-input').addEventListener('keydown', (e) => {
+document.getElementById('interpreter-input')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') interpretLogic();
 });
 
-// Resize Handler
-window.addEventListener('resize', () => {
-  requestAnimationFrame(() => createNodes());
-});
+window.addEventListener('resize', () => createNodes());
 
-// Initialize Percy Map
 (async () => {
   await loadSeeds();
-  requestAnimationFrame(() => {
-    createNodes();
-    console.log("✅ Percy logic map rendered.");
-  });
+  createNodes();
+  console.log("Percy initialized. Click a node.");
 })();
