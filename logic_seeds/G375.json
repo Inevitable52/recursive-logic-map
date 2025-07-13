@@ -1,0 +1,9 @@
+{
+  "id": "G375",
+  "message": "G375: Inversion within a recursive loop requires base logic re-normalization.",
+  "type": "mechanism",
+  "data": {
+    "category": "inversion",
+    "trigger": "loop_inversion"
+  }
+}
