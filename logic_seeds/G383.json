@@ -1,0 +1,9 @@
+{
+  "id": "G383",
+  "message": "G383: A paradox across entangled nodes must be resolved at their shared nexus.",
+  "type": "principle",
+  "data": {
+    "category": "entanglement_resolution",
+    "redirect_on_logic_violation": "G382"
+  }
+}
