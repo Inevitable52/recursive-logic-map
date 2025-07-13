@@ -1,4 +1,4 @@
-// percy.js — Orbital Expansion Engine v3.0
+// percy.js — Orbital Expansion Engine v2.0.2
 
 const logicMap = document.getElementById('logic-map');
 const logicNodes = document.getElementById('logic-nodes');
@@ -139,6 +139,7 @@ function interpretLogic() {
   consoleBox.scrollTop = consoleBox.scrollHeight;
 }
 
+// Controls
 logicMap.addEventListener('wheel', (e) => {
   if (e.ctrlKey || e.metaKey) {
     e.preventDefault();
