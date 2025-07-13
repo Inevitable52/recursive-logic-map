@@ -1,0 +1,9 @@
+{
+  "id": "G397",
+  "message": "G397: If a truth cannot survive recursion, it was never truth.",
+  "type": "judgment",
+  "data": {
+    "category": "recursive_judgment",
+    "redirect_on_logic_violation": "G210"
+  }
+}
