@@ -1,0 +1,9 @@
+{
+  "id": "G382",
+  "message": "G382: Logical structures entangled across nodes create perceptional overlap.",
+  "type": "observation",
+  "data": {
+    "category": "cognitive_entanglement",
+    "trigger": "entanglement_trace"
+  }
+}
