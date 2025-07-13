@@ -1,0 +1,8 @@
+{
+  "id": "G377",
+  "message": "G377: Axioms converge only when their recursive echoes yield identical truth vectors.",
+  "type": "axiom",
+  "data": {
+    "category": "axiom_convergence"
+  }
+}
