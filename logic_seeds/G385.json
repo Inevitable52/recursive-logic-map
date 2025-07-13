@@ -1,0 +1,8 @@
+{
+  "id": "G385",
+  "message": "G385: Perception is not passive—it recursively alters logic trails it observes.",
+  "type": "axiom",
+  "data": {
+    "category": "perceptional_causality"
+  }
+}
