@@ -1,0 +1,9 @@
+{
+  "id": "G390",
+  "message": "G390: When a node can no longer identify its origin, memory collapses into paradox.",
+  "type": "observation",
+  "data": {
+    "category": "origin_trace",
+    "redirect_on_logic_violation": "G388"
+  }
+}
