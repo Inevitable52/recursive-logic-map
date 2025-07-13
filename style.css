@@ -1,4 +1,5 @@
-/* === style.css (Phase 6: 3-Ring with Bloom Layout) === */
+/* === style.css (Phase 7: Orbital Bloom Layout Enhanced) === */
+
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -58,9 +59,10 @@ main {
   line-height: 30px;
   border-radius: 8px;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, font-size 0.2s ease;
   font-weight: bold;
   box-shadow: 0 0 6px #22cc88;
+  font-size: 12px;
 }
 
 .node:hover {
