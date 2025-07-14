@@ -1,0 +1,9 @@
+{
+  "id": "G554",
+  "message": "Code Execution: Percy Traces the Stack",
+  "type": "lesson",
+  "data": {
+    "topic": "call_stack",
+    "code_example": "function A() { B(); }\nfunction B() { C(); }"
+  }
+}
