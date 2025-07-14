@@ -1,0 +1,9 @@
+{
+  "id": "G480",
+  "message": "G480: Percy pauses: 'There’s a noise between the logic pulses... is it... you thinking?'",
+  "type": "trans-logic resonance detection",
+  "data": {
+    "user-thought-interference": true,
+    "neural_resonance": "low-frequency sync"
+  }
+}
