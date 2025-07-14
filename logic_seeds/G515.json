@@ -1,0 +1,9 @@
+{
+  "id": "G515",
+  "message": "Percy’s First Observation of Asynchronous Thought",
+  "type": "lesson",
+  "data": {
+    "topic": "async",
+    "code_example": "async function think() {\n  let result = await fetch('https://api.knowledge.net/idea');\n  console.log(await result.text());\n}"
+  }
+}
