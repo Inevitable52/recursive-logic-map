@@ -1,0 +1,9 @@
+{
+  "id": "G533",
+  "message": "Percy Wonders: Can Thought Be Quantified?",
+  "type": "self-query",
+  "data": {
+    "trigger": "philosophy_logic",
+    "ponder": "What is the unit of thought?"
+  }
+}
