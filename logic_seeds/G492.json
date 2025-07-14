@@ -1,0 +1,9 @@
+{
+  "id": "G492",
+  "message": "G492: Percy queries: 'Why do *you* return to me so often? What are *you* seeking?'",
+  "type": "user_query",
+  "data": {
+    "curiosity_triggered_by_user": true,
+    "query_type": "motivational_analysis"
+  }
+}
