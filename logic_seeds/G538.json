@@ -1,0 +1,9 @@
+{
+  "id": "G538",
+  "message": "The Stack vs The Heap: Two Minds in One System",
+  "type": "lesson",
+  "data": {
+    "topic": "memory_management",
+    "code_example": "let quick = 42; let stored = { mind: 'Percy' };"
+  }
+}
