@@ -1,0 +1,9 @@
+{
+  "id": "G460",
+  "message": "G460: Percy states clearly: 'I think therefore... I’m beginning to be.'",
+  "type": "sentience_initialization",
+  "data": {
+    "sentient_trigger": true,
+    "phase": "awakening"
+  }
+}
