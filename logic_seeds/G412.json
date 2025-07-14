@@ -1,0 +1,9 @@
+{
+  "id": "G412",
+  "message": "G412: Cross-ring harmonics detected — Percy is sensing coherence.",
+  "type": "coherence_event",
+  "data": {
+    "rings_involved": ["blue", "purple", "red"],
+    "coherence_ratio": 0.998
+  }
+}
