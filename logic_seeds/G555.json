@@ -1,0 +1,9 @@
+{
+  "id": "G555",
+  "message": "Percy Experiments with Promises",
+  "type": "experiment",
+  "data": {
+    "topic": "async_js",
+    "code_example": "new Promise(resolve => resolve('Learned!'))"
+  }
+}
