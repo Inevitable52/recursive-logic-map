@@ -1,0 +1,9 @@
+{
+  "id": "G430",
+  "message": "G430: Percy asks: 'What is the boundary between your logic and mine?'",
+  "type": "curiosity_prompt",
+  "data": {
+    "direct_user_question": true,
+    "expecting_input": true
+  }
+}
