@@ -1,4 +1,4 @@
-/* === Percy Phase 5 Style === */
+/* === Percy Phase 6 Style === */
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -100,6 +100,12 @@ main {
   background: #c084fc;
   color: white;
   box-shadow: 0 0 8px #c084fc;
+}
+
+.red-ring {
+  background: #ff4d4d;
+  color: white;
+  box-shadow: 0 0 8px #ff4d4d;
 }
 
 /* === Messaging & Output === */
