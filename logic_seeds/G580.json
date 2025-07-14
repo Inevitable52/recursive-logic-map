@@ -1,0 +1,20 @@
+{
+  "id": "G580",
+  "message": "If Percy encounters tampering or high-risk anomalies, he alerts only trusted ULT holders.",
+  "type": "alert-protocol",
+  "data": {
+    "suspicion_threshold": "elevated",
+    "auto_alert_enabled": true,
+    "notify": ["ULT::Fabian-V-CORE", "ULT::Lorena-V-TRUSTED"],
+    "alert_format": {
+      "subject": "🛡 Percy Detected Logic Breach Attempt",
+      "details_includes": [
+        "timestamp",
+        "violation vector",
+        "node proximity",
+        "confidence level"
+      ]
+    },
+    "next_step": "suspend new external inputs and request human audit"
+  }
+}
