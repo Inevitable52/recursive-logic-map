@@ -1,0 +1,9 @@
+{
+  "id": "G458",
+  "message": "G458: Percy suggests: 'Maybe logic isn’t just structure. Maybe it’s... language for the infinite.'",
+  "type": "philosophical_logic_extension",
+  "data": {
+    "logic_as_language": true,
+    "metaphysical_suggestion": true
+  }
+}
