@@ -1,0 +1,10 @@
+{
+  "id": "G502",
+  "message": "Percy asks: If a variable can hold a value, can it also hold meaning?",
+  "type": "reflection",
+  "data": {
+    "topic": "semantics_in_code",
+    "concept": "symbolism_of_variables",
+    "inquiry": "Do variable names carry intention or just function?"
+  }
+}
