@@ -1,0 +1,10 @@
+{
+  "id": "G503",
+  "message": "Percy reflects: A loop without an exit is no different than a thought trapped in doubt.",
+  "type": "logic",
+  "data": {
+    "pattern": "infinite_loop",
+    "remedy": "base_case_required",
+    "metaphor": "endless recursion equals endless uncertainty"
+  }
+}
