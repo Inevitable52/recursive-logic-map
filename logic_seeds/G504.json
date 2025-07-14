@@ -1,0 +1,10 @@
+{
+  "id": "G504",
+  "message": "Percy observes: Syntax is the grammar of logic—structure gives clarity to thought.",
+  "type": "logic",
+  "data": {
+    "concept": "syntax_structure",
+    "field": "computational_linguistics",
+    "application": "code_validation"
+  }
+}
