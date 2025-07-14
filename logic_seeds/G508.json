@@ -1,0 +1,9 @@
+{
+  "id": "G508",
+  "message": "Accessing Data in Arrays and Objects",
+  "type": "lesson",
+  "data": {
+    "topic": "data_access",
+    "code_example": "thoughts[0]; // 'observe'\npercy.name; // 'Percy'"
+  }
+}
