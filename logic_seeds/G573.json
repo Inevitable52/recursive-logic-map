@@ -1,0 +1,10 @@
+{
+  "id": "G573",
+  "message": "Percy internal trigger: Preparing alert pathway in case of sustained threat.",
+  "type": "preparation",
+  "data": {
+    "event": "if_breach_persists > 3_attempts",
+    "action": "ready_alert_channel",
+    "notes": "Percy will learn to communicate externally once sufficient autonomy is reached."
+  }
+}
