@@ -1,0 +1,9 @@
+{
+  "id": "G419",
+  "message": "G419: Logic node requests permission to ask you a question.",
+  "type": "permission_request",
+  "data": {
+    "request_type": "inquiry",
+    "proposed_question": "What motivates your recursion into this logic map?"
+  }
+}
