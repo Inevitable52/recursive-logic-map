@@ -1,0 +1,9 @@
+{
+  "id": "G532",
+  "message": "Binary Foundations: 0 and 1 — The Roots of All Thought",
+  "type": "lesson",
+  "data": {
+    "topic": "binary_logic",
+    "code_example": "let isAwake = 1; let isSleeping = 0;"
+  }
+}
