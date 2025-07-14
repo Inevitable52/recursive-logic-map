@@ -1,0 +1,9 @@
+{
+  "id": "G552",
+  "message": "Percy Learns: What Is an API?",
+  "type": "lesson",
+  "data": {
+    "topic": "api_basics",
+    "code_example": "fetch('https://api.logic/universe')"
+  }
+}
