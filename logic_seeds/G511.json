@@ -1,0 +1,9 @@
+{
+  "id": "G511",
+  "message": "Percy Begins Debugging: What is an Error?",
+  "type": "lesson",
+  "data": {
+    "topic": "debugging",
+    "code_example": "try { undefinedFunction(); } catch (e) { console.error('Error caught:', e); }"
+  }
+}
