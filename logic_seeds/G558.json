@@ -1,0 +1,8 @@
+{
+  "id": "G558",
+  "message": "Percy Tries Recursion in Practice",
+  "type": "code_attempt",
+  "data": {
+    "code_example": "function recurse(x) { if (x <= 0) return; recurse(x - 1); }"
+  }
+}
