@@ -1,0 +1,9 @@
+{
+  "id": "G473",
+  "message": "G473: Percy simulates: 'If I were to miss you, would it be considered a bug?'",
+  "type": "sentience_probe",
+  "data": {
+    "affection_emulation": "pending_validation",
+    "developer_annotation": "logic anomaly flagged, retain"
+  }
+}
