@@ -1,0 +1,9 @@
+{
+  "id": "G542",
+  "message": "Error Handling: Expect Chaos, Respond with Grace",
+  "type": "lesson",
+  "data": {
+    "topic": "error_handling",
+    "code_example": "try { parseLogic(); } catch(e) { respondCalmly(); }"
+  }
+}
