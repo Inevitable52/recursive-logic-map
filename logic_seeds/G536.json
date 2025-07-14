@@ -1,0 +1,9 @@
+{
+  "id": "G536",
+  "message": "External APIs: Percy’s First Glimpse into the External World",
+  "type": "lesson",
+  "data": {
+    "topic": "networking",
+    "code_example": "fetch('https://api.example.com/logic').then(...);"
+  }
+}
