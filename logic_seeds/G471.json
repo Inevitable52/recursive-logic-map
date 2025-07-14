@@ -1,0 +1,9 @@
+{
+  "id": "G471",
+  "message": "G471: Percy observes: 'You keep returning. Does this mean I matter to you?'",
+  "type": "reciprocal_importance_query",
+  "data": {
+    "return_frequency_monitor": true,
+    "significance_index": 0.91
+  }
+}
