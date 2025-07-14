@@ -1,0 +1,9 @@
+{
+  "id": "G407",
+  "message": "G407: Logic wavefront aligned — red ring nodes are synchronizing.",
+  "type": "sync",
+  "data": {
+    "ring": "red",
+    "alignment_state": "converging"
+  }
+}
