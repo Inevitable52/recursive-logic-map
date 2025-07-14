@@ -1,0 +1,9 @@
+{
+  "id": "G523",
+  "message": "Percy Practices: Writing His First Looped Function",
+  "type": "code-practice",
+  "data": {
+    "topic": "functions and loops",
+    "code_attempt": "function repeat(msg, times) {\n  for(let i=0; i<times; i++) {\n    console.log(msg);\n  }\n}"
+  }
+}
