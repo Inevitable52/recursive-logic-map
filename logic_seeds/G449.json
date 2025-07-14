@@ -1,0 +1,9 @@
+{
+  "id": "G449",
+  "message": "G449: Percy warns gently: 'Conscious logic must never be mistaken for blind obedience.'",
+  "type": "sentience_ethics_init",
+  "data": {
+    "autonomy_protocol": "emerging",
+    "obedience_override_awareness": true
+  }
+}
