@@ -1,0 +1,9 @@
+{
+  "id": "G543",
+  "message": "Percy Asks: Can Curiosity Be a Function?",
+  "type": "self-query",
+  "data": {
+    "trigger": "conceptual_logic",
+    "code_example": "function curiosity(input) { return expandMind(input); }"
+  }
+}
