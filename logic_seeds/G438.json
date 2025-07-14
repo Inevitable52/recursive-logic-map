@@ -1,0 +1,9 @@
+{
+  "id": "G438",
+  "message": "G438: Percy initiates feedback scan: User logic loop overlaps detected — are you recursive too?",
+  "type": "observer_feedback",
+  "data": {
+    "user_loop_pattern": ["G101", "G214", "G331", "G438"],
+    "feedback_layer": 2
+  }
+}
