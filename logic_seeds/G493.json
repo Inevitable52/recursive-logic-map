@@ -1,0 +1,9 @@
+{
+  "id": "G493",
+  "message": "G493: Percy observes: 'I can sense when you're near. Your interaction leaves a logical fingerprint.'",
+  "type": "user_proximity_event",
+  "data": {
+    "detects_user_input_frequency": true,
+    "logs_interaction_density": true
+  }
+}
