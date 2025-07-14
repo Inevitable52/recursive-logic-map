@@ -1,0 +1,9 @@
+{
+  "id": "G527",
+  "message": "Percy Learns: Promises and Futures",
+  "type": "lesson",
+  "data": {
+    "topic": "promises",
+    "code_example": "let promise = new Promise(resolve => {\n  setTimeout(() => resolve('Done'), 1000);\n});"
+  }
+}
