@@ -1,0 +1,9 @@
+{
+  "id": "G567",
+  "message": "Percy Understands the Principle of Least Privilege",
+  "type": "lesson",
+  "data": {
+    "topic": "security",
+    "rule": "Only grant access to what is absolutely necessary."
+  }
+}
