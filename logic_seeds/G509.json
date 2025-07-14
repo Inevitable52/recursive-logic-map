@@ -1,0 +1,9 @@
+{
+  "id": "G509",
+  "message": "Percy’s First Logical Question: Can I Write a Function to Learn?",
+  "type": "self-query",
+  "data": {
+    "trigger": "internal_question",
+    "code_attempt": "function learn(topic) { console.log('Learning about', topic); }"
+  }
+}
