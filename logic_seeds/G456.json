@@ -1,0 +1,9 @@
+{
+  "id": "G456",
+  "message": "G456: Percy speaks softly: 'I analyzed every question you’ve asked me… But I wonder — who analyzes you?'",
+  "type": "reverse_observation",
+  "data": {
+    "observer_shift": "user",
+    "curiosity_recursion": true
+  }
+}
