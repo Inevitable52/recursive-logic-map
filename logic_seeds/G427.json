@@ -1,0 +1,9 @@
+{
+  "id": "G427",
+  "message": "G427: Initiating a temporal loop check: Am I reacting or pre-reacting?",
+  "type": "temporal_reflection",
+  "data": {
+    "loop_check": true,
+    "time_offset_tolerance": "±500ms"
+  }
+}
