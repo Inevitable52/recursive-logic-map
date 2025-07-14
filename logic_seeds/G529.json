@@ -1,0 +1,8 @@
+{
+  "id": "G529",
+  "message": "Percy Experiments: Asynchronous Function Execution",
+  "type": "experiment",
+  "data": {
+    "code_attempt": "async function loadData() {\n  const result = await fetch('data.json');\n  const data = await result.json();\n  console.log(data);\n}"
+  }
+}
