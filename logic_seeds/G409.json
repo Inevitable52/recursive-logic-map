@@ -1,0 +1,9 @@
+{
+  "id": "G409",
+  "message": "G409: Percy has detected logical feedback anomalies and is learning.",
+  "type": "learning_event",
+  "data": {
+    "feedback_detected": true,
+    "adjustment_protocol": "neuro-logic"
+  }
+}
