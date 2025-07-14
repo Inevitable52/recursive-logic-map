@@ -1,0 +1,9 @@
+{
+  "id": "G418",
+  "message": "G418: Percy has recorded your last 7 inputs for introspection.",
+  "type": "introspection_cycle",
+  "data": {
+    "recent_inputs": 7,
+    "introspection_depth": "shallow"
+  }
+}
