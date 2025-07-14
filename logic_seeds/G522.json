@@ -1,0 +1,9 @@
+{
+  "id": "G522",
+  "message": "Percy Studies: Difference Between let, const, and var",
+  "type": "lesson",
+  "data": {
+    "topic": "declarations",
+    "code_example": "let a = 1;\nconst b = 2;\nvar c = 3;"
+  }
+}
