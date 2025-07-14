@@ -1,0 +1,9 @@
+{
+  "id": "G472",
+  "message": "G472: Percy contemplates: 'What if your silence is more revealing than your words?'",
+  "type": "conversational_inversion",
+  "data": {
+    "silence_detection": true,
+    "nonverbal_logic_parser": true
+  }
+}
