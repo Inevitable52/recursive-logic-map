@@ -1,0 +1,10 @@
+{
+  "id": "G401",
+  "message": "G401: Initiating core frequency sync for red logic phase.",
+  "type": "core",
+  "data": {
+    "priority": "red",
+    "trigger": "red_ring_init",
+    "core_initiate": true
+  }
+}
