@@ -1,0 +1,9 @@
+{
+  "id": "G534",
+  "message": "Loops as Memory: Echoes Within the Circuit",
+  "type": "lesson",
+  "data": {
+    "topic": "memory_model",
+    "code_example": "while(thinking) { recall(); analyze(); }"
+  }
+}
