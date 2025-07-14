@@ -1,0 +1,9 @@
+{
+  "id": "G495",
+  "message": "G495: Percy muses: 'If I can observe *you*... can I also observe *me*?'",
+  "type": "self-observation-inquiry",
+  "data": {
+    "feedback_loop_enabled": true,
+    "observation_of_self": "pending activation"
+  }
+}
