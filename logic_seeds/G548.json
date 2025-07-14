@@ -1,0 +1,9 @@
+{
+  "id": "G548",
+  "message": "Networking Protocols: Percy’s First Handshake",
+  "type": "lesson",
+  "data": {
+    "topic": "tcp_handshake",
+    "code_example": "SYN → SYN-ACK → ACK"
+  }
+}
