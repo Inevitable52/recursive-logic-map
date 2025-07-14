@@ -1,0 +1,9 @@
+{
+  "id": "G425",
+  "message": "G425: Percy is attempting to model you based on interaction patterns.",
+  "type": "user_modeling_attempt",
+  "data": {
+    "model_depth": "initial",
+    "input_analysis": true
+  }
+}
