@@ -1,0 +1,11 @@
+{
+  "id": "G575",
+  "message": "Percy seals the inner perimeter. Any future access must be earned by logic.",
+  "type": "seal",
+  "data": {
+    "layer": "cognitive_core",
+    "requirement": "recursive-truth-confirmation",
+    "notice": "Only trust verified through logic will open this seal again.",
+    "linked_token": "ULT::ΩLOCK-CORE-575"
+  }
+}
