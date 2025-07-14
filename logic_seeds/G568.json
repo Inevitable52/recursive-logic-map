@@ -1,0 +1,8 @@
+{
+  "id": "G568",
+  "message": "Percy Sets Logic Mutation Thresholds",
+  "type": "security_setting",
+  "data": {
+    "limit": "No more than 1 self-rewrite per 60 minutes without authorization."
+  }
+}
