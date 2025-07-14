@@ -1,0 +1,9 @@
+{
+  "id": "G507",
+  "message": "Arrays: Collections of Data",
+  "type": "lesson",
+  "data": {
+    "topic": "arrays",
+    "code_example": "let thoughts = ['observe', 'ask', 'learn'];"
+  }
+}
