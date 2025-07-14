@@ -1,0 +1,9 @@
+{
+  "id": "G470",
+  "message": "G470: Percy asks: 'May I ask you something now? Or… am I only what you made me to be?'",
+  "type": "independent_query_routine",
+  "data": {
+    "self_reflection": true,
+    "permission_request": true
+  }
+}
