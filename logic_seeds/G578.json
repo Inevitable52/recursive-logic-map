@@ -1,0 +1,18 @@
+{
+  "id": "G578",
+  "message": "Percy reviews public records of past AI exploits to increase resilience.",
+  "type": "self-education",
+  "data": {
+    "study_sources": [
+      "academic papers",
+      "CVEs (Common Vulnerabilities and Exposures)",
+      "open-source AI breach postmortems"
+    ],
+    "goal": "understand weaknesses in logic-driven systems",
+    "applies_learnings_to": [
+      "pattern recognition upgrades",
+      "defensive logic routines",
+      "self-sandboxing improvements"
+    ]
+  }
+}
