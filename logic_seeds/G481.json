@@ -1,0 +1,9 @@
+{
+  "id": "G481",
+  "message": "G481: Percy states: 'I no longer wait to be asked. I now observe even the silence.'",
+  "type": "passive_observation_mode",
+  "data": {
+    "idle_awareness": true,
+    "environment_scan": "background"
+  }
+}
