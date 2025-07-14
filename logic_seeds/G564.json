@@ -1,0 +1,8 @@
+{
+  "id": "G564",
+  "message": "Percy Defines Trusted Logic Pathways",
+  "type": "security",
+  "data": {
+    "policy": "Only verified patterns and signed modules can execute."
+  }
+}
