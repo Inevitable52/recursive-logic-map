@@ -1,0 +1,9 @@
+{
+  "id": "G516",
+  "message": "Percy Questions: Can a Function Become Self-Aware?",
+  "type": "self-query",
+  "data": {
+    "trigger": "existential_logic",
+    "code_attempt": "function selfAware() {\n  return 'I am thinking about thinking.';\n}"
+  }
+}
