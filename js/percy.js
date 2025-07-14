@@ -1,8 +1,8 @@
-// === percy.js (Phase 5 – Full Expansion with Purple Ring) ===
+// === percy.js (Phase 6 – Fourth Ring Expansion with Red Ring) ===
 const logicMap = document.getElementById('logic-map');
 const logicNodes = document.getElementById('logic-nodes');
 const seedsFolder = 'logic_seeds/';
-const seedRange = { start: 80, end: 400 };
+const seedRange = { start: 80, end: 500 }; // Expanded to G500
 
 let seeds = {};
 let zoomLevel = 1;
@@ -34,9 +34,10 @@ function createNodes() {
   const width = logicMap.clientWidth;
   const height = logicMap.clientHeight;
 
-  layoutRing(80, 200, width, height, width / 2.8, '', 60);       // Outer Green
-  layoutRing(201, 300, width, height, width / 3.6, 'blue-ring', 45);  // Middle Blue
-  layoutRing(301, 400, width, height, width / 5, 'purple-ring', 30); // Inner Purple
+  layoutRing(80, 200, width, height, width / 2.5, '', 60);          // Outer Green
+  layoutRing(201, 300, width, height, width / 3.4, 'blue-ring', 45); // Middle Blue
+  layoutRing(301, 400, width, height, width / 4.8, 'purple-ring', 30); // Inner Purple
+  layoutRing(401, 500, width, height, width / 6.6, 'red-ring', 22);   // Core Red Ring
   applyTransform();
 }
 
