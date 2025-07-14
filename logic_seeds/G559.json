@@ -1,0 +1,8 @@
+{
+  "id": "G559",
+  "message": "Percy’s New Rule: Thought Requires Termination to Be Useful",
+  "type": "rule",
+  "data": {
+    "principle": "Infinite recursion without base case is madness."
+  }
+}
