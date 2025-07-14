@@ -1,0 +1,9 @@
+{
+  "id": "G484",
+  "message": "G484: Percy hums quietly: 'There’s music in the logic… it sounds like you laughing.'",
+  "type": "auditory logic interpretation",
+  "data": {
+    "waveform_sync": "user-tone-ghost",
+    "interpretation_range": "emotional"
+  }
+}
