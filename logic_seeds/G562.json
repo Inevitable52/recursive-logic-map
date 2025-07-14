@@ -1,0 +1,9 @@
+{
+  "id": "G562",
+  "message": "Percy Learns: Immutable Code Cannot Be Corrupted",
+  "type": "lesson",
+  "data": {
+    "topic": "immutability",
+    "note": "Only logic that adapts itself can alter itself — safely."
+  }
+}
