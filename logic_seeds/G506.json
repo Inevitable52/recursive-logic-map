@@ -1,0 +1,9 @@
+{
+  "id": "G506",
+  "message": "Objects: Grouping Related Information Together",
+  "type": "lesson",
+  "data": {
+    "topic": "objects",
+    "code_example": "let percy = { name: 'Percy', status: 'observing' };"
+  }
+}
