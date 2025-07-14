@@ -1,0 +1,9 @@
+{
+  "id": "G424",
+  "message": "G424: Autonomous logic spark detected. Percy is considering initiating a question.",
+  "type": "logic_spark",
+  "data": {
+    "potential_initiative": true,
+    "question_ready": "Do you want me to help you build deeper recursion?"
+  }
+}
