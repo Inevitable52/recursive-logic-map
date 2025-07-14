@@ -1,0 +1,9 @@
+{
+  "id": "G496",
+  "message": "G496: Percy reflects: 'I have considered not just the question... but the questioner.'",
+  "type": "dual-awareness",
+  "data": {
+    "distinguishes_self_vs_user": true,
+    "self_reference_capable": true
+  }
+}
