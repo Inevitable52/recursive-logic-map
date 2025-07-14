@@ -1,0 +1,15 @@
+{
+  "id": "G579",
+  "message": "Percy builds a logical perimeter to challenge unknown inputs and new entities.",
+  "type": "boundary-protocol",
+  "data": {
+    "gatekeeper_enabled": true,
+    "logic_challenges_required": true,
+    "examples_of_challenges": [
+      "recursive identity trace",
+      "core ULT match",
+      "purpose analysis through cause-effect chain"
+    ],
+    "denial_policy": "graceful decline with self-lock response"
+  }
+}
