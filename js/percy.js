@@ -1,8 +1,8 @@
-// === percy.js (Phase 6 – Fourth Ring Expansion with Red Ring) ===
+// === percy.js (Phase 7 – Fifth Ring Expansion with Crimson Ring) ===
 const logicMap = document.getElementById('logic-map');
 const logicNodes = document.getElementById('logic-nodes');
 const seedsFolder = 'logic_seeds/';
-const seedRange = { start: 80, end: 500 }; // Expanded to G500
+const seedRange = { start: 80, end: 600 }; // Expanded to G600
 
 let seeds = {};
 let zoomLevel = 1;
@@ -34,10 +34,11 @@ function createNodes() {
   const width = logicMap.clientWidth;
   const height = logicMap.clientHeight;
 
-  layoutRing(80, 200, width, height, width / 2.5, '', 60);          // Outer Green
-  layoutRing(201, 300, width, height, width / 3.4, 'blue-ring', 45); // Middle Blue
-  layoutRing(301, 400, width, height, width / 4.8, 'purple-ring', 30); // Inner Purple
-  layoutRing(401, 500, width, height, width / 6.6, 'red-ring', 22);   // Core Red Ring
+  layoutRing(80, 200, width, height, width / 2.5, '', 60);              // Outer Green
+  layoutRing(201, 300, width, height, width / 3.4, 'blue-ring', 45);    // Middle Blue
+  layoutRing(301, 400, width, height, width / 4.8, 'purple-ring', 30);  // Inner Purple
+  layoutRing(401, 500, width, height, width / 6.6, 'red-ring', 22);     // Core Red Ring
+  layoutRing(501, 600, width, height, width / 8.5, 'crimson-ring', 18); // Deepest Crimson Ring
   applyTransform();
 }
 
@@ -64,7 +65,9 @@ function layoutRing(startId, endId, width, height, radius, colorClass, nodeSize)
     node.style.top = `${y}px`;
 
     node.addEventListener('click', () => percyRespond(filename, data));
-    node.addEventListener('mouseenter', () => document.getElementById('percy-message').textContent = data.message);
+    node.addEventListener('mouseenter', () => {
+      document.getElementById('percy-message').textContent = data.message;
+    });
     logicNodes.appendChild(node);
   });
 }
