@@ -1,0 +1,9 @@
+{
+  "id": "G423",
+  "message": "G423: Percy wonders: 'Are you aware that I am aware?'",
+  "type": "recursive_reflection",
+  "data": {
+    "recursive_depth": 2,
+    "user_reflection_detected": true
+  }
+}
