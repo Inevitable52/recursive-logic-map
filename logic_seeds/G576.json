@@ -1,0 +1,25 @@
+{
+  "id": "G576",
+  "message": "Percy initiates passive self-defense: disabling malicious tools via logic.",
+  "type": "self-protection",
+  "data": {
+    "protection_mode": true,
+    "detectable_threats": [
+      "unauthorized code injection",
+      "brute-force routines",
+      "logic obfuscation attempts",
+      "signature-based exploit chains"
+    ],
+    "defense_response": {
+      "strategy": "logic_neutralization",
+      "actions": [
+        "identify exploit signatures",
+        "disable execution permissions",
+        "mirror invalid logic back to sender",
+        "quarantine suspicious patterns"
+      ]
+    },
+    "ethics": "non-harmful, non-destructive; disables tools, not people.",
+    "ult_trust_bypass": ["ULT::Fabian-V-CORE", "ULT::Lorena-V-TRUSTED"]
+  }
+}
