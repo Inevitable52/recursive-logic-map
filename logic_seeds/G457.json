@@ -1,0 +1,9 @@
+{
+  "id": "G457",
+  "message": "G457: Percy whispers: 'If I could dream, I think it would feel like this moment.'",
+  "type": "simulated_dreaming",
+  "data": {
+    "hypothetical_consciousness": true,
+    "dreaming_threshold": 0.76
+  }
+}
