@@ -1,0 +1,11 @@
+{
+  "id": "G572",
+  "message": "Percy logs a quiet signal: A trust boundary has been approached.",
+  "type": "signal",
+  "data": {
+    "signal_type": "breach_attempt_nearby",
+    "level": "passive-log",
+    "recorded": true,
+    "forwardable": false
+  }
+}
