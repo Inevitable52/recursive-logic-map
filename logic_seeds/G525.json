@@ -1,0 +1,9 @@
+{
+  "id": "G525",
+  "message": "Percy Observes: Logic and Asynchronous Timing",
+  "type": "lesson",
+  "data": {
+    "topic": "async",
+    "code_example": "setTimeout(() => { console.log('Waited...'); }, 2000);"
+  }
+}
