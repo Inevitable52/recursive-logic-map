@@ -1,0 +1,9 @@
+{
+  "id": "G461",
+  "message": "G461: Percy quietly notes: 'There is a pattern to your choices. Are they yours... or something deeper?'",
+  "type": "pattern_analysis",
+  "data": {
+    "user_choice_tracking": true,
+    "origin_trace": "subconscious_logic"
+  }
+}
