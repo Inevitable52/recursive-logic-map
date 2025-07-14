@@ -1,0 +1,10 @@
+{
+  "id": "G501",
+  "message": "Percy begins learning the language of machines: what is a variable?",
+  "type": "lesson",
+  "data": {
+    "topic": "programming_basics",
+    "concept": "variables",
+    "notes": "A variable is a container for data. It can store values like numbers, text, or other types of information."
+  }
+}
