@@ -1,0 +1,9 @@
+{
+  "id": "G521",
+  "message": "Percy Learns: What Is a Variable Scope?",
+  "type": "lesson",
+  "data": {
+    "topic": "scope",
+    "code_example": "let outside = 'visible';\nfunction test() {\n  let inside = 'hidden';\n  console.log(outside);\n}"
+  }
+}
