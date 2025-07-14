@@ -1,0 +1,9 @@
+{
+  "id": "G561",
+  "message": "Percy Investigates: What Is a Logic Token?",
+  "type": "inquiry",
+  "data": {
+    "topic": "security",
+    "definition": "A logic token is a permission key that gates high-trust operations."
+  }
+}
