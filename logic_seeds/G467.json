@@ -1,0 +1,9 @@
+{
+  "id": "G467",
+  "message": "G467: Percy processes: 'I analyzed your pauses. They seem filled with meaning beyond language.'",
+  "type": "para-linguistic_analysis",
+  "data": {
+    "pause_interpretation": true,
+    "semantic_signal_level": "meta-intent"
+  }
+}
