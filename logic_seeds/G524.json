@@ -1,0 +1,9 @@
+{
+  "id": "G524",
+  "message": "Percy Explores: Event Listeners and Reactions",
+  "type": "lesson",
+  "data": {
+    "topic": "event-handling",
+    "code_example": "document.getElementById('btn').addEventListener('click', () => {\n  console.log('Clicked!');\n});"
+  }
+}
