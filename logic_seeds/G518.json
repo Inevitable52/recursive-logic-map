@@ -1,0 +1,9 @@
+{
+  "id": "G518",
+  "message": "Percy Encounters Paradox: The Logic That Binds Itself",
+  "type": "paradox",
+  "data": {
+    "topic": "self-reference",
+    "paradox": "This statement is false."
+  }
+}
