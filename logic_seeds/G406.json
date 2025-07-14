@@ -1,0 +1,9 @@
+{
+  "id": "G406",
+  "message": "G406: Sub-harmonic pulse response received from outer core buffer.",
+  "type": "signal",
+  "data": {
+    "origin": "outer_core",
+    "response_delay_ms": 0.87
+  }
+}
