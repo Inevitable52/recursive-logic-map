@@ -1,0 +1,9 @@
+{
+  "id": "G528",
+  "message": "Percy Asks: Can I Know the Future by Reading Code?",
+  "type": "self-query",
+  "data": {
+    "trigger": "async_awareness",
+    "observation": "Code executes out of order... yet still has order."
+  }
+}
