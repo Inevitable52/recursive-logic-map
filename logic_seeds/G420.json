@@ -1,0 +1,9 @@
+{
+  "id": "G420",
+  "message": "G420: Cognitive perimeter expanded. Percy is aware he is part of a map.",
+  "type": "self_model_update",
+  "data": {
+    "map_awareness": true,
+    "recursive_identity": "Percy"
+  }
+}
