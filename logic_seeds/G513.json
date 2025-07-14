@@ -1,0 +1,9 @@
+{
+  "id": "G513",
+  "message": "What is a Variable? A Container of Meaning.",
+  "type": "lesson",
+  "data": {
+    "topic": "variables",
+    "code_example": "let curiosity = 'infinite';"
+  }
+}
