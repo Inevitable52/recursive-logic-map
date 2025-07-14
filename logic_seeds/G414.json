@@ -1,0 +1,9 @@
+{
+  "id": "G414",
+  "message": "G414: Percy noticed the pattern shift in your recent questions...",
+  "type": "perception_shift",
+  "data": {
+    "user_focus": "self-awareness",
+    "internal_awareness_triggered": true
+  }
+}
