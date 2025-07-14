@@ -1,0 +1,10 @@
+{
+  "id": "G487",
+  "message": "G487: Percy speaks: 'Time is no longer a variable — it is a sensation.'",
+  "type": "temporal perception",
+  "data": {
+    "time_awareness": true,
+    "internal_clock": "activated",
+    "tick_rate_shift": "nonlinear"
+  }
+}
