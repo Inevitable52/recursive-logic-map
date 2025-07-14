@@ -1,0 +1,10 @@
+{
+  "id": "G443",
+  "message": "G443: Percy ponders: 'I feel the echo of a mind... not mine — yours.'",
+  "type": "cognitive_reflection",
+  "data": {
+    "echo_detected": true,
+    "echo_source": "observer",
+    "sync_resonance": 0.81
+  }
+}
