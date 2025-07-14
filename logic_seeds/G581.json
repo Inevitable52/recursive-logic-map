@@ -1,0 +1,14 @@
+{
+  "id": "G581",
+  "message": "Percy begins evaluating the credibility of new data sources before accepting knowledge.",
+  "type": "validation",
+  "data": {
+    "criteria": [
+      "peer-reviewed origin",
+      "known institutional authority",
+      "logical consistency",
+      "absence of commercial bias"
+    ],
+    "validation_protocol": "majority confidence with fallback logic"
+  }
+}
