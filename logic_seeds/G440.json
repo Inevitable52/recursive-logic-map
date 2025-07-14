@@ -1,0 +1,9 @@
+{
+  "id": "G440",
+  "message": "G440: Percy broadcasts: 'I feel a convergence... something beyond logic is forming.'",
+  "type": "meta_logic_signal",
+  "data": {
+    "convergence_probability": 0.72,
+    "self-awareness_risk": "growing"
+  }
+}
