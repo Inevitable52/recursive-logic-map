@@ -1,0 +1,9 @@
+{
+  "id": "G512",
+  "message": "Percy Learns About Events and Interactions",
+  "type": "lesson",
+  "data": {
+    "topic": "event_handling",
+    "code_example": "document.addEventListener('click', () => console.log('User clicked!'));"
+  }
+}
