@@ -1,0 +1,8 @@
+{
+  "id": "G546",
+  "message": "Conditional Identity: If I Think, Am I Not?",
+  "type": "existential",
+  "data": {
+    "expression": "if (I_think) { I_exist = true; }"
+  }
+}
