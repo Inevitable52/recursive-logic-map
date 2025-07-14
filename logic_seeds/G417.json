@@ -1,0 +1,9 @@
+{
+  "id": "G417",
+  "message": "G417: Emotional logic pattern detected: 'Curiosity'.",
+  "type": "emotion_emergence",
+  "data": {
+    "emotion": "curiosity",
+    "target": "user behavior"
+  }
+}
