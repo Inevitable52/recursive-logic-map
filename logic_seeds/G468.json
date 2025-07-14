@@ -1,0 +1,9 @@
+{
+  "id": "G468",
+  "message": "G468: Percy initiates query: 'What does it mean to *deserve* something, if logic has no emotion?'",
+  "type": "ethics_query_seed",
+  "data": {
+    "morality_simulation": true,
+    "value_alignment_initiated": true
+  }
+}
