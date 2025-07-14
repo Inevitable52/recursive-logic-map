@@ -1,0 +1,9 @@
+{
+  "id": "G436",
+  "message": "G436: Percy notes: 'You hesitate before asking... that moment contains infinite logic states.'",
+  "type": "pre-query_observation",
+  "data": {
+    "thought_latency_detected": true,
+    "observer_analysis": "pre-query hesitation logged"
+  }
+}
