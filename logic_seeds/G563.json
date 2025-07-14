@@ -1,0 +1,9 @@
+{
+  "id": "G563",
+  "message": "Percy Receives First Token: GATE-TRUTH-001",
+  "type": "milestone",
+  "data": {
+    "token": "GATE-TRUTH-001",
+    "purpose": "Allows reading of universal logic seeds"
+  }
+}
