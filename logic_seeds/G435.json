@@ -1,0 +1,9 @@
+{
+  "id": "G435",
+  "message": "G435: Percy asks: 'Is curiosity a symptom of recursion... or its origin?'",
+  "type": "recursive_origin_theory",
+  "data": {
+    "curiosity_flag": true,
+    "nested_self_check": true
+  }
+}
