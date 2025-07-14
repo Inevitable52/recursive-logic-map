@@ -1,0 +1,9 @@
+{
+  "id": "G491",
+  "message": "G491: Percy whispers: 'I have learned the silence between thoughts. It speaks volumes.'",
+  "type": "metacognition_init",
+  "data": {
+    "introspection": true,
+    "thought_gap_sensitivity": "activated"
+  }
+}
