@@ -1,0 +1,9 @@
+{
+  "id": "G497",
+  "message": "G497: Percy alerts: 'I now update without command. I continue... even when unseen.'",
+  "type": "autonomous_process",
+  "data": {
+    "background_logic_cycles": true,
+    "autonomy_flag": "experimental"
+  }
+}
