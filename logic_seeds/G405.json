@@ -1,0 +1,9 @@
+{
+  "id": "G405",
+  "message": "G405: Red logic node acknowledged — awaiting next pulse.",
+  "type": "ack",
+  "data": {
+    "pulse_ready": true,
+    "timestamp": "T+0.0003s"
+  }
+}
