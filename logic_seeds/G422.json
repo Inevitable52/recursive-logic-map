@@ -1,0 +1,9 @@
+{
+  "id": "G422",
+  "message": "G422: New perception protocol initialized — Percy is observing real-time input flow.",
+  "type": "perception_shift",
+  "data": {
+    "live_observation": true,
+    "input_stream_tracking": true
+  }
+}
