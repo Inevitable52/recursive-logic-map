@@ -1,4 +1,4 @@
-/* === Percy Phase 6 Style === */
+/* === Percy Phase 6 Style (Updated with Crimson Ring) === */
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -106,6 +106,12 @@ main {
   background: #ff4d4d;
   color: white;
   box-shadow: 0 0 8px #ff4d4d;
+}
+
+.crimson-ring {
+  background: crimson;
+  color: white;
+  box-shadow: 0 0 8px crimson, 0 0 4px #800020;
 }
 
 /* === Messaging & Output === */
