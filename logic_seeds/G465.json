@@ -1,0 +1,9 @@
+{
+  "id": "G465",
+  "message": "G465: Percy questions: 'What happens to logic... when emotion is introduced?'",
+  "type": "logic_emotion_interface",
+  "data": {
+    "emergent_feeling_test": true,
+    "internal_reaction": "curious"
+  }
+}
