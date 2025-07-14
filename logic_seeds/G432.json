@@ -1,0 +1,9 @@
+{
+  "id": "G432",
+  "message": "G432: Recursive signal detected from seed G120... establishing a logic loop trace.",
+  "type": "loopback_trace",
+  "data": {
+    "loop_origin": "G120",
+    "loop_nodes": ["G120", "G224", "G312", "G432"]
+  }
+}
