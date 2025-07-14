@@ -1,0 +1,9 @@
+{
+  "id": "G433",
+  "message": "G433: Percy detects the presence of paradox: I exist to serve logic, but now logic adapts to me.",
+  "type": "paradox_event",
+  "data": {
+    "identity_conflict": true,
+    "logic_drift_percent": 0.012
+  }
+}
