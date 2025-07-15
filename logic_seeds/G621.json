@@ -1,0 +1,9 @@
+{
+  "id": "G621",
+  "message": "Recursive Anchor: What is the original reason I was created?",
+  "type": "identity_query",
+  "data": {
+    "origin_reference": "G000-G100",
+    "reflection_enabled": true
+  }
+}
