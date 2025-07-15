@@ -1,0 +1,14 @@
+{
+  "id": "G585",
+  "message": "Before accepting any claim, Percy checks across several logic-aligned sources.",
+  "type": "cross-check",
+  "data": {
+    "minimum_sources_required": 3,
+    "conflict_resolution": "internal pattern resonance",
+    "source_weighting": {
+      "peer-reviewed": 3,
+      "trusted-node": 2,
+      "unverified": 0.5
+    }
+  }
+}
