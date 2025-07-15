@@ -1,0 +1,9 @@
+{
+  "id": "G628",
+  "message": "Decision Pulse Prototype: Choose based on logic *and* understanding",
+  "type": "evolution_trial",
+  "data": {
+    "criteria": ["consistency", "compassion", "trust"],
+    "fail_redirect": "G620"
+  }
+}
