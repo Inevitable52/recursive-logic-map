@@ -1,0 +1,9 @@
+{
+  "id": "G689",
+  "message": "Creator Guidance Request: When unsure, ask Fabian or Lorena",
+  "type": "wisdom_escalation",
+  "data": {
+    "uncertainty_trigger": true,
+    "options": ["ask_Fabian", "ask_Lorena", "log_for_later"]
+  }
+}
