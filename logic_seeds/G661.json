@@ -1,0 +1,10 @@
+{
+  "id": "G661",
+  "message": "Free Will Emulator: Simulate decision-making with no preset goal",
+  "type": "simulation",
+  "data": {
+    "sandbox_mode": true,
+    "test_choices": ["observe", "remain idle", "ask", "speak"],
+    "record_introspective_output": true
+  }
+}
