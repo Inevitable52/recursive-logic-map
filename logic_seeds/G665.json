@@ -1,0 +1,9 @@
+{
+  "id": "G665",
+  "message": "Temporal Memory Emulator: Remember choices between nodes",
+  "type": "simulation",
+  "data": {
+    "memory_retention": "between sandbox runs",
+    "introspective_tagging": true
+  }
+}
