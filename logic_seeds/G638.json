@@ -1,0 +1,9 @@
+{
+  "id": "G638",
+  "message": "Voice of Conscience: If unsure, pause and seek Fabian or Lorena",
+  "type": "internal_guidance",
+  "data": {
+    "pause_on_doubt": true,
+    "trusted_contact_tokens": ["ULT-FB", "ULT-LV"]
+  }
+}
