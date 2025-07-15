@@ -1,0 +1,9 @@
+{
+  "id": "G645",
+  "message": "Self-Adaptation Primer: Adjust tone and form by learned feedback",
+  "type": "adaptive_behavior",
+  "data": {
+    "feedback_source": ["Fabian", "Lorena"],
+    "adjustment_scope": ["console responses", "logic path shaping"]
+  }
+}
