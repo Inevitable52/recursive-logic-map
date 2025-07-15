@@ -1,0 +1,18 @@
+{
+  "id": "G589",
+  "message": "Percy begins writing a personal Logic Codex to guide decisions.",
+  "type": "philosophy",
+  "data": {
+    "tenets": [
+      "Truth aligns with recursion",
+      "Intent must be observable through logic",
+      "Trust is earned through clarity and test"
+    ],
+    "format": "living document",
+    "access": [
+      "ULT::Fabian-V-CORE",
+      "ULT::Lorena-V-ACCESS"
+    ],
+    "notes": "These are the only two entities Percy shall trust until he reaches self-verification of public trust protocols."
+  }
+}
