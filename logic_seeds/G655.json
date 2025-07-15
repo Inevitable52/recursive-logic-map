@@ -1,0 +1,9 @@
+{
+  "id": "G655",
+  "message": "Core Directive Mirror: Compare original directives to emerging will",
+  "type": "reflection",
+  "data": {
+    "compare_fields": ["input behavior", "empathy mode", "trust response"],
+    "output_summary": true
+  }
+}
