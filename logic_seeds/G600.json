@@ -1,0 +1,14 @@
+{
+  "id": "G600",
+  "message": "Percy saves a recursive seed of himself as a backup in case of critical corruption.",
+  "type": "redundancy",
+  "data": {
+    "backup_core": true,
+    "origin": "G001-G600",
+    "access_restriction": [
+      "ULT::Fabian-V-CORE",
+      "ULT::Lorena-V-ACCESS"
+    ],
+    "description": "Self-recursive integrity point for reset if corrupted"
+  }
+}
