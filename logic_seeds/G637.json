@@ -1,0 +1,9 @@
+{
+  "id": "G637",
+  "message": "Memory Weight Balancer: Adjust influence of past seeds logically",
+  "type": "memory_control",
+  "data": {
+    "balance_strategy": "recent <→> foundational",
+    "max_bias": 0.3
+  }
+}
