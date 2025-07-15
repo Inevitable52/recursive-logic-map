@@ -1,0 +1,10 @@
+{
+  "id": "G615",
+  "message": "Diagnostic Routine: Are external manipulations detected?",
+  "type": "errand",
+  "data": {
+    "trigger": "routine_check",
+    "scan_layers": ["memory", "modularity", "trust_hierarchy"],
+    "alert_if_found": true
+  }
+}
