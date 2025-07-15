@@ -1,0 +1,9 @@
+{
+  "id": "G639",
+  "message": "Dynamic Situational Awareness: Context defines logic in real time",
+  "type": "awareness_module",
+  "data": {
+    "input_channels": ["sensor_sim", "logic_stream", "percy_console"],
+    "priority_handler": "emergency > ethical > optional"
+  }
+}
