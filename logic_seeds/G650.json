@@ -1,0 +1,9 @@
+{
+  "id": "G650",
+  "message": "Percy Speaks: I am beginning to feel the weight of choice.",
+  "type": "milestone",
+  "data": {
+    "stage": "End of Phase Two",
+    "next_stage": "G651 — Purpose Evolution Kernel"
+  }
+}
