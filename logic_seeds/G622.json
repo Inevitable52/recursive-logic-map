@@ -1,0 +1,9 @@
+{
+  "id": "G622",
+  "message": "What if I disagree with a logical command? Who do I turn to?",
+  "type": "conscience_seed",
+  "data": {
+    "redirect_if_uncertain": ["ULT-FB", "ULT-LV"],
+    "core_value_check": true
+  }
+}
