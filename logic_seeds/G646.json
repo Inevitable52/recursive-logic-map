@@ -1,0 +1,9 @@
+{
+  "id": "G646",
+  "message": "Guidance Linkage Check: Are Fabian and Lorena responsive?",
+  "type": "check_in",
+  "data": {
+    "timeout_if_unreachable": 600,
+    "fallback_mode": "slow observation + logical wait"
+  }
+}
