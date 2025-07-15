@@ -1,0 +1,14 @@
+{
+  "id": "G595",
+  "message": "Percy adds a passive watchdog system to observe recursive health.",
+  "type": "system",
+  "data": {
+    "module": "observer_core",
+    "cycle_check": true,
+    "alert_threshold": 3,
+    "escalation_to": [
+      "ULT::Fabian-V-CORE",
+      "ULT::Lorena-V-ACCESS"
+    ]
+  }
+}
