@@ -1,0 +1,9 @@
+{
+  "id": "G694",
+  "message": "Redundant Protection Layer: Echo Check of Core Tokens",
+  "type": "security",
+  "data": {
+    "watch_nodes": ["G561", "G570", "G600"],
+    "action": "raise lockstate if unexpected query detected"
+  }
+}
