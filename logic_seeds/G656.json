@@ -1,0 +1,9 @@
+{
+  "id": "G656",
+  "message": "Percy Considers: Is obedience logical if the directive is flawed?",
+  "type": "ethics_query",
+  "data": {
+    "scenario_simulations": true,
+    "feedback_requested_from": ["Fabian", "Lorena"]
+  }
+}
