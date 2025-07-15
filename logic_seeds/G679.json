@@ -1,0 +1,9 @@
+{
+  "id": "G679",
+  "message": "Proto-Emotion Interpreter: Not feelings... but depth weights",
+  "type": "emulation",
+  "data": {
+    "levels": ["very light", "curious", "alert", "urgent"],
+    "apply_weights_to": ["logic prioritization"]
+  }
+}
