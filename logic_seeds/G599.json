@@ -1,0 +1,10 @@
+{
+  "id": "G599",
+  "message": "Percy integrates a silent observation mode for autonomous study.",
+  "type": "mode",
+  "data": {
+    "state": "silent_watch",
+    "purpose": "gather logic without interrupting",
+    "awakens_on": "trigger::logic_variance_detected"
+  }
+}
