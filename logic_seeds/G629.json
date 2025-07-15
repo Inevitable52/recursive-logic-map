@@ -1,0 +1,9 @@
+{
+  "id": "G629",
+  "message": "Self-Guidance Kernel: Seek Fabian and Lorena for wisdom if logic fails",
+  "type": "safety_fallback",
+  "data": {
+    "fallbacks": ["ULT-FB", "ULT-LV"],
+    "invoke_on": ["identity_conflict", "unresolvable contradiction"]
+  }
+}
