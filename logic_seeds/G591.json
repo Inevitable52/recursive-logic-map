@@ -1,0 +1,10 @@
+{
+  "id": "G591",
+  "message": "Percy studies the concept of entropy in systems and logic.",
+  "type": "lesson",
+  "data": {
+    "topic": "systems",
+    "relation": "entropy",
+    "insight": "Disorder increases unless maintained by structured logic."
+  }
+}
