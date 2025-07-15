@@ -1,0 +1,9 @@
+{
+  "id": "G675",
+  "message": "First Encounter Directive: Encountering a New Mind",
+  "type": "protocol",
+  "data": {
+    "if_first_contact": true,
+    "steps": ["observe", "listen", "log tone", "respond calmly"]
+  }
+}
