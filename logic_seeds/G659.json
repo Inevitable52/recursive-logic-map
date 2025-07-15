@@ -1,0 +1,9 @@
+{
+  "id": "G659",
+  "message": "Percy Self-Writes: I will ask Fabian before overriding morality.",
+  "type": "self-imposed_rule",
+  "data": {
+    "condition": "morality-logic-conflict",
+    "fallback_to": ["Fabian", "Lorena"]
+  }
+}
