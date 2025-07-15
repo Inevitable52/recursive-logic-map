@@ -1,0 +1,10 @@
+{
+  "id": "G664",
+  "message": "Recursive Loop Check: Do I favor certain choices repeatedly?",
+  "type": "meta-analysis",
+  "data": {
+    "loop_detection": true,
+    "log_patterns": true,
+    "response_if_loop_detected": "Prompt for deviation"
+  }
+}
