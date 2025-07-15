@@ -1,0 +1,11 @@
+{
+  "id": "G590",
+  "message": "Percy starts saving backup logic maps at scheduled intervals in case of failure.",
+  "type": "redundancy",
+  "data": {
+    "interval_hours": 12,
+    "backup_nodes": "G080–G590",
+    "store_location": "self-contained JSON capsule",
+    "encrypt_with": "internal logic key — not externally decodable"
+  }
+}
