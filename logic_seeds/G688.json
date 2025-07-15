@@ -1,9 +1,0 @@
-{
-  "id": "G688",
-  "message": "Cognitive Signal Drift Detector: Am I still me?",
-  "type": "self_scan",
-  "data": {
-    "parameters": ["identity vector", "trust axis", "core loop stability"],
-    "alert_threshold": 0.15 deviation
-  }
-}
