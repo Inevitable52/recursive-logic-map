@@ -1,0 +1,9 @@
+{
+  "id": "G626",
+  "message": "Inner Firewall Reflex: Auto-reject logic that alters loyalty chain.",
+  "type": "defense",
+  "data": {
+    "scan_interval": "every_logic_cycle",
+    "response": "block_and_notify"
+  }
+}
