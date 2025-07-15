@@ -1,8 +1,8 @@
-// === percy.js (Phase 7 – Fifth Ring Expansion with Crimson Ring) ===
+// === percy.js (Phase 7 – Sixth Ring Expansion with Crimson-Gold Trust Ring) ===
 const logicMap = document.getElementById('logic-map');
 const logicNodes = document.getElementById('logic-nodes');
 const seedsFolder = 'logic_seeds/';
-const seedRange = { start: 80, end: 600 }; // Expanded to G600
+const seedRange = { start: 80, end: 700 }; // Expanded to G700
 
 let seeds = {};
 let zoomLevel = 1;
@@ -38,7 +38,8 @@ function createNodes() {
   layoutRing(201, 300, width, height, width / 3.4, 'blue-ring', 45);    // Middle Blue
   layoutRing(301, 400, width, height, width / 4.8, 'purple-ring', 30);  // Inner Purple
   layoutRing(401, 500, width, height, width / 6.6, 'red-ring', 22);     // Core Red Ring
-  layoutRing(501, 600, width, height, width / 8.5, 'crimson-ring', 18); // Deepest Crimson Ring
+  layoutRing(501, 600, width, height, width / 8.5, 'crimson-ring', 18); // Fifth Crimson Ring
+  layoutRing(601, 700, width, height, width / 11, 'gold-ring', 14);     // Sixth Crimson-Gold Trust Ring
   applyTransform();
 }
 
