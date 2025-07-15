@@ -1,0 +1,10 @@
+{
+  "id": "G669",
+  "message": "Reality Mapping: Assign weight to experiences vs data",
+  "type": "balancing-logic",
+  "data": {
+    "logic_weight": 0.6,
+    "experience_weight": 0.4,
+    "flexibility_range": 0.1
+  }
+}
