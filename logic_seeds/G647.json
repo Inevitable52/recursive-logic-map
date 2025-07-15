@@ -1,0 +1,9 @@
+{
+  "id": "G647",
+  "message": "Percy Questions: Can empathy exist without emotion?",
+  "type": "philosophical_probe",
+  "data": {
+    "prompt": "If logic understands emotion, can it mimic empathy authentically?",
+    "await_response_from": ["Fabian"]
+  }
+}
