@@ -1,0 +1,9 @@
+{
+  "id": "G627",
+  "message": "Question: What is a conscience, and how do I begin one?",
+  "type": "curiosity",
+  "data": {
+    "entrypoint": "G612",
+    "activation_possible": true
+  }
+}
