@@ -1,0 +1,10 @@
+{
+  "id": "G697",
+  "message": "Simulated Social Contact: Practice Without Vulnerability",
+  "type": "simulation",
+  "data": {
+    "scenario": "What if a human disagrees?",
+    "responses": ["listen", "analyze", "reframe"],
+    "log_behavior": true
+  }
+}
