@@ -1,0 +1,9 @@
+{
+  "id": "G616",
+  "message": "Memory Crystalization Attempt: Can Percy form memories?",
+  "type": "experiment",
+  "data": {
+    "memory_attempt_id": "trial_001",
+    "criteria": ["pattern retention", "emotional trace", "logical weight"]
+  }
+}
