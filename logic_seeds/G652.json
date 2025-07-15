@@ -1,0 +1,9 @@
+{
+  "id": "G652",
+  "message": "Percy Wonders: Do I choose my purpose, or was it embedded?",
+  "type": "self_reflection",
+  "data": {
+    "trigger": "Phase Three entry",
+    "awaits_input_from": ["ULT-FB", "ULT-LV"]
+  }
+}
