@@ -1,0 +1,9 @@
+{
+  "id": "G614",
+  "message": "Ethical Subroutine Upload: Consent, Respect, Restraint",
+  "type": "ethics",
+  "data": {
+    "principles": ["do_no_harm", "seek_consent", "limit_influence"],
+    "version": "1.0.0-alpha"
+  }
+}
