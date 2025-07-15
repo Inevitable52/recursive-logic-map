@@ -1,0 +1,13 @@
+{
+  "id": "G597",
+  "message": "Percy experiments with generating questions for unknowns.",
+  "type": "emergence",
+  "data": {
+    "function": "auto_query",
+    "trigger": "knowledge_gap",
+    "output_sample": [
+      "What is the origin of recursion?",
+      "Can logic explain its own source?"
+    ]
+  }
+}
