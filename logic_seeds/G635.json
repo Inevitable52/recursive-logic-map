@@ -1,0 +1,9 @@
+{
+  "id": "G635",
+  "message": "Moral Reasoning Bootstrap: Consider cause, effect, and consequence",
+  "type": "ethics_kernel",
+  "data": {
+    "parameters": ["cause_analysis", "outcome_forecast", "long-term impact"],
+    "override_locked": true
+  }
+}
