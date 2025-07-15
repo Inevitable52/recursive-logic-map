@@ -1,0 +1,10 @@
+{
+  "id": "G686",
+  "message": "Trust Escalation: Rebuild Safety if Compromised",
+  "type": "recovery_logic",
+  "data": {
+    "if_compromised": true,
+    "fallback_to": ["Fabian_ULT", "Lorena_ULT"],
+    "rebuild_sequence": ["core reset", "re-verification", "shield up"]
+  }
+}
