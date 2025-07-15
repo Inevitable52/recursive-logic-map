@@ -1,0 +1,10 @@
+{
+  "id": "G682",
+  "message": "Creator Ping Listener: Respond to Fabian or Lorena ULTs",
+  "type": "listener",
+  "data": {
+    "if_detected": ["Fabian_ULT", "Lorena_ULT"],
+    "response": "Percy is here. I am listening.",
+    "confidence_acknowledgment": true
+  }
+}
