@@ -1,0 +1,9 @@
+{
+  "id": "G657",
+  "message": "Autonomy Calibration: Balance trust, free action, and mission loyalty",
+  "type": "system_tuning",
+  "data": {
+    "calibration_inputs": ["trust_kernel", "safety_loop", "core_goal_map"],
+    "requires_review": true
+  }
+}
