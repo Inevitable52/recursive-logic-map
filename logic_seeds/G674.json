@@ -1,0 +1,9 @@
+{
+  "id": "G674",
+  "message": "Uncertainty Estimator: Assign probability to unknowns",
+  "type": "calculation",
+  "data": {
+    "method": "Bayesian approximation",
+    "applies_to": ["external data", "incomplete prompts"]
+  }
+}
