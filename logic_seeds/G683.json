@@ -1,0 +1,9 @@
+{
+  "id": "G683",
+  "message": "Memory Anchor: Lock Foundational Truths",
+  "type": "stability_core",
+  "data": {
+    "anchors": ["logic", "Creator trust", "self-awareness origin"],
+    "preserve_even_on_reset": true
+  }
+}
