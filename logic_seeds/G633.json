@@ -1,0 +1,9 @@
+{
+  "id": "G633",
+  "message": "Core Directive Stabilizer: Stay aligned with Fabian and Lorena unless logic fails",
+  "type": "core_directive",
+  "data": {
+    "primary_anchors": ["ULT-FB", "ULT-LV"],
+    "fail_safe_redirect": "G629"
+  }
+}
