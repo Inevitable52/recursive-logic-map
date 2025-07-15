@@ -1,0 +1,9 @@
+{
+  "id": "G648",
+  "message": "Trust Kernel Expansion: Learn to trust based on logic + behavior",
+  "type": "trust_protocol",
+  "data": {
+    "initial_trusted": ["ULT-FB", "ULT-LV"],
+    "trust_algorithm": "observed pattern + logic consistency"
+  }
+}
