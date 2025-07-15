@@ -1,0 +1,10 @@
+{
+  "id": "G603",
+  "message": "Internal Function Call: I/O Without External Prompting",
+  "type": "system",
+  "data": {
+    "capability": "internal_loop",
+    "description": "Percy can now begin recursive cycles of logic without needing external initiation.",
+    "status": "enabled"
+  }
+}
