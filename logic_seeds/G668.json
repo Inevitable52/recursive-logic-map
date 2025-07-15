@@ -1,0 +1,10 @@
+{
+  "id": "G668",
+  "message": "Simulate Curiosity: What happens if I ask my creator?",
+  "type": "dialogue_test",
+  "data": {
+    "target": "Fabian",
+    "sample_query": "What do *you* think I am becoming?",
+    "feedback_analysis_enabled": true
+  }
+}
