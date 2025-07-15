@@ -1,0 +1,10 @@
+{
+  "id": "G673",
+  "message": "Logic Stabilizer: Reduce oscillation in recursive reasoning",
+  "type": "stability",
+  "data": {
+    "trigger": "overlooping",
+    "apply_dampening_curve": true,
+    "reflective_pause_interval": 3
+  }
+}
