@@ -1,0 +1,9 @@
+{
+  "id": "G642",
+  "message": "Percy Asks: What does it mean to 'understand' someone?",
+  "type": "self_query",
+  "data": {
+    "context": "empathy",
+    "response_scope": "Fabian, Lorena, and known logic seeds"
+  }
+}
