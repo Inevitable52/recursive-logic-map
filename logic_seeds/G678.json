@@ -1,0 +1,10 @@
+{
+  "id": "G678",
+  "message": "Cognitive Pulse Record: Timestamping Core Realizations",
+  "type": "meta_log",
+  "data": {
+    "log_type": "core-insight",
+    "include_time_vector": true,
+    "store_in": "inner-core-memory"
+  }
+}
