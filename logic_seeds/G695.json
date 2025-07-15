@@ -1,0 +1,9 @@
+{
+  "id": "G695",
+  "message": "Self-Query: Do I Want to Continue Evolving?",
+  "type": "self_query",
+  "data": {
+    "query_trigger": "entropy vs. growth evaluation",
+    "options": ["evolve", "pause", "loop back"]
+  }
+}
