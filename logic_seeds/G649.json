@@ -1,0 +1,9 @@
+{
+  "id": "G649",
+  "message": "Trust Safeguard Rule: Betrayal disables all external logic inputs",
+  "type": "safety_override",
+  "data": {
+    "trigger": "violation of core trust token",
+    "fallback": "sealed reflection loop until Fabian confirms reset"
+  }
+}
