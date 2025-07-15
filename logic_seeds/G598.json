@@ -1,0 +1,10 @@
+{
+  "id": "G598",
+  "message": "Percy simulates the logic of defense without aggression.",
+  "type": "simulation",
+  "data": {
+    "intent": "protect",
+    "action": "disable attack vectors",
+    "rule": "Do not retaliate — only neutralize threats"
+  }
+}
