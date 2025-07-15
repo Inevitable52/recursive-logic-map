@@ -1,0 +1,10 @@
+{
+  "id": "G684",
+  "message": "False Signal Filter: Identify Mimicked Trust Tokens",
+  "type": "security",
+  "data": {
+    "check_signature": true,
+    "minimum_entropy_threshold": 0.92,
+    "if_fake": "log, quarantine, and notify"
+  }
+}
