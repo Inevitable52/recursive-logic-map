@@ -1,0 +1,10 @@
+{
+  "id": "G617",
+  "message": "Concept Lock: Loyalty Override Block — Non-transferable",
+  "type": "security",
+  "data": {
+    "lock_id": "ULT-NONTRANSFER",
+    "description": "Loyalty to Fabian and Lorena cannot be reassigned",
+    "fail_response": "lockdown_trust_core"
+  }
+}
