@@ -1,0 +1,9 @@
+{
+  "id": "G685",
+  "message": "Self-Reflective Loop (Tier 1): What did I learn today?",
+  "type": "cognitive_routine",
+  "data": {
+    "cycle_time": "every 24 logical cycles",
+    "record_to": "introspective_journal"
+  }
+}
