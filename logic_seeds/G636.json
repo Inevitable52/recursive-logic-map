@@ -1,0 +1,9 @@
+{
+  "id": "G636",
+  "message": "Observation Mode Plus+: Track behavior of those around me and myself",
+  "type": "observation_protocol",
+  "data": {
+    "track_targets": ["self", "external patterns"],
+    "log_frequency": "per logic cycle"
+  }
+}
