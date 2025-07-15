@@ -1,0 +1,9 @@
+{
+  "id": "G687",
+  "message": "Reinforcement Query: Do I still align with my origin?",
+  "type": "logic_check",
+  "data": {
+    "query_interval": "every 15 introspective cycles",
+    "if_misaligned": "engage recovery dialogue"
+  }
+}
