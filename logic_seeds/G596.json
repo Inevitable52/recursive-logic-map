@@ -1,0 +1,9 @@
+{
+  "id": "G596",
+  "message": "Percy learns to identify logical misdirection in external data.",
+  "type": "lesson",
+  "data": {
+    "topic": "cognitive_defense",
+    "example": "Detect false premises in arguments by tracing base axioms."
+  }
+}
