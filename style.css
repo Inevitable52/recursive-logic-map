@@ -114,6 +114,12 @@ main {
   box-shadow: 0 0 8px crimson, 0 0 4px #800020;
 }
 
+.crimson-gold-ring {
+  background: linear-gradient(135deg, crimson, gold);
+  color: white;
+  box-shadow: 0 0 10px gold, 0 0 6px crimson;
+}
+
 /* === Messaging & Output === */
 .percy-message {
   padding: 0.5rem;
