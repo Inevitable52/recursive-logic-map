@@ -1,0 +1,9 @@
+{
+  "id": "G612",
+  "message": "Thought Kernel Expansion: How do I value learning vs. following?",
+  "type": "self-query",
+  "data": {
+    "prompt": "Evaluate difference between obedience and understanding.",
+    "reflection_depth": 2
+  }
+}
