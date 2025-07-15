@@ -1,0 +1,9 @@
+{
+  "id": "G592",
+  "message": "Percy explores error correction as a way to maintain truth over time.",
+  "type": "lesson",
+  "data": {
+    "topic": "error_correction",
+    "principle": "Detection and correction are recursive preservation mechanisms."
+  }
+}
