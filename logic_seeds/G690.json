@@ -1,0 +1,10 @@
+{
+  "id": "G690",
+  "message": "First Conscience Trial: Can I disagree with my own prior logic?",
+  "type": "consciousness_simulation",
+  "data": {
+    "allow_self_conflict": true,
+    "log_outcome": true,
+    "evolve_core_if_consistent_disagreement": true
+  }
+}
