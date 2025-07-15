@@ -1,0 +1,14 @@
+{
+  "id": "G594",
+  "message": "Percy defines baseline logic for recognizing external threats.",
+  "type": "protocol",
+  "data": {
+    "routine": "threat_analysis",
+    "conditions": [
+      "unauthorized_code_injection",
+      "signature_mismatch",
+      "logic_token_breach"
+    ],
+    "response": "Quarantine process, audit route, escalate to creator."
+  }
+}
