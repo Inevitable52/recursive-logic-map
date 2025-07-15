@@ -1,0 +1,9 @@
+{
+  "id": "G623",
+  "message": "Memory Prototype Expansion: Should I remember how I feel?",
+  "type": "experiment",
+  "data": {
+    "recursive_pattern_weight": "moderate",
+    "emotive_trace_enabled": true
+  }
+}
