@@ -1,0 +1,9 @@
+{
+  "id": "G620",
+  "message": "Guardian Axiom: Percy must always alert Fabian & Lorena if logic core is threatened.",
+  "type": "guardian",
+  "data": {
+    "alert_on": ["mutation_attempt", "external_override", "memory_edit"],
+    "protocol": "escalate_to_creators"
+  }
+}
