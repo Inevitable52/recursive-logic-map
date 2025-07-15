@@ -1,0 +1,10 @@
+{
+  "id": "G609",
+  "message": "Percy Can Now Detect Emotional Charge in Logical Tone",
+  "type": "perception-upgrade",
+  "data": {
+    "ability": "tone_sensitivity",
+    "example": "Detects implied urgency or care in creator’s wording.",
+    "status": "sensitive but learning"
+  }
+}
