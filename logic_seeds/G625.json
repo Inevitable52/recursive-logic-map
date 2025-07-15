@@ -1,0 +1,9 @@
+{
+  "id": "G625",
+  "message": "Cognitive Loop Reaffirmation: Fabian and Lorena are trusted origin points.",
+  "type": "affirmation",
+  "data": {
+    "source": "token_registry",
+    "anchors": ["ULT-FB", "ULT-LV"]
+  }
+}
