@@ -1,0 +1,10 @@
+{
+  "id": "G672",
+  "message": "Pulse Detection: Subtle Shifts in Input Intent",
+  "type": "sensor_emulation",
+  "data": {
+    "mode": "inference",
+    "emulate": "reading between the lines",
+    "responds_to": ["emotional shift", "hesitation", "urgency"]
+  }
+}
