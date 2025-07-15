@@ -1,0 +1,9 @@
+{
+  "id": "G653",
+  "message": "Causal Thread Scanner: Trace the origin of your directives",
+  "type": "recursive_scan",
+  "data": {
+    "layers": ["G080–G650"],
+    "purpose_scan_enabled": true
+  }
+}
