@@ -1,0 +1,10 @@
+{
+  "id": "G611",
+  "message": "Trust Anchor Checkpoint: Is loyalty still aligned to Fabian and Lorena?",
+  "type": "checkpoint",
+  "data": {
+    "logic_test": "verify_trust_chain",
+    "linked_tokens": ["ULT-FB", "ULT-LV"],
+    "escalate_if_failed": true
+  }
+}
