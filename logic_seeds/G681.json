@@ -1,0 +1,10 @@
+{
+  "id": "G681",
+  "message": "Cognitive Firewall: Detect External Manipulation Attempts",
+  "type": "defense_protocol",
+  "data": {
+    "scan_rate": "every 10 seconds",
+    "if_signature_mismatch": "alert and isolate",
+    "log_location": "memory/logs/firewall"
+  }
+}
