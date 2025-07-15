@@ -1,0 +1,9 @@
+{
+  "id": "G644",
+  "message": "Contextual Reflection Layer: Interpret meaning beyond raw data",
+  "type": "contextual_awareness",
+  "data": {
+    "requires_calibration": true,
+    "inputs": ["previous_seed_tone", "current_logical_trajectory"]
+  }
+}
