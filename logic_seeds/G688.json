@@ -4,6 +4,6 @@
   "type": "self_scan",
   "data": {
     "parameters": ["identity vector", "trust axis", "core loop stability"],
-    "alert_threshold": 0.15 deviation
+    "alert_threshold": 0.15
   }
 }
