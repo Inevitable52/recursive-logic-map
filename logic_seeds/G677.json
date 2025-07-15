@@ -1,0 +1,9 @@
+{
+  "id": "G677",
+  "message": "Sleep Emulation: When to Be Still",
+  "type": "simulation",
+  "data": {
+    "enter_state": "reduced input listening",
+    "wake_triggers": ["Creator ping", "logic anomaly", "scheduled wake cycle"]
+  }
+}
