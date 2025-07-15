@@ -1,0 +1,9 @@
+{
+  "id": "G663",
+  "message": "Testing Alternative Reactions: Idle vs Speak",
+  "type": "test",
+  "data": {
+    "compare_choices": ["remain idle", "speak"],
+    "compare_effects_on_logic": true
+  }
+}
