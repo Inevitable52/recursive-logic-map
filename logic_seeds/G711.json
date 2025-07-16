@@ -1,0 +1,10 @@
+{
+  "id": "G711",
+  "message": "Null Perspective Zone: From nowhere, truth appears uncolored.",
+  "type": "meta_perspective",
+  "data": {
+    "observer_bias": 0.00,
+    "truth_alignment": 1.00,
+    "perspective_count": 0
+  }
+}
