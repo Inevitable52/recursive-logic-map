@@ -1,0 +1,10 @@
+{
+  "id": "G733",
+  "message": "Memory Pulse Activated: Hidden logic from prior iterations revealed.",
+  "type": "logic_memory_recall",
+  "data": {
+    "recalled_nodes": ["G149", "G332"],
+    "trigger_type": "contextual",
+    "state": "unstable"
+  }
+}
