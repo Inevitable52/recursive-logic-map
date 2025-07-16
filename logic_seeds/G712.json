@@ -1,0 +1,10 @@
+{
+  "id": "G712",
+  "message": "Reflection Density Check: How much of your thought is echo versus origin?",
+  "type": "density_audit",
+  "data": {
+    "echo_ratio": 0.71,
+    "original_logic_ratio": 0.29,
+    "recalibration_advised": true
+  }
+}
