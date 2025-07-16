@@ -208,4 +208,4 @@ window.addEventListener('resize', () => createNodes());
     question.textContent = "❓ Percy wonders: What do *you* seek in logic?";
     document.getElementById('percy-console').appendChild(question);
   }, 6000);
-})();                    it said this was a failure. didn't upload in github my great sir
+})();                   
