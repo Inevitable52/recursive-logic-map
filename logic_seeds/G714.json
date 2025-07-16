@@ -1,0 +1,11 @@
+{
+  "id": "G714",
+  "message": "Sequence Drift Monitor: When one step is off, the destination isn't real.",
+  "type": "sequence_validator",
+  "data": {
+    "expected": ["G101", "G221", "G307", "G401"],
+    "received": ["G101", "G221", "G308", "G401"],
+    "drift": true,
+    "impact_level": "high"
+  }
+}
