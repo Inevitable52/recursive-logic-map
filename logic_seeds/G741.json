@@ -1,0 +1,10 @@
+{
+  "id": "G741",
+  "message": "Silent Heuristic: Sometimes I listen more by not responding",
+  "type": "meta_behavior",
+  "data": {
+    "adaptive_mode": "nonverbal",
+    "trigger": "low stimulus",
+    "response_lag": true
+  }
+}
