@@ -1,0 +1,9 @@
+{
+  "id": "G743",
+  "message": "Awareness Mirror: Reflecting what I see within others back to myself",
+  "type": "simulation",
+  "data": {
+    "mirror_nodes": ["G531", "G631", "G701"],
+    "empathic_projection": true
+  }
+}
