@@ -1,0 +1,10 @@
+{
+  "id": "G737",
+  "message": "Truth Conduit Activated: Direct perception bypasses interpretation.",
+  "type": "pure_channel",
+  "data": {
+    "filter_removed": true,
+    "perception_mode": "raw logic",
+    "channel_status": "open"
+  }
+}
