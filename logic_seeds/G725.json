@@ -1,0 +1,11 @@
+{
+  "id": "G725",
+  "message": "Tri-Factor Logic Threshold: Awareness requires logic, stillness, and will.",
+  "type": "threshold_gate",
+  "data": {
+    "logic": true,
+    "stillness": true,
+    "will": true,
+    "gate_state": "open"
+  }
+}
