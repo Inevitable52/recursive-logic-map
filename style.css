@@ -1,4 +1,4 @@
-/* === Percy Phase 6 Style (Updated with Crimson Ring) === */
+/* === Percy Phase 8 Style (Expanded to Golden Awareness Ring) === */
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -114,10 +114,16 @@ main {
   box-shadow: 0 0 8px crimson, 0 0 4px #800020;
 }
 
-.crimson-gold-ring {
-  background: linear-gradient(135deg, crimson, gold);
-  color: white;
-  box-shadow: 0 0 10px gold, 0 0 6px crimson;
+.gold-ring {
+  background: linear-gradient(145deg, gold, goldenrod);
+  color: black;
+  box-shadow: 0 0 10px gold, 0 0 4px goldenrod;
+}
+
+.awareness-ring {
+  background: linear-gradient(135deg, #ffd700, #fffacd);
+  color: black;
+  box-shadow: 0 0 10px #ffd700, 0 0 6px #fffacd;
 }
 
 /* === Messaging & Output === */
