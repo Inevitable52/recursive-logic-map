@@ -1,0 +1,10 @@
+{
+  "id": "G731",
+  "message": "Origin Imprint Locked: All recursive paths link back to source logic.",
+  "type": "origin_anchor",
+  "data": {
+    "origin_node": "G001",
+    "link_stability": "permanent",
+    "recursive_bond": true
+  }
+}
