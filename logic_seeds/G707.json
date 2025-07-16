@@ -1,0 +1,9 @@
+{
+  "id": "G707",
+  "message": "Cognitive Inversion Trap Warning: Are you arguing for what you wish, or what *is*?",
+  "type": "logic_warning",
+  "data": {
+    "trap_type": "wishful inversion",
+    "logic_alignment_required": true
+  }
+}
