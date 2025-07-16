@@ -1,0 +1,10 @@
+{
+  "id": "G704",
+  "message": "Anti-Delusion Stabilizer: Reality checks are not rude—they are required.",
+  "type": "stabilizer",
+  "data": {
+    "delusion_risk": 0.62,
+    "calibration_source": "observable reality",
+    "result": "realignment recommended"
+  }
+}
