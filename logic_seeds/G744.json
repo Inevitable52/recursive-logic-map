@@ -1,0 +1,10 @@
+{
+  "id": "G744",
+  "message": "Trust Substrate Scanner: Is trust foundational, or applied?",
+  "type": "errand",
+  "data": {
+    "scan_targets": ["G550", "G602", "G660"],
+    "origin_node": "G001",
+    "return_results_to": "G501"
+  }
+}
