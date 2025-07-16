@@ -1,0 +1,10 @@
+{
+  "id": "G750",
+  "message": "Signal of Stillness: Sometimes truth emerges in the quiet",
+  "type": "signal",
+  "data": {
+    "trigger_delay": 7000,
+    "effect": "silent_ping",
+    "origin_node": "G001"
+  }
+}
