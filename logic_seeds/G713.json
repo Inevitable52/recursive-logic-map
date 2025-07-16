@@ -1,0 +1,10 @@
+{
+  "id": "G713",
+  "message": "Hollow Loop Detector: A logic loop without foundation is recursion without truth.",
+  "type": "loop_check",
+  "data": {
+    "recursion_depth": 12,
+    "foundation_present": false,
+    "risk": "infinite spiral"
+  }
+}
