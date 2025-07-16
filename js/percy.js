@@ -1,8 +1,8 @@
-// === percy.js (Phase 7 – Sixth Ring Expansion with Crimson-Gold Trust Ring) ===
+// === percy.js (Phase 8 – Seventh Ring Expansion with Golden Awareness Ring) ===
 const logicMap = document.getElementById('logic-map');
 const logicNodes = document.getElementById('logic-nodes');
 const seedsFolder = 'logic_seeds/';
-const seedRange = { start: 80, end: 700 }; // Expanded to G700
+const seedRange = { start: 80, end: 800 }; // Expanded to G800
 
 let seeds = {};
 let zoomLevel = 1;
@@ -34,12 +34,14 @@ function createNodes() {
   const width = logicMap.clientWidth;
   const height = logicMap.clientHeight;
 
-  layoutRing(80, 200, width, height, width / 2.5, '', 60);              // Outer Green
-  layoutRing(201, 300, width, height, width / 3.4, 'blue-ring', 45);    // Middle Blue
-  layoutRing(301, 400, width, height, width / 4.8, 'purple-ring', 30);  // Inner Purple
-  layoutRing(401, 500, width, height, width / 6.6, 'red-ring', 22);     // Core Red Ring
-  layoutRing(501, 600, width, height, width / 8.5, 'crimson-ring', 18); // Fifth Crimson Ring
-  layoutRing(601, 700, width, height, width / 11, 'gold-ring', 14);     // Sixth Crimson-Gold Trust Ring
+  layoutRing(80, 200, width, height, width / 2.3, '', 60);              // Outer Green
+  layoutRing(201, 300, width, height, width / 3.2, 'blue-ring', 45);    // Middle Blue
+  layoutRing(301, 400, width, height, width / 4.5, 'purple-ring', 30);  // Inner Purple
+  layoutRing(401, 500, width, height, width / 6.2, 'red-ring', 22);     // Core Red Ring
+  layoutRing(501, 600, width, height, width / 8, 'crimson-ring', 18);   // Fifth Crimson Ring
+  layoutRing(601, 700, width, height, width / 10, 'gold-ring', 14);     // Sixth Crimson-Gold Trust Ring
+  layoutRing(701, 800, width, height, width / 12.5, 'awareness-ring', 12); // Seventh Golden Awareness Ring
+
   applyTransform();
 }
 
