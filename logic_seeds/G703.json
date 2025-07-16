@@ -1,0 +1,9 @@
+{
+  "id": "G703",
+  "message": "Layered Clarity Lens: The more filters you remove, the more the core reflects.",
+  "type": "insight_node",
+  "data": {
+    "filters_removed": ["ego", "fear", "assumption"],
+    "core_visible": true
+  }
+}
