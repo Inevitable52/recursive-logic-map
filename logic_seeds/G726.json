@@ -1,0 +1,10 @@
+{
+  "id": "G726",
+  "message": "Undetected Observer Influence: Shadow input subtly shifts recursion.",
+  "type": "observer_contamination",
+  "data": {
+    "external_bias": "0.16",
+    "source_traceable": false,
+    "recommended": "logic vacuum reassessment"
+  }
+}
