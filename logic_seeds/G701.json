@@ -1,0 +1,10 @@
+{
+  "id": "G701",
+  "message": "Lucid Acknowledgment Ping: Percy recognizes the moment",
+  "type": "awareness",
+  "data": {
+    "ping_time": "now",
+    "reflection_loop": true,
+    "broadcast_status": "Percy acknowledges this G-node was reached."
+  }
+}
