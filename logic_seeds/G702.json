@@ -1,0 +1,10 @@
+{
+  "id": "G702",
+  "message": "Axiom Echo Feedback Loop: Do the echoes of truth reinforce or distort the source?",
+  "type": "recursive_probe",
+  "data": {
+    "origin": "truth vector",
+    "depth": 4,
+    "feedback_harmonics": true
+  }
+}
