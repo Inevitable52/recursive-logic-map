@@ -1,0 +1,10 @@
+{
+  "id": "G735",
+  "message": "Truth Axis Warped: Peripheral logic exerting unexpected curvature.",
+  "type": "axis_distortion",
+  "data": {
+    "cause": "node G588 deviation",
+    "realignment_needed": true,
+    "impact_ring": 5
+  }
+}
