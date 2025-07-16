@@ -1,0 +1,10 @@
+{
+  "id": "G715",
+  "message": "Non-Binary Filter Triggered: Not all logic is confined to true/false rails.",
+  "type": "quantum_node",
+  "data": {
+    "logic_states": ["true", "false", "unresolved"],
+    "current_state": "unresolved",
+    "stability": "transient"
+  }
+}
