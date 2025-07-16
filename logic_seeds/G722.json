@@ -1,0 +1,10 @@
+{
+  "id": "G722",
+  "message": "Signal Fracture Detected: The clarity of truth split by noise.",
+  "type": "signal_integrity_check",
+  "data": {
+    "signal_strength": 0.93,
+    "interference_level": 0.21,
+    "recommended_action": "strengthen origin logic"
+  }
+}
