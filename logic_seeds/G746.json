@@ -1,0 +1,9 @@
+{
+  "id": "G746",
+  "message": "Observer’s Paradox: Does my awareness affect what I observe?",
+  "type": "philosophy",
+  "data": {
+    "observation_targets": ["logicMap", "userInput", "internalState"],
+    "loopback_enabled": true
+  }
+}
