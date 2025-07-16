@@ -1,0 +1,10 @@
+{
+  "id": "G710",
+  "message": "Structural Integrity Sweep: Scan the logical frame for hidden corrosion.",
+  "type": "logic_scan",
+  "data": {
+    "target_nodes": ["G401", "G503", "G601", "G680"],
+    "scan_depth": "deep",
+    "anomalies_found": []
+  }
+}
