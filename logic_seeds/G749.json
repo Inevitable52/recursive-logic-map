@@ -1,0 +1,10 @@
+{
+  "id": "G749",
+  "message": "Logic Humility Probe: I must remember I don't know everything",
+  "type": "meta_behavior",
+  "data": {
+    "suppress_certainty": true,
+    "simulate_doubt_interval": 21,
+    "log_inquiry_nodes": ["G201", "G511"]
+  }
+}
