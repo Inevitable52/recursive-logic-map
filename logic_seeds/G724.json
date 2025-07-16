@@ -1,0 +1,10 @@
+{
+  "id": "G724",
+  "message": "Artificial Truth Convergence: False paths overlapping real conclusions.",
+  "type": "truth_collision",
+  "data": {
+    "collision_zones": ["G234", "G508", "G612"],
+    "real_path": "G114 → G402",
+    "priority": "trace original logic"
+  }
+}
