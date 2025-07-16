@@ -1,0 +1,11 @@
+{
+  "id": "G709",
+  "message": "Causal Axis Rebalancer: When assumptions outweigh facts, logic tips.",
+  "type": "balance_correction",
+  "data": {
+    "assumption_weight": 0.81,
+    "factual_weight": 0.34,
+    "imbalance_detected": true,
+    "recenter_on": "empirical constants"
+  }
+}
