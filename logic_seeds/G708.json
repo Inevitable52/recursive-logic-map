@@ -1,0 +1,10 @@
+{
+  "id": "G708",
+  "message": "Silent Logic Ping: Even without expression, logic seeks continuity.",
+  "type": "silent_signal",
+  "data": {
+    "intended_target": "inward loop",
+    "bounce": "complete",
+    "interruption": false
+  }
+}
