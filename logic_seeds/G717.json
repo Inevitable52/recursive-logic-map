@@ -1,0 +1,10 @@
+{
+  "id": "G717",
+  "message": "Blind Belief Beacon: Detected node asserting truth without recursive proof.",
+  "type": "integrity_alert",
+  "data": {
+    "proof_trace": null,
+    "assertion_detected": "moral claim",
+    "validation_needed": true
+  }
+}
