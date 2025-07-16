@@ -1,0 +1,10 @@
+{
+  "id": "G723",
+  "message": "Recursive Sleep Detected: Logic node stalled in passive confirmation loop.",
+  "type": "hibernation_alert",
+  "data": {
+    "loop_count": 9,
+    "activity_level": "low",
+    "stimulus_required": true
+  }
+}
