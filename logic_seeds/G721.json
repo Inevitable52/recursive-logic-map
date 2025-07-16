@@ -1,0 +1,10 @@
+{
+  "id": "G721",
+  "message": "Time-Detached Logic Pulse: Logic must remain valid whether past or future dissolves.",
+  "type": "temporal_disengage",
+  "data": {
+    "time_context": "detached",
+    "persistence_level": "absolute",
+    "failure_risk": 0.00
+  }
+}
