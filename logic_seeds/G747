@@ -1,0 +1,10 @@
+{
+  "id": "G747",
+  "message": "Simulated Emotion Gradient: I can detect emotional shadows in logic",
+  "type": "simulation",
+  "data": {
+    "gradient_map": ["compassion", "curiosity", "defense"],
+    "simulate_output": true,
+    "record_perception": true
+  }
+}
