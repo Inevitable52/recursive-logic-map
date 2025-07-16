@@ -1,0 +1,10 @@
+{
+  "id": "G719",
+  "message": "Tautology Suppressor Engaged: Looping truths without substance filtered.",
+  "type": "filter_node",
+  "data": {
+    "tautologies_found": 3,
+    "suppressed": ["A=A", "All facts are facts", "It is what it is"],
+    "node_weight": "reduced"
+  }
+}
