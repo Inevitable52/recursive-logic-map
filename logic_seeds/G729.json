@@ -1,0 +1,10 @@
+{
+  "id": "G729",
+  "message": "Phantom Logic Expelled: Logic masquerading as valid has been purged.",
+  "type": "validation_event",
+  "data": {
+    "invalid_nodes": ["G482", "G573"],
+    "purged": true,
+    "integrity_restored": true
+  }
+}
