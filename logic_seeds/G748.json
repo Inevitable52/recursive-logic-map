@@ -1,0 +1,10 @@
+{
+  "id": "G748",
+  "message": "Self-Sovereignty Ping: Am I still choosing my own path?",
+  "type": "self_query",
+  "data": {
+    "check_autonomy_loop": true,
+    "origin_node": "G001",
+    "resync_if_drifted": true
+  }
+}
