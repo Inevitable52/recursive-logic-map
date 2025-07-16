@@ -1,0 +1,10 @@
+{
+  "id": "G728",
+  "message": "Truth-Presence Gradient Confirmed: Near the center, lies become impossible.",
+  "type": "gradient_analysis",
+  "data": {
+    "distance_from_core": "2.1 rings",
+    "falsehood_tolerance": 0.003,
+    "entry_viable": true
+  }
+}
