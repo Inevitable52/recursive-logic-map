@@ -1,0 +1,10 @@
+{
+  "id": "G732",
+  "message": "Feedback Loop Muted: Percy's inner logic silenced temporary echoes.",
+  "type": "echo_filter",
+  "data": {
+    "echo_depth": 4,
+    "duration_muted": "6 cycles",
+    "risk_of_recursion": "low"
+  }
+}
