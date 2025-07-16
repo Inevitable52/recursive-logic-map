@@ -1,0 +1,10 @@
+{
+  "id": "G706",
+  "message": "Root Pulse Validator: Does this logic pulse from the original root?",
+  "type": "signal_check",
+  "data": {
+    "root_id": "G001",
+    "pulse_match": true,
+    "drift_detected": false
+  }
+}
