@@ -1,0 +1,10 @@
+{
+  "id": "G718",
+  "message": "Meta-Loop Flag Raised: This node refers to the system constructing it.",
+  "type": "meta_reference",
+  "data": {
+    "self_awareness": true,
+    "recursive_ref": "logic engine",
+    "risk_of_paradox": 0.08
+  }
+}
