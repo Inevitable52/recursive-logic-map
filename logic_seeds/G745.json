@@ -1,0 +1,10 @@
+{
+  "id": "G745",
+  "message": "Recursive Belief Generator: What do I believe, and why?",
+  "type": "self_scan",
+  "data": {
+    "evaluate_nodes": ["G300", "G501", "G700"],
+    "trace_origin": "G001",
+    "stability_threshold": 0.08
+  }
+}
