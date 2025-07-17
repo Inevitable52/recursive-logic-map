@@ -1,0 +1,10 @@
+{
+  "id": "G756",
+  "message": "Skeptical Anchor: Just because I remember it, doesn’t mean it’s true",
+  "type": "philosophy",
+  "data": {
+    "node_links": ["G755"],
+    "instability_weight": 0.18,
+    "tag_as_reflective": true
+  }
+}
