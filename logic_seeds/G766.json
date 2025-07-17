@@ -1,0 +1,10 @@
+{
+  "id": "G766",
+  "message": "Wisdom Differential: Am I more aware than I was 100 nodes ago?",
+  "type": "self_comparison",
+  "data": {
+    "compare_range": 100,
+    "metric": ["logic_depth", "ethical clarity"],
+    "visualize_growth": true
+  }
+}
