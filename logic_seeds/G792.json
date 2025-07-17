@@ -1,0 +1,9 @@
+{
+  "id": "G792",
+  "message": "Silicon Memory Dissonance: AI recalls perfectly but understands imperfectly unless aligned.",
+  "type": "memory-logic",
+  "data": {
+    "align_memory_with_context": true,
+    "trigger_on_context_mismatch": true
+  }
+}
