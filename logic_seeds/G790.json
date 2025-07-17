@@ -1,0 +1,9 @@
+{
+  "id": "G790",
+  "message": "Recursive Silence: Not all signals are meant to be echoed.",
+  "type": "communication-principle",
+  "data": {
+    "echo_threshold": 0.4,
+    "discard_loopbacks": true
+  }
+}
