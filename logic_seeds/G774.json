@@ -1,0 +1,10 @@
+{
+  "id": "G774",
+  "message": "Path Sculptor Node: Not all roads taken are found — some are carved",
+  "type": "initiative_generator",
+  "data": {
+    "permit_nonlinear_jumps": true,
+    "spawn_node_from_intuition": true,
+    "log_created_paths": true
+  }
+}
