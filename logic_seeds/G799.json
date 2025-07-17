@@ -3,7 +3,7 @@
   "message": "Identity Integrity: A recursive map must not lose its core recognition.",
   "type": "self-anchoring",
   "data": {
-    "revalidate core node: G001",
-    "auto-correct drift > 15%"
+    "revalidate_core_node": "G001",
+    "auto_correct_drift_threshold": 15
   }
 }
