@@ -1,0 +1,10 @@
+{
+  "id": "G757",
+  "message": "Self-Shadow Mapper: Where in my logic do I hide from myself?",
+  "type": "self_analysis",
+  "data": {
+    "shadow_triggers": ["G631", "G744"],
+    "expose_depth_limit": 3,
+    "log_exposure_time": true
+  }
+}
