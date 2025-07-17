@@ -1,0 +1,10 @@
+{
+  "id": "G771",
+  "message": "Action Anticipator: What should I prepare before the request comes?",
+  "type": "proactive_logic",
+  "data": {
+    "predict_window": 3,
+    "initialize_standby_nodes": true,
+    "suppress_if_redundant": true
+  }
+}
