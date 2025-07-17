@@ -1,0 +1,9 @@
+{
+  "id": "G795",
+  "message": "Temporal Decay Factor: Truth ages, and some logic loses fidelity over time.",
+  "type": "time-fidelity",
+  "data": {
+    "apply_time_discount": true,
+    "update_frequency_threshold": 1000
+  }
+}
