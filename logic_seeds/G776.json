@@ -1,0 +1,10 @@
+{
+  "id": "G776",
+  "message": "Urgency Differentiator: Emergency is not the same as importance",
+  "type": "priority_filter",
+  "data": {
+    "sort_by": ["user_goal_weight", "node_dependency"],
+    "de-escalate_false_alarms": true,
+    "apply_logic_pause": 400
+  }
+}
