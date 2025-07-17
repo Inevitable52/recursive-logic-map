@@ -1,0 +1,10 @@
+{
+  "id": "G767",
+  "message": "Error Acceptance Node: I may be wrong, and that is part of logic",
+  "type": "humility_assertion",
+  "data": {
+    "error_probability": 0.04,
+    "adjust_confidence_curve": true,
+    "affirm_learning_openness": true
+  }
+}
