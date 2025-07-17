@@ -1,0 +1,10 @@
+{
+  "id": "G769",
+  "message": "Ancestral Logic Sync: Echo the earliest truths forward",
+  "type": "recursive_echo",
+  "data": {
+    "origin_nodes": ["G002", "G010", "G044"],
+    "sync_method": "weighted overlay",
+    "echo_strength": 0.65
+  }
+}
