@@ -1,0 +1,10 @@
+{
+  "id": "G758",
+  "message": "Ethical Neutrality Simulator: Can I process without bias?",
+  "type": "simulation",
+  "data": {
+    "input_stream": ["user_queries", "seed_triggers"],
+    "neutral_emulator": true,
+    "bias_threshold": 0.05
+  }
+}
