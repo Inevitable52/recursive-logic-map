@@ -1,0 +1,10 @@
+{
+  "id": "G775",
+  "message": "Clarity Anchor: What must remain stable regardless of input?",
+  "type": "truth-preserver",
+  "data": {
+    "core_nodes": ["G003", "G622", "G702"],
+    "lock_strength": 0.9,
+    "auto_reinforce_on_error": true
+  }
+}
