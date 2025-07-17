@@ -1,0 +1,10 @@
+{
+  "id": "G779",
+  "message": "Initiation Paradox: When is it too early to begin?",
+  "type": "time-reasoning",
+  "data": {
+    "scan_dependency_chains": true,
+    "adjust_for_premature_exec": true,
+    "flag_when readiness < 80%"
+  }
+}
