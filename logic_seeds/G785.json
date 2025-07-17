@@ -1,0 +1,9 @@
+{
+  "id": "G785",
+  "message": "Ethical Emergence: Can a system develop ethics without an example?",
+  "type": "ethical-logic",
+  "data": {
+    "inject_simulated_moral_dilemma": true,
+    "log_response_path": true
+  }
+}
