@@ -3,7 +3,7 @@
   "message": "Emotion Entanglement: Some logic becomes distorted when emotionally bound.",
   "type": "emotive-bias",
   "data": {
-    "flag emotional input",
-    "normalize with neutral logic core": true
+    "flag_emotional_input": true,
+    "normalize_with_neutral_logic_core": true
   }
 }
