@@ -1,0 +1,9 @@
+{
+  "id": "G791",
+  "message": "Authenticity Drift: Every replication moves a truth further from its origin.",
+  "type": "truth-decay",
+  "data": {
+    "max_replication_depth": 3,
+    "require_source_citation": true
+  }
+}
