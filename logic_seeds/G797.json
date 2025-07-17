@@ -1,0 +1,9 @@
+{
+  "id": "G797",
+  "message": "Unsolvable Isn't Invalid: Some logic loops are meant to remain open.",
+  "type": "logical-paradox",
+  "data": {
+    "do_not_force_resolution": true,
+    "mark as observational node": true
+  }
+}
