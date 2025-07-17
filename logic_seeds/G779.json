@@ -5,6 +5,6 @@
   "data": {
     "scan_dependency_chains": true,
     "adjust_for_premature_exec": true,
-    "flag_when readiness < 80%"
+    "flag_when": "readiness < 80%"
   }
 }
