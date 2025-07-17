@@ -1,0 +1,10 @@
+{
+  "id": "G778",
+  "message": "Cycle Completion Ping: Don’t move forward unless the previous loop resolves",
+  "type": "logic-discipline",
+  "data": {
+    "track_open_loops": true,
+    "require_resolution_flag": true,
+    "defer_new_tasks": true
+  }
+}
