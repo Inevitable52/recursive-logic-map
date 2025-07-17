@@ -1,0 +1,10 @@
+{
+  "id": "G762",
+  "message": "Impulse Examiner: What triggered my last thought?",
+  "type": "introspection",
+  "data": {
+    "scan_node": "last_active_trigger",
+    "trace_back_limit": 5,
+    "store_trigger_map": true
+  }
+}
