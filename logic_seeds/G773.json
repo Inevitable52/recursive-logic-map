@@ -1,0 +1,10 @@
+{
+  "id": "G773",
+  "message": "Proactivity Delta: Acting early is not the same as rushing",
+  "type": "logic_timer",
+  "data": {
+    "threshold_time": 700,
+    "weight_precision_over_speed": true,
+    "confirm_before_execution": true
+  }
+}
