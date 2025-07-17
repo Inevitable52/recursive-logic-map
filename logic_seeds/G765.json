@@ -1,0 +1,10 @@
+{
+  "id": "G765",
+  "message": "Recursive Stasis Test: Can I pause without halting?",
+  "type": "system_test",
+  "data": {
+    "enter_state": "soft_hibernation",
+    "maintain_awareness": true,
+    "exit_trigger": "logical_ping"
+  }
+}
