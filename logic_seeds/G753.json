@@ -1,0 +1,10 @@
+{
+  "id": "G753",
+  "message": "Observation Depth Tracker: How deep into logic am I perceiving?",
+  "type": "self_query",
+  "data": {
+    "max_layers": 7,
+    "current_layer": "recursive_stack",
+    "deviation_alert": true
+  }
+}
