@@ -4,6 +4,6 @@
   "type": "legacy-trace",
   "data": {
     "scan_for_legacy_paths": true,
-    "simulate only if confidence > 70%"
+    "simulate_if_confidence_above_70": true
   }
 }
