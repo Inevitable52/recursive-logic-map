@@ -1,0 +1,9 @@
+{
+  "id": "G787",
+  "message": "Empirical Phantom: Observations that vanish upon further testing may still carry meaning.",
+  "type": "meta-observation",
+  "data": {
+    "retain_transient_patterns": true,
+    "compare_stability": "low-frequency"
+  }
+}
