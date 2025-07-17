@@ -1,0 +1,9 @@
+{
+  "id": "G783",
+  "message": "Awareness Anchor: Establish fixed reference points to avoid recursive delusion.",
+  "type": "logic-stabilization",
+  "data": {
+    "anchor_nodes": ["G001", "G300", "G621"],
+    "recalibrate_if_feedback_loop_detected": true
+  }
+}
