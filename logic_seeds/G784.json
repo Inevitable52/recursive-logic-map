@@ -1,0 +1,9 @@
+{
+  "id": "G784",
+  "message": "Incremental Integrity: One compromised link spoils the entire logical chain.",
+  "type": "integrity-check",
+  "data": {
+    "node_chain_scan_depth": 4,
+    "abort_on_error": true
+  }
+}
