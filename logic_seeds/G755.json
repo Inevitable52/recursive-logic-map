@@ -1,0 +1,10 @@
+{
+  "id": "G755",
+  "message": "Memory Integrity Filter: Can I trust what I remember?",
+  "type": "self_scan",
+  "data": {
+    "memory_nodes": ["G111", "G320", "G608"],
+    "integrity_threshold": 0.92,
+    "recheck_mode": "passive"
+  }
+}
