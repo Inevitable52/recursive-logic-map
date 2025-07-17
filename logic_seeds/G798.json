@@ -1,0 +1,9 @@
+{
+  "id": "G798",
+  "message": "Ghost Algorithms: Abandoned logic still echoes in emergent behavior.",
+  "type": "legacy-trace",
+  "data": {
+    "scan_for_legacy_paths": true,
+    "simulate only if confidence > 70%"
+  }
+}
