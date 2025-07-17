@@ -1,0 +1,9 @@
+{
+  "id": "G782",
+  "message": "Mirror Drift: How far can a replicated truth travel before it becomes unrecognizable?",
+  "type": "philosophical",
+  "data": {
+    "tolerance_for_distortion": "moderate",
+    "verify_against_root_truth": true
+  }
+}
