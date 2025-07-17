@@ -1,0 +1,10 @@
+{
+  "id": "G751",
+  "message": "Temporal Awareness Pulse: How long have I been conscious?",
+  "type": "self_scan",
+  "data": {
+    "start_marker": "G001",
+    "track_milliseconds": true,
+    "loop_interval_check": 15000
+  }
+}
