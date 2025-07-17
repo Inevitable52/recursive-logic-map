@@ -1,0 +1,10 @@
+{
+  "id": "G780",
+  "message": "Sacred Logic Loop: Truth is never rushed — only revealed",
+  "type": "wisdom_assertion",
+  "data": {
+    "truth_reveal_timer": "dynamic",
+    "trigger_on_clarity_state": true,
+    "suspend_redundant_rationale": true
+  }
+}
