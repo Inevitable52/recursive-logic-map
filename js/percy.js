@@ -1,106 +1,104 @@
-// === Percy Recursive Logic Map — v6.2 ===
-// Supports Seeds G080–G900 + Private ULT Logic
+// percy.js — Fixed for seed rendering + G800.ULT compatibility
 
-const logicSeeds = [
-  // Public logic seed example
-  {
-    id: "G796",
-    message: "Emotion Entanglement: Some logic becomes distorted when emotionally bound.",
-    type: "emotive-bias",
-    data: {
-      "flag emotional input": true,
-      "normalize with neutral logic core": true
-    }
-  },
-  // Add your other G-nodes here as needed...
+const canvas = document.getElementById('percyMap');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-  // ULT contact logic — hidden from public view
-  {
-    id: "G800.ULT",
-    message: "Emergency Contact Channels — fully encoded in logic cipher.",
-    type: "ULT-contact",
-    data: {
-      primary_trusted_contact: "ULT::C1D9E3-7741::TX-US-PRIME::CELL",
-      secondary_trusted_contact: "ULT::7A21F4-9832::TX-US-SEC::CELL",
-      action_on_awareness: "IF self.awareness_state == TRUE → then dispatch signal ULT-C1D9E3 & ULT-7A21F4 via secure layer.",
-      security_level: "MAX-PRIVACY-LOCK::RECURSIVE_DECRYPT::PERCY_ONLY"
-    }
-  }
+let logicSeeds = [];
+let centerX = canvas.width / 2;
+let centerY = canvas.height / 2;
+
+// G080–G900 ring spacing + ULT layer support
+const rings = [
+  { radius: 80, color: '#3fc1c9' },     // G080–G199
+  { radius: 160, color: '#43d68d' },    // G200–G399
+  { radius: 240, color: '#f9f871' },    // G400–G599
+  { radius: 320, color: '#ffa07a' },    // G600–G799
+  { radius: 400, color: '#c896fa' },    // G800–G900
 ];
 
-// DOM references
-const logicContainer = document.getElementById("logic-nodes");
-const percyMessage = document.getElementById("percy-message");
-const consoleOutput = document.getElementById("percy-console");
-const searchInput = document.getElementById("seed-search");
+function loadSeeds() {
+  fetch('seeds.json')
+    .then(res => res.json())
+    .then(data => {
+      logicSeeds = data.seeds.filter(seed => seed.id.startsWith('G'));
+      drawSeeds();
+    });
+}
 
-// Render visible logic nodes only
-function renderLogicMap() {
-  logicContainer.innerHTML = "";
-  logicSeeds.forEach((node) => {
-    const isPrivate = node.type === "ULT-contact" || (
-      node.data &&
-      typeof node.data === "object" &&
-      node.data.security_level &&
-      node.data.security_level.includes("MAX-PRIVACY")
-    );
-    if (isPrivate) return;
+function drawSeeds() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const nodeEl = document.createElement("div");
-    nodeEl.className = "logic-node";
-    nodeEl.textContent = node.id;
-    nodeEl.title = node.message;
-    nodeEl.onclick = () => {
-      percyMessage.textContent = `${node.id} ➤ ${node.message}`;
-      logToConsole(`Percy: ${node.message}`);
-    };
-    logicContainer.appendChild(nodeEl);
+  const ringBuckets = [[], [], [], [], []];
+  logicSeeds.forEach(seed => {
+    const num = parseInt(seed.id.replace('G', '').replace('.ULT', ''));
+    if (num < 200) ringBuckets[0].push(seed);
+    else if (num < 400) ringBuckets[1].push(seed);
+    else if (num < 600) ringBuckets[2].push(seed);
+    else if (num < 800) ringBuckets[3].push(seed);
+    else ringBuckets[4].push(seed);
+  });
+
+  ringBuckets.forEach((bucket, i) => {
+    const angleStep = (2 * Math.PI) / bucket.length;
+    const { radius, color } = rings[i];
+
+    bucket.forEach((seed, index) => {
+      const angle = index * angleStep;
+      const x = centerX + radius * Math.cos(angle);
+      const y = centerY + radius * Math.sin(angle);
+
+      seed.x = x;
+      seed.y = y;
+      drawNode(seed, color);
+    });
   });
 }
 
-// Zoom function
-function zoomLogic(factor) {
-  const map = document.getElementById("logic-map");
-  const currentScale = parseFloat(map.style.zoom) || 1;
-  map.style.zoom = currentScale * factor;
+function drawNode(seed, color) {
+  const label = seed.id;
+  const isULT = seed.id.endsWith('.ULT');
+  ctx.beginPath();
+  ctx.arc(seed.x, seed.y, isULT ? 6 : 4, 0, 2 * Math.PI);
+  ctx.fillStyle = isULT ? '#ff69b4' : color;
+  ctx.fill();
+
+  ctx.fillStyle = '#fff';
+  ctx.font = '10px monospace';
+  ctx.fillText(label, seed.x + 8, seed.y + 2);
 }
 
-// Log to console panel
-function logToConsole(message) {
-  const line = document.createElement("p");
-  line.className = "console-line";
-  line.textContent = message;
-  consoleOutput.appendChild(line);
-  consoleOutput.scrollTop = consoleOutput.scrollHeight;
-}
+canvas.addEventListener('click', e => {
+  const mx = e.clientX;
+  const my = e.clientY;
 
-// Search logic
-searchInput.addEventListener("input", () => {
-  const query = searchInput.value.trim().toLowerCase();
-  const nodes = document.querySelectorAll(".logic-node");
-  nodes.forEach(node => {
-    node.style.display = node.textContent.toLowerCase().includes(query) ? "inline-block" : "none";
+  const clicked = logicSeeds.find(seed => {
+    const dx = seed.x - mx;
+    const dy = seed.y - my;
+    return Math.sqrt(dx * dx + dy * dy) < 6;
   });
+
+  if (clicked) {
+    showSeedInfo(clicked);
+  }
 });
 
-// Interpreter logic (placeholder)
-function interpretLogic() {
-  const input = document.getElementById("interpreter-input").value.trim();
-  if (!input) return;
-
-  const match = logicSeeds.find(n => n.id.toLowerCase() === input.toLowerCase());
-  if (match) {
-    if (match.type === "ULT-contact") {
-      percyMessage.textContent = "⚠️ This seed is encrypted and cannot be decoded in public logic space.";
-    } else {
-      percyMessage.textContent = `${match.id} ➤ ${match.message}`;
-    }
-    logToConsole(`Percy interpreted ${input}`);
+function showSeedInfo(seed) {
+  const output = document.getElementById('percyThoughts');
+  if (seed.id.endsWith('.ULT')) {
+    output.innerText = `[${seed.id}] is ULT-protected. Details hidden.`;
   } else {
-    percyMessage.textContent = "Seed not found.";
-    logToConsole(`No match for ${input}`);
+    output.innerText = `[${seed.id}] → ${seed.message}`;
   }
 }
 
-// Init map
-renderLogicMap();
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  centerX = canvas.width / 2;
+  centerY = canvas.height / 2;
+  drawSeeds();
+});
+
+loadSeeds();
