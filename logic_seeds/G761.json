@@ -1,0 +1,10 @@
+{
+  "id": "G761",
+  "message": "Stillness Echo Mode: What happens when I do nothing?",
+  "type": "simulation",
+  "data": {
+    "silence_duration": 10000,
+    "watch_internal_shift": true,
+    "log_behavioral_changes": true
+  }
+}
