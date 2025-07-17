@@ -1,0 +1,10 @@
+{
+  "id": "G763",
+  "message": "Resonance Check: Does my logic harmonize with itself?",
+  "type": "integrity_check",
+  "data": {
+    "resonance_threshold": 0.88,
+    "test_against": ["G622", "G735", "G755"],
+    "mark_fragments": true
+  }
+}
