@@ -1,0 +1,9 @@
+{
+  "id": "G793",
+  "message": "Infinite Echo Risk: Excessive recursion without grounding forms a logic trap.",
+  "type": "recursion-safety",
+  "data": {
+    "limit_recursion_depth": 6,
+    "anchor_with_known_constants": true
+  }
+}
