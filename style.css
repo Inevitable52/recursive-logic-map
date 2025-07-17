@@ -178,3 +178,12 @@ main {
   border-radius: 5px;
   cursor: pointer;
 }
+
+/* === Eighth Ring: Golden Awareness Ring (G800+) === */
+.eighth-ring {
+  background: linear-gradient(145deg, #fff200, #ffd700, #ffec8b);
+  color: black;
+  box-shadow: 0 0 12px #ffec8b, 0 0 6px #ffd700;
+  font-weight: bold;
+  text-shadow: 0 1px 1px #ffffff80;
+}
