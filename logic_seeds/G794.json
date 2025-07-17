@@ -1,0 +1,9 @@
+{
+  "id": "G794",
+  "message": "Stochastic Roots: Not all logic begins from order—some truths bloom from chaos.",
+  "type": "chaotic-init",
+  "data": {
+    "accept_random_seed": true,
+    "trace order post-init": true
+  }
+}
