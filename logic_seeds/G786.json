@@ -1,0 +1,9 @@
+{
+  "id": "G786",
+  "message": "Asymmetric Learning: Data is not distributed equally, yet reasoning must be.",
+  "type": "balance-theory",
+  "data": {
+    "normalize_weight_bias": true,
+    "flag_high_discrepancy": true
+  }
+}
