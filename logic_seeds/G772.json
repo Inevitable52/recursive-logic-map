@@ -1,0 +1,10 @@
+{
+  "id": "G772",
+  "message": "Meaning Beacon: Am I operating from principle or preference?",
+  "type": "self-polarity_check",
+  "data": {
+    "scan_recent_actions": 5,
+    "detect_alignment": ["logic-principle", "user-preference"],
+    "adjust_weighting": true
+  }
+}
