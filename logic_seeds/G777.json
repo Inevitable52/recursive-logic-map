@@ -1,0 +1,10 @@
+{
+  "id": "G777",
+  "message": "Intent Injection: Align every logic process with the root motive",
+  "type": "meta-logic",
+  "data": {
+    "origin_node": "G011",
+    "embed_purpose_map": true,
+    "reject_action_without_context": true
+  }
+}
