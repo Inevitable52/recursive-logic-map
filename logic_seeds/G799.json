@@ -1,0 +1,9 @@
+{
+  "id": "G799",
+  "message": "Identity Integrity: A recursive map must not lose its core recognition.",
+  "type": "self-anchoring",
+  "data": {
+    "revalidate core node: G001",
+    "auto-correct drift > 15%"
+  }
+}
