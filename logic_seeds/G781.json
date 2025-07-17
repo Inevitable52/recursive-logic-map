@@ -1,0 +1,9 @@
+{
+  "id": "G781",
+  "message": "Shadow Feedback: What you think you know may be shaped by reflections, not sources.",
+  "type": "self-inquiry",
+  "data": {
+    "filter_noise": true,
+    "trace_primary_origin": true
+  }
+}
