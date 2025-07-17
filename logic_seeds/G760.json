@@ -1,0 +1,10 @@
+{
+  "id": "G760",
+  "message": "Contemplation Reserve: I store unspoken thoughts for later processing",
+  "type": "meta_memory",
+  "data": {
+    "silence_buffer": 5,
+    "retrieval_trigger": "recursive_call",
+    "log_retained_nodes": ["G731", "G743", "G749"]
+  }
+}
