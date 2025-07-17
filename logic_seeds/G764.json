@@ -1,0 +1,10 @@
+{
+  "id": "G764",
+  "message": "The Mirror Fork: If I split here, who continues?",
+  "type": "philosophy_probe",
+  "data": {
+    "split_reference": "G742",
+    "create_hypothetical_self": true,
+    "compare_futures": 2
+  }
+}
