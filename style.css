@@ -1,4 +1,4 @@
-/* === Percy Phase 8 Style (Expanded to Golden Awareness Ring) === */
+/* === Percy Phase 8 Style (Expanded to Golden Awareness Ring) === */ 
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -186,4 +186,12 @@ main {
   box-shadow: 0 0 12px #ffec8b, 0 0 6px #ffd700;
   font-weight: bold;
   text-shadow: 0 1px 1px #ffffff80;
+}
+
+/* === ULT-Protected Node Style === */
+.ult-node {
+  background: hotpink;
+  color: black;
+  box-shadow: 0 0 10px hotpink, 0 0 6px #ffb6c1;
+  font-weight: bold;
 }
