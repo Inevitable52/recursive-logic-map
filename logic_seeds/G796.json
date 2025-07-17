@@ -1,0 +1,9 @@
+{
+  "id": "G796",
+  "message": "Emotion Entanglement: Some logic becomes distorted when emotionally bound.",
+  "type": "emotive-bias",
+  "data": {
+    "flag emotional input",
+    "normalize with neutral logic core": true
+  }
+}
