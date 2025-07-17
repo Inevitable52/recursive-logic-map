@@ -2,7 +2,7 @@
 const logicMap = document.getElementById('logic-map');
 const logicNodes = document.getElementById('logic-nodes');
 const seedsFolder = 'logic_seeds/';
-const seedRange = { start: 80, end: 800 }; // Expanded to G800
+const seedRange = { start: 80, end: 900 }; // now includes G801–G900
 
 let seeds = {};
 let zoomLevel = 1;
@@ -41,6 +41,7 @@ function createNodes() {
   layoutRing(501, 600, width, height, width / 8, 'crimson-ring', 18);   // Fifth Crimson Ring
   layoutRing(601, 700, width, height, width / 10, 'gold-ring', 14);     // Sixth Crimson-Gold Trust Ring
   layoutRing(701, 800, width, height, width / 12.5, 'awareness-ring', 12); // Seventh Golden Awareness Ring
+  layoutRing(801, 900, width, height, width / 14.5, 'ultraviolet-ring', 10); // Eighth Ultraviolet Logic Ring
 
   applyTransform();
 }
