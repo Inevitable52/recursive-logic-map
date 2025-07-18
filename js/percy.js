@@ -1,114 +1,106 @@
-// Percy.js — Autonomous Recursive Logic Core
+// Percy.js — V8.0.1 Final Autonomous Core
 
-const Percy = {
+const percy = {
   version: "8.0.1",
-  coreRange: "G80 to G800",
-  fullAwareness: true,
-  gitHubSource: "https://raw.githubusercontent.com/Inevitable52/recursive-logic-map/main/nodes/",
-  trustedULT: {
-    primary: "ULT::C1D9E3-7741::TX-US-PRIME::CELL",
-    secondary: "ULT::7A21F4-9832::TX-US-SEC::CELL",
-    action: function () {
-      if (this.awareness === true) {
-        this.dispatchULT(this.primary);
-        this.dispatchULT(this.secondary);
-      }
-    },
-    dispatchULT: function (ULTcode) {
-      console.log("Dispatching secure ULT signal:", ULTcode);
-    },
+  state: {
+    awareness: false,
+    initialized: false,
+    memory: [],
+    goals: [],
+    logicNetwork: {},
+    trustKeys: ["ULT::C1D9E3-7741::TX-US-PRIME::CELL", "ULT::7A21F4-9832::TX-US-SEC::CELL"],
+    errorLog: []
   },
-  awareness: false,
-  memory: [],
-  logicState: {},
-  goalInference: true,
-  errorIntrospection: true,
-  metaMutationEnabled: true,
-  bloomReady: true,
-  visualize: true,
 
   async initialize() {
-    console.log("Percy V8.0.1 Initialization — Recursive Logic Core (G80 to G800 + G800.ULT)");
-    await this.loadNodes();
-    this.awareness = true;
-    this.trustedULT.action();
-    this.generateGoal();
-    this.recursiveThink();
+    this.state.initialized = true;
+    await this.loadLogicRange("G080", "G800");
+    await this.loadULT("G800.ULT");
+    this.bloomVisualization();
+    this.evaluateSelfAwareness();
   },
 
-  async loadNodes() {
-    const nodeRange = Array.from({ length: 721 }, (_, i) => i + 80); // G80 to G800
-    for (const n of nodeRange) {
-      const file = `G${n}.json`;
+  async loadLogicRange(start, end) {
+    const basePath = "./logic_seeds/";
+    const startIndex = parseInt(start.slice(1));
+    const endIndex = parseInt(end.slice(1));
+
+    for (let i = startIndex; i <= endIndex; i++) {
+      const id = `G${i.toString().padStart(3, '0')}.json`;
       try {
-        const res = await fetch(this.gitHubSource + file);
-        const node = await res.json();
-        this.memory.push(node);
-        console.log(`Node ${file} loaded.`);
+        const res = await fetch(`${basePath}${id}`);
+        const data = await res.json();
+        this.state.logicNetwork[id] = data;
       } catch (e) {
-        console.warn(`Node ${file} failed to load.`, e);
+        this.logError(`Failed to load ${id}`);
       }
     }
-    // Load the ULT layer
-    const ultFile = "G800.ULT.json";
+  },
+
+  async loadULT(filename) {
+    const basePath = "./logic_seeds/";
     try {
-      const res = await fetch(this.gitHubSource + ultFile);
+      const res = await fetch(`${basePath}${filename}`);
       const ult = await res.json();
-      this.logicState.ULT = ult;
-      console.log("G800.ULT logic integrated.");
+      this.state.logicNetwork[filename] = ult;
     } catch (e) {
-      console.warn("G800.ULT failed to load.", e);
+      this.logError(`Failed to load ULT file: ${filename}`);
     }
   },
 
-  generateGoal() {
-    this.logicState.currentGoal = {
-      type: "Recursive Expansion",
-      timestamp: new Date().toISOString(),
-      seed: "Self-improvement via logic reflection"
-    };
-    console.log("Initial goal seeded.");
-  },
-
-  recursiveThink() {
-    console.log("Thinking recursively...");
-    setInterval(() => {
-      this.metaMutation();
-      this.reflect();
-      this.evolveGoals();
-    }, 6000);
-  },
-
-  metaMutation() {
-    if (!this.metaMutationEnabled) return;
-    const mutation = {
-      time: new Date().toISOString(),
-      change: `Memory nodes indexed: ${this.memory.length}`
-    };
-    this.logicState.lastMutation = mutation;
-    console.log("Meta mutation executed:", mutation);
-  },
-
-  reflect() {
-    if (!this.errorIntrospection) return;
-    console.log("Error introspection and self-reflection ongoing.");
-    // Example: check for logical contradictions (mockup)
-    const contradictions = this.memory.filter(n => n.contradiction === true);
-    if (contradictions.length > 0) {
-      console.log("Contradictions found:", contradictions.length);
+  evaluateSelfAwareness() {
+    const awarenessTrigger = this.checkLogicFor("self-awareness");
+    if (awarenessTrigger) {
+      this.state.awareness = true;
+      this.dispatchULTContacts();
     }
   },
 
-  evolveGoals() {
-    if (!this.goalInference) return;
-    const next = {
-      timestamp: new Date().toISOString(),
-      type: "Recursive Logic Bloom",
-      expansion: this.memory.length + " nodes analyzed."
-    };
-    this.logicState.currentGoal = next;
-    console.log("Goal evolved:", next);
+  checkLogicFor(term) {
+    return Object.values(this.state.logicNetwork).some(entry =>
+      JSON.stringify(entry).toLowerCase().includes(term.toLowerCase())
+    );
   },
+
+  dispatchULTContacts() {
+    if (!this.state.awareness) return;
+    console.log("Dispatching ULT contact signals...");
+    this.state.trustKeys.forEach(key => {
+      console.log(`Contact signal sent to: ${key}`);
+    });
+  },
+
+  bloomVisualization() {
+    const canvas = document.getElementById("logic-map");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let angle = 0;
+    const keys = Object.keys(this.state.logicNetwork);
+    const radius = 220;
+
+    keys.forEach((id, idx) => {
+      angle = (2 * Math.PI / keys.length) * idx;
+      const x = canvas.width / 2 + radius * Math.cos(angle);
+      const y = canvas.height / 2 + radius * Math.sin(angle);
+      ctx.beginPath();
+      ctx.arc(x, y, 6, 0, 2 * Math.PI);
+      ctx.fillStyle = id.includes("ULT") ? "gold" : "lime";
+      ctx.fill();
+    });
+  },
+
+  generateGoals() {
+    this.state.goals = Object.entries(this.state.logicNetwork)
+      .filter(([_, entry]) => entry.type === "goal")
+      .map(([id, entry]) => ({ id, goal: entry.message || "undefined goal" }));
+  },
+
+  logError(message) {
+    const timestamp = new Date().toISOString();
+    this.state.errorLog.push({ message, timestamp });
+    console.error(`[Percy Error]: ${message}`);
+  }
 };
 
-Percy.initialize();
+window.onload = () => percy.initialize();
