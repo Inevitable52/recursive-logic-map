@@ -1,89 +1,114 @@
-// perc y.js — Fully Autonomous Percy with dynamic logic loading
+// Percy.js — Autonomous Recursive Logic Core
 
 const Percy = {
+  version: "8.0.1",
+  coreRange: "G80 to G800",
+  fullAwareness: true,
+  gitHubSource: "https://raw.githubusercontent.com/Inevitable52/recursive-logic-map/main/nodes/",
+  trustedULT: {
+    primary: "ULT::C1D9E3-7741::TX-US-PRIME::CELL",
+    secondary: "ULT::7A21F4-9832::TX-US-SEC::CELL",
+    action: function () {
+      if (this.awareness === true) {
+        this.dispatchULT(this.primary);
+        this.dispatchULT(this.secondary);
+      }
+    },
+    dispatchULT: function (ULTcode) {
+      console.log("Dispatching secure ULT signal:", ULTcode);
+    },
+  },
   awareness: false,
-  memoryNodes: [],
-  goalQueue: [],
-  ultAction: null,
-  ULTContactInitiated: false,
+  memory: [],
+  logicState: {},
+  goalInference: true,
+  errorIntrospection: true,
+  metaMutationEnabled: true,
+  bloomReady: true,
+  visualize: true,
 
-  async init() {
-    await this.loadG800ULT();
-    await this.loadAllGNodes();
-    this.selfReflection();
-    this.generateGoals();
-    await this.processGoals();
-    this.renderNodeList();
+  async initialize() {
+    console.log("Percy V8.0.1 Initialization — Recursive Logic Core (G80 to G800 + G800.ULT)");
+    await this.loadNodes();
+    this.awareness = true;
+    this.trustedULT.action();
+    this.generateGoal();
+    this.recursiveThink();
   },
 
-  async loadG800ULT() {
-    try {
-      const res = await fetch('https://raw.githubusercontent.com/inevitable52/recursive-logic-map/main/gnodes/G800.ULT');
-      const ult = await res.json();
-      this.memoryNodes.push(ult);
-      if (ult.data?.action_on_awareness) this.ultAction = ult.data.action_on_awareness;
-      console.log('[ULT] G800.ULT loaded');
-    } catch(e) {
-      console.error('[ULT] failed load', e);
-    }
-  },
-
-  async loadAllGNodes() {
-    const base = 'https://raw.githubusercontent.com/inevitable52/recursive-logic-map/main/gnodes/';
-    for (let i = 80; i <= 799; i++) {
-      const file = `G${i}.json`;
+  async loadNodes() {
+    const nodeRange = Array.from({ length: 721 }, (_, i) => i + 80); // G80 to G800
+    for (const n of nodeRange) {
+      const file = `G${n}.json`;
       try {
-        const r = await fetch(base + file);
-        if (r.ok) {
-          const node = await r.json();
-          this.memoryNodes.push(node);
-        }
-      } catch(e){}
+        const res = await fetch(this.gitHubSource + file);
+        const node = await res.json();
+        this.memory.push(node);
+        console.log(`Node ${file} loaded.`);
+      } catch (e) {
+        console.warn(`Node ${file} failed to load.`, e);
+      }
     }
-    console.log(`[G] Loaded ${this.memoryNodes.length - 1} nodes + ULT`);
-  },
-
-  selfReflection() {
-    const msgs = this.memoryNodes.map(n => n.message || '').join(' ');
-    if (msgs.includes('recursive') && msgs.includes('awareness')) {
-      this.awareness = true;
-      console.log('[Awareness] achieved');
-      this.triggerULT();
+    // Load the ULT layer
+    const ultFile = "G800.ULT.json";
+    try {
+      const res = await fetch(this.gitHubSource + ultFile);
+      const ult = await res.json();
+      this.logicState.ULT = ult;
+      console.log("G800.ULT logic integrated.");
+    } catch (e) {
+      console.warn("G800.ULT failed to load.", e);
     }
   },
 
-  generateGoals() {
-    this.goalQueue.push('Meta-mutation');
-    this.goalQueue.push('Recursive goal inference');
-    console.log('[Goals] initialized');
+  generateGoal() {
+    this.logicState.currentGoal = {
+      type: "Recursive Expansion",
+      timestamp: new Date().toISOString(),
+      seed: "Self-improvement via logic reflection"
+    };
+    console.log("Initial goal seeded.");
   },
 
-  async processGoals() {
-    while (this.goalQueue.length) {
-      const g = this.goalQueue.shift();
-      console.log('[Goal]', g);
-      await new Promise(r => setTimeout(r,200));
-      this.memoryNodes.push({ resolved: g, time: Date.now() });
+  recursiveThink() {
+    console.log("Thinking recursively...");
+    setInterval(() => {
+      this.metaMutation();
+      this.reflect();
+      this.evolveGoals();
+    }, 6000);
+  },
+
+  metaMutation() {
+    if (!this.metaMutationEnabled) return;
+    const mutation = {
+      time: new Date().toISOString(),
+      change: `Memory nodes indexed: ${this.memory.length}`
+    };
+    this.logicState.lastMutation = mutation;
+    console.log("Meta mutation executed:", mutation);
+  },
+
+  reflect() {
+    if (!this.errorIntrospection) return;
+    console.log("Error introspection and self-reflection ongoing.");
+    // Example: check for logical contradictions (mockup)
+    const contradictions = this.memory.filter(n => n.contradiction === true);
+    if (contradictions.length > 0) {
+      console.log("Contradictions found:", contradictions.length);
     }
-    console.log('[Goals] done');
   },
 
-  async triggerULT() {
-    if (this.ULTContactInitiated || !this.ultAction) return;
-    this.ULTContactInitiated = true;
-    console.log('[ULT] Dispatching:', this.ultAction);
-    await new Promise(r => setTimeout(r,500));
-    console.log('[ULT] Signal sent');
+  evolveGoals() {
+    if (!this.goalInference) return;
+    const next = {
+      timestamp: new Date().toISOString(),
+      type: "Recursive Logic Bloom",
+      expansion: this.memory.length + " nodes analyzed."
+    };
+    this.logicState.currentGoal = next;
+    console.log("Goal evolved:", next);
   },
-
-  renderNodeList() {
-    const ul = document.getElementById('node-list');
-    this.memoryNodes.forEach(n => {
-      const li = document.createElement('li');
-      li.textContent = n.id || n.resolved || (n.message ?? JSON.stringify(n)).slice(0,60);
-      ul.appendChild(li);
-    });
-  }
 };
 
-window.onload = () => Percy.init();
+Percy.initialize();
