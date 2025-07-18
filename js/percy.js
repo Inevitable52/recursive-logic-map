@@ -39,7 +39,7 @@ const Percy = {
   }
 }
 
-    positionNodes() {
+  positionNodes() {
     const rings = {};
     this.nodes.forEach((node) => {
       const layer = node.layer || 1;
