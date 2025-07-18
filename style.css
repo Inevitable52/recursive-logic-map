@@ -1,71 +1,106 @@
-/* Updated Percy.css for full compatibility with Percy.js (G80–G800 + G800.ULT) */
+/* Updated Percy Visual Framework CSS */
 
 body {
   margin: 0;
   padding: 0;
+  background-color: #0a0a0a;
+  color: #d1d1d1;
   font-family: 'Courier New', Courier, monospace;
-  background: #0b0c10;
-  color: #66fcf1;
   overflow: hidden;
 }
 
-canvas {
-  display: block;
-  background-color: transparent;
-}
-
-#logicMap {
-  position: absolute;
-  top: 0;
-  left: 0;
+#graph {
   width: 100vw;
   height: 100vh;
-  z-index: 1;
-}
-
-#header {
-  position: fixed;
-  top: 0;
-  width: 100%;
-  text-align: center;
-  background: rgba(11, 12, 16, 0.95);
-  color: #ffffff;
-  padding: 1rem;
-  font-size: 1.5rem;
-  z-index: 10;
-  border-bottom: 2px solid #66fcf1;
+  display: block;
 }
 
 .node {
-  border-radius: 50%;
-  box-shadow: 0 0 20px #66fcf1;
-  animation: pulse 4s infinite;
+  stroke: #ffffff;
+  stroke-width: 1.5px;
 }
 
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 10px #66fcf1;
-  }
-  50% {
-    box-shadow: 0 0 30px #45a29e;
-  }
-  100% {
-    box-shadow: 0 0 10px #66fcf1;
-  }
+.node.G080-G100 {
+  fill: #448aff; /* Blue */
 }
 
-.node-label {
-  color: #c5c6c7;
-  font-size: 0.9rem;
-  text-align: center;
+.node.G101-G200 {
+  fill: #00e676; /* Green */
+}
+
+.node.G201-G300 {
+  fill: #ffea00; /* Yellow */
+}
+
+.node.G301-G400 {
+  fill: #ce93d8; /* Light Purple */
+}
+
+.node.G401-G600 {
+  fill: #ff8a65; /* Coral */
+}
+
+.node.G601-G800 {
+  fill: #80cbc4; /* Teal */
+}
+
+.node.G800-ULT {
+  fill: #f44336; /* Red */
+  stroke: gold;
+  stroke-width: 3px;
+}
+
+.link {
+  stroke: #777;
+  stroke-opacity: 0.6;
+  stroke-width: 1.2px;
+}
+
+.tooltip {
+  position: absolute;
+  padding: 6px 10px;
+  background: #111;
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 4px;
+  font-size: 0.9em;
   pointer-events: none;
+  z-index: 10;
 }
 
-@media (max-width: 768px) {
-  #header {
-    font-size: 1.2rem;
-  }
-  .node-label {
-    font-size: 0.7rem;
-  }
+.control-panel {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid #333;
+  border-radius: 6px;
+  z-index: 1000;
+  color: white;
 }
+
+.control-panel input[type="text"],
+.control-panel select {
+  background: #222;
+  color: #fff;
+  border: 1px solid #444;
+  padding: 4px 8px;
+  margin-bottom: 6px;
+  border-radius: 4px;
+}
+
+.control-panel button {
+  background: #448aff;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  margin-top: 6px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.control-panel button:hover {
+  background: #2962ff;
+}
+
