@@ -17,7 +17,7 @@ header {
   margin: 1rem auto;
   background-color: #1a1a2a;
   width: 90%;
-  height: 400px;
+  height: 500px; /* Increased for G800 */
   border: 2px solid #444466;
 }
 
@@ -54,7 +54,7 @@ button:hover {
   background: #3366ff;
 }
 
-.console {
+#percy-console {
   background: #111;
   padding: 1rem;
   max-height: 200px;
