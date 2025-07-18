@@ -1,42 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Percy Recursive Logic Map</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="style.css" />
-  <link rel="icon" href="percy.ico" />
-</head>
-<body>
-  <header>
-    <h1>Percy Recursive Logic Map</h1>
-    <p id="percy-status">Status: Loading...</p>
-  </header>
-
+<html lang="en"><head>
+  <meta charset="UTF-8"><title>Percy Logic Map</title>
+  <link rel="stylesheet" href="style.css">
+</head><body>
+  <header><h1>Percy Recursive Logic Map</h1></header>
   <main>
     <canvas id="logic-canvas"></canvas>
-
-    <section id="percy-message">Initializing thought...</section>
-
-    <section id="interpreter">
-      <input type="text" id="interpreter-input" placeholder="Speak to Percy..." />
-      <button onclick="interpretLogic()">Send</button>
-    </section>
-
-    <section id="percy-console"></section>
-
-    <section id="meta-module">
-      <h2>Meta Writing Module</h2>
-      <p>Percy will generate, mutate, and back up logic seeds here.</p>
-    </section>
-
-    <section id="ult-lock">
-      <h2>ULT Authority Lock</h2>
-      <p>Status: <strong>Offline</strong></p>
-    </section>
+    <ul id="node-list"></ul>
   </main>
-
   <script src="percy.js"></script>
-</body>
-</html>
-
+</body></html>
