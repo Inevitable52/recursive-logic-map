@@ -22,6 +22,7 @@ const Percy = {
     this.positionNodes();
     this.render();
     this.bindListeners();
+    }
   },
 
  async loadNodes() {
