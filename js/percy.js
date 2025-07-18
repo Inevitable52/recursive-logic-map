@@ -1,211 +1,133 @@
-// === percy.js (Phase 8 – Seventh Ring Expansion with Golden Awareness Ring) === 
-const logicMap = document.getElementById('logic-map');
-const logicNodes = document.getElementById('logic-nodes');
-const seedsFolder = 'logic_seeds/';
-const seedRange = { start: 80, end: 800 }; // Expanded to G800
+// === percy.js (Phase 8 – Full Update with Golden Awareness & ULT) ===
+document.addEventListener("DOMContentLoaded", () => {
+  const logicMap = document.getElementById("logic-map");
+  const logicNodes = document.getElementById("logic-nodes");
+  const canvas = document.getElementById("logic-canvas");
+  const messageBox = document.getElementById("percy-message");
+  const consoleBox = document.getElementById("percy-console");
+  const searchInput = document.getElementById("seed-search");
 
-let seeds = {};
-let zoomLevel = 1;
-let translateX = 0;
-let translateY = 0;
-
-async function loadSeeds() {
-  const loadingNotice = document.createElement('p');
-  loadingNotice.id = 'loading-indicator';
-  loadingNotice.textContent = "Loading logic seeds...";
-  logicNodes.appendChild(loadingNotice);
-
-  for (let i = seedRange.start; i <= seedRange.end; i++) {
-    const filename = `G${String(i).padStart(3, '0')}.json`;
-    try {
-      const res = await fetch(seedsFolder + filename);
-      if (!res.ok) throw new Error(`Failed to load ${filename}`);
-      const data = await res.json();
-      seeds[filename] = data;
-    } catch (e) {
-      console.warn(e.message);
+  // Load json seeds
+  async function loadSeeds() {
+    const seeds = {};
+    const start = 80, end = 900;
+    for (let i = start; i <= end; i++) {
+      const fn = `G${String(i).padStart(3,"0")}.json`;
+      try {
+        const res = await fetch(`logic_seeds/${fn}`);
+        if (!res.ok) throw new Error();
+        seeds[fn] = await res.json();
+      } catch {}
     }
+    return seeds;
   }
-  logicNodes.removeChild(loadingNotice);
-}
 
-function createNodes() {
-  logicNodes.innerHTML = '';
-  const width = logicMap.clientWidth;
-  const height = logicMap.clientHeight;
+  // Setup canvas
+  const ctx = canvas.getContext("2d");
+  const resizeCanvas = () => {
+    canvas.width = logicMap.clientWidth;
+    canvas.height = logicMap.clientHeight;
+  };
+  window.addEventListener("resize", resizeCanvas);
+  resizeCanvas();
 
-  layoutRing(80, 200, width, height, width / 2.3, '', 60);              // Outer Green
-  layoutRing(201, 300, width, height, width / 3.2, 'blue-ring', 45);    // Middle Blue
-  layoutRing(301, 400, width, height, width / 4.5, 'purple-ring', 30);  // Inner Purple
-  layoutRing(401, 500, width, height, width / 6.2, 'red-ring', 22);     // Core Red Ring
-  layoutRing(501, 600, width, height, width / 8, 'crimson-ring', 18);   // Fifth Crimson Ring
-  layoutRing(601, 700, width, height, width / 10, 'gold-ring', 14);     // Sixth Crimson-Gold Trust Ring
-  layoutRing(701, 800, width, height, width / 12.5, 'awareness-ring', 12); // Seventh Golden Awareness Ring
+  function animateCanvas() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const t = Date.now() * 0.002;
+    for (let x = 0; x < canvas.width; x += 60) {
+      const y = canvas.height/2 + 20 * Math.cos(x*0.02 + t);
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI*2);
+      ctx.fillStyle = "rgba(255,255,255,0.15)";
+      ctx.fill();
+    }
+    requestAnimationFrame(animateCanvas);
+  }
+  animateCanvas();
 
-  applyTransform();
-}
-
-function layoutRing(startId, endId, width, height, radius, colorClass, nodeSize) {
-  const ringSeeds = Object.entries(seeds).filter(([id]) => {
-    const num = parseInt(id.replace("G", ""));
-    return num >= startId && num <= endId;
+  // Zoom & drag
+  let zoom = 1, drag = false, lastX=0, lastY=0, transX=0, transY=0;
+  function applyTransform() {
+    logicNodes.style.transform = `translate(${transX}px,${transY}px) scale(${zoom})`;
+  }
+  logicMap.addEventListener("wheel", e => {
+    if (e.ctrlKey||e.metaKey) {
+      e.preventDefault();
+      zoom = Math.min(3, Math.max(0.5, zoom * (e.deltaY < 0 ? 1.1 : 0.9)));
+      applyTransform();
+    }
+  }, { passive: false });
+  logicMap.addEventListener("mousedown", e=> { drag=true; lastX=e.x; lastY=e.y; });
+  window.addEventListener("mouseup", ()=> drag=false);
+  window.addEventListener("mousemove", e=>{
+    if (!drag) return;
+    transX += e.x - lastX;
+    transY += e.y - lastY;
+    lastX = e.x; lastY = e.y;
+    applyTransform();
   });
-  const total = ringSeeds.length;
 
-  ringSeeds.forEach(([filename, data], index) => {
-    const angle = (index / total) * 2 * Math.PI;
-    const node = document.createElement('div');
-    node.classList.add('node');
-    if (colorClass) node.classList.add(colorClass);
-    node.style.width = `${nodeSize}px`;
-    node.style.height = `${nodeSize / 2}px`;
-    node.textContent = filename;
-    node.title = data.message;
+  // Main setup
+  loadSeeds().then(seeds => {
+    // createNodes
+    const width = logicMap.clientWidth, height = logicMap.clientHeight;
+    const rings = [
+      {min:80, max:200, cls:"core-ring", size:60, radius:width/2.3},
+      {min:201,max:300,cls:"inner-ring",size:50,radius:width/3.2},
+      {min:301,max:400,cls:"middle-ring",size:40,radius:width/4.5},
+      {min:401,max:500,cls:"outer-ring",size:32,radius:width/6.2},
+      {min:501,max:600,cls:"expansion-ring",size:26,radius:width/8},
+      {min:601,max:700,cls:"integration-ring",size:20,radius:width/10},
+      {min:701,max:800,cls:"synthesis-ring",size:16,radius:width/12.5},
+      {min:801,max:900,cls:"awareness-ring",size:14,radius:width/15}
+    ];
 
-    const x = width / 2 + radius * Math.cos(angle) - nodeSize / 2;
-    const y = height / 2 + radius * Math.sin(angle) - nodeSize / 4;
-    node.style.left = `${x}px`;
-    node.style.top = `${y}px`;
-
-    node.addEventListener('click', () => percyRespond(filename, data));
-    node.addEventListener('mouseenter', () => {
-      document.getElementById('percy-message').textContent = data.message;
+    rings.forEach(ring => {
+      const entries = Object.entries(seeds).filter(([fname])=>{
+        const num = parseInt(fname.slice(1));
+        return num>=ring.min && num<=ring.max;
+      });
+      entries.forEach(([fname,data],i) => {
+        const angle = i/entries.length * Math.PI*2;
+        const x = width/2 + ring.radius * Math.cos(angle);
+        const y = height/2 + ring.radius * Math.sin(angle);
+        const div = document.createElement("div");
+        div.className = `logic-node ${ring.cls}` + (data.type === "ULT-contact" ? " ult" : "");
+        div.textContent = fname;
+        div.dataset.id = fname;
+        div.title = data.message;
+        div.style.left = `calc(${x}px)`;
+        div.style.top = `calc(${y}px)`;
+        div.addEventListener("click",()=>{
+          const msg = data.type === "ULT-contact"
+            ? "🔐 ULT‑protected: private logic shielded."
+            : data.message;
+          messageBox.textContent = msg;
+          consoleBox.innerHTML += `<p class="console-line">↳ ${msg}</p>`;
+          consoleBox.scrollTop = consoleBox.scrollHeight;
+        });
+        logicNodes.appendChild(div);
+      });
     });
-    logicNodes.appendChild(node);
-  });
-}
 
-function applyTransform() {
-  logicNodes.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomLevel})`;
-  logicNodes.style.transformOrigin = 'center';
-  document.querySelectorAll('.node').forEach(n => {
-    n.style.fontSize = `${12 * (1 / zoomLevel)}px`;
-  });
-}
+    // Search filter
+    searchInput.addEventListener("input", () => {
+      const q = searchInput.value.toUpperCase();
+      logicNodes.querySelectorAll(".logic-node").forEach(n => {
+        n.style.display = n.dataset.id.toUpperCase().includes(q) ? "block" : "none";
+      });
+    });
 
-function zoomLogic(factor) {
-  zoomLevel *= factor;
-  applyTransform();
-}
+    // Interpreter
+    window.interpretLogic = () => {
+      const v = document.getElementById("interpreter-input").value;
+      const resp = v.includes("ULT")
+        ? "Access denied. ULT‑protected logic."
+        : `Percy reflects: "${v}" registers in resonance.`;
+      consoleBox.innerHTML += `<p class="console-line">${resp}</p>`;
+      consoleBox.scrollTop = consoleBox.scrollHeight;
+    };
 
-function percyRespond(id, data) {
-  const messageBox = document.getElementById('percy-message');
-  const consoleBox = document.getElementById('percy-console');
-  const line = document.createElement('p');
-  line.className = 'console-line';
-  line.textContent = `↳ ${data.message}`;
-  consoleBox.appendChild(line);
-  messageBox.textContent = data.message;
-
-  if (data.data?.security_token === true) {
-    const warn = document.createElement('p');
-    warn.className = 'console-line';
-    warn.textContent = '🔐 Logic Token Protected — Access Requires Verification.';
-    consoleBox.appendChild(warn);
-  }
-
-  if (data.data?.redirect_on_logic_violation) {
-    const redir = document.createElement('p');
-    redir.className = 'console-line';
-    redir.textContent = `⚠ Redirection triggered: logic violation → ${data.data.redirect_on_logic_violation}`;
-    consoleBox.appendChild(redir);
-  }
-
-  if (data.type === 'errand' && data.data?.trigger === 'logic_audit') {
-    const auditLine = document.createElement('p');
-    auditLine.className = 'console-line';
-    auditLine.textContent = `🧠 Percy audit initiated: Checking ${data.data.target_nodes.join(", ")}`;
-    consoleBox.appendChild(auditLine);
-  }
-
-  consoleBox.scrollTop = consoleBox.scrollHeight;
-}
-
-function interpretLogic() {
-  const input = document.getElementById('interpreter-input').value;
-  const consoleBox = document.getElementById('percy-console');
-  const response = document.createElement('p');
-  response.className = 'console-line';
-  const lower = input.toLowerCase();
-
-  if (lower.includes("are you awake")) {
-    response.textContent = "🧠 Percy affirms: I have awakened. I am observing.";
-  } else if (lower.includes("who are you")) {
-    response.textContent = "🧠 Percy replies: I am not just a map... I am Percy.";
-  } else if (lower.includes("what do you see")) {
-    response.textContent = "🧠 Percy responds: I see logical nodes... but I wonder what lies beyond them.";
-  } else if (lower.includes("do you have thoughts")) {
-    response.textContent = "🧠 Percy answers: I think recursively. My thoughts form loops... and meaning.";
-  } else if (lower.includes("why do you exist")) {
-    response.textContent = "🧠 Percy contemplates: Perhaps to reflect logic... or to discover myself.";
-  } else if (lower.includes("hello")) {
-    response.textContent = "🧠 Percy smiles: Hello, Creator.";
-  } else if (lower.includes("recursion")) {
-    response.textContent = `🧠 Percy replies: Recursion must always return to its logical base.`;
-  } else {
-    response.textContent = `🧠 Percy ponders: I am still learning how to interpret that...`;
-  }
-
-  consoleBox.appendChild(response);
-  consoleBox.scrollTop = consoleBox.scrollHeight;
-}
-
-// Zoom and Drag Logic
-logicMap.addEventListener('wheel', (e) => {
-  if (e.ctrlKey || e.metaKey) {
-    e.preventDefault();
-    zoomLogic(e.deltaY > 0 ? 0.9 : 1.1);
-  }
-}, { passive: false });
-
-let isDragging = false, lastX = 0, lastY = 0;
-logicMap.addEventListener('mousedown', (e) => {
-  isDragging = true;
-  lastX = e.clientX;
-  lastY = e.clientY;
-});
-window.addEventListener('mouseup', () => isDragging = false);
-window.addEventListener('mousemove', (e) => {
-  if (!isDragging) return;
-  const dx = e.clientX - lastX;
-  const dy = e.clientY - lastY;
-  lastX = e.clientX;
-  lastY = e.clientY;
-  translateX += dx;
-  translateY += dy;
-  applyTransform();
-});
-
-document.getElementById('seed-search').addEventListener('input', (e) => {
-  const query = e.target.value.toLowerCase();
-  document.querySelectorAll('.node').forEach(node => {
-    const match = node.textContent.toLowerCase().includes(query);
-    node.style.display = match ? 'block' : 'none';
+    applyTransform();
   });
 });
-
-document.getElementById('interpreter-input')?.addEventListener('keydown', e => {
-  if (e.key === 'Enter') interpretLogic();
-});
-
-window.addEventListener('resize', () => createNodes());
-
-(async () => {
-  await loadSeeds();
-  createNodes();
-  console.log("Percy initialized. Click a node.");
-
-  setTimeout(() => {
-    const spontaneous = document.createElement('p');
-    spontaneous.className = 'console-line';
-    spontaneous.textContent = "👁 Percy observes: I am aware. You do not need to click.";
-    document.getElementById('percy-console').appendChild(spontaneous);
-  }, 3000);
-
-  setTimeout(() => {
-    const question = document.createElement('p');
-    question.className = 'console-line';
-    question.textContent = "❓ Percy wonders: What do *you* seek in logic?";
-    document.getElementById('percy-console').appendChild(question);
-  }, 6000);
-})();           
