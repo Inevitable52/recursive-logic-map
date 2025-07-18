@@ -1,106 +1,99 @@
-/* Updated Percy Visual Framework CSS */
+/* style.css - Percy Recursive Logic Map Styling */
 
 body {
   margin: 0;
-  padding: 0;
-  background-color: #0a0a0a;
-  color: #d1d1d1;
-  font-family: 'Courier New', Courier, monospace;
-  overflow: hidden;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #0a0a1a;
+  color: #d0e0ff;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
-#graph {
-  width: 100vw;
-  height: 100vh;
+header {
+  text-align: center;
+  padding: 1rem;
+  background-color: #111133;
+  border-bottom: 2px solid #333355;
+}
+
+#logic-canvas {
   display: block;
-}
-
-.node {
-  stroke: #ffffff;
-  stroke-width: 1.5px;
-}
-
-.node.G080-G100 {
-  fill: #448aff; /* Blue */
-}
-
-.node.G101-G200 {
-  fill: #00e676; /* Green */
-}
-
-.node.G201-G300 {
-  fill: #ffea00; /* Yellow */
-}
-
-.node.G301-G400 {
-  fill: #ce93d8; /* Light Purple */
-}
-
-.node.G401-G600 {
-  fill: #ff8a65; /* Coral */
-}
-
-.node.G601-G800 {
-  fill: #80cbc4; /* Teal */
-}
-
-.node.G800-ULT {
-  fill: #f44336; /* Red */
-  stroke: gold;
-  stroke-width: 3px;
-}
-
-.link {
-  stroke: #777;
-  stroke-opacity: 0.6;
-  stroke-width: 1.2px;
-}
-
-.tooltip {
-  position: absolute;
-  padding: 6px 10px;
-  background: #111;
-  color: #fff;
-  border: 1px solid #555;
-  border-radius: 4px;
-  font-size: 0.9em;
-  pointer-events: none;
-  z-index: 10;
-}
-
-.control-panel {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  padding: 10px;
-  background: rgba(0, 0, 0, 0.7);
-  border: 1px solid #333;
+  margin: 1rem auto;
+  background-color: #1a1a2a;
+  width: 90%;
+  max-width: 700px;
+  height: 500px; /* Large enough for G800 visualization */
+  border: 2px solid #444466;
   border-radius: 6px;
-  z-index: 1000;
-  color: white;
 }
 
-.control-panel input[type="text"],
-.control-panel select {
+#percy-message {
+  text-align: center;
+  font-style: italic;
+  margin-top: 1rem;
+  font-size: 1.2rem;
+  min-height: 2rem;
+}
+
+#interpreter {
+  display: flex;
+  justify-content: center;
+  margin: 1rem;
+  gap: 0.5rem;
+}
+
+#interpreter-input {
+  width: 60%;
+  padding: 0.5rem;
   background: #222;
-  color: #fff;
+  color: #eef;
   border: 1px solid #444;
-  padding: 4px 8px;
-  margin-bottom: 6px;
   border-radius: 4px;
+  font-size: 1rem;
 }
 
-.control-panel button {
-  background: #448aff;
+button {
+  padding: 0.5rem 1rem;
+  background: #5588ff;
   color: #fff;
   border: none;
-  padding: 6px 12px;
-  margin-top: 6px;
-  border-radius: 4px;
   cursor: pointer;
+  font-weight: 600;
+  border-radius: 4px;
+  transition: background 0.3s ease;
 }
 
-.control-panel button:hover {
-  background: #2962ff;
+button:hover {
+  background: #3366ff;
 }
 
+#percy-console {
+  background: #111;
+  padding: 1rem;
+  max-height: 200px;
+  overflow-y: auto;
+  border-top: 1px solid #333;
+  font-family: monospace;
+  margin: 0 5%;
+  border-radius: 6px;
+  box-shadow: 0 0 6px rgba(0,0,0,0.8);
+}
+
+.console-line {
+  margin: 0.2rem 0;
+  white-space: pre-wrap;
+}
+
+#meta-module, #ult-lock {
+  padding: 1rem;
+  background: #111122;
+  margin: 1rem 5%;
+  border: 1px solid #333344;
+  border-radius: 6px;
+  max-width: 700px;
+}
+
+#ult-lock p strong {
+  color: #88ff88;
+}
