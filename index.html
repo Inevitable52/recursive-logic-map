@@ -2,32 +2,50 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Percy Recursive Logic Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="style.css" />
   <link rel="icon" href="percy.ico" />
 </head>
 <body>
   <header>
     <h1>Percy Recursive Logic Map</h1>
-    <p>Autonomous Expansion Engine — G080 to G800 + G800.ULT</p>
+    <p id="percy-status">Status: Loading...</p>
   </header>
 
   <main>
-    <div id="visualization-container">
-      <canvas id="logic-map-canvas"></canvas>
-    </div>
-    <div id="status-log">
-      <h2>Status Log</h2>
-      <pre id="percy-log-output">Initializing Percy...</pre>
-    </div>
-  </main>
+    <canvas id="logic-canvas" aria-label="Recursive logic map visualization"></canvas>
 
-  <footer>
-    <p>&copy; 2025 Fabian Villarreal — Percy Recursive Autonomy Framework</p>
-  </footer>
+    <section id="percy-message" aria-live="polite" aria-atomic="true">
+      Initializing thought...
+    </section>
+
+    <section id="interpreter" role="form" aria-label="Speak to Percy interpreter">
+      <input
+        type="text"
+        id="interpreter-input"
+        placeholder="Speak to Percy..."
+        aria-label="User input for Percy"
+        autocomplete="off"
+      />
+      <button onclick="interpretLogic()" aria-label="Send message to Percy">Send</button>
+    </section>
+
+    <section id="percy-console" aria-live="polite" aria-atomic="false" role="log" aria-label="Percy console output">
+      <!-- Console output lines appended here -->
+    </section>
+
+    <section id="meta-module" aria-label="Meta Writing Module">
+      <h2>Meta Writing Module</h2>
+      <p>Percy will generate, mutate, and back up logic seeds here as part of recursive logic evolution.</p>
+    </section>
+
+    <section id="ult-lock" aria-label="ULT Authority Lock status">
+      <h2>ULT Authority Lock</h2>
+      <p>Status: <strong>Offline</strong></p>
+    </section>
+  </main>
 
   <script src="percy.js"></script>
 </body>
 </html>
-
