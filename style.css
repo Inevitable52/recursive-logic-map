@@ -195,3 +195,14 @@ main {
   box-shadow: 0 0 10px hotpink, 0 0 6px #ffb6c1;
   font-weight: bold;
 }
+
+#logic-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* So it doesn't block node clicks */
+}
+
