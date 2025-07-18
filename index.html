@@ -4,12 +4,20 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Percy Recursive Logic Map</title>
-  <link rel="stylesheet" href="style.css?v=6.2" />
+  <link rel="stylesheet" href="style.css?v=6.1" />
+
+  <!-- Favicon Set (Uncomment and adjust paths if favicons are present) -->
+  <!--
+  <link rel="apple-touch-icon" sizes="180x180" href="percy_io/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="percy_io/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="percy_io/favicon-16x16.png">
+  <link rel="manifest" href="percy_io/site.webmanifest">
+  -->
 </head>
 <body>
   <header>
     <h1>Percy Recursive Logic Map</h1>
-    <p>Visualizing Logic Seeds G080–G900 + ULT layer</p>
+    <p>Visualizing Logic Seeds G080–G800</p>
   </header>
 
   <main>
@@ -25,7 +33,7 @@
     <!-- Logic Map Viewport -->
     <div id="viewport">
       <div id="logic-map">
-        <div id="logic-nodes"></div> <!-- ✅ Keep this here only -->
+        <div id="logic-nodes"></div>
       </div>
     </div>
 
@@ -37,7 +45,6 @@
     <!-- Console Output -->
     <div id="percy-console" class="console">
       <p class="console-line">Percy initialized. Click a node.</p>
-      <p class="console-line ult-note">ULT-protected nodes active — private info hidden.</p>
     </div>
 
     <!-- Interpreter -->
@@ -45,9 +52,6 @@
       <input id="interpreter-input" placeholder="Ask Percy...">
       <button onclick="interpretLogic()">Ask</button>
     </div>
-    
-    <!-- Canvas for Logic Map Rendering -->
-    <canvas id="logic-canvas"></canvas>
   </main>
 
   <footer>
@@ -55,6 +59,6 @@
   </footer>
 
   <!-- Percy Script Logic -->
-  <script src="js/percy.js?v=6.2"></script>
+  <script src="js/percy.js?v=6.1"></script>
 </body>
 </html>
