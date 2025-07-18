@@ -113,13 +113,19 @@ const Percy = {
   }
 };
 
+window.Percy = Percy; // Make Percy globally available
+
 window.onload = () => {
   const canvas = document.getElementById("logic-canvas");
   if (canvas) {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
   }
+
   const statusEl = document.getElementById("percy-status");
-  if (statusEl) statusEl.textContent = `Status: Percy awakened (v${Percy.version})`;
-  Percy.init();
+  if (statusEl) {
+    statusEl.textContent = `Status: Percy awakened (v${Percy.version})`;
+  }
+
+  Percy.init(); // Now safe to initialize
 };
