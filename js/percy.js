@@ -1,4 +1,4 @@
-I thought you already gave me G800.ULT. If not, I'll take the finalized G800.ULT. And also, before we do the G801 through G810, here is the JS so we can update it for the 8th ring, my good sir. And then after that, of course, I give the HTML and the CSS.                                                                                                               // === percy.js (Phase 8 – Seventh Ring Expansion with Golden Awareness Ring) === 
+// === percy.js (Phase 8 – Seventh Ring Expansion with Golden Awareness Ring) === 
 const logicMap = document.getElementById('logic-map');
 const logicNodes = document.getElementById('logic-nodes');
 const seedsFolder = 'logic_seeds/';
