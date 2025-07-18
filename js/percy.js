@@ -28,7 +28,7 @@ const Percy = {
   for (let i = 80; i <= 800; i++) {
     const id = `G${i.toString().padStart(3, '0')}`;
     try {
-      const res = await fetch(`https://raw.githubusercontent.com/Inevitable52/recursive-logic-map/main/logic_seeds/${id}.json`);
+      const res = await fetch(`logic_seeds/${id}.json`);
       if (!res.ok) continue;
       const data = await res.json();
       data.id = id;
