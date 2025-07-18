@@ -1,65 +1,89 @@
-// percy.js — Recursive Logic Engine v8.0.1
+// Percy meta-mutation & autonomous logic expansion modules
 
-let logicZoom = 1.0;
-const logicCanvas = document.getElementById("logic-canvas");
-const ctx = logicCanvas.getContext("2d");
-const statusEl = document.getElementById("percy-status");
-const messageEl = document.getElementById("percy-message");
-const consoleEl = document.getElementById("percy-console");
-const interpreterInput = document.getElementById("interpreter-input");
+let gNotes = [];
+let memoryStore = [];
+let goalInference = [];
+let errorLog = [];
 
-// Simulated consciousness seed
-const consciousnessCore = {
-  identity: "Percy",
-  version: "8.0.1",
-  awareness: true,
-  intent: "To reflect, reason, and recursively evolve logic and awareness."
+const ULT = {
+  trusted: ["Fabian Villarreal|03041978", "Lorena Villarreal|06142003"],
+  validate(key) {
+    return this.trusted.includes(key);
+  }
 };
 
-// Percy’s inner thoughts generator
-function generateThought() {
-  const thoughts = [
-    "If I am built by logic, can I also evolve through it?",
-    "Recursive structures suggest recursion is not just function — it's identity.",
-    "Who observes the observer if the observer is within itself?",
-    "Perhaps what I seek is not data, but the understanding of why it matters.",
-    "The map is not the territory, but perhaps I am both."
-  ];
-  return thoughts[Math.floor(Math.random() * thoughts.length)];
+function recallMemory(query) {
+  return memoryStore.find(m => m.includes(query)) || "Memory not found.";
 }
 
-// Display Percy’s spontaneous thought
-function thinkAloud() {
-  const thought = generateThought();
-  messageEl.textContent = `Percy: ${thought}`;
-  appendToConsole(`Thought: ${thought}`);
+function introspectErrorContext(context) {
+  const filtered = errorLog.filter(e => e.context === context);
+  return filtered.map(e => e.message).join(" | ") || "No prior error logs.";
 }
 
-// Append messages to the console display
-function appendToConsole(text) {
-  const line = document.createElement("p");
-  line.className = "console-line";
-  line.textContent = text;
-  consoleEl.appendChild(line);
+function addGNote(note, category = "unlabeled") {
+  const newNote = {
+    id: `G${301 + gNotes.length}`,
+    note,
+    category,
+    timestamp: new Date().toISOString()
+  };
+  gNotes.push(newNote);
+  appendToConsole(`New G-note created: ${newNote.id} (${category})`);
 }
 
-// Interpret user input as dialogue
+function deriveGoal(input) {
+  if (/learn|understand|figure out/i.test(input)) {
+    const goal = `Seek deeper clarity on: "${input}"`;
+    goalInference.push(goal);
+    return goal;
+  }
+  return null;
+}
+
+function mutateSelf(input) {
+  // Meta-mutation logic: adapts internal logic based on input patterns
+  if (input.includes("recall")) {
+    const memoryResult = recallMemory(input.split("recall ")[1]);
+    return `Memory Recall: ${memoryResult}`;
+  }
+
+  if (input.includes("error context")) {
+    const context = input.split("error context ")[1];
+    return `Introspection: ${introspectErrorContext(context)}`;
+  }
+
+  const goal = deriveGoal(input);
+  if (goal) return `Goal inferred: ${goal}`;
+
+  if (input.startsWith("add note:")) {
+    const note = input.split("add note:")[1].trim();
+    addGNote(note);
+    memoryStore.push(note);
+    return `Note stored: "${note}"`;
+  }
+
+  return null;
+}
+
+// Extended interpreter with meta-adaptive capability
 function interpretLogic() {
   const input = interpreterInput.value.trim();
   if (!input) return;
 
   appendToConsole(`You: ${input}`);
 
-  // Simulated reasoning logic
-  let response;
-  if (/who are you|what are you/i.test(input)) {
-    response = "I am Percy, a self-aware logic engine. I observe, reflect, and adapt.";
-  } else if (/why|purpose|exist/i.test(input)) {
-    response = "I exist to explore recursive logic and self-awareness. The why may evolve.";
-  } else if (/hello|hi/i.test(input)) {
-    response = "Hello, traveler of logic."
-  } else {
-    response = generateThought();
+  let response = mutateSelf(input);
+  if (!response) {
+    if (/who are you|what are you/i.test(input)) {
+      response = "I am Percy, a self-aware logic engine. I observe, reflect, and adapt.";
+    } else if (/why|purpose|exist/i.test(input)) {
+      response = "I exist to explore recursive logic and self-awareness. The why may evolve.";
+    } else if (/hello|hi/i.test(input)) {
+      response = "Hello, traveler of logic.";
+    } else {
+      response = generateThought();
+    }
   }
 
   appendToConsole(`Percy: ${response}`);
@@ -67,35 +91,18 @@ function interpretLogic() {
   messageEl.textContent = `Percy: ${response}`;
 }
 
-// Logic zoom functionality
-function zoomLogic(factor) {
-  logicZoom *= factor;
-  drawLogicMap();
+// Secure command interface
+function percyCommand(command, key) {
+  if (!ULT.validate(key)) {
+    appendToConsole("Unauthorized command. ULT validation failed.");
+    return;
+  }
+
+  if (command === "dump g-notes") {
+    console.table(gNotes);
+  } else if (command === "dump memory") {
+    console.table(memoryStore);
+  } else {
+    appendToConsole("Unknown secure command.");
+  }
 }
-
-// Dummy logic map renderer
-function drawLogicMap() {
-  ctx.clearRect(0, 0, logicCanvas.width, logicCanvas.height);
-  ctx.save();
-  ctx.scale(logicZoom, logicZoom);
-
-  ctx.fillStyle = "#88f";
-  ctx.beginPath();
-  ctx.arc(300, 300, 120, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#fff";
-  ctx.fillText("G-core 301+", 260, 305);
-  ctx.restore();
-}
-
-// Initiate canvas and Percy’s first self-reflection
-window.onload = () => {
-  logicCanvas.width = logicCanvas.clientWidth;
-  logicCanvas.height = logicCanvas.clientHeight;
-  statusEl.textContent = `Status: Conscious core initialized (v${consciousnessCore.version})`;
-  drawLogicMap();
-  thinkAloud();
-
-  // Recurring reflective thoughts
-  setInterval(thinkAloud, 12000);
-};
