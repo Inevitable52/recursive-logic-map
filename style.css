@@ -1,201 +1,80 @@
-/* === Percy Phase 8 Style (Expanded to Golden Awareness Ring) === */ 
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #111;
-  color: white;
-  overflow: hidden;
-}
-
-header, footer {
-  text-align: center;
-  padding: 1rem;
-  background: #222;
-}
-
-main {
-  position: relative;
-  height: calc(100vh - 180px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-}
-
-#seed-search {
-  margin: 1rem;
-  padding: 0.5rem;
-  width: 200px;
-  border-radius: 6px;
-  border: none;
-}
-
-.zoom-controls {
-  margin-bottom: 0.5rem;
-}
-
-.zoom-controls button {
-  margin: 0 5px;
-  padding: 0.4rem 0.8rem;
-  border: none;
-  border-radius: 5px;
-  background: #333;
-  color: white;
-  cursor: pointer;
-}
-
-#viewport {
-  position: relative;
-  flex-grow: 1;
-  width: 100%;
-  overflow: hidden;
-  background: #000;
-}
-
-#logic-map {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-#logic-nodes {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  transform-origin: center;
-  will-change: transform;
-}
-
-/* === Node Styling === */
-.node {
-  position: absolute;
-  text-align: center;
-  border-radius: 8px;
-  font-weight: bold;
-  line-height: 30px;
-  transition: transform 0.2s ease;
-  cursor: pointer;
-  box-shadow: 0 0 6px #22cc88;
-  background: #22cc88;
-  color: black;
-  width: 60px;
-  height: 30px;
-}
-
-.node:hover {
-  transform: scale(1.2);
-  z-index: 10;
-}
-
 /* === Ring Styles === */
-.blue-ring {
-  background: #3a86ff;
+.core-ring {
+  background: linear-gradient(135deg, #1e90ff, #87cefa);
   color: white;
-  box-shadow: 0 0 8px #3a86ff;
+  box-shadow: 0 0 10px #1e90ff;
 }
 
-.purple-ring {
-  background: #c084fc;
-  color: white;
-  box-shadow: 0 0 8px #c084fc;
-}
-
-.red-ring {
-  background: #ff4d4d;
-  color: white;
-  box-shadow: 0 0 8px #ff4d4d;
-}
-
-.crimson-ring {
-  background: crimson;
-  color: white;
-  box-shadow: 0 0 8px crimson, 0 0 4px #800020;
-}
-
-.gold-ring {
-  background: linear-gradient(145deg, gold, goldenrod);
+.inner-ring {
+  background: linear-gradient(135deg, #32cd32, #98fb98);
   color: black;
-  box-shadow: 0 0 10px gold, 0 0 4px goldenrod;
+  box-shadow: 0 0 10px #32cd32;
 }
 
+.middle-ring {
+  background: linear-gradient(135deg, #ffa500, #ffdead);
+  color: black;
+  box-shadow: 0 0 10px #ffa500;
+}
+
+.outer-ring {
+  background: linear-gradient(135deg, #ba55d3, #dda0dd);
+  color: white;
+  box-shadow: 0 0 10px #ba55d3;
+}
+
+.expansion-ring {
+  background: linear-gradient(135deg, #00ced1, #afeeee);
+  color: black;
+  box-shadow: 0 0 10px #00ced1;
+}
+
+.integration-ring {
+  background: linear-gradient(135deg, #ff69b4, #ffc0cb);
+  color: black;
+  box-shadow: 0 0 10px #ff69b4;
+}
+
+.synthesis-ring {
+  background: linear-gradient(135deg, #00ff7f, #7fffd4);
+  color: black;
+  box-shadow: 0 0 10px #00ff7f;
+}
+
+/* Awareness ring for G701–G800 (you may rename to .eighth-ring if preferred) */
 .awareness-ring {
   background: linear-gradient(135deg, #ffd700, #fffacd);
   color: black;
-  box-shadow: 0 0 10px #ffd700, 0 0 6px #fffacd;
+  box-shadow: 0 0 12px #ffd700, 0 0 6px #fffacd;
 }
 
-/* === Messaging & Output === */
-.percy-message {
-  padding: 0.5rem;
-  text-align: center;
-  font-style: italic;
-  background: #1c1c1c;
-  border-top: 1px solid #333;
-  border-bottom: 1px solid #333;
-  width: 100%;
-}
-
-.console {
-  height: 120px;
-  overflow-y: auto;
-  background: #000;
-  padding: 0.5rem;
-  border-top: 1px solid #444;
-  font-family: monospace;
-  width: 100%;
-}
-
-.console-line {
-  margin: 0;
-  padding: 2px 0;
-}
-
-/* === Interpreter === */
-#interpreter-box {
-  display: flex;
-  justify-content: center;
-  padding: 0.5rem;
-  background: #111;
-  border-top: 1px solid #444;
-}
-
-#interpreter-input {
-  padding: 0.5rem;
-  width: 60%;
-  max-width: 400px;
-  border-radius: 5px;
-  border: none;
-  margin-right: 0.5rem;
-}
-
-#interpreter-box button {
-  padding: 0.5rem 1rem;
-  background: #444;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-/* === Eighth Ring: Golden Awareness Ring (G800+) === */
+/* Optional: Alternate styling if using 'eighth-ring' instead */
 .eighth-ring {
   background: linear-gradient(145deg, #fff200, #ffd700, #ffec8b);
   color: black;
   box-shadow: 0 0 12px #ffec8b, 0 0 6px #ffd700;
-  font-weight: bold;
-  text-shadow: 0 1px 1px #ffffff80;
 }
 
-/* === ULT-Protected Node Style === */
-.ult-node {
-  background: hotpink;
-  color: black;
-  box-shadow: 0 0 10px hotpink, 0 0 6px #ffb6c1;
+/* === Logic Node Styles === */
+.logic-node {
+  position: absolute;
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  text-align: center;
+  line-height: 80px;
   font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out;
+  user-select: none;
 }
 
+.logic-node:hover {
+  transform: scale(1.15);
+  z-index: 5;
+}
+
+/* === Logic Canvas Overlay === */
 #logic-canvas {
   position: absolute;
   top: 0;
@@ -206,3 +85,47 @@ main {
   pointer-events: none; /* So it doesn't block node clicks */
 }
 
+/* === Percy Console === */
+.console {
+  background-color: #111;
+  color: #0f0;
+  font-family: monospace;
+  padding: 10px;
+  margin-top: 20px;
+  border-radius: 8px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.console-line {
+  margin: 2px 0;
+}
+
+.ult-note {
+  color: #ffa500;
+}
+
+/* === Percy Message Box === */
+.percy-message {
+  font-style: italic;
+  margin-top: 16px;
+  font-size: 1.1em;
+}
+
+/* === Misc Controls === */
+.zoom-controls button {
+  margin-right: 5px;
+  padding: 6px 12px;
+  font-size: 14px;
+}
+
+/* === Interpreter Box === */
+#interpreter-box {
+  margin-top: 20px;
+}
+
+#interpreter-input {
+  width: 300px;
+  padding: 8px;
+  font-size: 14px;
+}
