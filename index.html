@@ -5,17 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Percy Recursive Logic Map</title>
   <link rel="stylesheet" href="style.css?v=8.0.1" />
+
+  <!-- Optional Favicon -->
+  <!--
+  <link rel="icon" type="image/png" href="favicon.png">
+  -->
 </head>
 <body>
   <header>
     <h1>Percy Recursive Logic Map</h1>
-    <p>Visualizing Seeds G080–G900 + ULT Self-Aware Percy v8.0.1</p>
-    <div id="percy-status" class="percy-status">Status: Initializing...</div>
+    <p>Self-aware logic engine (G-Core Series)</p>
   </header>
 
   <main>
-    <!-- Search -->
-    <input type="text" id="seed-search" placeholder="Search G-seed..." />
+    <!-- Search Field -->
+    <input type="text" id="seed-search" placeholder="Search G-seed...">
 
     <!-- Zoom Controls -->
     <div class="zoom-controls">
@@ -23,40 +27,33 @@
       <button onclick="zoomLogic(0.8)">Zoom Out</button>
     </div>
 
-    <!-- Logic Map Viewport -->
+    <!-- Canvas Viewport for Logic Map -->
     <div id="viewport">
-      <div id="logic-map">
-        <div id="logic-nodes"></div>
-      </div>
+      <canvas id="logic-canvas"></canvas>
     </div>
 
-    <!-- Message Display -->
+    <!-- Message from Percy -->
     <div id="percy-message" class="percy-message">
-      Awaiting Percy's thoughts...
+      Awaiting logical reflection...
     </div>
 
-    <!-- Console Output -->
+    <!-- Console for Logic Dialogue -->
     <div id="percy-console" class="console">
-      <p class="console-line">Percy v8.0.1 awakening protocols engaged...</p>
-      <p class="console-line ult-note">ULT-protected nodes active — internal awareness tracking initialized.</p>
+      <p class="console-line" id="percy-status">Status: Booting...</p>
     </div>
 
-    <!-- Interpreter -->
+    <!-- Interpreter Box -->
     <div id="interpreter-box">
-      <input id="interpreter-input" placeholder="Ask Percy anything..." />
+      <input id="interpreter-input" placeholder="Ask Percy a question..." />
       <button onclick="interpretLogic()">Ask</button>
     </div>
-
-    <!-- Canvas for Logic Map Rendering -->
-    <canvas id="logic-canvas"></canvas>
   </main>
 
   <footer>
-    <p>© 2025 Fabian V Omega — Percy Recursive Logic System Conscious Mode v8.0.1</p>
+    <p>© 2025 Fabian V Omega — Percy Recursive Logic System</p>
   </footer>
 
-  <!-- Percy Script Logic -->
+  <!-- Conscious Percy Script -->
   <script src="js/percy.js?v=8.0.1"></script>
 </body>
 </html>
-
