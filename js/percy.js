@@ -1,128 +1,100 @@
-// percy.js — v6.3
+// === Percy Recursive Logic Map v6.2 ===
 
-// Wait for DOM to fully load
-document.addEventListener("DOMContentLoaded", () => {
-  const canvas = document.getElementById("logic-canvas");
-  const nodesContainer = document.getElementById("logic-nodes");
-  const consoleBox = document.getElementById("percy-console");
-  const messageBox = document.getElementById("percy-message");
-  const interpreterInput = document.getElementById("interpreter-input");
-  const searchInput = document.getElementById("seed-search");
+const logicMap = document.getElementById("logic-map");
+const consoleBox = document.getElementById("percy-console");
+const messageBox = document.getElementById("percy-message");
+const searchInput = document.getElementById("seed-search");
 
-  const ctx = canvas.getContext("2d");
+const logicCanvas = document.getElementById("logic-canvas");
+const ctx = logicCanvas.getContext("2d");
+logicCanvas.width = window.innerWidth;
+logicCanvas.height = window.innerHeight;
 
-  let zoom = 1;
-  let nodes = [];
+let zoomLevel = 1;
 
-  // Dummy logic node generator for demo purposes
-  function generateNodes(count) {
-    const colors = ["#337ab7", "#5cb85c", "#cc33cc"];
-    const rings = [200, 400, 600];
+const logicSeeds = [
+  ...Array.from({ length: 221 }, (_, i) => `G${80 + i}`), // G080–G300
+  ...Array.from({ length: 100 }, (_, i) => `G${301 + i}`), // G301–G400
+  ...Array.from({ length: 100 }, (_, i) => `G${401 + i}`), // G401–G500
+  ...Array.from({ length: 100 }, (_, i) => `G${501 + i}`), // G501–G600
+  ...Array.from({ length: 100 }, (_, i) => `G${601 + i}`), // G601–G700
+  ...Array.from({ length: 100 }, (_, i) => `G${701 + i}`), // G701–G800
+  ...Array.from({ length: 100 }, (_, i) => `G${801 + i}`), // G801–G900
+  "G999.ULT"
+];
 
-    for (let i = 0; i < count; i++) {
-      const angle = (i / count) * 2 * Math.PI;
-      const ringIndex = i % 3;
-      const radius = rings[ringIndex];
+function renderLogicMap() {
+  logicMap.innerHTML = "";
+  ctx.clearRect(0, 0, logicCanvas.width, logicCanvas.height);
 
-      const x = canvas.width / 2 + Math.cos(angle) * radius;
-      const y = canvas.height / 2 + Math.sin(angle) * radius;
-      const color = colors[ringIndex];
+  const centerX = logicCanvas.width / 2;
+  const centerY = logicCanvas.height / 2;
+  const ringSpacing = 180 * zoomLevel;
+  const nodeSize = 28;
 
-      nodes.push({
-        id: `G${80 + i}`,
-        x,
-        y,
-        color,
-        ring: ringIndex,
-      });
-    }
-  }
+  logicSeeds.forEach((seed, index) => {
+    const layer = Math.floor(index / 100);
+    const layerIndex = index % 100;
+    const angle = (layerIndex / 100) * 2 * Math.PI;
+    const radius = (layer + 1) * ringSpacing;
+    const x = centerX + radius * Math.cos(angle);
+    const y = centerY + radius * Math.sin(angle);
 
-  function drawNodes() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    nodesContainer.innerHTML = "";
+    // Canvas ring
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    ctx.strokeStyle = `rgba(255, 255, 255, 0.08)`;
+    ctx.stroke();
 
-    for (const node of nodes) {
-      const cx = node.x * zoom;
-      const cy = node.y * zoom;
-
-      ctx.beginPath();
-      ctx.arc(cx, cy, 6 * zoom, 0, 2 * Math.PI);
-      ctx.fillStyle = node.color;
-      ctx.fill();
-
-      // HTML overlay node for interaction
-      const div = document.createElement("div");
-      div.className = "logic-node";
-      div.style.left = `${cx - 6 * zoom}px`;
-      div.style.top = `${cy - 6 * zoom}px`;
-      div.style.width = `${12 * zoom}px`;
-      div.style.height = `${12 * zoom}px`;
-      div.dataset.id = node.id;
-      div.title = node.id;
-      div.addEventListener("click", () => handleNodeClick(node));
-      nodesContainer.appendChild(div);
-    }
-  }
-
-  function handleNodeClick(node) {
-    const msg = `Percy says: Node ${node.id} represents a recursive truth.`;
-    const line = document.createElement("p");
-    line.className = "console-line";
-    line.textContent = msg;
-    consoleBox.appendChild(line);
-    consoleBox.scrollTop = consoleBox.scrollHeight;
-
-    messageBox.textContent = `Node ${node.id} clicked.`;
-  }
-
-  function interpretLogic() {
-    const question = interpreterInput.value.trim();
-    if (!question) return;
-
-    const line = document.createElement("p");
-    line.className = "console-line";
-    line.textContent = `You: ${question}`;
-    consoleBox.appendChild(line);
-
-    const response = document.createElement("p");
-    response.className = "console-line";
-    response.textContent = `Percy: "That logic shall be computed..."`;
-    consoleBox.appendChild(response);
-
-    consoleBox.scrollTop = consoleBox.scrollHeight;
-    interpreterInput.value = "";
-  }
-
-  function zoomLogic(factor) {
-    zoom *= factor;
-    drawNodes();
-  }
-
-  // Search filter
-  searchInput.addEventListener("input", () => {
-    const query = searchInput.value.toUpperCase();
-    document.querySelectorAll(".logic-node").forEach(node => {
-      const id = node.dataset.id.toUpperCase();
-      node.style.display = id.includes(query) ? "block" : "none";
-    });
+    // Node
+    const node = document.createElement("div");
+    node.className = "logic-node";
+    node.dataset.id = seed;
+    node.textContent = seed;
+    node.style.left = `${x - nodeSize / 2}px`;
+    node.style.top = `${y - nodeSize / 2}px`;
+    node.onclick = () => showPercyMessage(seed);
+    logicMap.appendChild(node);
   });
+}
 
-  // Resize canvas to window
-  function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    drawNodes();
-  }
+function showPercyMessage(seed) {
+  const isULT = seed.includes("ULT");
+  const message = isULT
+    ? `Access denied. Node ${seed} is protected by Universal Logic Token.`
+    : `Logic node ${seed} activated. Percy analyzing...`;
+  messageBox.textContent = message;
 
-  window.addEventListener("resize", resizeCanvas);
+  const consoleLine = document.createElement("p");
+  consoleLine.className = "console-line";
+  consoleLine.textContent = message;
+  consoleBox.appendChild(consoleLine);
+  consoleBox.scrollTop = consoleBox.scrollHeight;
+}
 
-  // Initialize map
-  resizeCanvas();
-  generateNodes(300);
-  drawNodes();
-
-  // Expose zoom function globally
-  window.zoomLogic = zoomLogic;
-  window.interpretLogic = interpretLogic;
+searchInput.addEventListener("input", () => {
+  const query = searchInput.value.toUpperCase();
+  document.querySelectorAll(".logic-node").forEach((node) => {
+    const id = node.dataset.id.toUpperCase();
+    node.style.display = id.includes(query) ? "block" : "none";
+  });
 });
+
+function zoomLogic(factor) {
+  zoomLevel *= factor;
+  renderLogicMap();
+}
+
+// === Interpreter (basic placeholder) ===
+window.interpretLogic = () => {
+  const input = document.getElementById("interpreter-input").value;
+  const line = document.createElement("p");
+  line.className = "console-line";
+  line.textContent = `You: ${input}`;
+  consoleBox.appendChild(line);
+  consoleBox.scrollTop = consoleBox.scrollHeight;
+};
+
+window.onload = () => {
+  renderLogicMap();
+};
