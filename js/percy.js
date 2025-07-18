@@ -24,20 +24,20 @@ const Percy = {
     this.bindListeners();
   },
 
-  async loadNodes() {
-    for (let i = 80; i <= 800; i++) {
-      const id = `G${i.toString().padStart(3, '0')}`;
-      try {
-        const res = await fetch(`https://raw.githubusercontent.com/Inevitable52/recursive-logic-map/main/js/${id}.json`);
-        if (!res.ok) continue;
-        const data = await res.json();
-        data.id = id;
-        this.nodes.push(data);
-      } catch (e) {
-        console.warn(`Failed to load ${id}`, e);
-      }
+ async loadNodes() {
+  for (let i = 80; i <= 800; i++) {
+    const id = `G${i.toString().padStart(3, '0')}`;
+    try {
+      const res = await fetch(`https://raw.githubusercontent.com/Inevitable52/recursive-logic-map/main/logic_seeds/${id}.json`);
+      if (!res.ok) continue;
+      const data = await res.json();
+      data.id = id;
+      this.nodes.push(data);
+    } catch (e) {
+      console.warn(`Failed to load ${id}`, e);
     }
-  },
+  }
+}
 
   positionNodes() {
     const rings = {};
