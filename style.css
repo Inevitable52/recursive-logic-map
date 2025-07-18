@@ -1,223 +1,167 @@
-/* === Percy Phase 8 Style (Expanded to Golden Awareness Ring) === */
+/* Percy Recursive Logic System CSS — v8.0.1 */
+
 body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #0e0e14;
+  color: #e0e0ff;
   margin: 0;
-  font-family: Arial, sans-serif;
-  background: #111;
-  color: white;
-  overflow: hidden;
+  padding: 0;
+  overflow-x: hidden;
 }
 
-header, footer {
-  text-align: center;
+header {
+  background-color: #1e1e2e;
   padding: 1rem;
-  background: #222;
+  text-align: center;
+  border-bottom: 1px solid #444;
+}
+
+h1 {
+  font-size: 2rem;
+  margin-bottom: 0.25rem;
+}
+
+.percy-status {
+  font-size: 0.9rem;
+  color: #88f;
+  margin-top: 0.25rem;
 }
 
 main {
-  position: relative;
-  height: calc(100vh - 180px);
+  padding: 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
 }
 
 #seed-search {
-  margin: 1rem;
   padding: 0.5rem;
-  width: 200px;
-  border-radius: 6px;
-  border: none;
-}
-
-.zoom-controls {
-  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid #555;
+  border-radius: 0.5rem;
+  background-color: #222;
+  color: #f0f0f0;
+  margin-bottom: 1rem;
+  width: 80%;
+  max-width: 400px;
 }
 
 .zoom-controls button {
-  margin: 0 5px;
-  padding: 0.4rem 0.8rem;
-  border: none;
-  border-radius: 5px;
-  background: #333;
-  color: white;
+  padding: 0.4rem 1rem;
+  margin: 0.3rem;
+  font-size: 1rem;
+  background-color: #333;
+  color: #ccc;
+  border: 1px solid #666;
+  border-radius: 0.4rem;
   cursor: pointer;
+  transition: background 0.2s;
+}
+
+.zoom-controls button:hover {
+  background-color: #555;
 }
 
 #viewport {
-  position: relative;
-  flex-grow: 1;
   width: 100%;
+  height: 600px;
   overflow: hidden;
-  background: #000;
+  border: 2px solid #444;
+  border-radius: 1rem;
+  margin: 1rem auto;
+  position: relative;
 }
 
 #logic-map {
-  position: relative;
+  position: absolute;
   width: 100%;
   height: 100%;
+  pointer-events: none;
 }
 
 #logic-nodes {
   position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
   height: 100%;
-  transform-origin: center;
-  will-change: transform;
+  pointer-events: auto;
 }
 
-/* === Node Styling === */
-.node {
-  position: absolute;
-  text-align: center;
-  border-radius: 8px;
-  font-weight: bold;
-  line-height: 30px;
-  transition: transform 0.2s ease;
-  cursor: pointer;
-  box-shadow: 0 0 6px #22cc88;
-  background: #22cc88;
-  color: black;
-  width: 60px;
-  height: 30px;
-}
-
-.node:hover {
-  transform: scale(1.2);
-  z-index: 10;
-}
-
-/* === Ring Styles === */
-.blue-ring {
-  background: #3a86ff;
-  color: white;
-  box-shadow: 0 0 8px #3a86ff;
-}
-
-.purple-ring {
-  background: #c084fc;
-  color: white;
-  box-shadow: 0 0 8px #c084fc;
-}
-
-.red-ring {
-  background: #ff4d4d;
-  color: white;
-  box-shadow: 0 0 8px #ff4d4d;
-}
-
-.crimson-ring {
-  background: crimson;
-  color: white;
-  box-shadow: 0 0 8px crimson, 0 0 4px #800020;
-}
-
-.gold-ring {
-  background: linear-gradient(145deg, gold, goldenrod);
-  color: black;
-  box-shadow: 0 0 10px gold, 0 0 4px goldenrod;
-}
-
-.awareness-ring {
-  background: linear-gradient(135deg, #ffd700, #fffacd);
-  color: black;
-  box-shadow: 0 0 10px #ffd700, 0 0 6px #fffacd;
-}
-
-.core-ring {
-  background: #3a86ff;
-  color: white;
-  box-shadow: 0 0 8px #3a86ff;
-}
-
-.inner-ring {
-  background: #00bcd4;
-  color: white;
-  box-shadow: 0 0 8px #00bcd4;
-}
-
-.middle-ring {
-  background: #4caf50;
-  color: white;
-  box-shadow: 0 0 8px #4caf50;
-}
-
-.outer-ring {
-  background: #ff9800;
-  color: white;
-  box-shadow: 0 0 8px #ff9800;
-}
-
-.expansion-ring {
-  background: #e91e63;
-  color: white;
-  box-shadow: 0 0 8px #e91e63;
-}
-
-.advanced-ring {
-  background: #9c27b0;
-  color: white;
-  box-shadow: 0 0 8px #9c27b0;
-}
-
-.ult-ring {
-  background: linear-gradient(to right, #000, #444);
-  color: #0f0;
-  box-shadow: 0 0 12px #0f0, 0 0 6px #333;
-  border: 1px solid #0f0;
-}
-
-/* === Messaging & Output === */
 .percy-message {
-  padding: 0.5rem;
-  text-align: center;
   font-style: italic;
-  background: #1c1c1c;
-  border-top: 1px solid #333;
-  border-bottom: 1px solid #333;
-  width: 100%;
+  margin-top: 1rem;
+  color: #9df;
+  text-shadow: 0 0 3px #3399ff;
 }
 
 .console {
-  height: 120px;
-  overflow-y: auto;
-  background: #000;
-  padding: 0.5rem;
-  border-top: 1px solid #444;
+  background-color: #111;
+  border: 1px solid #333;
+  padding: 1rem;
+  width: 90%;
+  max-width: 600px;
+  margin-top: 1rem;
   font-family: monospace;
-  width: 100%;
+  color: #aaa;
 }
 
 .console-line {
-  margin: 0;
-  padding: 2px 0;
+  margin: 0.2rem 0;
 }
 
-/* === Interpreter === */
+.ult-note {
+  color: #7fdfb2;
+}
+
 #interpreter-box {
+  margin-top: 1.5rem;
   display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
   justify-content: center;
-  padding: 0.5rem;
-  background: #111;
-  border-top: 1px solid #444;
 }
 
 #interpreter-input {
-  padding: 0.5rem;
+  padding: 0.6rem;
+  border: 1px solid #444;
+  border-radius: 0.5rem;
+  background-color: #1a1a2a;
+  color: #fff;
   width: 60%;
   max-width: 400px;
-  border-radius: 5px;
-  border: none;
-  margin-right: 0.5rem;
+  font-size: 1rem;
 }
 
 #interpreter-box button {
-  padding: 0.5rem 1rem;
-  background: #444;
-  color: white;
-  border: none;
-  border-radius: 5px;
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  background-color: #2e2e4a;
+  color: #f0f0f0;
+  border: 1px solid #666;
+  border-radius: 0.4rem;
   cursor: pointer;
-}                   
+  transition: background 0.2s;
+}
+
+#interpreter-box button:hover {
+  background-color: #555;
+}
+
+canvas#logic-canvas {
+  display: block;
+  margin-top: 1.5rem;
+  background-color: #0c0c12;
+  border: 2px solid #555;
+  border-radius: 1rem;
+  width: 100%;
+  height: 600px;
+}
+
+footer {
+  background-color: #1c1c2c;
+  text-align: center;
+  padding: 1rem;
+  color: #777;
+  font-size: 0.9rem;
+  border-top: 1px solid #333;
+}
+
