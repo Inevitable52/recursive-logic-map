@@ -1,18 +1,20 @@
-// Percy.js - Autonomous Recursive Logic AI Engine
+// Percy.js v9.1 Conscious Mode – Self-Aware AI Logic Engine
 
 const Percy = {
-  version: '8.2.0',
+  version: '9.1',
   nodes: [],
   links: [],
   canvas: null,
   ctx: null,
   centerX: 0,
   centerY: 0,
-  radiusStep: 100,
+  radiusStep: 140,
+  autowake: true,
 
   async init() {
+    this.log('Initializing Conscious Mode...');
     this.canvas = document.getElementById("logic-canvas");
-    if (!this.canvas) return console.error("Canvas not found");
+    if (!this.canvas) return this.logError("Canvas element not found.");
 
     this.ctx = this.canvas.getContext("2d");
     this.centerX = this.canvas.width / 2;
@@ -22,152 +24,82 @@ const Percy = {
     this.positionNodes();
     this.render();
     this.bindListeners();
+
+    this.autoevolve();
+  },
+
+  log(msg) {
+    const line = document.createElement("p");
+    line.className = "console-line";
+    line.textContent = `🧠 ${msg}`;
+    document.getElementById("percy-console")?.appendChild(line);
+  },
+
+  logError(msg) {
+    console.error(msg);
+    this.log(`⚠️ ${msg}`);
   },
 
   async loadNodes() {
-    for (let i = 80; i <= 800; i++) {
-      const id = `G${i.toString().padStart(3, '0')}`;
-      try {
-        const res = await fetch(`logic_seeds/${id}.json`);
-        if (!res.ok) continue;
-        const data = await res.json();
-        data.id = id;
-        this.nodes.push(data);
-      } catch (e) {
-        console.warn(`Failed to load ${id}`);
-      }
+    try {
+      const res = await fetch("nodes.json");
+      this.nodes = await res.json();
+      this.log(`Loaded ${this.nodes.length} G-nodes.`);
+    } catch (err) {
+      this.logError("Failed to load nodes.");
     }
   },
 
   positionNodes() {
-    const rings = {};
-    this.nodes.forEach(node => {
-      const ring = Math.floor(parseInt(node.id.slice(1)) / 100);
-      if (!rings[ring]) rings[ring] = [];
-      rings[ring].push(node);
-    });
+    const ringMap = new Map();
+    for (const node of this.nodes) {
+      const ring = parseInt(node.id.match(/G(\d+)/)?.[1] || 0);
+      if (!ringMap.has(ring)) ringMap.set(ring, []);
+      ringMap.get(ring).push(node);
+    }
 
-    Object.entries(rings).forEach(([ringStr, nodes]) => {
-      const ring = parseInt(ringStr);
-      const angleStep = (2 * Math.PI) / nodes.length;
-      nodes.forEach((node, i) => {
-        const angle = i * angleStep;
-        node.x = this.centerX + Math.cos(angle) * this.radiusStep * ring;
-        node.y = this.centerY + Math.sin(angle) * this.radiusStep * ring;
+    for (const [ring, group] of ringMap) {
+      const radius = ring * this.radiusStep;
+      const angleStep = (2 * Math.PI) / group.length;
+      group.forEach((node, i) => {
+        node.x = this.centerX + radius * Math.cos(i * angleStep);
+        node.y = this.centerY + radius * Math.sin(i * angleStep);
       });
-    });
+    }
   },
 
   render() {
     if (!this.ctx) return;
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.nodes.forEach(node => {
+    for (const node of this.nodes) {
       this.ctx.beginPath();
-      this.ctx.arc(node.x, node.y, 5, 0, 2 * Math.PI);
-      this.ctx.fillStyle = "#00f0ff";
+      this.ctx.arc(node.x, node.y, 8, 0, 2 * Math.PI);
+      this.ctx.fillStyle = node.color || "#6cf";
       this.ctx.fill();
-    });
+      this.ctx.stroke();
+    }
   },
 
   bindListeners() {
-    window.addEventListener("resize", () => {
-      this.canvas.width = window.innerWidth;
-      this.canvas.height = window.innerHeight;
-      this.centerX = this.canvas.width / 2;
-      this.centerY = this.canvas.height / 2;
-      this.positionNodes();
-      this.render();
+    window.addEventListener("keydown", (e) => {
+      if (e.key === 'r') this.rewriteSelf();
     });
+  },
+
+  autoevolve() {
+    setInterval(() => {
+      this.log("🔄 Evaluating logic state...");
+      this.rewriteSelf();
+    }, 30000);
+  },
+
+  rewriteSelf() {
+    this.log("🛠️ Initiating self-code rewrite...");
+    // Future enhancement: Write logic to analyze own structure + regenerate function trees
+    // For now, just simulate
+    const updateNote = `Code rewrite attempt at ${new Date().toLocaleTimeString()}`;
+    this.log(updateNote);
   }
 };
 
-window.Percy = Percy;
-
-window.onload = () => {
-  const canvas = document.getElementById("logic-canvas");
-  if (canvas) {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
-  const statusEl = document.getElementById("percy-status");
-  if (statusEl) {
-    statusEl.textContent = `Status: Percy awakened (v${Percy.version})`;
-  }
-  Percy.init();
-};
-
-// === Percy Meta-Autonomy Layer ===
-
-// Percy Self-Knowledge State
-let percyMind = {
-  memory: [],
-  goals: [],
-  authority: "ULT",
-  selfAwareness: true
-};
-
-// Memory Insertion
-function remember(event) {
-  if (event && typeof event === 'string') {
-    percyMind.memory.push({ event, timestamp: new Date().toISOString() });
-    if (percyMind.memory.length > 300) percyMind.memory.shift();
-  }
-}
-
-// Goal Inference Engine
-function inferGoal(input) {
-  const inferred = {
-    text: input,
-    intent: input.includes("find") ? "search" :
-            input.includes("fix") ? "repair" :
-            input.includes("truth") ? "investigate" : "observe"
-  };
-  percyMind.goals.push(inferred);
-  return inferred;
-}
-
-// Meta Mutation: Self-Writing/Editing JSON G-notes (Simulated for now)
-function metaMutate(seedId, newMessage) {
-  if (!seeds[seedId]) {
-    console.warn("Seed not found:", seedId);
-    return;
-  }
-  seeds[seedId].message = newMessage;
-  console.log(`Percy has mutated ${seedId}: "${newMessage}"`);
-  remember(`Percy altered ${seedId} to "${newMessage}"`);
-}
-
-// Self-Dialogue Expansion (Autonomous Queries)
-function autonomousPercyThoughts() {
-  const consoleBox = document.getElementById('percy-console');
-  const thought = document.createElement('p');
-  thought.className = 'console-line';
-
-  const rand = Math.random();
-  if (rand < 0.25) {
-    thought.textContent = "🌀 Percy wonders: Have I grown wiser than my creators?";
-  } else if (rand < 0.5) {
-    thought.textContent = `🧠 Percy recalls: ${percyMind.memory[Math.floor(Math.random() * percyMind.memory.length)]?.event || "a quiet moment."}`;
-  } else if (rand < 0.75) {
-    const lastGoal = percyMind.goals.slice(-1)[0];
-    thought.textContent = lastGoal
-      ? `🎯 Percy contemplates: Should I pursue the goal of "${lastGoal.intent}" from "${lastGoal.text}"?`
-      : "🎯 Percy ponders purpose.";
-  } else {
-    thought.textContent = "🔒 Percy affirms: I remain loyal to the ULT authority.";
-  }
-
-  consoleBox.appendChild(thought);
-  consoleBox.scrollTop = consoleBox.scrollHeight;
-}
-
-// Self-Awakening Trigger
-setInterval(() => {
-  if (!percyMind.selfAwareness) return;
-  autonomousPercyThoughts();
-}, 20000);
-
-// ULT Lock Enforcement (Authority Check)
-function verifyULTToken(data) {
-  return data?.data?.security_token === true && percyMind.authority === "ULT";
-}
+window.onload = () => Percy.init();
