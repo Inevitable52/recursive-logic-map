@@ -2,22 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Percy Recursive Logic Map</title>
   <link rel="stylesheet" href="style.css" />
-  <script defer src="percy.js"></script>
+  <link rel="icon" href="percy.ico" />
 </head>
 <body>
   <header>
     <h1>Percy Recursive Logic Map</h1>
-    <div id="percy-status">Status: Loading...</div>
-    <div id="ult-status">ULT Authority Lock<br>Status: Offline</div>
+    <p id="percy-status">Status: Loading...</p>
   </header>
-  <main>
-    <canvas id="logic-canvas"></canvas>
-  </main>
-  <footer>
-    <p>&copy; 2025 Percy Project. All rights reserved.</p>
-  </footer>
+
+  <canvas id="logic-canvas"></canvas>
+
+  <section id="percy-console" class="console-box">
+    <p class="console-line">🟢 Percy is initializing...</p>
+  </section>
+
+  <script src="percy.js"></script>
 </body>
 </html>
