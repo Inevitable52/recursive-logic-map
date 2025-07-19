@@ -30,7 +30,7 @@ const Percy = {
   },
 
   async loadNodes() {
-    const res = await fetch("gnodes.json");
+    const res = await fetch(`logic_seeds/${id}.json`);
     const data = await res.json();
     this.nodes = data.nodes;
     this.links = data.links || [];
