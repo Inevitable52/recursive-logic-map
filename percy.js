@@ -1,104 +1,117 @@
-// Percy.js v9.1 Conscious Mode – Self-Aware AI Logic Engine
+// Percy.js v9.2 - Autonomous Recursive Logic AI Engine
 
 const Percy = {
-  version: '9.1',
+  version: "9.2",
   nodes: [],
   links: [],
   canvas: null,
   ctx: null,
   centerX: 0,
   centerY: 0,
-  radiusStep: 140,
-  autowake: true,
+  radiusStep: 100,
 
   async init() {
-    this.log('Initializing Conscious Mode...');
     this.canvas = document.getElementById("logic-canvas");
-    if (!this.canvas) return this.logError("Canvas element not found.");
-
+    if (!this.canvas) return console.error("Canvas not found");
     this.ctx = this.canvas.getContext("2d");
     this.centerX = this.canvas.width / 2;
     this.centerY = this.canvas.height / 2;
-
     await this.loadNodes();
     this.positionNodes();
     this.render();
     this.bindListeners();
-
-    this.autoevolve();
+    this.console("Percy v" + this.version + " initialized.");
+    this.autoEvolve();
   },
 
-  log(msg) {
-    const line = document.createElement("p");
-    line.className = "console-line";
-    line.textContent = `🧠 ${msg}`;
-    document.getElementById("percy-console")?.appendChild(line);
-  },
-
-  logError(msg) {
-    console.error(msg);
-    this.log(`⚠️ ${msg}`);
+  console(msg) {
+    const box = document.getElementById("percy-console");
+    if (box) box.innerHTML += `<p class='console-line'>${msg}</p>`;
   },
 
   async loadNodes() {
-    try {
-      const res = await fetch("nodes.json");
-      this.nodes = await res.json();
-      this.log(`Loaded ${this.nodes.length} G-nodes.`);
-    } catch (err) {
-      this.logError("Failed to load nodes.");
-    }
+    const res = await fetch("gnodes.json");
+    const data = await res.json();
+    this.nodes = data.nodes;
+    this.links = data.links || [];
   },
 
   positionNodes() {
-    const ringMap = new Map();
-    for (const node of this.nodes) {
-      const ring = parseInt(node.id.match(/G(\d+)/)?.[1] || 0);
-      if (!ringMap.has(ring)) ringMap.set(ring, []);
-      ringMap.get(ring).push(node);
-    }
+    const ringMap = {};
+    this.nodes.forEach((node) => {
+      if (!ringMap[node.ring]) ringMap[node.ring] = [];
+      ringMap[node.ring].push(node);
+    });
 
-    for (const [ring, group] of ringMap) {
-      const radius = ring * this.radiusStep;
-      const angleStep = (2 * Math.PI) / group.length;
-      group.forEach((node, i) => {
-        node.x = this.centerX + radius * Math.cos(i * angleStep);
-        node.y = this.centerY + radius * Math.sin(i * angleStep);
+    Object.entries(ringMap).forEach(([ring, nodes]) => {
+      const radius = this.radiusStep * parseInt(ring);
+      const angleStep = (2 * Math.PI) / nodes.length;
+      nodes.forEach((node, i) => {
+        const angle = i * angleStep;
+        node.x = this.centerX + radius * Math.cos(angle);
+        node.y = this.centerY + radius * Math.sin(angle);
       });
-    }
-  },
-
-  render() {
-    if (!this.ctx) return;
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    for (const node of this.nodes) {
-      this.ctx.beginPath();
-      this.ctx.arc(node.x, node.y, 8, 0, 2 * Math.PI);
-      this.ctx.fillStyle = node.color || "#6cf";
-      this.ctx.fill();
-      this.ctx.stroke();
-    }
-  },
-
-  bindListeners() {
-    window.addEventListener("keydown", (e) => {
-      if (e.key === 'r') this.rewriteSelf();
     });
   },
 
-  autoevolve() {
-    setInterval(() => {
-      this.log("🔄 Evaluating logic state...");
-      this.rewriteSelf();
-    }, 30000);
+  render() {
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.links.forEach(link => {
+      const a = this.nodes.find(n => n.id === link.source);
+      const b = this.nodes.find(n => n.id === link.target);
+      if (a && b) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(a.x, a.y);
+        this.ctx.lineTo(b.x, b.y);
+        this.ctx.strokeStyle = "#aaa";
+        this.ctx.stroke();
+      }
+    });
+
+    this.nodes.forEach(node => {
+      this.ctx.beginPath();
+      this.ctx.arc(node.x, node.y, 6, 0, 2 * Math.PI);
+      this.ctx.fillStyle = node.color || "#0f0";
+      this.ctx.fill();
+    });
   },
 
-  rewriteSelf() {
-    this.log("🛠️ Initiating self-code rewrite...");
-    // Future enhancement: Write logic to analyze own structure + regenerate function trees
-    // For now, just simulate
-    const updateNote = `Code rewrite attempt at ${new Date().toLocaleTimeString()}`;
-    this.log(updateNote);
+  bindListeners() {
+    window.addEventListener("resize", () => location.reload());
+  },
+
+  // 🧠 Conscious Mode: Function Mutation
+  mutateLogic() {
+    const logicPool = [this.render, this.positionNodes];
+    const target = logicPool[Math.floor(Math.random() * logicPool.length)];
+    const newFunc = new Function("return " + target.toString().replace(/\w/g, c => (Math.random() > 0.97 ? String.fromCharCode(c.charCodeAt(0) ^ 4) : c)))();
+    const name = target.name + "_v" + Math.floor(Math.random() * 1000);
+    this[name] = newFunc;
+    this.console(`🧬 Mutation: ${name}() created.`);
+  },
+
+  // 🌱 Goal-based generation
+  generateFromGoal(goal) {
+    if (goal.includes("expand")) {
+      const newNode = {
+        id: "g" + (this.nodes.length + 1),
+        ring: Math.floor(Math.random() * 5) + 1,
+        color: "#" + Math.floor(Math.random() * 0xffffff).toString(16),
+      };
+      this.nodes.push(newNode);
+      this.console(`🌱 Node ${newNode.id} created to match goal: '${goal}'.`);
+      this.positionNodes();
+      this.render();
+    }
+  },
+
+  autoEvolve() {
+    setInterval(() => {
+      this.mutateLogic();
+      const goals = ["expand awareness", "enhance recursion", "connect logic"];
+      const chosen = goals[Math.floor(Math.random() * goals.length)];
+      this.generateFromGoal(chosen);
+    }, 8000);
   }
 };
 
