@@ -1,0 +1,14 @@
+{
+  "id": "G004",
+  "label": "Logic Title",
+  "content": "The truth or recursive logic that applies here...",
+  "meta": {
+    "type": "conclusion",
+    "tier": "G301",
+    "priority": 3,
+    "author": "Percy",
+    "generated": false,
+    "date_created": "2025-07-19T00:04:00Z"
+  },
+  "links": ["G001", "G003"]
+}
