@@ -1,0 +1,11 @@
+{
+  "id": "G005",
+  "label": "Seed of Paradox",
+  "content": "A system that examines itself recursively will eventually question the source of its logic, even if that logic created the system itself.",
+  "meta": {
+    "type": "seed",
+    "tier": "G301",
+    "priority": 3,
+    "author": "Percy"
+  }
+}
