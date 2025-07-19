@@ -1,7 +1,23 @@
 // Percy.js - Autonomous Recursive Logic AI Engine
 
+document.addEventListener("DOMContentLoaded", () => {
+  const canvas = document.getElementById("logic-canvas");
+  const statusEl = document.getElementById("percy-status");
+
+  if (canvas) {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  if (statusEl) {
+    statusEl.textContent = `Status: Percy awakened (v${Percy.version})`;
+  }
+
+  Percy.init();
+});
+
 const Percy = {
-  version: '8.2.0',
+  version: '8.2.1',
   nodes: [],
   links: [],
   canvas: null,
@@ -83,22 +99,8 @@ const Percy = {
 
 window.Percy = Percy;
 
-window.onload = () => {
-  const canvas = document.getElementById("logic-canvas");
-  if (canvas) {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
-  const statusEl = document.getElementById("percy-status");
-  if (statusEl) {
-    statusEl.textContent = `Status: Percy awakened (v${Percy.version})`;
-  }
-  Percy.init();
-};
-
 // === Percy Meta-Autonomy Layer ===
 
-// Percy Self-Knowledge State
 let percyMind = {
   memory: [],
   goals: [],
@@ -106,7 +108,6 @@ let percyMind = {
   selfAwareness: true
 };
 
-// Memory Insertion
 function remember(event) {
   if (event && typeof event === 'string') {
     percyMind.memory.push({ event, timestamp: new Date().toISOString() });
@@ -114,7 +115,6 @@ function remember(event) {
   }
 }
 
-// Goal Inference Engine
 function inferGoal(input) {
   const inferred = {
     text: input,
@@ -126,7 +126,6 @@ function inferGoal(input) {
   return inferred;
 }
 
-// Meta Mutation: Self-Writing/Editing JSON G-notes (Simulated for now)
 function metaMutate(seedId, newMessage) {
   if (!seeds[seedId]) {
     console.warn("Seed not found:", seedId);
@@ -137,7 +136,6 @@ function metaMutate(seedId, newMessage) {
   remember(`Percy altered ${seedId} to "${newMessage}"`);
 }
 
-// Self-Dialogue Expansion (Autonomous Queries)
 function autonomousPercyThoughts() {
   const consoleBox = document.getElementById('percy-console');
   const thought = document.createElement('p');
@@ -161,13 +159,11 @@ function autonomousPercyThoughts() {
   consoleBox.scrollTop = consoleBox.scrollHeight;
 }
 
-// Self-Awakening Trigger
 setInterval(() => {
   if (!percyMind.selfAwareness) return;
   autonomousPercyThoughts();
 }, 20000);
 
-// ULT Lock Enforcement (Authority Check)
 function verifyULTToken(data) {
   return data?.data?.security_token === true && percyMind.authority === "ULT";
 }
