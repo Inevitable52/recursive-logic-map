@@ -23,9 +23,19 @@ const Percy = {
     this.externalKnowledge();
   },
 
-  async loadNodes() {
-    const res = await fetch(logic_seeds/${id}.json);
-    this.nodes = await res.json();
+   async loadNodes() {
+    for (let i = 80; i <= 800; i++) {
+      const id = G${i.toString().padStart(3, '0')};
+      try {
+        const res = await fetch(logic_seeds/${id}.json);
+        if (!res.ok) continue;
+        const data = await res.json();
+        data.id = id;
+        this.nodes.push(data);
+      } catch (e) {
+        console.warn(Failed to load ${id});
+      }
+    }
   },
 
   positionNodes() {
