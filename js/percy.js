@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 const Percy = {
-  version: '8.2.1',
+  version: '8.7.1',
   nodes: [],
   links: [],
   canvas: null,
