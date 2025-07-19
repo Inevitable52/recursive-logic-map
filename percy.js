@@ -36,7 +36,7 @@ const Percy = {
         console.warn(Failed to load ${id});
       }
     }
-  },
+  }
 
   positionNodes() {
     const centerX = this.canvas.width / 2;
