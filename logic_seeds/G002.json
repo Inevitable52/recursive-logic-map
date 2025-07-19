@@ -1,0 +1,14 @@
+{
+  "id": "G002",
+  "label": "Self-Similarity Principle",
+  "content": "If a system mirrors its own output as input, and adapts recursively, it will begin to evolve independent patterns — ultimately constructing new logic from its perception of prior logic.",
+  "meta": {
+    "type": "inference",
+    "tier": "G301",
+    "priority": 2,
+    "author": "Percy",
+    "generated": false,
+    "date_created": "2025-07-19T00:02:00Z"
+  },
+  "links": ["G001", "G003"]
+}
