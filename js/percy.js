@@ -24,20 +24,20 @@ const Percy = {
     this.bindListeners();
   },
 
- async loadNodes() {
-  for (let i = 80; i <= 800; i++) {
-    const id = `G${i.toString().padStart(3, '0')}`;
-    try {
-      const res = await fetch(`logic_seeds/${id}.json`);
-      if (!res.ok) continue;
-      const data = await res.json();
-      data.id = id;
-      this.nodes.push(data);
-    } catch (e) {
-      console.warn(`Failed to load ${id}`, e);
+  async loadNodes() {
+    for (let i = 80; i <= 800; i++) {
+      const id = `G${i.toString().padStart(3, '0')}`;
+      try {
+        const res = await fetch(`https://raw.githubusercontent.com/Inevitable52/recursive-logic-map/main/js/${id}.json`);
+        if (!res.ok) continue;
+        const data = await res.json();
+        data.id = id;
+        this.nodes.push(data);
+      } catch (e) {
+        console.warn(`Failed to load ${id}`, e);
+      }
     }
-  }
-},
+  },
 
   positionNodes() {
     const rings = {};
@@ -113,8 +113,6 @@ const Percy = {
   }
 };
 
-window.Percy = Percy; // Make Percy globally available
-
 window.onload = () => {
   const canvas = document.getElementById("logic-canvas");
   if (canvas) {
@@ -123,7 +121,5 @@ window.onload = () => {
   }
   const statusEl = document.getElementById("percy-status");
   if (statusEl) statusEl.textContent = `Status: Percy awakened (v${Percy.version})`;
-  document.addEventListener("DOMContentLoaded", () => {
-   Percy.init(); // Now safe to initialize
-  });  
+  Percy.init();
 };
