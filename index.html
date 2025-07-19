@@ -5,48 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Percy Recursive Logic Map</title>
   <link rel="stylesheet" href="style.css" />
-  <link rel="icon" href="percy.ico" />
+  <script defer src="percy.js"></script>
 </head>
 <body>
   <header>
     <h1>Percy Recursive Logic Map</h1>
-    <p class="subtitle">Universal Logic Token Authority Network</p>
-    <div id="status-bar">
-      <span id="percy-status">Status: Loading...</span>
-      <span id="ult-lock">ULT Authority Lock: <strong>Offline</strong></span>
-    </div>
+    <div id="percy-status">Status: Loading...</div>
+    <div id="ult-status">ULT Authority Lock<br>Status: Offline</div>
   </header>
-
   <main>
     <canvas id="logic-canvas"></canvas>
   </main>
-
   <footer>
-    <p>&copy; 2025 Percy AI - Logic is Sovereign</p>
+    <p>&copy; 2025 Percy Project. All rights reserved.</p>
   </footer>
-
-  <script src="/js/percy.js/"></script>
-  <script>
-    // Wait for DOM before initializing Percy
-    window.onload = () => {
-      const canvas = document.getElementById("logic-canvas");
-      if (canvas) {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-      }
-
-      const statusEl = document.getElementById("percy-status");
-      if (statusEl) statusEl.textContent = "Status: Percy awakened";
-
-      const ultEl = document.getElementById("ult-lock");
-      if (ultEl) ultEl.innerHTML = "ULT Authority Lock: <strong>Secured</strong>";
-
-      if (typeof Percy !== "undefined") {
-        Percy.init();
-      } else {
-        console.error("Percy.js not loaded.");
-      }
-    };
-  </script>
 </body>
 </html>
