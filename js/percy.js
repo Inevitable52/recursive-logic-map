@@ -9,7 +9,6 @@ const Percy = {
   centerX: 0,
   centerY: 0,
   radiusStep: 100,
-},
 
   async init() {
     this.canvas = document.getElementById("logic-canvas");
