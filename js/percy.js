@@ -38,7 +38,7 @@ const Percy = {
       console.warn(`Failed to load ${id}`, e);
     }
   }
-}
+},
 
   positionNodes() {
     const rings = {};
