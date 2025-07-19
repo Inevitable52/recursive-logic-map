@@ -121,11 +121,8 @@ window.onload = () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
   }
-
   const statusEl = document.getElementById("percy-status");
   if (statusEl) {
     statusEl.textContent = `Status: Percy awakened (v${Percy.version})`;
-  }
-
   Percy.init(); // Now safe to initialize
 };
