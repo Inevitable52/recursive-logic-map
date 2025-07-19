@@ -13,12 +13,19 @@
     <p id="percy-status">Status: Loading...</p>
   </header>
 
-  <canvas id="logic-canvas"></canvas>
+  <!-- Added container -->
+  <div id="graph-container">
+    <canvas id="logic-canvas" width="800" height="800"></canvas>
+  </div>
+
+  <!-- Optional: Button if your JS expects one -->
+  <button id="loadButton" style="display:none;">Load Nodes</button>
 
   <section id="percy-console" class="console-box">
     <p class="console-line">🟢 Percy is initializing...</p>
   </section>
 
-  <script src="percy.js"></script>
+  <!-- Defer JS until HTML is ready -->
+  <script defer src="percy.js"></script>
 </body>
 </html>
