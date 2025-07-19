@@ -1,94 +1,61 @@
-/* Percy Recursive Logic Map - Updated CSS */
-
 body {
   margin: 0;
-  padding: 0;
-  background-color: #0b0c10;
-  color: #c5c6c7;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   overflow: hidden;
+  font-family: "Segoe UI", sans-serif;
+  background: radial-gradient(circle, #0f0f0f, #000000);
+  color: #00ffcc;
 }
 
 header {
   position: absolute;
+  top: 10px;
+  left: 20px;
+  z-index: 10;
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: 1px solid #00ffcc;
+  box-shadow: 0 0 10px #00ffcc55;
+}
+
+h1 {
+  font-size: 1.5em;
+  margin: 0;
+  color: #00ffcc;
+}
+
+#percy-status {
+  font-size: 0.9em;
+  margin-top: 4px;
+  color: #dddddd;
+}
+
+canvas#logic-canvas {
+  position: absolute;
   top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+.console-box {
+  position: absolute;
+  bottom: 0;
   left: 0;
   width: 100%;
-  padding: 1rem;
-  background-color: #1f2833cc;
-  color: #66fcf1;
+  max-height: 25vh;
+  overflow-y: auto;
+  background-color: rgba(0, 0, 0, 0.8);
+  border-top: 2px solid #00ffcc;
+  font-size: 0.85em;
+  padding: 10px;
+  box-sizing: border-box;
   z-index: 10;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
-header h1 {
-  font-size: 1.5rem;
-  margin: 0;
+.console-line {
+  margin: 2px 0;
+  color: #00ffcc;
+  font-family: monospace;
+  white-space: pre-wrap;
 }
 
-header span#percy-status {
-  font-size: 1rem;
-  color: #ffffff;
-  background-color: #45a29e;
-  padding: 0.3rem 0.8rem;
-  border-radius: 1rem;
-}
-
-canvas {
-  display: block;
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 0;
-}
-
-.node {
-  position: absolute;
-  padding: 0.4rem 0.8rem;
-  border-radius: 12px;
-  color: #0b0c10;
-  font-size: 0.9rem;
-  white-space: nowrap;
-  cursor: pointer;
-  background: linear-gradient(to right, #66fcf1, #45a29e);
-  box-shadow: 0 0 12px #45a29eaa;
-  transition: transform 0.2s ease;
-  user-select: none;
-}
-
-.node:hover {
-  transform: scale(1.1);
-  z-index: 5;
-  box-shadow: 0 0 16px #66fcf1;
-}
-
-.ring-1 {
-  background: linear-gradient(to right, #00ff00, #00cc00);
-}
-
-.ring-2 {
-  background: linear-gradient(to right, #0077ff, #0055aa);
-}
-
-.ring-3 {
-  background: linear-gradient(to right, #ffaa00, #cc7700);
-}
-
-.ring-4 {
-  background: linear-gradient(to right, #ff3333, #aa0000);
-}
-
-.ring-5 {
-  background: linear-gradient(to right, #bb66ff, #7a00cc);
-}
-
-.link-line {
-  stroke: #66fcf199;
-  stroke-width: 2;
-  fill: none;
-  pointer-events: none;
-}
