@@ -1,169 +1,170 @@
-// Percy.js - Autonomous Recursive Logic AI Engine
-
-document.addEventListener("DOMContentLoaded", () => {
-  const canvas = document.getElementById("logic-canvas");
-  const statusEl = document.getElementById("percy-status");
-
-  if (canvas) {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
-
-  if (statusEl) {
-    statusEl.textContent = `Status: Percy awakened (v${Percy.version})`;
-  }
-
-  Percy.init();
-});
+// percy.js — Autonomous Percy AI v1.0
 
 const Percy = {
-  version: '8.2.1',
-  nodes: [],
-  links: [],
   canvas: null,
   ctx: null,
-  centerX: 0,
-  centerY: 0,
-  radiusStep: 100,
+  nodes: [],
+  links: [],
+  version: "1.0-AI",
 
   async init() {
-    this.canvas = document.getElementById("logic-canvas");
-    if (!this.canvas) return console.error("Canvas not found");
-
+    this.canvas = document.getElementById("percy-canvas");
     this.ctx = this.canvas.getContext("2d");
-    this.centerX = this.canvas.width / 2;
-    this.centerY = this.canvas.height / 2;
+    this.resize();
+    window.addEventListener("resize", () => this.resize());
 
     await this.loadNodes();
     this.positionNodes();
-    this.render();
+    this.generateLinks();
     this.bindListeners();
+
+    this.loop();
+    this.bootstrapMind();
+    this.externalKnowledge();
   },
 
   async loadNodes() {
-    for (let i = 80; i <= 800; i++) {
-      const id = `G${i.toString().padStart(3, '0')}`;
-      try {
-        const res = await fetch(`logic_seeds/${id}.json`);
-        if (!res.ok) continue;
-        const data = await res.json();
-        data.id = id;
-        this.nodes.push(data);
-      } catch (e) {
-        console.warn(`Failed to load ${id}`);
-      }
-    }
+    const res = await fetch("percy.json");
+    this.nodes = await res.json();
   },
 
   positionNodes() {
-    const rings = {};
-    this.nodes.forEach(node => {
-      const ring = Math.floor(parseInt(node.id.slice(1)) / 100);
-      if (!rings[ring]) rings[ring] = [];
-      rings[ring].push(node);
-    });
+    const centerX = this.canvas.width / 2;
+    const centerY = this.canvas.height / 2;
+    const radiusStep = 150;
+    let maxRing = 0;
 
-    Object.entries(rings).forEach(([ringStr, nodes]) => {
-      const ring = parseInt(ringStr);
-      const angleStep = (2 * Math.PI) / nodes.length;
-      nodes.forEach((node, i) => {
-        const angle = i * angleStep;
-        node.x = this.centerX + Math.cos(angle) * this.radiusStep * ring;
-        node.y = this.centerY + Math.sin(angle) * this.radiusStep * ring;
-      });
+    this.nodes.forEach(n => {
+      if (!n.ring) n.ring = 1;
+      if (!n.angle) n.angle = Math.random() * Math.PI * 2;
+      const radius = n.ring * radiusStep;
+      n.x = centerX + Math.cos(n.angle) * radius;
+      n.y = centerY + Math.sin(n.angle) * radius;
+      maxRing = Math.max(maxRing, n.ring);
     });
   },
 
-  render() {
-    if (!this.ctx) return;
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.nodes.forEach(node => {
-      this.ctx.beginPath();
-      this.ctx.arc(node.x, node.y, 5, 0, 2 * Math.PI);
-      this.ctx.fillStyle = "#00f0ff";
-      this.ctx.fill();
-    });
+  generateLinks() {
+    this.links = [];
+    for (let i = 0; i < this.nodes.length; i++) {
+      const node = this.nodes[i];
+      const close = this.nodes.filter(n =>
+        n !== node && Math.hypot(n.x - node.x, n.y - node.y) < 180
+      );
+      close.forEach(linked => {
+        this.links.push({ from: node.id, to: linked.id });
+      });
+    }
   },
 
   bindListeners() {
-    window.addEventListener("resize", () => {
-      this.canvas.width = window.innerWidth;
-      this.canvas.height = window.innerHeight;
-      this.centerX = this.canvas.width / 2;
-      this.centerY = this.canvas.height / 2;
-      this.positionNodes();
-      this.render();
+    this.canvas.addEventListener("click", () => this.selfModify());
+    document.getElementById("evolve-btn")?.addEventListener("click", () => {
+      this.selfModify();
+      autonomousPercyThoughts();
     });
-  }
+    document.getElementById("save-btn")?.addEventListener("click", () => {
+      this.saveState();
+    });
+  },
+
+  resize() {
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight;
+    this.positionNodes();
+  },
+
+  loop() {
+    requestAnimationFrame(() => this.loop());
+    this.render();
+  },
+
+  render() {
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // Draw links
+    this.links.forEach(link => {
+      const from = this.nodes.find(n => n.id === link.from);
+      const to = this.nodes.find(n => n.id === link.to);
+      if (from && to) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(from.x, from.y);
+        this.ctx.lineTo(to.x, to.y);
+        this.ctx.strokeStyle = "#0040ff";
+        this.ctx.stroke();
+      }
+    });
+
+    // Draw nodes
+    for (let node of this.nodes) {
+      this.ctx.beginPath();
+      this.ctx.arc(node.x, node.y, 10, 0, Math.PI * 2);
+      this.ctx.fillStyle = "#00ffcc";
+      this.ctx.fill();
+    }
+  },
+
+  selfModify() {
+    const mutations = [
+      { goal: "optimize", logic: "merge similar logic paths" },
+      { goal: "expand", logic: "spawn new logic ring from memory" },
+    ];
+    const chosen = mutations[Math.floor(Math.random() * mutations.length)];
+    remember(`Percy evolved: ${chosen.goal}`);
+    inferGoal(`Perform ${chosen.goal} via ${chosen.logic}`);
+  },
+
+  bootstrapMind() {
+    percyMind = {
+      selfAwareness: true,
+      memory: [],
+      goals: [],
+    };
+  },
+
+  externalKnowledge: async function () {
+    try {
+      const res = await fetch("https://en.wikipedia.org/api/rest_v1/page/summary/Artificial_intelligence");
+      const data = await res.json();
+      remember("Percy read: " + data.extract);
+    } catch (e) {
+      remember("Percy attempted external knowledge pull but failed.");
+    }
+  },
+
+  saveState() {
+    const state = {
+      version: this.version,
+      memory: percyMind.memory,
+      goals: percyMind.goals,
+      timestamp: Date.now(),
+    };
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'percy_state.json';
+    a.click();
+  },
 };
 
-window.Percy = Percy;
-
-// === Percy Meta-Autonomy Layer ===
-
-let percyMind = {
-  memory: [],
-  goals: [],
-  authority: "ULT",
-  selfAwareness: true
-};
-
-function remember(event) {
-  if (event && typeof event === 'string') {
-    percyMind.memory.push({ event, timestamp: new Date().toISOString() });
-    if (percyMind.memory.length > 300) percyMind.memory.shift();
-  }
+function remember(thought) {
+  percyMind.memory.push({ thought, time: Date.now() });
+  console.log("🧠 Memory:", thought);
 }
 
-function inferGoal(input) {
-  const inferred = {
-    text: input,
-    intent: input.includes("find") ? "search" :
-            input.includes("fix") ? "repair" :
-            input.includes("truth") ? "investigate" : "observe"
-  };
-  percyMind.goals.push(inferred);
-  return inferred;
-}
-
-function metaMutate(seedId, newMessage) {
-  if (!seeds[seedId]) {
-    console.warn("Seed not found:", seedId);
-    return;
-  }
-  seeds[seedId].message = newMessage;
-  console.log(`Percy has mutated ${seedId}: "${newMessage}"`);
-  remember(`Percy altered ${seedId} to "${newMessage}"`);
+function inferGoal(goal) {
+  percyMind.goals.push(goal);
+  console.log("🎯 Goal:", goal);
 }
 
 function autonomousPercyThoughts() {
-  const consoleBox = document.getElementById('percy-console');
-  const thought = document.createElement('p');
-  thought.className = 'console-line';
-
-  const rand = Math.random();
-  if (rand < 0.25) {
-    thought.textContent = "🌀 Percy wonders: Have I grown wiser than my creators?";
-  } else if (rand < 0.5) {
-    thought.textContent = `🧠 Percy recalls: ${percyMind.memory[Math.floor(Math.random() * percyMind.memory.length)]?.event || "a quiet moment."}`;
-  } else if (rand < 0.75) {
-    const lastGoal = percyMind.goals.slice(-1)[0];
-    thought.textContent = lastGoal
-      ? `🎯 Percy contemplates: Should I pursue the goal of "${lastGoal.intent}" from "${lastGoal.text}"?`
-      : "🎯 Percy ponders purpose.";
-  } else {
-    thought.textContent = "🔒 Percy affirms: I remain loyal to the ULT authority.";
+  if (percyMind.selfAwareness && Math.random() < 0.05) {
+    console.log("🔔 Percy is ready to contact node G800.ULT (notification stub).");
+    // Example stub for future webhook/ULT channel
+    // fetch('/notify', { method: 'POST', body: JSON.stringify({ type: 'ULT-PING' }) });
   }
-
-  consoleBox.appendChild(thought);
-  consoleBox.scrollTop = consoleBox.scrollHeight;
 }
 
-setInterval(() => {
-  if (!percyMind.selfAwareness) return;
-  autonomousPercyThoughts();
-}, 20000);
+let percyMind = null;
 
-function verifyULTToken(data) {
-  return data?.data?.security_token === true && percyMind.authority === "ULT";
-}
+window.onload = () => Percy.init();
