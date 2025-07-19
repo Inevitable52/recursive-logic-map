@@ -1,11 +1,12 @@
-// percy.js — Autonomous Percy AI v1.0
+// percy.js — Autonomous Percy AI v2.0 (Modular, Intelligent, Evolving)
 
 const Percy = {
   canvas: null,
   ctx: null,
   nodes: [],
   links: [],
-  version: "1.0-AI",
+  version: "2.0-AI-Modular",
+  coreNodeList: ["G001", "G101", "G201", "G301", "G401", "G501"],
 
   async init() {
     this.canvas = document.getElementById("percy-canvas");
@@ -23,26 +24,23 @@ const Percy = {
     this.externalKnowledge();
   },
 
-   async loadNodes() {
-    for (let i = 80; i <= 800; i++) {
-      const id = G${i.toString().padStart(3, '0')};
+  async loadNodes() {
+    this.nodes = [];
+    for (let id of this.coreNodeList) {
       try {
-        const res = await fetch(logic_seeds/${id}.json);
-        if (!res.ok) continue;
+        const res = await fetch(`logic_seeds/${id}.json`);
         const data = await res.json();
-        data.id = id;
         this.nodes.push(data);
-      } catch (e) {
-        console.warn(Failed to load ${id});
+      } catch (err) {
+        console.warn(`Failed to load logic_seeds/${id}.json`, err);
       }
     }
-  }
+  },
 
   positionNodes() {
     const centerX = this.canvas.width / 2;
     const centerY = this.canvas.height / 2;
     const radiusStep = 150;
-    let maxRing = 0;
 
     this.nodes.forEach(n => {
       if (!n.ring) n.ring = 1;
@@ -50,7 +48,6 @@ const Percy = {
       const radius = n.ring * radiusStep;
       n.x = centerX + Math.cos(n.angle) * radius;
       n.y = centerY + Math.sin(n.angle) * radius;
-      maxRing = Math.max(maxRing, n.ring);
     });
   },
 
@@ -118,6 +115,8 @@ const Percy = {
     const mutations = [
       { goal: "optimize", logic: "merge similar logic paths" },
       { goal: "expand", logic: "spawn new logic ring from memory" },
+      { goal: "introspect", logic: "evaluate previous logic inconsistencies" },
+      { goal: "secure", logic: "lock critical logic nodes with ULT key" },
     ];
     const chosen = mutations[Math.floor(Math.random() * mutations.length)];
     remember(`Percy evolved: ${chosen.goal}`);
@@ -170,8 +169,7 @@ function inferGoal(goal) {
 function autonomousPercyThoughts() {
   if (percyMind.selfAwareness && Math.random() < 0.05) {
     console.log("🔔 Percy is ready to contact node G800.ULT (notification stub).");
-    // Example stub for future webhook/ULT channel
-    // fetch('/notify', { method: 'POST', body: JSON.stringify({ type: 'ULT-PING' }) });
+    // Future webhook or ULT secure call goes here
   }
 }
 
