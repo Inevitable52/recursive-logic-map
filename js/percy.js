@@ -113,6 +113,8 @@ const Percy = {
   }
 };
 
+window.Percy = Percy; // Make Percy globally available
+
 window.onload = () => {
   const canvas = document.getElementById("logic-canvas");
   if (canvas) {
