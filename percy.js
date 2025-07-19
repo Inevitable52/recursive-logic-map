@@ -1,112 +1,134 @@
-const logicMap = document.getElementById('logic-map');
-const seedsFolder = 'logic_seeds/';
-const seedRange = { start: 80, end: 130 };
+// percy.js - Updated for DOM safety and visual ring structure
 
-let seeds = {};
+const Percy = {
+  version: '7.19.25',
+  nodes: [],
+  links: [],
+  canvas: null,
+  ctx: null,
+  centerX: 0,
+  centerY: 0,
+  radiusStep: 100,
 
-async function loadSeeds() {
-  const loadingNotice = document.createElement('p');
-  loadingNotice.id = 'loading-indicator';
-  loadingNotice.textContent = "Loading logic seeds...";
-  logicMap.appendChild(loadingNotice);
+  async init() {
+    this.canvas = document.getElementById("logic-canvas");
+    if (!this.canvas) return console.error("Canvas not found");
 
-  for (let i = seedRange.start; i <= seedRange.end; i++) {
-    const filename = `G${String(i).padStart(3, '0')}.json`;
-    try {
-      const res = await fetch(seedsFolder + filename);
-      if (!res.ok) throw new Error(`Failed to load ${filename}`);
-      const data = await res.json();
-      seeds[filename] = data;
-    } catch (e) {
-      console.warn(e.message);
+    this.ctx = this.canvas.getContext("2d");
+    const container = document.getElementById("graph-container");
+    if (!container) return console.error("Graph container not found");
+
+    this.centerX = container.clientWidth / 2;
+    this.centerY = container.clientHeight / 2;
+
+    await this.loadNodes();
+    this.positionNodes();
+    this.render();
+    this.bindListeners();
+
+    this.log(`🔁 Percy v${this.version} initialized.`);
+  },
+
+  async loadNodes() {
+    // For testing: generate dummy nodes if not loaded externally
+    if (this.nodes.length === 0) {
+      for (let i = 0; i < 60; i++) {
+        this.nodes.push({ id: `G${i + 1}`, layer: Math.floor(i / 10) });
+      }
     }
-  }
+  },
 
-  logicMap.removeChild(loadingNotice);
-}
+  positionNodes() {
+    const layerCounts = {};
+    this.nodes.forEach(node => {
+      const layer = node.layer ?? 0;
+      layerCounts[layer] = (layerCounts[layer] || 0) + 1;
+    });
 
-function createNodes() {
-  const mapWidth = logicMap.clientWidth;
-  const mapHeight = logicMap.clientHeight;
-  const total = Object.keys(seeds).length;
-  let index = 0;
+    const layerOffsets = {};
+    for (let layer in layerCounts) {
+      const count = layerCounts[layer];
+      layerOffsets[layer] = 0;
+    }
 
-  logicMap.innerHTML = ''; // Clear existing nodes before redraw
+    this.nodes.forEach(node => {
+      const layer = node.layer ?? 0;
+      const count = layerCounts[layer];
+      const index = layerOffsets[layer]++;
+      const angle = (2 * Math.PI * index) / count;
+      const radius = this.radiusStep * (layer + 1);
+      node.x = this.centerX + radius * Math.cos(angle);
+      node.y = this.centerY + radius * Math.sin(angle);
+    });
+  },
 
-  for (const [filename, data] of Object.entries(seeds)) {
-    const node = document.createElement('div');
-    node.classList.add('node');
-    node.textContent = filename;
-    node.title = data.message;
+  render() {
+    if (!this.ctx) return;
 
-    // CLICK: Percy speaks
-    node.addEventListener('click', () => {
-      const messageBox = document.getElementById('percy-message');
-      messageBox.textContent = data.message || "No message found.";
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-      const consoleBox = document.getElementById('percy-console');
-      const line = document.createElement('p');
-      line.className = 'console-line';
-      line.textContent = `↳ ${data.message}`;
-      consoleBox.appendChild(line);
-      consoleBox.scrollTop = consoleBox.scrollHeight;
-
-      if (data.data?.redirect_on_logic_violation) {
-        const redirectId = data.data.redirect_on_logic_violation;
-        const redirectLine = document.createElement('p');
-        redirectLine.className = 'console-line';
-        redirectLine.textContent = `⚠ Redirection triggered: logic violation → ${redirectId}`;
-        consoleBox.appendChild(redirectLine);
+    // Links
+    this.ctx.strokeStyle = "#aaa";
+    this.links.forEach(link => {
+      const from = this.nodes.find(n => n.id === link.from);
+      const to = this.nodes.find(n => n.id === link.to);
+      if (from && to) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(from.x, from.y);
+        this.ctx.lineTo(to.x, to.y);
+        this.ctx.stroke();
       }
     });
 
-    // HOVER: Percy whispers
-    node.addEventListener('mouseenter', () => {
-      const messageBox = document.getElementById('percy-message');
-      messageBox.textContent = data.message || "No message found.";
+    // Nodes
+    this.nodes.forEach(node => {
+      this.ctx.beginPath();
+      this.ctx.arc(node.x, node.y, 10, 0, 2 * Math.PI);
+      this.ctx.fillStyle = "#66f";
+      this.ctx.fill();
+      this.ctx.strokeStyle = "#333";
+      this.ctx.stroke();
+
+      // Label
+      this.ctx.font = "12px sans-serif";
+      this.ctx.fillStyle = "#000";
+      this.ctx.fillText(node.id, node.x + 12, node.y);
     });
+  },
 
-    // Circular layout
-    const angle = (index / total) * 2 * Math.PI;
-    const radius = Math.min(mapWidth, mapHeight) / 3;
-    const x = mapWidth / 2 + radius * Math.cos(angle) - 30;
-    const y = mapHeight / 2 + radius * Math.sin(angle) - 15;
+  bindListeners() {
+    const loadButton = document.getElementById("loadButton");
+    if (loadButton) {
+      loadButton.addEventListener("click", async () => {
+        await this.loadNodes();
+        this.positionNodes();
+        this.render();
+      });
+    }
 
-    node.style.left = `${x}px`;
-    node.style.top = `${y}px`;
+    window.addEventListener("resize", () => {
+      const container = document.getElementById("graph-container");
+      if (container) {
+        this.centerX = container.clientWidth / 2;
+        this.centerY = container.clientHeight / 2;
+        this.positionNodes();
+        this.render();
+      }
+    });
+  },
 
-    logicMap.appendChild(node);
-    index++;
+  log(message) {
+    const status = document.getElementById("percy-status");
+    const consoleBox = document.getElementById("percy-console");
+    if (status) status.textContent = `Status: ${message}`;
+    if (consoleBox) {
+      const line = document.createElement("p");
+      line.className = "console-line";
+      line.textContent = message;
+      consoleBox.appendChild(line);
+    }
   }
+};
 
-  // Apply current search filter after all nodes are redrawn
-  applyFilter();
-}
-
-// Filter function for live search
-function applyFilter() {
-  const query = document.getElementById('seed-search').value.toLowerCase();
-  const nodes = document.querySelectorAll('.node');
-  nodes.forEach(node => {
-    const match = node.textContent.toLowerCase().includes(query);
-    node.style.display = match ? 'block' : 'none';
-  });
-}
-
-// Initialize Percy
-async function init() {
-  await loadSeeds();
-  createNodes();
-  console.log("Percy initialized. Click a node.");
-}
-
-// Rebuild nodes on window resize
-window.addEventListener('resize', () => {
-  createNodes(); // logicMap.innerHTML handled inside
-});
-
-// Live filter input
-document.getElementById('seed-search').addEventListener('input', applyFilter);
-
-// Start the whole thing
-init();
+// Wait for DOM to load before running Percy
+document.addEventListener("DOMContentLoaded", () => Percy.init());
