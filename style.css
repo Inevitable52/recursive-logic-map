@@ -1,88 +1,47 @@
 body {
   margin: 0;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #0b0c10;
-  color: #c5c6c7;
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
+  font-family: Arial, sans-serif;
+  background-color: #111;
+  color: #eee;
   overflow: hidden;
 }
 
-header {
-  background-color: #1f2833;
-  padding: 1rem;
-  text-align: center;
-  border-bottom: 2px solid #45a29e;
-}
-
-h1 {
-  margin: 0;
-  color: #66fcf1;
-  font-size: 1.75rem;
-}
-
-#percy-status {
-  margin-top: 0.5rem;
-  font-size: 0.95rem;
-  color: #45a29e;
-}
-
-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-
-canvas#graph {
-  flex: 1;
-  width: 100%;
-  height: 100%;
-  background-color: #121212;
+canvas#logic-canvas {
   display: block;
+  width: 100vw;
+  height: 100vh;
+  background-color: #000;
 }
 
-#percy-console-wrapper {
-  background-color: #1f2833;
-  border-top: 2px solid #45a29e;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 10px 20px;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 10;
 }
 
 #percy-console {
-  height: 200px;
+  position: absolute;
+  bottom: 60px;
+  left: 0;
+  right: 0;
+  padding: 10px;
+  background-color: rgba(0, 0, 0, 0.6);
   overflow-y: auto;
-  background-color: #0b0c10;
-  border: 1px solid #45a29e;
-  padding: 0.5rem;
-  font-family: monospace;
-  font-size: 0.9rem;
-  color: #66fcf1;
+  max-height: 150px;
+  z-index: 10;
 }
 
-#user-input {
-  padding: 0.5rem;
-  font-size: 1rem;
-  border: 1px solid #45a29e;
-  background-color: #0b0c10;
-  color: #ffffff;
+#percy-status {
+  position: absolute;
+  bottom: 0;
+  left: 0;
   width: 100%;
-}
-
-#send-button {
-  margin-top: 0.5rem;
-  padding: 0.5rem;
-  background-color: #45a29e;
-  color: #0b0c10;
-  border: none;
+  padding: 10px;
   font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-#send-button:hover {
-  background-color: #66fcf1;
+  background-color: rgba(0, 0, 0, 0.8);
+  text-align: center;
+  z-index: 10;
 }
