@@ -1,25 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Percy Recursive Logic Engine</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="icon" href="percy.ico" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Percy 2FA Setup</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/otplib@12.0.1"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #111;
+      color: #fff;
+      padding: 2rem;
+    }
+    .qr-container {
+      background: #222;
+      padding: 1rem;
+      border-radius: 1rem;
+      box-shadow: 0 0 10px #0ff5;
+      max-width: 400px;
+    }
+    input, button {
+      padding: 0.5rem;
+      margin-top: 1rem;
+      width: 100%;
+      font-size: 1rem;
+    }
+    .status {
+      margin-top: 1rem;
+    }
+  </style>
 </head>
 <body>
-  <header>
-    <h1>Percy Recursive Logic Engine</h1>
-  </header>
+  <h1>Percy 2FA Setup</h1>
+  <div class="qr-container">
+    <p>Scan the QR code with Authy or Google Authenticator:</p>
+    <canvas id="qrcode"></canvas>
+    <p>Or enter this code manually:</p>
+    <code id="manual-code"></code>
+    <hr>
+    <label>Enter code from app:</label>
+    <input type="text" id="user-code" placeholder="123456">
+    <button onclick="verifyCode()">Verify</button>
+    <div class="status" id="status"></div>
+  </div>
 
-  <canvas id="logic-canvas"></canvas>
+  <script>
+    const secret = otplib.authenticator.generateSecret();
+    const otpauth = otplib.authenticator.keyuri("PercyUser", "Percy", secret);
+    const qrCanvas = document.getElementById("qrcode");
 
-  <section id="console-container">
-    <div id="percy-console"></div>
-    <div id="percy-status">Status: Ready</div>
-    <input id="user-input" type="text" placeholder="Ask Percy something..." autocomplete="off" />
-  </section>
+    QRCode.toCanvas(qrCanvas, otpauth, { width: 256 }, function (error) {
+      if (error) console.error(error);
+      console.log("QR code generated");
+    });
 
-  <script src="percy.js"></script>
+    document.getElementById("manual-code").textContent = secret;
+
+    function verifyCode() {
+      const userInput = document.getElementById("user-code").value.trim();
+      const isValid = otplib.authenticator.check(userInput, secret);
+      const status = document.getElementById("status");
+      status.textContent = isValid ? "✅ Verified!" : "❌ Invalid code.";
+      status.style.color = isValid ? "#0f0" : "#f00";
+    }
+  </script>
 </body>
 </html>
