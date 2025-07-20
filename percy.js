@@ -336,22 +336,27 @@ async function saveDefinition(word, def) {
 async function scanAndDefineAllWords() {
   const seen = new Set();
 
-  for (const node of window.nodes) {
+  for (const node of nodes) {
     const text = [node.label, node.message, node.summary].filter(Boolean).join(" ");
     const words = text.split(/\W+/).map(w => w.toLowerCase()).filter(w => w.length > 2);
 
     for (const word of words) {
-      if (!window.dictionary[word] && !seen.has(word)) {
+      if (!dictionary[word] && !seen.has(word)) {
         seen.add(word);
         const def = await fetchOnlineDefinition(word);
         if (def) {
-          window.dictionary[word] = def;
+          dictionary[word] = def;
           await saveDefinition(word, def);
           logToConsole(`📥 Auto-learned: ${word} → ${def.definition}`);
         }
+        // Wait 300ms between each request to avoid flooding API
+        await new Promise(res => setTimeout(res, 300));
       }
     }
   }
+
+  logToConsole("✅ Auto dictionary scan complete.");
+}
 
   logToConsole("✅ Auto dictionary scan complete.");
 }
