@@ -291,12 +291,18 @@ async function fetchOnlineDefinition(word) {
   return null;
 }
 
-function saveDefinition(word, def) {
-  fetch("/save_definition", {
+async function saveDefinition(word, def) {
+  const response = await fetch('https://recursive-logic-map.vercel.app/api/save_definition', {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ word, def })
   });
+
+  if (response.ok) {
+    console.log("✅ Saved definition:", word, "=", def);
+  } else {
+    console.error("❌ Failed to save:", response.statusText);
+  }
 }
 
 function animateThinking() {
