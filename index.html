@@ -1,32 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Percy Recursive Logic Map</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="icon" href="percy.ico">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Percy Recursive Logic Engine</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header>
-    <h1>Percy Recursive Logic Map</h1>
-    <p id="status">Initializing...</p>
+    <h1>Percy Recursive Logic Engine</h1>
+    <div id="percy-status">Status: Initializing...</div>
   </header>
 
-  <main>
-    <section id="graph-container">
-      <canvas id="graph"></canvas>
-    </section>
+  <canvas id="logic-canvas"></canvas>
 
-    <section id="console-container">
-      <div id="console-output"></div>
-      <input type="text" id="user-input" placeholder="Type a word, phrase, or question...">
-    </section>
-  </main>
-
-  <footer>
-    <button onclick="scanAndDefineAllWords()">🔍 Re-scan Words</button>
-  </footer>
+  <section id="console-section">
+    <div id="percy-console" class="console-box"></div>
+    <input type="text" id="user-input" placeholder="Type your input and press Enter" autocomplete="off" />
+  </section>
 
   <script src="percy.js"></script>
 </body>
