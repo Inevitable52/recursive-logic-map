@@ -296,3 +296,45 @@ window.onload = () => {
     animateThinking();
   });
 };
+
+// 🧠 Percy Language-Aware Response System
+function respondToUser(input) {
+  const query = input.toLowerCase().trim();
+
+  if (!query) return;
+
+  // Check dictionary for match
+  if (dictionary && dictionary[query]) {
+    const def = dictionary[query];
+    const response =
+      `📚 *${capitalize(query)}*: ${def.definition}` +
+      (def.examples && def.examples.length ? `\n🔁 Example: ${def.examples[0]}` : '') +
+      (def.related && def.related.length ? `\n🔗 Related: ${def.related.join(", ")}` : '');
+    logToConsole(response);
+    return;
+  }
+
+  // Try to match a core node ID or partial match
+  const match = nodes.find(n => n.id?.toLowerCase() === query);
+  if (match) {
+    logToConsole(`📍 Found logic node "${match.id}": ${match.summary || "No summary available."}`);
+    return;
+  }
+
+  // Default fallback
+  logToConsole("🤖 Percy is thinking... no direct dictionary or node match yet.");
+}
+
+// 🧼 Capitalize helper
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// 🧾 Bind user input box to Percy response
+document.getElementById("user-input").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") {
+    const input = this.value;
+    respondToUser(input);
+    this.value = "";
+  }
+});
