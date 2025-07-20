@@ -6,6 +6,7 @@
   <title>Percy Recursive Logic Engine</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="icon" href="percy.ico" />
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 </head>
 <body>
   <header>
@@ -37,6 +38,12 @@
   <footer>
     <p>© 2025 Percy Recursive Logic Engine</p>
   </footer>
+
+  <section id="qr-code-section" aria-label="QR code for Twilio OTP secret" hidden>
+  <h2>Scan this QR code with your authenticator app</h2>
+  <canvas id="qr-code-canvas"></canvas>
+  <button id="close-qr-btn" aria-label="Close QR code display">Close</button>
+</section>
 
   <script src="percy.js"></script>
 </body>
