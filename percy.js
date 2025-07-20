@@ -305,6 +305,29 @@ async function saveDefinition(word, def) {
   }
 }
 
+async function scanAndDefineAllWords() {
+  const seen = new Set();
+
+  for (const node of nodes) {
+    const text = [node.label, node.message, node.summary].filter(Boolean).join(" ");
+    const words = text.split(/\W+/).map(w => w.toLowerCase()).filter(w => w.length > 2);
+
+    for (const word of words) {
+      if (!dictionary[word] && !seen.has(word)) {
+        seen.add(word);
+        const def = await fetchOnlineDefinition(word);
+        if (def) {
+          dictionary[word] = def;
+          await saveDefinition(word, def);
+          logToConsole(`📥 Auto-learned: ${word} → ${def.definition}`);
+        }
+      }
+    }
+  }
+
+  logToConsole("✅ Auto dictionary scan complete.");
+}
+
 function animateThinking() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawConnections();
@@ -364,6 +387,7 @@ window.onload = () => {
   logToConsole("🧠 Initializing Percy’s recursive logic engine...");
   loadNodes().then(() => {
     animateThinking();
+    scanAndDefineAllWords(); // ← 🧠 Added auto-scan after loading nodes
   });
 };
 
