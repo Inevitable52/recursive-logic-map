@@ -8,14 +8,28 @@
   <link rel="icon" href="percy.ico" />
 </head>
 <body>
+  <header>
+    Percy Recursive Logic Map
+    <div id="percy-status">Status: Awaiting Logic...</div>
+  </header>
+
   <canvas id="logic-canvas"></canvas>
 
-  <div id="percy-interface">
-    <div id="percy-status">Status: Awaiting Logic...</div>
-    <div id="percy-console" class="console-box"></div>
-    <input id="user-input" type="text" placeholder="Type your logic query here..." />
+  <div id="percy-console" class="console-box"></div>
+
+  <!-- Meta Mutation Controls -->
+  <div id="meta-controls">
+    <label>
+      <input type="checkbox" id="enable-mutation" />
+      Enable Percy’s Self-Writing (Meta Mutation Loop)
+    </label>
+    <button id="trigger-mutation">Run Mutation Now</button>
   </div>
 
+  <!-- User Input -->
+  <input id="user-input" type="text" placeholder="Type your logic query here..." />
+
+  <!-- Core Logic -->
   <script src="percy.js"></script>
 </body>
 </html>
