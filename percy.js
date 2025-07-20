@@ -298,7 +298,8 @@ function capitalize(str) {
 
 async function fetchOnlineDefinition(word) {
   try {
-    const res = await fetch(`https://recursive-logic-map.vercel.app/api/proxy?word=${encodeURIComponent(word)}`);
+    const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`;
+    const res = await fetch(url);
     const data = await res.json();
     if (Array.isArray(data) && data.length > 0) {
       const entry = data[0];
