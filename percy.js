@@ -77,21 +77,48 @@ const coreNodeList = [
 ];
 
 
-const canvas = document.getElementById("logic-canvas");
-const ctx = canvas.getContext("2d");
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+document.addEventListener("DOMContentLoaded", () => {
+  const canvas = document.getElementById("logic-canvas");
+  if (!canvas) {
+    console.error("❌ Canvas element with id 'logic-canvas' not found.");
+    return;
+  }
 
-const consoleBox = document.getElementById("percy-console");
-const statusDisplay = document.getElementById("percy-status");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    console.error("❌ Unable to get canvas context.");
+    return;
+  }
 
-let nodes = [];
-let currentNodeIndex = 0;
-let lastUpdate = Date.now();
-let memory = [];
-let ULT = null;
-let goalPlan = [];
-let dictionary = {};
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const consoleBox = document.getElementById("percy-console");
+  const statusDisplay = document.getElementById("percy-status");
+
+  // Declare globals inside DOMContentLoaded to ensure they're ready
+  window.ctx = ctx;
+  window.canvas = canvas;
+  window.consoleBox = consoleBox;
+  window.statusDisplay = statusDisplay;
+  window.nodes = [];
+  window.currentNodeIndex = 0;
+  window.lastUpdate = Date.now();
+  window.memory = [];
+  window.ULT = null;
+  window.goalPlan = [];
+  window.dictionary = {};
+
+  // Kick off engine after DOM is ready
+  logToConsole("🧠 Initializing Percy’s recursive logic engine...");
+  loadNodes().then(() => {
+    animateThinking();
+    scanAndDefineAllWords();
+  });
+
+  document.getElementById("user-input").addEventListener("keydown", handleUserInput);
+});
+
 
 const githubConfig = {
   token: "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",
@@ -382,13 +409,3 @@ function deriveTokenFromULT() {
     logToConsole("⚠️ Missing ULT code; unable to construct GitHub token.");
   }
 }
-
-window.onload = () => {
-  logToConsole("🧠 Initializing Percy’s recursive logic engine...");
-  loadNodes().then(() => {
-    animateThinking();
-    scanAndDefineAllWords(); // ← 🧠 Added auto-scan after loading nodes
-  });
-};
-
-document.getElementById("user-input").addEventListener("keydown", handleUserInput);
