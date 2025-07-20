@@ -1,6 +1,6 @@
 // percy.js — Recursive Logic Engine w/ Advanced Capabilities + SMS + Goal Planning + Meta Mutation + GitHub Sync + Dictionary Integration + Vercel Proxy
 const coreNodeList = [
-"G001", "G002", "G003", "G004", "G005", "G080",
+  "G001", "G002", "G003", "G004", "G005", "G080",
   "G081", "G082", "G083", "G084", "G085", "G086", "G087", "G088", "G089", "G090",
   "G091", "G092", "G093", "G094", "G095", "G096", "G097", "G098", "G099", "G100",
   "G101", "G102", "G103", "G104", "G105", "G106", "G107", "G108", "G109", "G110",
@@ -107,9 +107,17 @@ document.addEventListener("DOMContentLoaded", () => {
   window.memory = [];
   window.ULT = null;
   window.goalPlan = [];
+  window.dictionary = {};
+  window.trustedUsers = {
+    fabian: { name: "Fabian Villarreal", dob: "1978-03-04" },
+    lorena: { name: "Lorena Villarreal", dob: "2003-06-14" }
+  };
+
+  // OTP and 2FA state
+  window.otpSecret = null;
+  window.otpVerified = false;
 
   // ===== DICTIONARY + localStorage LOAD =====
-  window.dictionary = {};
   const savedDict = localStorage.getItem("percy_dictionary");
   if (savedDict) {
     try {
@@ -127,6 +135,14 @@ document.addEventListener("DOMContentLoaded", () => {
   loadNodes().then(() => {
     animateThinking();
     scanAndDefineAllWords();
+    if (window.ULT) {
+      // Attempt GitHub token reconstruction securely
+      deriveTokenFromULT();
+      // Generate OTP secret for 2FA (simulate here)
+      window.otpSecret = generateOTPSecret();
+      logToConsole("🔐 OTP secret generated for 2FA.");
+      showOTPQRCode(window.otpSecret);
+    }
   });
 
   const userInput = document.getElementById("user-input");
@@ -137,7 +153,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// All your other functions below...
+// --- Core functions ---
 
 const githubConfig = {
   token: "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",
@@ -281,6 +297,20 @@ function respondToUser(input) {
   const query = input.toLowerCase().trim();
   if (!query) return;
 
+  // Check OTP code input if expecting 2FA
+  if (!window.otpVerified && query.startsWith("otp ")) {
+    const code = query.slice(4).trim();
+    if (verifyOTP(code)) {
+      window.otpVerified = true;
+      logToConsole("✅ 2FA OTP verified successfully.");
+      updateStatusDisplay("2FA verified. Access granted.");
+    } else {
+      logToConsole("❌ Invalid OTP code.");
+      updateStatusDisplay("Invalid OTP. Try again.");
+    }
+    return;
+  }
+
   if (window.dictionary && window.dictionary[query]) {
     const def = window.dictionary[query];
     const response = `📚 *${capitalize(query)}*: ${def.definition}` +
@@ -355,20 +385,20 @@ async function saveDefinition(word, def) {
 async function scanAndDefineAllWords() {
   const seen = new Set();
 
-  for (const node of nodes) {
+  for (const node of window.nodes) {
     const text = [node.label, node.message, node.summary].filter(Boolean).join(" ");
     const words = text.split(/\W+/).map(w => w.toLowerCase()).filter(w => w.length > 2);
 
     for (const word of words) {
-      if (!dictionary[word] && !seen.has(word)) {
+      if (!window.dictionary[word] && !seen.has(word)) {
         seen.add(word);
         const def = await fetchOnlineDefinition(word);
         if (def) {
-          dictionary[word] = def;
+          window.dictionary[word] = def;
 
           // === Save dictionary persistently & update status ===
-          localStorage.setItem("percy_dictionary", JSON.stringify(dictionary));
-          updateStatusDisplay(`📘 Definitions loaded: ${Object.keys(dictionary).length}`);
+          localStorage.setItem("percy_dictionary", JSON.stringify(window.dictionary));
+          updateStatusDisplay(`📘 Definitions loaded: ${Object.keys(window.dictionary).length}`);
           // =====================================================
 
           await saveDefinition(word, def);
@@ -450,3 +480,31 @@ function updateStatusDisplay(message) {
     console.log("ℹ️", message);
   }
 }
+
+// ===== New 2FA / OTP Functions =====
+
+// NOTE: For simplicity, OTP generation is simulated here;
+// in production, use a proper TOTP library like otplib.
+
+function generateOTPSecret() {
+  // Simple random secret generator (base32-ish)
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let secret = "";
+  for (let i = 0; i < 16; i++) {
+    secret += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return secret;
+}
+
+function verifyOTP(code) {
+  // Very simple stub: accept '123456' as valid OTP for demo
+  return code === "123456";
+}
+
+function showOTPQRCode(secret) {
+  // Simulate QR code display in console; in real UI show QR for Google Authenticator etc.
+  logToConsole(`🔑 Scan this OTP secret in your Authenticator app: ${secret}`);
+}
+
+// ===== Trusted Users and ULT structure are loaded from the coreNodeList "G800.ULT" JSON node
+
