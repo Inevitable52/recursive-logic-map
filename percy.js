@@ -358,9 +358,6 @@ async function scanAndDefineAllWords() {
   logToConsole("✅ Auto dictionary scan complete.");
 }
 
-  logToConsole("✅ Auto dictionary scan complete.");
-}
-
 function animateThinking() {
   window.ctx.clearRect(0, 0, window.canvas.width, window.canvas.height);
   drawConnections();
