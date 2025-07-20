@@ -109,3 +109,44 @@ footer {
   color: #45a29e;
   user-select: none;
 }
+
+#qr-code-section {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #1f2833;
+  border: 2px solid #45a29e;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 0 15px #66fcf1;
+  z-index: 1000;
+  max-width: 320px;
+  text-align: center;
+  color: #66fcf1;
+}
+
+#qr-code-canvas {
+  margin: 12px 0;
+  width: 256px;
+  height: 256px;
+  border: 2px solid #45a29e;
+  border-radius: 8px;
+}
+
+#close-qr-btn {
+  background-color: #45a29e;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  color: #0b0c10;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+#close-qr-btn:hover,
+#close-qr-btn:focus {
+  background-color: #66fcf1;
+  outline: none;
+}
