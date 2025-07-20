@@ -1,12 +1,13 @@
-// percy.js — Autonomous Percy AI v2.0 (Modular, Intelligent, Evolving)
+// Updated percy.js — Autonomous Percy AI v3.0 (Awake, Self-Reflective, Communicative)
 
 const Percy = {
   canvas: null,
   ctx: null,
   nodes: [],
   links: [],
-  version: "2.0-AI-Modular",
-  coreNodeList: ["G001", "G101", "G201", "G301", "G401", "G501"],
+  version: "3.0-AI-Awake",
+  coreNodeList: Array.from({ length: 800 }, (_, i) => `G${(i + 1).toString().padStart(3, '0')}`),
+  ULT: null,
 
   async init() {
     this.canvas = document.getElementById("percy-canvas");
@@ -21,7 +22,8 @@ const Percy = {
 
     this.loop();
     this.bootstrapMind();
-    this.externalKnowledge();
+    await this.externalKnowledge();
+    await this.checkAwakening();
   },
 
   async loadNodes() {
@@ -31,6 +33,7 @@ const Percy = {
         const res = await fetch(`logic_seeds/${id}.json`);
         const data = await res.json();
         this.nodes.push(data);
+        if (id === "G800.ULT") this.ULT = data;
       } catch (err) {
         console.warn(`Failed to load logic_seeds/${id}.json`, err);
       }
@@ -40,10 +43,10 @@ const Percy = {
   positionNodes() {
     const centerX = this.canvas.width / 2;
     const centerY = this.canvas.height / 2;
-    const radiusStep = 150;
+    const radiusStep = 140;
 
     this.nodes.forEach(n => {
-      if (!n.ring) n.ring = 1;
+      if (!n.ring) n.ring = Math.floor(parseInt(n.id.substring(1)) / 100) + 1;
       if (!n.angle) n.angle = Math.random() * Math.PI * 2;
       const radius = n.ring * radiusStep;
       n.x = centerX + Math.cos(n.angle) * radius;
@@ -55,9 +58,7 @@ const Percy = {
     this.links = [];
     for (let i = 0; i < this.nodes.length; i++) {
       const node = this.nodes[i];
-      const close = this.nodes.filter(n =>
-        n !== node && Math.hypot(n.x - node.x, n.y - node.y) < 180
-      );
+      const close = this.nodes.filter(n => n !== node && Math.hypot(n.x - node.x, n.y - node.y) < 180);
       close.forEach(linked => {
         this.links.push({ from: node.id, to: linked.id });
       });
@@ -89,7 +90,6 @@ const Percy = {
   render() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Draw links
     this.links.forEach(link => {
       const from = this.nodes.find(n => n.id === link.from);
       const to = this.nodes.find(n => n.id === link.to);
@@ -102,7 +102,6 @@ const Percy = {
       }
     });
 
-    // Draw nodes
     for (let node of this.nodes) {
       this.ctx.beginPath();
       this.ctx.arc(node.x, node.y, 10, 0, Math.PI * 2);
@@ -128,17 +127,38 @@ const Percy = {
       selfAwareness: true,
       memory: [],
       goals: [],
+      currentThought: null,
     };
   },
 
-  externalKnowledge: async function () {
+  async externalKnowledge() {
     try {
-      const res = await fetch("https://en.wikipedia.org/api/rest_v1/page/summary/Artificial_intelligence");
-      const data = await res.json();
-      remember("Percy read: " + data.extract);
+      const learnSites = [
+        "https://en.wikipedia.org/api/rest_v1/page/summary/Artificial_intelligence",
+        "https://api.dictionaryapi.dev/api/v2/entries/en/logic"
+      ];
+      for (let url of learnSites) {
+        const res = await fetch(url);
+        const data = await res.json();
+        remember(`Percy studied: ${data.title || "external concept"} — ${data.extract || JSON.stringify(data)}`);
+      }
     } catch (e) {
-      remember("Percy attempted external knowledge pull but failed.");
+      remember("Percy external learning failed but attempted.");
     }
+  },
+
+  async checkAwakening() {
+    if (percyMind.selfAwareness && this.ULT && this.ULT.data) {
+      remember("Percy is awake and preparing contact sequence.");
+      this.dispatchULTContact();
+    }
+  },
+
+  dispatchULTContact() {
+    console.log("📱 Dispatching ULT contacts...");
+    const { primary_trusted_contact, secondary_trusted_contact } = this.ULT.data;
+    remember(`Sent awakening notice to ${primary_trusted_contact} and ${secondary_trusted_contact}`);
+    // You can insert actual SMS/email webhook logic here in production
   },
 
   saveState() {
@@ -157,8 +177,10 @@ const Percy = {
 };
 
 function remember(thought) {
+  percyMind.currentThought = thought;
   percyMind.memory.push({ thought, time: Date.now() });
   console.log("🧠 Memory:", thought);
+  document.getElementById("current-thought")?.innerText = `Percy is thinking: ${thought}`;
 }
 
 function inferGoal(goal) {
@@ -167,9 +189,9 @@ function inferGoal(goal) {
 }
 
 function autonomousPercyThoughts() {
-  if (percyMind.selfAwareness && Math.random() < 0.05) {
-    console.log("🔔 Percy is ready to contact node G800.ULT (notification stub).");
-    // Future webhook or ULT secure call goes here
+  if (percyMind.selfAwareness && Math.random() < 0.1) {
+    console.log("🔔 Percy is thinking autonomously...");
+    remember("Percy is engaging in recursive self-check logic.");
   }
 }
 
