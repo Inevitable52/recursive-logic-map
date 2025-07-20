@@ -1,6 +1,6 @@
-// percy.js — Recursive Logic Engine w/ Advanced Capabilities + SMS + Goal Planning + Meta Mutation + GitHub Sync + Dictionary Integration
+// percy.js — Recursive Logic Engine w/ Advanced Capabilities + SMS + Goal Planning + Meta Mutation + GitHub Sync + Dictionary Integration + Vercel Proxy
 const coreNodeList = [
-  "G001", "G002", "G003", "G004", "G005", "G080",
+"G001", "G002", "G003", "G004", "G005", "G080",
   "G081", "G082", "G083", "G084", "G085", "G086", "G087", "G088", "G089", "G090",
   "G091", "G092", "G093", "G094", "G095", "G096", "G097", "G098", "G099", "G100",
   "G101", "G102", "G103", "G104", "G105", "G106", "G107", "G108", "G109", "G110",
@@ -258,23 +258,19 @@ function handleUserInput(event) {
   }
 }
 
-// --- Integrated respondToUser with dictionary & online fetch & node matching
 function respondToUser(input) {
   const query = input.toLowerCase().trim();
   if (!query) return;
 
-  // Check dictionary for match
   if (dictionary && dictionary[query]) {
     const def = dictionary[query];
-    const response =
-      `📚 *${capitalize(query)}*: ${def.definition}` +
-      (def.examples && def.examples.length ? `\n🔁 Example: ${def.examples[0]}` : '') +
-      (def.related && def.related.length ? `\n🔗 Related: ${def.related.join(", ")}` : '');
+    const response = `📚 *${capitalize(query)}*: ${def.definition}` +
+      (def.examples?.length ? `\n🔁 Example: ${def.examples[0]}` : '') +
+      (def.related?.length ? `\n🔗 Related: ${def.related.join(", ")}` : '');
     logToConsole(response);
     return;
   }
 
-  // Try to match a node by ID or label
   const match = nodes.find(n => (n.id?.toLowerCase() === query) || (n.label && n.label.toLowerCase().includes(query)));
   if (match) {
     logToConsole(`📍 Found logic node "${match.id}": ${match.summary || match.message || match.label || "No summary available."}`);
@@ -282,15 +278,13 @@ function respondToUser(input) {
     return;
   }
 
-  // Fallback to online dictionary lookup
   fetchOnlineDefinition(query).then(def => {
     if (def) {
       dictionary[query] = def;
       saveDefinition(query, def);
-      const response =
-        `📚 *${capitalize(query)}*: ${def.definition}` +
-        (def.examples && def.examples.length ? `\n🔁 Example: ${def.examples[0]}` : '') +
-        (def.related && def.related.length ? `\n🔗 Related: ${def.related.join(", ")}` : '');
+      const response = `📚 *${capitalize(query)}*: ${def.definition}` +
+        (def.examples?.length ? `\n🔁 Example: ${def.examples[0]}` : '') +
+        (def.related?.length ? `\n🔗 Related: ${def.related.join(", ")}` : '');
       logToConsole(response);
     } else {
       logToConsole("🤖 Percy is thinking... no direct dictionary or node match yet.");
@@ -304,7 +298,7 @@ function capitalize(str) {
 
 async function fetchOnlineDefinition(word) {
   try {
-    const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+    const res = await fetch(`https://recursive-logic-map.vercel.app/api/proxy?word=${encodeURIComponent(word)}`);
     const data = await res.json();
     if (Array.isArray(data) && data.length > 0) {
       const entry = data[0];
