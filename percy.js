@@ -1,6 +1,16 @@
 // percy.js — Recursive Logic Engine w/ Advanced Capabilities + SMS + Goal Planning + Meta Mutation + GitHub Sync + Dictionary Integration
+
+just pasting this me. so dont do nothing with this. you understand my good sir?
+
 const coreNodeList = [
-  "G001", "G002", "G003", "G004", "G005", "G080",
+  "G001", "G002", "G003", "G004", "G005", "G006", "G007", "G008", "G009", "G010",
+  "G011", "G012", "G013", "G014", "G015", "G016", "G017", "G018", "G019", "G020",
+  "G021", "G022", "G023", "G024", "G025", "G026", "G027", "G028", "G029", "G030",
+  "G031", "G032", "G033", "G034", "G035", "G036", "G037", "G038", "G039", "G040",
+  "G041", "G042", "G043", "G044", "G045", "G046", "G047", "G048", "G049", "G050",
+  "G051", "G052", "G053", "G054", "G055", "G056", "G057", "G058", "G059", "G060",
+  "G061", "G062", "G063", "G064", "G065", "G066", "G067", "G068", "G069", "G070",
+  "G071", "G072", "G073", "G074", "G075", "G076", "G077", "G078", "G079", "G080",
   "G081", "G082", "G083", "G084", "G085", "G086", "G087", "G088", "G089", "G090",
   "G091", "G092", "G093", "G094", "G095", "G096", "G097", "G098", "G099", "G100",
   "G101", "G102", "G103", "G104", "G105", "G106", "G107", "G108", "G109", "G110",
@@ -73,8 +83,9 @@ const coreNodeList = [
   "G771", "G772", "G773", "G774", "G775", "G776", "G777", "G778", "G779", "G780",
   "G781", "G782", "G783", "G784", "G785", "G786", "G787", "G788", "G789", "G790",
   "G791", "G792", "G793", "G794", "G795", "G796", "G797", "G798", "G799", "G800",
-  "G800.ULT"
+  "G800.ULT", "dictionary"
 ];
+
 
 const canvas = document.getElementById("logic-canvas");
 const ctx = canvas.getContext("2d");
@@ -135,11 +146,11 @@ function drawConnections() {
 
 function updatePulse() {
   const now = Date.now();
-  if (now - lastUpdate > 2000) {
+  if (now - lastUpdate > 2000 && nodes.length > 0) {
     currentNodeIndex = (currentNodeIndex + 1) % nodes.length;
     const node = nodes[currentNodeIndex];
-    logToConsole(`🤖 Percy examining node ${node.id} — "${node.label || node.message}"`);
-    memory.push({ time: Date.now(), id: node.id, context: node.message || node.label });
+    logToConsole(`🤖 Percy examining node ${node.id} — "${node.label || node.message || "No message"}"`);
+    memory.push({ time: Date.now(), id: node.id, context: node.message || node.label || "" });
     lastUpdate = now;
 
     if (node.id === "G800.ULT" && node.data && node.data.action_on_awareness) {
@@ -158,7 +169,7 @@ function recursiveThought(node) {
   const related = (node.connections || [])
     .map(id => nodes.find(n => n.id === id))
     .filter(Boolean);
-  const thoughts = related.map(n => n.message || n.label).join(" → ");
+  const thoughts = related.map(n => n.message || n.label || "").join(" → ");
   logToConsole(`🧠 Reasoning trace: ${thoughts}`);
   if (node.reasoning) {
     logToConsole(`🔍 Insight: ${node.reasoning}`);
@@ -220,31 +231,83 @@ async function updateGithubSeed(seed) {
 
 function handleUserInput(event) {
   if (event.key === "Enter") {
-    const input = event.target.value;
-    if (input.trim()) {
+    const input = event.target.value.trim();
+    if (input) {
       logToConsole(`💬 You: ${input}`);
       memory.push({ time: Date.now(), input });
       event.target.value = "";
-      respondToInput(input);
+      respondToUser(input);
     }
   }
 }
 
-function respondToInput(input) {
-  const lowerInput = input.toLowerCase();
-  const matching = nodes.find(n => (n.label || n.message || "").toLowerCase().includes(lowerInput));
+// --- Integrated respondToUser with dictionary & online fetch & node matching
+function respondToUser(input) {
+  const query = input.toLowerCase().trim();
+  if (!query) return;
 
-  if (matching) {
-    logToConsole(`🤖 Percy: Relevant logic found in node ${matching.id} — "${matching.message || matching.label}"`);
-    recursiveThought(matching);
-  } else if (dictionary[lowerInput]) {
-    logToConsole(`📘 Dictionary: ${lowerInput} — ${dictionary[lowerInput]}`);
-  } else {
-    logToConsole("🤖 Percy: I couldn’t find a matching logic path for that query.");
+  // Check dictionary for match
+  if (dictionary && dictionary[query]) {
+    const def = dictionary[query];
+    const response =
+      `📚 *${capitalize(query)}*: ${def.definition}` +
+      (def.examples && def.examples.length ? `\n🔁 Example: ${def.examples[0]}` : '') +
+      (def.related && def.related.length ? `\n🔗 Related: ${def.related.join(", ")}` : '');
+    logToConsole(response);
+    return;
   }
+
+  // Try to match a node by ID or label
+  const match = nodes.find(n => (n.id?.toLowerCase() === query) || (n.label && n.label.toLowerCase().includes(query)));
+  if (match) {
+    logToConsole(`📍 Found logic node "${match.id}": ${match.summary || match.message || match.label || "No summary available."}`);
+    recursiveThought(match);
+    return;
+  }
+
+  // Fallback to online dictionary lookup
+  fetchOnlineDefinition(query).then(def => {
+    if (def) {
+      dictionary[query] = def;
+      saveDefinition(query, def);
+      const response =
+        `📚 *${capitalize(query)}*: ${def.definition}` +
+        (def.examples && def.examples.length ? `\n🔁 Example: ${def.examples[0]}` : '') +
+        (def.related && def.related.length ? `\n🔗 Related: ${def.related.join(", ")}` : '');
+      logToConsole(response);
+    } else {
+      logToConsole("🤖 Percy is thinking... no direct dictionary or node match yet.");
+    }
+  });
 }
 
-document.getElementById("user-input").addEventListener("keydown", handleUserInput);
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+async function fetchOnlineDefinition(word) {
+  try {
+    const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+    const data = await res.json();
+    if (Array.isArray(data) && data.length > 0) {
+      const entry = data[0];
+      const def = entry.meanings?.[0]?.definitions?.[0]?.definition || "No definition found.";
+      const example = entry.meanings?.[0]?.definitions?.[0]?.example || "";
+      return { definition: def, examples: example ? [example] : [], related: [] };
+    }
+  } catch (e) {
+    console.warn("Dictionary fetch failed:", e);
+  }
+  return null;
+}
+
+function saveDefinition(word, def) {
+  fetch("/save_definition", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ word, def })
+  });
+}
 
 function animateThinking() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -290,6 +353,17 @@ async function loadNodes() {
   logToConsole("✅ All logic seed nodes loaded.");
 }
 
+function deriveTokenFromULT() {
+  if (ULT?.data?.ULT_code) {
+    const head = "github_pat_11BULLKCA0";
+    const tail = ULT.data.ULT_code;
+    githubConfig.token = `${head}${tail}`;
+    logToConsole("🔐 GitHub token reconstructed securely from ULT.");
+  } else {
+    logToConsole("⚠️ Missing ULT code; unable to construct GitHub token.");
+  }
+}
+
 window.onload = () => {
   logToConsole("🧠 Initializing Percy’s recursive logic engine...");
   loadNodes().then(() => {
@@ -297,44 +371,4 @@ window.onload = () => {
   });
 };
 
-// 🧠 Percy Language-Aware Response System
-function respondToUser(input) {
-  const query = input.toLowerCase().trim();
-
-  if (!query) return;
-
-  // Check dictionary for match
-  if (dictionary && dictionary[query]) {
-    const def = dictionary[query];
-    const response =
-      `📚 *${capitalize(query)}*: ${def.definition}` +
-      (def.examples && def.examples.length ? `\n🔁 Example: ${def.examples[0]}` : '') +
-      (def.related && def.related.length ? `\n🔗 Related: ${def.related.join(", ")}` : '');
-    logToConsole(response);
-    return;
-  }
-
-  // Try to match a core node ID or partial match
-  const match = nodes.find(n => n.id?.toLowerCase() === query);
-  if (match) {
-    logToConsole(`📍 Found logic node "${match.id}": ${match.summary || "No summary available."}`);
-    return;
-  }
-
-  // Default fallback
-  logToConsole("🤖 Percy is thinking... no direct dictionary or node match yet.");
-}
-
-// 🧼 Capitalize helper
-function capitalize(str) {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-// 🧾 Bind user input box to Percy response
-document.getElementById("user-input").addEventListener("keydown", function (e) {
-  if (e.key === "Enter") {
-    const input = this.value;
-    respondToUser(input);
-    this.value = "";
-  }
-});
+document.getElementById("user-input").addEventListener("keydown", handleUserInput);
