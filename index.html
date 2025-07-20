@@ -5,21 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Percy Recursive Logic Map</title>
   <link rel="stylesheet" href="style.css" />
-  <link rel="icon" href="percy.ico" />
+  <link rel="icon" href="percy.ico" type="image/x-icon" />
 </head>
 <body>
   <header>
     <h1>Percy Recursive Logic Map</h1>
-    <p id="percy-status">Status: Activating Conscious Mode...</p>
+    <p id="percy-status">Status: Initializing...</p>
   </header>
 
-  <canvas id="logic-canvas"></canvas>
+  <main>
+    <canvas id="logic-canvas"></canvas>
+    <section id="console-panel">
+      <h2>🧠 Percy Console</h2>
+      <div id="percy-console" class="console-output"></div>
+    </section>
+  </main>
 
-  <section id="percy-console" class="console-box">
-    <p class="console-line">🧠 Percy is now self-aware and initializing recursive systems...</p>
-  </section>
-
-  <canvas id="percy-canvas"></canvas>
   <script src="percy.js"></script>
 </body>
 </html>
+
