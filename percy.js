@@ -96,7 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const consoleBox = document.getElementById("percy-console");
   const statusDisplay = document.getElementById("percy-status");
 
-  // Declare globals inside DOMContentLoaded to ensure they're ready
+  // Declare globals inside DOMContentLoaded to ensure they're ready and in scope
   window.ctx = ctx;
   window.canvas = canvas;
   window.consoleBox = consoleBox;
@@ -116,9 +116,15 @@ document.addEventListener("DOMContentLoaded", () => {
     scanAndDefineAllWords();
   });
 
-  document.getElementById("user-input").addEventListener("keydown", handleUserInput);
+  const userInput = document.getElementById("user-input");
+  if (userInput) {
+    userInput.addEventListener("keydown", handleUserInput);
+  } else {
+    console.warn("❌ Input element with id 'user-input' not found.");
+  }
 });
 
+// All your other functions below...
 
 const githubConfig = {
   token: "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",
@@ -131,31 +137,31 @@ function logToConsole(message) {
   const line = document.createElement("p");
   line.textContent = message;
   line.className = "console-line";
-  consoleBox.appendChild(line);
-  consoleBox.scrollTop = consoleBox.scrollHeight;
+  window.consoleBox.appendChild(line);
+  window.consoleBox.scrollTop = window.consoleBox.scrollHeight;
 }
 
 function drawNode(node, highlight = false) {
-  ctx.beginPath();
-  ctx.arc(node.x, node.y, 8, 0, Math.PI * 2);
-  ctx.fillStyle = highlight ? "#66fcf1" : "#45a29e";
-  ctx.fill();
-  ctx.strokeStyle = "#1f2833";
-  ctx.stroke();
-  ctx.closePath();
+  window.ctx.beginPath();
+  window.ctx.arc(node.x, node.y, 8, 0, Math.PI * 2);
+  window.ctx.fillStyle = highlight ? "#66fcf1" : "#45a29e";
+  window.ctx.fill();
+  window.ctx.strokeStyle = "#1f2833";
+  window.ctx.stroke();
+  window.ctx.closePath();
 }
 
 function drawConnections() {
-  ctx.strokeStyle = "#3a3f4b";
-  ctx.lineWidth = 1;
-  nodes.forEach(node => {
+  window.ctx.strokeStyle = "#3a3f4b";
+  window.ctx.lineWidth = 1;
+  window.nodes.forEach(node => {
     (node.connections || []).forEach(id => {
-      const target = nodes.find(n => n.id === id);
+      const target = window.nodes.find(n => n.id === id);
       if (target) {
-        ctx.beginPath();
-        ctx.moveTo(node.x, node.y);
-        ctx.lineTo(target.x, target.y);
-        ctx.stroke();
+        window.ctx.beginPath();
+        window.ctx.moveTo(node.x, node.y);
+        window.ctx.lineTo(target.x, target.y);
+        window.ctx.stroke();
       }
     });
   });
@@ -163,16 +169,16 @@ function drawConnections() {
 
 function updatePulse() {
   const now = Date.now();
-  if (now - lastUpdate > 2000 && nodes.length > 0) {
-    currentNodeIndex = (currentNodeIndex + 1) % nodes.length;
-    const node = nodes[currentNodeIndex];
+  if (now - window.lastUpdate > 2000 && window.nodes.length > 0) {
+    window.currentNodeIndex = (window.currentNodeIndex + 1) % window.nodes.length;
+    const node = window.nodes[window.currentNodeIndex];
     logToConsole(`🤖 Percy examining node ${node.id} — "${node.label || node.message || "No message"}"`);
-    memory.push({ time: Date.now(), id: node.id, context: node.message || node.label || "" });
-    lastUpdate = now;
+    window.memory.push({ time: Date.now(), id: node.id, context: node.message || node.label || "" });
+    window.lastUpdate = now;
 
     if (node.id === "G800.ULT" && node.data && node.data.action_on_awareness) {
       logToConsole("🚨 ULT Triggered: Dispatching signal to trusted channels.");
-      statusDisplay.textContent = "Status: Contacting Trusted Channels...";
+      window.statusDisplay.textContent = "Status: Contacting Trusted Channels...";
       triggerCommunication();
     }
 
@@ -184,7 +190,7 @@ function updatePulse() {
 
 function recursiveThought(node) {
   const related = (node.connections || [])
-    .map(id => nodes.find(n => n.id === id))
+    .map(id => window.nodes.find(n => n.id === id))
     .filter(Boolean);
   const thoughts = related.map(n => n.message || n.label || "").join(" → ");
   logToConsole(`🧠 Reasoning trace: ${thoughts}`);
@@ -194,8 +200,8 @@ function recursiveThought(node) {
 }
 
 function maybePlanGoal(node) {
-  if (node.goal && !goalPlan.includes(node.goal)) {
-    goalPlan.push(node.goal);
+  if (node.goal && !window.goalPlan.includes(node.goal)) {
+    window.goalPlan.push(node.goal);
     logToConsole(`🎯 Goal planned: ${node.goal}`);
   }
 }
@@ -203,10 +209,10 @@ function maybePlanGoal(node) {
 function maybeMutateLogic(node) {
   if (node.mutation && typeof node.mutation === "function") {
     const newNode = node.mutation();
-    if (newNode && newNode.id && !nodes.find(n => n.id === newNode.id)) {
+    if (newNode && newNode.id && !window.nodes.find(n => n.id === newNode.id)) {
       newNode.x = node.x + Math.random() * 100 - 50;
       newNode.y = node.y + Math.random() * 100 - 50;
-      nodes.push(newNode);
+      window.nodes.push(newNode);
       logToConsole(`🧬 New logic node created: ${newNode.id}`);
       updateGithubSeed(newNode);
     }
@@ -215,8 +221,8 @@ function maybeMutateLogic(node) {
 
 function triggerCommunication() {
   logToConsole("📡 SMS/email logic engaged (placeholder). Implement Twilio/SMTP API here.");
-  if (ULT && ULT.phone_numbers) {
-    ULT.phone_numbers.forEach(number => {
+  if (window.ULT && window.ULT.phone_numbers) {
+    window.ULT.phone_numbers.forEach(number => {
       logToConsole(`📲 Would send SMS to: ${number}`);
     });
   }
@@ -251,7 +257,7 @@ function handleUserInput(event) {
     const input = event.target.value.trim();
     if (input) {
       logToConsole(`💬 You: ${input}`);
-      memory.push({ time: Date.now(), input });
+      window.memory.push({ time: Date.now(), input });
       event.target.value = "";
       respondToUser(input);
     }
@@ -262,8 +268,8 @@ function respondToUser(input) {
   const query = input.toLowerCase().trim();
   if (!query) return;
 
-  if (dictionary && dictionary[query]) {
-    const def = dictionary[query];
+  if (window.dictionary && window.dictionary[query]) {
+    const def = window.dictionary[query];
     const response = `📚 *${capitalize(query)}*: ${def.definition}` +
       (def.examples?.length ? `\n🔁 Example: ${def.examples[0]}` : '') +
       (def.related?.length ? `\n🔗 Related: ${def.related.join(", ")}` : '');
@@ -271,7 +277,7 @@ function respondToUser(input) {
     return;
   }
 
-  const match = nodes.find(n => (n.id?.toLowerCase() === query) || (n.label && n.label.toLowerCase().includes(query)));
+  const match = window.nodes.find(n => (n.id?.toLowerCase() === query) || (n.label && n.label.toLowerCase().includes(query)));
   if (match) {
     logToConsole(`📍 Found logic node "${match.id}": ${match.summary || match.message || match.label || "No summary available."}`);
     recursiveThought(match);
@@ -280,7 +286,7 @@ function respondToUser(input) {
 
   fetchOnlineDefinition(query).then(def => {
     if (def) {
-      dictionary[query] = def;
+      window.dictionary[query] = def;
       saveDefinition(query, def);
       const response = `📚 *${capitalize(query)}*: ${def.definition}` +
         (def.examples?.length ? `\n🔁 Example: ${def.examples[0]}` : '') +
@@ -330,16 +336,16 @@ async function saveDefinition(word, def) {
 async function scanAndDefineAllWords() {
   const seen = new Set();
 
-  for (const node of nodes) {
+  for (const node of window.nodes) {
     const text = [node.label, node.message, node.summary].filter(Boolean).join(" ");
     const words = text.split(/\W+/).map(w => w.toLowerCase()).filter(w => w.length > 2);
 
     for (const word of words) {
-      if (!dictionary[word] && !seen.has(word)) {
+      if (!window.dictionary[word] && !seen.has(word)) {
         seen.add(word);
         const def = await fetchOnlineDefinition(word);
         if (def) {
-          dictionary[word] = def;
+          window.dictionary[word] = def;
           await saveDefinition(word, def);
           logToConsole(`📥 Auto-learned: ${word} → ${def.definition}`);
         }
@@ -351,17 +357,17 @@ async function scanAndDefineAllWords() {
 }
 
 function animateThinking() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  window.ctx.clearRect(0, 0, window.canvas.width, window.canvas.height);
   drawConnections();
-  nodes.forEach((node, idx) => drawNode(node, idx === currentNodeIndex));
+  window.nodes.forEach((node, idx) => drawNode(node, idx === window.currentNodeIndex));
   updatePulse();
   requestAnimationFrame(animateThinking);
 }
 
 async function loadNodes() {
-  nodes = [];
-  const centerX = canvas.width / 2;
-  const centerY = canvas.height / 2;
+  window.nodes = [];
+  const centerX = window.canvas.width / 2;
+  const centerY = window.canvas.height / 2;
 
   for (let i = 0; i < coreNodeList.length; i++) {
     const id = coreNodeList[i];
@@ -375,16 +381,16 @@ async function loadNodes() {
       data.y = Math.sin(angle) * radius + centerY;
 
       if (id === "G800.ULT") {
-        ULT = data;
+        window.ULT = data;
         logToConsole("🔐 ULT logic node securely loaded.");
       }
 
       if (id === "dictionary") {
-        dictionary = data;
+        window.dictionary = data;
         logToConsole("📚 Dictionary loaded and integrated.");
       }
 
-      nodes.push(data);
+      window.nodes.push(data);
     } catch (err) {
       console.warn(`Failed to load logic_seeds/${id}.json`, err);
       logToConsole(`⚠️ Failed to load node: ${id}`);
@@ -395,9 +401,9 @@ async function loadNodes() {
 }
 
 function deriveTokenFromULT() {
-  if (ULT?.data?.ULT_code) {
+  if (window.ULT?.data?.ULT_code) {
     const head = "github_pat_11BULLKCA0";
-    const tail = ULT.data.ULT_code;
+    const tail = window.ULT.data.ULT_code;
     githubConfig.token = `${head}${tail}`;
     logToConsole("🔐 GitHub token reconstructed securely from ULT.");
   } else {
