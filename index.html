@@ -3,21 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Percy Recursive Logic Engine</title>
+  <title>Percy Recursive Logic Map</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="percy.ico" />
 </head>
 <body>
   <header>
-    <h1>Percy Recursive Logic Engine</h1>
-    <div id="percy-status">Status: Initializing...</div>
+    <h1>Percy Recursive Logic Map</h1>
+    <div id="percy-status">🧠 Initializing...</div>
   </header>
 
-  <canvas id="logic-canvas"></canvas>
+  <main>
+    <canvas id="graph"></canvas>
 
-  <section id="console-section">
-    <div id="percy-console" class="console-box"></div>
-    <input type="text" id="user-input" placeholder="Type your input and press Enter" autocomplete="off" />
-  </section>
+    <section id="percy-console-wrapper">
+      <div id="percy-console"></div>
+      <input type="text" id="user-input" placeholder="Type a word or sentence..." />
+      <button id="send-button">Send</button>
+    </section>
+  </main>
 
   <script src="percy.js"></script>
 </body>
