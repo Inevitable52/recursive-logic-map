@@ -1,73 +1,81 @@
-body {
+* {
+  box-sizing: border-box;
   margin: 0;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  padding: 0;
+}
+
+body {
   background-color: #0b0c10;
   color: #c5c6c7;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   overflow: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 header {
+  padding: 10px 20px;
   background-color: #1f2833;
-  padding: 1em;
-  text-align: center;
-  box-shadow: 0 0 8px #66fcf1;
+  color: #66fcf1;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  z-index: 1;
 }
 
 h1 {
-  color: #66fcf1;
-  margin: 0;
-  font-size: 2em;
+  font-size: 1.5rem;
 }
 
 #percy-status {
-  color: #45a29e;
-  font-size: 0.9em;
-  margin-top: 0.5em;
+  font-size: 0.9rem;
+  color: #c5c6c7;
 }
 
 main {
-  display: flex;
-  height: calc(100vh - 100px);
-}
-
-#logic-canvas {
-  flex: 3;
-  background-color: #0b0c10;
-  display: block;
-}
-
-#percy-console-section {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background-color: #1f2833;
-  border-left: 2px solid #45a29e;
+  position: relative;
 }
 
-#percy-console {
-  flex: 1;
+#logic-canvas {
+  flex-grow: 1;
+  width: 100%;
+  height: 100%;
+  display: block;
+  background-color: #0b0c10;
+}
+
+#console-section {
+  background-color: #1f2833;
   padding: 10px;
+  display: flex;
+  flex-direction: column;
+  height: 200px;
+  border-top: 2px solid #66fcf1;
+}
+
+.console-box {
+  flex-grow: 1;
   overflow-y: auto;
+  padding-right: 5px;
   font-family: monospace;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  color: #45a29e;
 }
 
 .console-line {
-  margin-bottom: 8px;
-  animation: fadeIn 0.3s ease-in;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  padding: 2px 0;
 }
 
 #user-input {
-  padding: 12px;
+  padding: 8px;
+  font-size: 1rem;
   border: none;
   outline: none;
   background-color: #0b0c10;
   color: #66fcf1;
-  border-top: 1px solid #45a29e;
-  font-size: 1em;
+  border: 1px solid #45a29e;
+  border-radius: 4px;
 }
-
