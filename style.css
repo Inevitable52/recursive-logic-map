@@ -1,62 +1,69 @@
-body {
+/* style.css — Percy UI Layout */
+
+* {
   margin: 0;
   padding: 0;
-  font-family: "Segoe UI", sans-serif;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #0b0c10;
   color: #c5c6c7;
   overflow: hidden;
 }
 
 header {
-  text-align: center;
-  padding: 1rem;
   background-color: #1f2833;
-  color: #66fcf1;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.6);
-  z-index: 10;
+  padding: 1rem 2rem;
+  border-bottom: 2px solid #45a29e;
 }
 
-h1 {
-  margin: 0.2rem 0;
-  font-size: 2rem;
+header h1 {
+  font-size: 1.8rem;
+  color: #66fcf1;
 }
 
 #percy-status {
+  margin-top: 0.25rem;
   font-size: 0.95rem;
-  color: #45a29e;
-}
-
-canvas#logic-canvas {
-  display: block;
-  width: 100vw;
-  height: 100vh;
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 1;
-}
-
-#percy-console {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  background: #1f2833cc;
   color: #c5c6c7;
-  font-size: 0.85rem;
-  font-family: monospace;
-  padding: 0.5rem;
-  max-height: 25vh;
+}
+
+main {
+  display: flex;
+  height: calc(100vh - 80px);
+}
+
+#logic-canvas {
+  flex: 3;
+  display: block;
+  background-color: #0b0c10;
+}
+
+#console-panel {
+  flex: 1;
+  background-color: #1f2833;
+  border-left: 2px solid #45a29e;
+  padding: 1rem;
   overflow-y: auto;
-  z-index: 5;
-  border-top: 1px solid #66fcf1;
+}
+
+#console-panel h2 {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  color: #66fcf1;
+}
+
+.console-output {
+  max-height: calc(100% - 2rem);
+  overflow-y: auto;
+  padding-right: 0.5rem;
 }
 
 .console-line {
-  margin: 0.2rem 0;
-}
-
-.node-ring {
-  stroke-width: 1;
-  fill: none;
-  stroke-opacity: 0.6;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  color: #c5c6c7;
+  word-wrap: break-word;
 }
