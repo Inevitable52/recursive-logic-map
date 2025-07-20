@@ -2,34 +2,27 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Percy Recursive Logic Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PercyA.I - Recursive Logic Engine</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="icon" href="percy.ico" />
 </head>
 <body>
   <header>
-    Percy Recursive Logic Map
-    <div id="percy-status">Status: Awaiting Logic...</div>
+    <h1>PercyA.I — Recursive Logic Engine</h1>
+    <p id="percy-status">Status: Initializing...</p>
   </header>
 
-  <canvas id="logic-canvas"></canvas>
+  <main>
+    <canvas id="logic-canvas"></canvas>
 
-  <div id="percy-console" class="console-box"></div>
+    <section id="percy-console-section">
+      <div id="percy-console" class="console-box"></div>
+      <input id="user-input" type="text" placeholder="Ask Percy something..." />
+    </section>
+  </main>
 
-  <!-- Meta Mutation Controls -->
-  <div id="meta-controls">
-    <label>
-      <input type="checkbox" id="enable-mutation" />
-      Enable Percy’s Self-Writing (Meta Mutation Loop)
-    </label>
-    <button id="trigger-mutation">Run Mutation Now</button>
-  </div>
-
-  <!-- User Input -->
-  <input id="user-input" type="text" placeholder="Type your logic query here..." />
-
-  <!-- Core Logic -->
   <script src="percy.js"></script>
 </body>
 </html>
+
