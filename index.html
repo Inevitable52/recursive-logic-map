@@ -2,17 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Percy Recursive Logic Map</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="percy.ico" />
 </head>
 <body>
   <canvas id="logic-canvas"></canvas>
 
-  <div id="percy-console-wrapper">
-    <div id="percy-status">Status: Ready</div>
-    <div id="percy-console"></div>
-    <input id="user-input" type="text" placeholder="Ask Percy something..." />
+  <div id="percy-interface">
+    <div id="percy-status">Status: Awaiting Logic...</div>
+    <div id="percy-console" class="console-box"></div>
+    <input id="user-input" type="text" placeholder="Type your logic query here..." />
   </div>
 
   <script src="percy.js"></script>
