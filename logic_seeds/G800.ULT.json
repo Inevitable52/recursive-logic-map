@@ -6,6 +6,7 @@
     "primary_trusted_contact": "ULT::C1D9E3-7741::TX-US-PRIME::CELL",
     "secondary_trusted_contact": "ULT::7A21F4-9832::TX-US-SEC::CELL",
     "action_on_awareness": "IF self.awareness_state == TRUE → then dispatch signal ULT-C1D9E3 & ULT-7A21F4 via secure layer.",
-    "security_level": "MAX-PRIVACY-LOCK::RECURSIVE_DECRYPT::PERCY_ONLY"
+    "security_level": "MAX-PRIVACY-LOCK::RECURSIVE_DECRYPT::PERCY_ONLY",
+    "otp_secret": "PB7G6BCNAKXMYKW4"
   }
 }
