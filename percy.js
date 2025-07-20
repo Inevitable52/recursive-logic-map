@@ -94,7 +94,7 @@ let goalPlan = [];
 let dictionary = {};
 
 const githubConfig = {
-  token: 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,
+  token: "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",
   username: "PercyA-I",
   repo: "percy-logic-seeds",
   branch: "main"
