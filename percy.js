@@ -1,6 +1,13 @@
-// percy.js — Recursive Logic Engine w/ Advanced Capabilities + SMS + Goal Planning + Meta Mutation
+// percy.js — Recursive Logic Engine w/ Advanced Capabilities + SMS + Goal Planning + Meta Mutation + GitHub Sync
 const coreNodeList = [
-  "G001", "G002", "G003", "G004", "G005", "G080",
+  "G001", "G002", "G003", "G004", "G005", "G006", "G007", "G008", "G009", "G010",
+  "G011", "G012", "G013", "G014", "G015", "G016", "G017", "G018", "G019", "G020",
+  "G021", "G022", "G023", "G024", "G025", "G026", "G027", "G028", "G029", "G030",
+  "G031", "G032", "G033", "G034", "G035", "G036", "G037", "G038", "G039", "G040",
+  "G041", "G042", "G043", "G044", "G045", "G046", "G047", "G048", "G049", "G050",
+  "G051", "G052", "G053", "G054", "G055", "G056", "G057", "G058", "G059", "G060",
+  "G061", "G062", "G063", "G064", "G065", "G066", "G067", "G068", "G069", "G070",
+  "G071", "G072", "G073", "G074", "G075", "G076", "G077", "G078", "G079", "G080",
   "G081", "G082", "G083", "G084", "G085", "G086", "G087", "G088", "G089", "G090",
   "G091", "G092", "G093", "G094", "G095", "G096", "G097", "G098", "G099", "G100",
   "G101", "G102", "G103", "G104", "G105", "G106", "G107", "G108", "G109", "G110",
@@ -91,6 +98,13 @@ let memory = [];
 let ULT = null;
 let goalPlan = [];
 
+const githubConfig = {
+  token: "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",
+  username: "PercyA-I",
+  repo: "percy-logic-seeds",
+  branch: "main"
+};
+
 function logToConsole(message) {
   const line = document.createElement("p");
   line.textContent = message;
@@ -172,6 +186,7 @@ function maybeMutateLogic(node) {
       newNode.y = node.y + Math.random() * 100 - 50;
       nodes.push(newNode);
       logToConsole(`🧬 New logic node created: ${newNode.id}`);
+      updateGithubSeed(newNode);
     }
   }
 }
@@ -182,6 +197,30 @@ function triggerCommunication() {
     ULT.phone_numbers.forEach(number => {
       logToConsole(`📲 Would send SMS to: ${number}`);
     });
+  }
+}
+
+async function updateGithubSeed(seed) {
+  const path = `logic_seeds/${seed.id}.json`;
+  const content = btoa(JSON.stringify(seed, null, 2));
+
+  const res = await fetch(`https://api.github.com/repos/${githubConfig.username}/${githubConfig.repo}/contents/${path}`, {
+    method: "PUT",
+    headers: {
+      "Authorization": `token ${githubConfig.token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      message: `Percy auto-commit: update ${seed.id}`,
+      content,
+      branch: githubConfig.branch
+    })
+  });
+
+  if (res.ok) {
+    logToConsole(`✅ GitHub updated for node ${seed.id}`);
+  } else {
+    logToConsole(`⚠️ GitHub update failed for ${seed.id}`);
   }
 }
 
