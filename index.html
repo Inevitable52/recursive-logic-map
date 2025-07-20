@@ -10,14 +10,20 @@
 <body>
   <header>
     <h1>Percy Recursive Logic Map</h1>
-    <p>Tracking logic, memory, and recursive thought.</p>
   </header>
 
-  <!-- ✅ ADD THIS CANVAS -->
-  <canvas id="logic-canvas"></canvas>
+  <main>
+    <canvas id="logic-canvas"></canvas>
 
-  <section id="percy-console"></section>
-  <section id="percy-status">Status: Ready</section>
+    <section id="console-section">
+      <div id="percy-console" tabindex="0" aria-live="polite" aria-label="Percy Console Output"></div>
+      <div id="percy-status" aria-live="polite" aria-label="Status Display">Status: Ready</div>
+    </section>
+
+    <section id="input-section">
+      <input type="text" id="user-input" placeholder="Ask Percy something..." autocomplete="off" />
+    </section>
+  </main>
 
   <script src="percy.js"></script>
 </body>
