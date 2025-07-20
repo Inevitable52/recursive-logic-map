@@ -1,17 +1,25 @@
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
+  // ✅ Allow CORS from GitHub Pages
+  res.setHeader("Access-Control-Allow-Origin", "https://inevitable52.github.io");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  // ✅ Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
   }
 
-  const { key, value } = req.body;
+  if (req.method === "POST") {
+    const { word, def } = req.body;
 
-  if (!key || !value) {
-    return res.status(400).json({ error: 'Missing key or value' });
+    // 🔐 You can add auth/validation here if needed
+
+    console.log("📝 Saving:", word, "=", def);
+
+    // TODO: Save to GitHub repo here (or local file/db/etc)
+
+    return res.status(200).json({ message: "Definition saved." });
   }
 
-  // For now we’ll just log it to Vercel’s console
-  console.log(`Saving definition: ${key} = ${value}`);
-
-  // In a real app you’d store this in a database or file
-  return res.status(200).json({ message: 'Definition saved successfully.' });
+  res.status(405).json({ error: "Method not allowed" });
 }
