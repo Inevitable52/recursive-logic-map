@@ -107,7 +107,20 @@ document.addEventListener("DOMContentLoaded", () => {
   window.memory = [];
   window.ULT = null;
   window.goalPlan = [];
+
+  // ===== DICTIONARY + localStorage LOAD =====
   window.dictionary = {};
+  const savedDict = localStorage.getItem("percy_dictionary");
+  if (savedDict) {
+    try {
+      window.dictionary = JSON.parse(savedDict);
+      console.log(`📦 Dictionary restored from localStorage with ${Object.keys(window.dictionary).length} entries.`);
+      updateStatusDisplay(`📘 Definitions loaded: ${Object.keys(window.dictionary).length}`);
+    } catch (e) {
+      console.warn("⚠️ Failed to parse saved dictionary from localStorage.", e);
+    }
+  }
+  // ===========================================
 
   // Kick off engine after DOM is ready
   logToConsole("🧠 Initializing Percy’s recursive logic engine...");
@@ -287,6 +300,12 @@ function respondToUser(input) {
   fetchOnlineDefinition(query).then(def => {
     if (def) {
       window.dictionary[query] = def;
+
+      // === Save dictionary persistently & update status ===
+      localStorage.setItem("percy_dictionary", JSON.stringify(window.dictionary));
+      updateStatusDisplay(`📘 Definitions loaded: ${Object.keys(window.dictionary).length}`);
+      // =====================================================
+
       saveDefinition(query, def);
       const response = `📚 *${capitalize(query)}*: ${def.definition}` +
         (def.examples?.length ? `\n🔁 Example: ${def.examples[0]}` : '') +
@@ -346,6 +365,12 @@ async function scanAndDefineAllWords() {
         const def = await fetchOnlineDefinition(word);
         if (def) {
           dictionary[word] = def;
+
+          // === Save dictionary persistently & update status ===
+          localStorage.setItem("percy_dictionary", JSON.stringify(dictionary));
+          updateStatusDisplay(`📘 Definitions loaded: ${Object.keys(dictionary).length}`);
+          // =====================================================
+
           await saveDefinition(word, def);
           logToConsole(`📥 Auto-learned: ${word} → ${def.definition}`);
         }
@@ -390,6 +415,9 @@ async function loadNodes() {
       if (id === "dictionary") {
         window.dictionary = data;
         logToConsole("📚 Dictionary loaded and integrated.");
+        // Update localStorage on dictionary load
+        localStorage.setItem("percy_dictionary", JSON.stringify(window.dictionary));
+        updateStatusDisplay(`📘 Definitions loaded: ${Object.keys(window.dictionary).length}`);
       }
 
       window.nodes.push(data);
@@ -410,5 +438,15 @@ function deriveTokenFromULT() {
     logToConsole("🔐 GitHub token reconstructed securely from ULT.");
   } else {
     logToConsole("⚠️ Missing ULT code; unable to construct GitHub token.");
+  }
+}
+
+// === Helper to update the status display (create this in your HTML with id="percy-status") ===
+function updateStatusDisplay(message) {
+  const status = document.getElementById("percy-status");
+  if (status) {
+    status.textContent = message;
+  } else {
+    console.log("ℹ️", message);
   }
 }
