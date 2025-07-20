@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Percy Recursive Logic Map</title>
+  <title>Percy Recursive Logic Engine</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="icon" href="percy.ico" />
 </head>
@@ -14,11 +14,11 @@
   </header>
 
   <main>
-    <canvas id="logic-canvas"></canvas>
+    <canvas id="logic-canvas" aria-label="Percy Logic Visualization"></canvas>
 
-    <section id="console-section">
-      <div id="percy-console" class="console-box"></div>
-      <input id="user-input" type="text" placeholder="Ask Percy something..." autocomplete="off" />
+    <section id="console-section" aria-live="polite" aria-atomic="false" role="log">
+      <div id="percy-console" class="console-box" tabindex="0"></div>
+      <input id="user-input" type="text" placeholder="Ask Percy something..." autocomplete="off" aria-label="User input to ask Percy" />
     </section>
   </main>
 
