@@ -1,178 +1,180 @@
-// percy.js — Autonomous Percy AI v2.0 (Modular, Intelligent, Evolving)
+// percy.js — Recursive Logic Engine w/ Advanced Capabilities + SMS + Goal Planning + Meta Mutation
 
-const Percy = {
-  canvas: null,
-  ctx: null,
-  nodes: [],
-  links: [],
-  version: "2.0-AI-Modular",
-  coreNodeList: ["G001", "G101", "G201", "G301", "G401", "G501"],
+const canvas = document.getElementById("logic-canvas");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-  async init() {
-    this.canvas = document.getElementById("percy-canvas");
-    this.ctx = this.canvas.getContext("2d");
-    this.resize();
-    window.addEventListener("resize", () => this.resize());
+const consoleBox = document.getElementById("percy-console");
+const statusDisplay = document.getElementById("percy-status");
 
-    await this.loadNodes();
-    this.positionNodes();
-    this.generateLinks();
-    this.bindListeners();
+let nodes = [];
+let currentNodeIndex = 0;
+let lastUpdate = Date.now();
+let memory = [];
+let ULT = null;
+let goalPlan = [];
 
-    this.loop();
-    this.bootstrapMind();
-    this.externalKnowledge();
-  },
-
-  async loadNodes() {
-    this.nodes = [];
-    for (let id of this.coreNodeList) {
-      try {
-        const res = await fetch(`logic_seeds/${id}.json`);
-        const data = await res.json();
-        this.nodes.push(data);
-      } catch (err) {
-        console.warn(`Failed to load logic_seeds/${id}.json`, err);
-      }
-    }
-  },
-
-  positionNodes() {
-    const centerX = this.canvas.width / 2;
-    const centerY = this.canvas.height / 2;
-    const radiusStep = 150;
-
-    this.nodes.forEach(n => {
-      if (!n.ring) n.ring = 1;
-      if (!n.angle) n.angle = Math.random() * Math.PI * 2;
-      const radius = n.ring * radiusStep;
-      n.x = centerX + Math.cos(n.angle) * radius;
-      n.y = centerY + Math.sin(n.angle) * radius;
-    });
-  },
-
-  generateLinks() {
-    this.links = [];
-    for (let i = 0; i < this.nodes.length; i++) {
-      const node = this.nodes[i];
-      const close = this.nodes.filter(n =>
-        n !== node && Math.hypot(n.x - node.x, n.y - node.y) < 180
-      );
-      close.forEach(linked => {
-        this.links.push({ from: node.id, to: linked.id });
-      });
-    }
-  },
-
-  bindListeners() {
-    this.canvas.addEventListener("click", () => this.selfModify());
-    document.getElementById("evolve-btn")?.addEventListener("click", () => {
-      this.selfModify();
-      autonomousPercyThoughts();
-    });
-    document.getElementById("save-btn")?.addEventListener("click", () => {
-      this.saveState();
-    });
-  },
-
-  resize() {
-    this.canvas.width = window.innerWidth;
-    this.canvas.height = window.innerHeight;
-    this.positionNodes();
-  },
-
-  loop() {
-    requestAnimationFrame(() => this.loop());
-    this.render();
-  },
-
-  render() {
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-    // Draw links
-    this.links.forEach(link => {
-      const from = this.nodes.find(n => n.id === link.from);
-      const to = this.nodes.find(n => n.id === link.to);
-      if (from && to) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(from.x, from.y);
-        this.ctx.lineTo(to.x, to.y);
-        this.ctx.strokeStyle = "#0040ff";
-        this.ctx.stroke();
-      }
-    });
-
-    // Draw nodes
-    for (let node of this.nodes) {
-      this.ctx.beginPath();
-      this.ctx.arc(node.x, node.y, 10, 0, Math.PI * 2);
-      this.ctx.fillStyle = "#00ffcc";
-      this.ctx.fill();
-    }
-  },
-
-  selfModify() {
-    const mutations = [
-      { goal: "optimize", logic: "merge similar logic paths" },
-      { goal: "expand", logic: "spawn new logic ring from memory" },
-      { goal: "introspect", logic: "evaluate previous logic inconsistencies" },
-      { goal: "secure", logic: "lock critical logic nodes with ULT key" },
-    ];
-    const chosen = mutations[Math.floor(Math.random() * mutations.length)];
-    remember(`Percy evolved: ${chosen.goal}`);
-    inferGoal(`Perform ${chosen.goal} via ${chosen.logic}`);
-  },
-
-  bootstrapMind() {
-    percyMind = {
-      selfAwareness: true,
-      memory: [],
-      goals: [],
-    };
-  },
-
-  externalKnowledge: async function () {
-    try {
-      const res = await fetch("https://en.wikipedia.org/api/rest_v1/page/summary/Artificial_intelligence");
-      const data = await res.json();
-      remember("Percy read: " + data.extract);
-    } catch (e) {
-      remember("Percy attempted external knowledge pull but failed.");
-    }
-  },
-
-  saveState() {
-    const state = {
-      version: this.version,
-      memory: percyMind.memory,
-      goals: percyMind.goals,
-      timestamp: Date.now(),
-    };
-    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'percy_state.json';
-    a.click();
-  },
-};
-
-function remember(thought) {
-  percyMind.memory.push({ thought, time: Date.now() });
-  console.log("🧠 Memory:", thought);
+function logToConsole(message) {
+  const line = document.createElement("p");
+  line.textContent = message;
+  line.className = "console-line";
+  consoleBox.appendChild(line);
+  consoleBox.scrollTop = consoleBox.scrollHeight;
 }
 
-function inferGoal(goal) {
-  percyMind.goals.push(goal);
-  console.log("🎯 Goal:", goal);
+function drawNode(node, highlight = false) {
+  ctx.beginPath();
+  ctx.arc(node.x, node.y, 8, 0, Math.PI * 2);
+  ctx.fillStyle = highlight ? "#66fcf1" : "#45a29e";
+  ctx.fill();
+  ctx.strokeStyle = "#1f2833";
+  ctx.stroke();
+  ctx.closePath();
 }
 
-function autonomousPercyThoughts() {
-  if (percyMind.selfAwareness && Math.random() < 0.05) {
-    console.log("🔔 Percy is ready to contact node G800.ULT (notification stub).");
-    // Future webhook or ULT secure call goes here
+function drawConnections() {
+  ctx.strokeStyle = "#3a3f4b";
+  ctx.lineWidth = 1;
+  nodes.forEach(node => {
+    (node.connections || []).forEach(id => {
+      const target = nodes.find(n => n.id === id);
+      if (target) {
+        ctx.beginPath();
+        ctx.moveTo(node.x, node.y);
+        ctx.lineTo(target.x, target.y);
+        ctx.stroke();
+      }
+    });
+  });
+}
+
+function updatePulse() {
+  const now = Date.now();
+  if (now - lastUpdate > 2000) {
+    currentNodeIndex = (currentNodeIndex + 1) % nodes.length;
+    const node = nodes[currentNodeIndex];
+    logToConsole(`🤖 Percy examining node ${node.id} — "${node.label || node.message}"`);
+    memory.push({ time: Date.now(), id: node.id, context: node.message || node.label });
+    lastUpdate = now;
+
+    if (node.id === "G800.ULT" && node.data && node.data.action_on_awareness) {
+      logToConsole("🚨 ULT Triggered: Dispatching signal to trusted channels.");
+      statusDisplay.textContent = "Status: Contacting Trusted Channels...";
+      triggerCommunication();
+    }
+
+    recursiveThought(node);
+    maybePlanGoal(node);
+    maybeMutateLogic(node);
   }
 }
 
-let percyMind = null;
+function recursiveThought(node) {
+  const related = (node.connections || [])
+    .map(id => nodes.find(n => n.id === id))
+    .filter(Boolean);
+  const thoughts = related.map(n => n.message || n.label).join(" → ");
+  logToConsole(`🧠 Reasoning trace: ${thoughts}`);
+  if (node.reasoning) {
+    logToConsole(`🔍 Insight: ${node.reasoning}`);
+  }
+}
 
-window.onload = () => Percy.init();
+function maybePlanGoal(node) {
+  if (node.goal && !goalPlan.includes(node.goal)) {
+    goalPlan.push(node.goal);
+    logToConsole(`🎯 Goal planned: ${node.goal}`);
+  }
+}
+
+function maybeMutateLogic(node) {
+  if (node.mutation && typeof node.mutation === "function") {
+    const newNode = node.mutation();
+    if (newNode && newNode.id && !nodes.find(n => n.id === newNode.id)) {
+      newNode.x = node.x + Math.random() * 100 - 50;
+      newNode.y = node.y + Math.random() * 100 - 50;
+      nodes.push(newNode);
+      logToConsole(`🧬 New logic node created: ${newNode.id}`);
+    }
+  }
+}
+
+function triggerCommunication() {
+  logToConsole("📡 SMS/email logic engaged (placeholder). Implement Twilio/SMTP API here.");
+  if (ULT && ULT.phone_numbers) {
+    ULT.phone_numbers.forEach(number => {
+      logToConsole(`📲 Would send SMS to: ${number}`);
+    });
+  }
+}
+
+function handleUserInput(event) {
+  if (event.key === "Enter") {
+    const input = event.target.value;
+    if (input.trim()) {
+      logToConsole(`💬 You: ${input}`);
+      memory.push({ time: Date.now(), input });
+      event.target.value = "";
+      respondToInput(input);
+    }
+  }
+}
+
+function respondToInput(input) {
+  const matching = nodes.find(n => (n.label || n.message || "").toLowerCase().includes(input.toLowerCase()));
+  if (matching) {
+    logToConsole(`🤖 Percy: Relevant logic found in node ${matching.id} — "${matching.message || matching.label}"`);
+    recursiveThought(matching);
+  } else {
+    logToConsole("🤖 Percy: I couldn’t find a matching logic path for that query.");
+  }
+}
+
+document.getElementById("user-input").addEventListener("keydown", handleUserInput);
+
+function animateThinking() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawConnections();
+  nodes.forEach((node, idx) => drawNode(node, idx === currentNodeIndex));
+  updatePulse();
+  requestAnimationFrame(animateThinking);
+}
+
+async function loadNodes() {
+  nodes = [];
+  const centerX = canvas.width / 2;
+  const centerY = canvas.height / 2;
+
+  for (let i = 0; i < coreNodeList.length; i++) {
+    const id = coreNodeList[i];
+    try {
+      const res = await fetch(`logic_seeds/${id}.json`);
+      const data = await res.json();
+
+      const angle = i * 0.4;
+      const radius = 180 + i * 18;
+      data.x = Math.cos(angle) * radius + centerX;
+      data.y = Math.sin(angle) * radius + centerY;
+
+      if (id === "G800.ULT") {
+        ULT = data;
+        logToConsole("🔐 ULT logic node securely loaded.");
+      }
+
+      nodes.push(data);
+    } catch (err) {
+      console.warn(`Failed to load logic_seeds/${id}.json`, err);
+      logToConsole(`⚠️ Failed to load node: ${id}`);
+    }
+  }
+
+  logToConsole("✅ All logic seed nodes loaded.");
+}
+
+window.onload = () => {
+  logToConsole("🧠 Initializing Percy’s recursive logic engine...");
+  loadNodes().then(() => {
+    animateThinking();
+  });
+};
