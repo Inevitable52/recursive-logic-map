@@ -1,4 +1,4 @@
-// percy.js — Recursive Logic Engine w/ Advanced Capabilities + SMS + Goal Planning + Meta Mutation + GitHub Sync + Dictionary Integration + Vercel Proxy
+// percy.js — Recursive Logic Engine with LLM + Progressive Learning + SMS + Goal Planning + Meta Mutation + GitHub Sync + Dictionary + Vercel Proxy
 const coreNodeList = [
   "G001", "G002", "G003", "G004", "G005", "G080",
   "G081", "G082", "G083", "G084", "G085", "G086", "G087", "G088", "G089", "G090",
@@ -77,40 +77,117 @@ const coreNodeList = [
 ];
 
 
-document.addEventListener("DOMContentLoaded", () => {
+// OpenAI API Key (replace with your actual key, keep secret)
+const OPENAI_API_KEY = "your_openai_api_key_here";
+
+// --- Globals ---
+window.nodes = [];
+window.memory = []; // Logs past interactions for progressive learning
+window.goalPlan = [];
+window.dictionary = {};
+window.ULT = null;
+window.otpSecret = null;
+window.otpVerified = false;
+window.currentNodeIndex = 0;
+window.lastUpdate = Date.now();
+
+const githubConfig = {
+  token: "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",
+  username: "PercyA-I",
+  repo: "percy-logic-seeds",
+  branch: "main"
+};
+
+// ---------------------- Initialization -----------------------
+
+document.addEventListener("DOMContentLoaded", async () => {
+  initCanvas();
+  await loadNodes();
+  restoreDictionary();
+  animateThinking();
+  scanAndDefineAllWords();
+  if (window.ULT) {
+    deriveTokenFromULT();
+    window.otpSecret = generateOTPSecret();
+    showOTPQRCode(window.otpSecret);
+  }
+  setupUserInputHandler();
+});
+
+function initCanvas() {
   const canvas = document.getElementById("logic-canvas");
-  if (!canvas) return console.error("❌ Canvas element with id 'logic-canvas' not found.");
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return console.error("❌ Unable to get canvas context.");
+  if (!canvas) return console.error("❌ Canvas element not found.");
+  window.canvas = canvas;
+  window.ctx = canvas.getContext("2d");
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
-  window.otplib = window.otplib || window.otplib_umd;
+  window.consoleBox = document.getElementById("percy-console");
+  window.statusDisplay = document.getElementById("percy-status");
+}
 
-  const consoleBox = document.getElementById("percy-console");
-  const statusDisplay = document.getElementById("percy-status");
+// ---------------------- Console Logging ----------------------
 
-  window.ctx = ctx;
-  window.canvas = canvas;
-  window.consoleBox = consoleBox;
-  window.statusDisplay = statusDisplay;
-  
-  logToConsole("🧠 Initializing Percy’s recursive logic engine..."); // Only call once here
-  
+function logToConsole(message) {
+  if (!window.consoleBox) return console.log(message);
+  const line = document.createElement("p");
+  line.textContent = message;
+  line.className = "console-line";
+  window.consoleBox.appendChild(line);
+  window.consoleBox.scrollTop = window.consoleBox.scrollHeight;
+}
+
+function updateStatusDisplay(message) {
+  if (window.statusDisplay) {
+    window.statusDisplay.textContent = message;
+  } else {
+    console.log("ℹ️", message);
+  }
+}
+
+// ---------------------- Load Logic Nodes ---------------------
+
+async function loadNodes() {
   window.nodes = [];
-  window.currentNodeIndex = 0;
-  window.lastUpdate = Date.now();
-  window.memory = [];
-  window.ULT = null;
-  window.goalPlan = [];
-  window.dictionary = {};
-  window.trustedUsers = {
-    fabian: { name: "Fabian Villarreal", dob: "1978-03-04" },
-    lorena: { name: "Lorena Villarreal", dob: "2003-06-14" }
-  };
-  window.otpSecret = null;
-  window.otpVerified = false;
+  const centerX = window.canvas.width / 2;
+  const centerY = window.canvas.height / 2;
 
+  for (let i = 0; i < coreNodeList.length; i++) {
+    const id = coreNodeList[i];
+    try {
+      const res = await fetch(`logic_seeds/${id}.json`);
+      const data = await res.json();
+
+      const angle = i * 0.4;
+      const radius = 180 + i * 18;
+      data.x = Math.cos(angle) * radius + centerX;
+      data.y = Math.sin(angle) * radius + centerY;
+
+      if (id === "G800.ULT") {
+        window.ULT = data;
+        logToConsole("🔐 ULT logic node securely loaded.");
+      }
+
+      if (id === "dictionary") {
+        window.dictionary = data;
+        localStorage.setItem("percy_dictionary", JSON.stringify(window.dictionary));
+        updateStatusDisplay(`📘 Definitions loaded: ${Object.keys(window.dictionary).length}`);
+        logToConsole("📚 Dictionary loaded and integrated.");
+      }
+
+      window.nodes.push(data);
+    } catch (err) {
+      console.warn(`Failed to load logic_seeds/${id}.json`, err);
+      logToConsole(`⚠️ Failed to load node: ${id}`);
+    }
+  }
+
+  logToConsole("✅ All logic seed nodes loaded.");
+}
+
+// ---------------------- Dictionary ----------------------------
+
+function restoreDictionary() {
   const savedDict = localStorage.getItem("percy_dictionary");
   if (savedDict) {
     try {
@@ -120,40 +197,69 @@ document.addEventListener("DOMContentLoaded", () => {
       console.warn("⚠️ Failed to parse saved dictionary.", e);
     }
   }
-
-  loadNodes().then(() => {
-    animateThinking();
-    scanAndDefineAllWords();
-    if (window.ULT) {
-      deriveTokenFromULT();
-      window.otpSecret = generateOTPSecret();
-      logToConsole("🔐 OTP secret generated for 2FA.");
-      showOTPQRCode(window.otpSecret);
-    }
-  });
-
-  const userInput = document.getElementById("user-input");
-  if (userInput) {
-    userInput.addEventListener("keydown", handleUserInput);
-  }
-});
-
-// --- Core functions ---
-
-const githubConfig = {
-  token: "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",
-  username: "PercyA-I",
-  repo: "percy-logic-seeds",
-  branch: "main"
-};
-
-function logToConsole(message) {
-  const line = document.createElement("p");
-  line.textContent = message;
-  line.className = "console-line";
-  window.consoleBox.appendChild(line);
-  window.consoleBox.scrollTop = window.consoleBox.scrollHeight;
 }
+
+async function fetchOnlineDefinition(word) {
+  try {
+    const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (Array.isArray(data) && data.length > 0) {
+      const entry = data[0];
+      const def = entry.meanings?.[0]?.definitions?.[0]?.definition || "No definition found.";
+      const example = entry.meanings?.[0]?.definitions?.[0]?.example || "";
+      return { definition: def, examples: example ? [example] : [], related: [] };
+    }
+  } catch (e) {
+    console.warn("Dictionary fetch failed:", e);
+  }
+  return null;
+}
+
+async function scanAndDefineAllWords() {
+  const seen = new Set();
+
+  for (const node of window.nodes) {
+    const text = [node.label, node.message, node.summary].filter(Boolean).join(" ");
+    const words = text.split(/\W+/).map(w => w.toLowerCase()).filter(w => w.length > 2);
+
+    for (const word of words) {
+      if (!window.dictionary[word] && !seen.has(word)) {
+        seen.add(word);
+        const def = await fetchOnlineDefinition(word);
+        if (def) {
+          window.dictionary[word] = def;
+          localStorage.setItem("percy_dictionary", JSON.stringify(window.dictionary));
+          updateStatusDisplay(`📘 Definitions loaded: ${Object.keys(window.dictionary).length}`);
+          await saveDefinition(word, def);
+          logToConsole(`📥 Auto-learned: ${word} → ${def.definition}`);
+        }
+        await new Promise(res => setTimeout(res, 300)); // throttle API calls
+      }
+    }
+  }
+
+  logToConsole("✅ Auto dictionary scan complete.");
+}
+
+async function saveDefinition(word, def) {
+  try {
+    const response = await fetch('https://recursive-logic-map.vercel.app/api/save_definition', {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ word, def })
+    });
+    if (response.ok) {
+      console.log("✅ Saved definition:", word);
+    } else {
+      console.error("❌ Failed to save definition:", response.statusText);
+    }
+  } catch (e) {
+    console.error("❌ Error saving definition:", e);
+  }
+}
+
+// ---------------------- Drawing ------------------------------
 
 function drawNode(node, highlight = false) {
   window.ctx.beginPath();
@@ -181,13 +287,23 @@ function drawConnections() {
   });
 }
 
+function animateThinking() {
+  window.ctx.clearRect(0, 0, window.canvas.width, window.canvas.height);
+  drawConnections();
+  window.nodes.forEach((node, idx) => drawNode(node, idx === window.currentNodeIndex));
+  updatePulse();
+  requestAnimationFrame(animateThinking);
+}
+
+// ---------------------- Core Logic Loop ----------------------
+
 function updatePulse() {
   const now = Date.now();
   if (now - window.lastUpdate > 2000 && window.nodes.length > 0) {
     window.currentNodeIndex = (window.currentNodeIndex + 1) % window.nodes.length;
     const node = window.nodes[window.currentNodeIndex];
     logToConsole(`🤖 Percy examining node ${node.id} — "${node.label || node.message || "No message"}"`);
-    window.memory.push({ time: Date.now(), id: node.id, context: node.message || node.label || "" });
+    window.memory.push({ time: now, id: node.id, context: node.message || node.label || "" });
     window.lastUpdate = now;
 
     if (node.id === "G800.ULT" && node.data && node.data.action_on_awareness) {
@@ -246,88 +362,143 @@ async function updateGithubSeed(seed) {
   const path = `logic_seeds/${seed.id}.json`;
   const content = btoa(JSON.stringify(seed, null, 2));
 
-  const res = await fetch(`https://api.github.com/repos/${githubConfig.username}/${githubConfig.repo}/contents/${path}`, {
-    method: "PUT",
-    headers: {
-      "Authorization": `token ${githubConfig.token}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      message: `Percy auto-commit: update ${seed.id}`,
-      content,
-      branch: githubConfig.branch
-    })
-  });
-
-  if (res.ok) {
-    logToConsole(`✅ GitHub updated for node ${seed.id}`);
-  } else {
-    logToConsole(`⚠️ GitHub update failed for ${seed.id}`);
+  try {
+    const res = await fetch(`https://api.github.com/repos/${githubConfig.username}/${githubConfig.repo}/contents/${path}`, {
+      method: "PUT",
+      headers: {
+        "Authorization": `token ${githubConfig.token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        message: `Percy auto-commit: update ${seed.id}`,
+        content,
+        branch: githubConfig.branch
+      })
+    });
+    if (res.ok) {
+      logToConsole(`✅ GitHub updated for node ${seed.id}`);
+    } else {
+      logToConsole(`⚠️ GitHub update failed for ${seed.id}`);
+    }
+  } catch (e) {
+    logToConsole(`⚠️ GitHub update error for ${seed.id}: ${e.message}`);
   }
 }
 
-function handleUserInput(event) {
-  if (event.key === "Enter") {
-    const input = event.target.value.trim();
-    if (input) {
+// ---------------------- LLM Integration ----------------------
+
+async function queryLLM(prompt) {
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 300,
+        temperature: 0.7
+      })
+    });
+    const data = await response.json();
+    if (data.choices && data.choices.length > 0) {
+      return data.choices[0].message.content.trim();
+    }
+    return "🤖 Sorry, no response from LLM.";
+  } catch (e) {
+    console.error("❌ LLM query error:", e);
+    return "❌ Error communicating with LLM.";
+  }
+}
+
+function getRelevantGnodes(query) {
+  const matches = window.nodes.filter(n => 
+    (n.id && n.id.toLowerCase().includes(query.toLowerCase())) ||
+    (n.label && n.label.toLowerCase().includes(query.toLowerCase()))
+  );
+  return matches.map(n => `Gnode ${n.id}: ${n.message || n.label || ""}`).join("\n");
+}
+
+async function respondWithLogicAndContext(userInput) {
+  // Build context from relevant Gnodes + memory (progressive learning)
+  const gnodeContext = getRelevantGnodes(userInput);
+  const memoryContext = window.memory
+    .slice(-10) // last 10 memory items to keep prompt concise
+    .map(m => `Memory[${new Date(m.time).toLocaleString()}]: ${m.context || m.input || ""}`)
+    .join("\n");
+
+  const prompt = `
+You are Percy, a recursive logic engine enhanced with LLM capabilities.
+Use the following Gnode information and memory from past interactions to answer logically and contextually.
+
+Gnodes:
+${gnodeContext}
+
+Memory:
+${memoryContext}
+
+User query:
+"${userInput}"
+
+Provide a clear, logical, and thoughtful response.
+`;
+
+  const answer = await queryLLM(prompt);
+  logToConsole(`🤖 Percy (LLM): ${answer}`);
+
+  // Add user input + LLM response to memory for future context
+  window.memory.push({ time: Date.now(), input: userInput, response: answer });
+
+  // Optionally persist memory (could be localStorage or server-side for real progressive learning)
+  try {
+    localStorage.setItem("percy_memory", JSON.stringify(window.memory.slice(-1000))); // keep last 1000 entries max
+  } catch (e) {
+    console.warn("⚠️ Failed to save memory:", e);
+  }
+}
+
+function setupUserInputHandler() {
+  const userInput = document.getElementById("user-input");
+  if (!userInput) return;
+  userInput.addEventListener("keydown", async (event) => {
+    if (event.key === "Enter") {
+      const input = event.target.value.trim();
+      if (!input) return;
       logToConsole(`💬 You: ${input}`);
-      window.memory.push({ time: Date.now(), input });
+
+      // 2FA check (existing logic)
+      if (!window.otpVerified && input.toLowerCase().startsWith("otp ")) {
+        const code = input.slice(4).trim();
+        if (verifyOTP(code)) {
+          window.otpVerified = true;
+          logToConsole("✅ 2FA OTP verified successfully.");
+          updateStatusDisplay("2FA verified. Access granted.");
+        } else {
+          logToConsole("❌ Invalid OTP code.");
+          updateStatusDisplay("Invalid OTP. Try again.");
+        }
+        event.target.value = "";
+        return;
+      }
+
+      // Dictionary lookup if exact match
+      const lowerInput = input.toLowerCase();
+      if (window.dictionary && window.dictionary[lowerInput]) {
+        const def = window.dictionary[lowerInput];
+        const response = `📚 *${capitalize(lowerInput)}*: ${def.definition}` +
+          (def.examples?.length ? `\n🔁 Example: ${def.examples[0]}` : '') +
+          (def.related?.length ? `\n🔗 Related: ${def.related.join(", ")}` : '');
+        logToConsole(response);
+        event.target.value = "";
+        return;
+      }
+
+      // Otherwise respond via LLM + Gnodes context + memory
+      await respondWithLogicAndContext(input);
+
       event.target.value = "";
-      respondToUser(input);
-    }
-  }
-}
-
-function respondToUser(input) {
-  const query = input.toLowerCase().trim();
-  if (!query) return;
-
-  // Check OTP code input if expecting 2FA
-  if (!window.otpVerified && query.startsWith("otp ")) {
-    const code = query.slice(4).trim();
-    if (verifyOTP(code)) {
-      window.otpVerified = true;
-      logToConsole("✅ 2FA OTP verified successfully.");
-      updateStatusDisplay("2FA verified. Access granted.");
-    } else {
-      logToConsole("❌ Invalid OTP code.");
-      updateStatusDisplay("Invalid OTP. Try again.");
-    }
-    return;
-  }
-
-  if (window.dictionary && window.dictionary[query]) {
-    const def = window.dictionary[query];
-    const response = `📚 *${capitalize(query)}*: ${def.definition}` +
-      (def.examples?.length ? `\n🔁 Example: ${def.examples[0]}` : '') +
-      (def.related?.length ? `\n🔗 Related: ${def.related.join(", ")}` : '');
-    logToConsole(response);
-    return;
-  }
-
-  const match = window.nodes.find(n => (n.id?.toLowerCase() === query) || (n.label && n.label.toLowerCase().includes(query)));
-  if (match) {
-    logToConsole(`📍 Found logic node "${match.id}": ${match.summary || match.message || match.label || "No summary available."}`);
-    recursiveThought(match);
-    return;
-  }
-
-  fetchOnlineDefinition(query).then(def => {
-    if (def) {
-      window.dictionary[query] = def;
-
-      // === Save dictionary persistently & update status ===
-      localStorage.setItem("percy_dictionary", JSON.stringify(window.dictionary));
-      updateStatusDisplay(`📘 Definitions loaded: ${Object.keys(window.dictionary).length}`);
-      // =====================================================
-
-      saveDefinition(query, def);
-      const response = `📚 *${capitalize(query)}*: ${def.definition}` +
-        (def.examples?.length ? `\n🔁 Example: ${def.examples[0]}` : '') +
-        (def.related?.length ? `\n🔗 Related: ${def.related.join(", ")}` : '');
-      logToConsole(response);
-    } else {
-      logToConsole("🤖 Percy is thinking... no direct dictionary or node match yet.");
     }
   });
 }
@@ -336,143 +507,11 @@ function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-async function fetchOnlineDefinition(word) {
-  try {
-    const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    if (Array.isArray(data) && data.length > 0) {
-      const entry = data[0];
-      const def = entry.meanings?.[0]?.definitions?.[0]?.definition || "No definition found.";
-      const example = entry.meanings?.[0]?.definitions?.[0]?.example || "";
-      return { definition: def, examples: example ? [example] : [], related: [] };
-    }
-  } catch (e) {
-    console.warn("Dictionary fetch failed:", e);
-  }
-  return null;
-}
+// ---------------------- OTP / 2FA -----------------------------
 
-async function saveDefinition(word, def) {
-  const response = await fetch('https://recursive-logic-map.vercel.app/api/save_definition', {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ word, def })
-  });
-
-  if (response.ok) {
-    console.log("✅ Saved definition:", word, "=", def);
-  } else {
-    console.error("❌ Failed to save:", response.statusText);
-  }
-}
-
-async function scanAndDefineAllWords() {
-  const seen = new Set();
-
-  for (const node of window.nodes) {
-    const text = [node.label, node.message, node.summary].filter(Boolean).join(" ");
-    const words = text.split(/\W+/).map(w => w.toLowerCase()).filter(w => w.length > 2);
-
-    for (const word of words) {
-      if (!window.dictionary[word] && !seen.has(word)) {
-        seen.add(word);
-        const def = await fetchOnlineDefinition(word);
-        if (def) {
-          window.dictionary[word] = def;
-
-          // === Save dictionary persistently & update status ===
-          localStorage.setItem("percy_dictionary", JSON.stringify(window.dictionary));
-          updateStatusDisplay(`📘 Definitions loaded: ${Object.keys(window.dictionary).length}`);
-          // =====================================================
-
-          await saveDefinition(word, def);
-          logToConsole(`📥 Auto-learned: ${word} → ${def.definition}`);
-        }
-        // Wait 300ms between each request to avoid flooding API
-        await new Promise(res => setTimeout(res, 300));
-      }
-    }
-  }
-
-  logToConsole("✅ Auto dictionary scan complete.");
-}
-
-function animateThinking() {
-  window.ctx.clearRect(0, 0, window.canvas.width, window.canvas.height);
-  drawConnections();
-  window.nodes.forEach((node, idx) => drawNode(node, idx === window.currentNodeIndex));
-  updatePulse();
-  requestAnimationFrame(animateThinking);
-}
-
-async function loadNodes() {
-  window.nodes = [];
-  const centerX = window.canvas.width / 2;
-  const centerY = window.canvas.height / 2;
-
-  for (let i = 0; i < coreNodeList.length; i++) {
-    const id = coreNodeList[i];
-    try {
-      const res = await fetch(`logic_seeds/${id}.json`);
-      const data = await res.json();
-
-      const angle = i * 0.4;
-      const radius = 180 + i * 18;
-      data.x = Math.cos(angle) * radius + centerX;
-      data.y = Math.sin(angle) * radius + centerY;
-
-      if (id === "G800.ULT") {
-        window.ULT = data;
-        logToConsole("🔐 ULT logic node securely loaded.");
-      }
-
-      if (id === "dictionary") {
-        window.dictionary = data;
-        logToConsole("📚 Dictionary loaded and integrated.");
-        // Update localStorage on dictionary load
-        localStorage.setItem("percy_dictionary", JSON.stringify(window.dictionary));
-        updateStatusDisplay(`📘 Definitions loaded: ${Object.keys(window.dictionary).length}`);
-      }
-
-      window.nodes.push(data);
-    } catch (err) {
-      console.warn(`Failed to load logic_seeds/${id}.json`, err);
-      logToConsole(`⚠️ Failed to load node: ${id}`);
-    }
-  }
-
-  logToConsole("✅ All logic seed nodes loaded.");
-}
-
-function deriveTokenFromULT() {
-  if (window.ULT?.data?.ULT_code) {
-    const head = "github_pat_11BULLKCA0";
-    const tail = window.ULT.data.ULT_code;
-    githubConfig.token = `${head}${tail}`;
-    logToConsole("🔐 GitHub token reconstructed securely from ULT.");
-  } else {
-    logToConsole("⚠️ Missing ULT code; unable to construct GitHub token.");
-  }
-}
-
-// === Helper to update the status display (create this in your HTML with id="percy-status") ===
-function updateStatusDisplay(message) {
-  const status = document.getElementById("percy-status");
-  if (status) {
-    status.textContent = message;
-  } else {
-    console.log("ℹ️", message);
-  }
-}
-
-// ===== New 2FA / OTP Functions =====
-
-// NOTE: For simplicity, OTP generation is simulated here;
-// in production, use a proper TOTP library like otplib.
+// Placeholder OTP generation/verification logic — replace with real TOTP lib in prod
 
 function generateOTPSecret() {
-  // Simple random secret generator (base32-ish)
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
   let secret = "";
   for (let i = 0; i < 16; i++) {
@@ -486,14 +525,27 @@ function verifyOTP(code) {
     logToConsole("⚠️ No OTP secret set.");
     return false;
   }
-
-  const isValid = window.otplib.authenticator.check(code, window.otpSecret);
-  return isValid;
+  // Using otplib if loaded (or mock)
+  if (window.otplib && window.otplib.authenticator) {
+    return window.otplib.authenticator.check(code, window.otpSecret);
+  }
+  return false;
 }
 
 function showOTPQRCode(secret) {
-  // Simulate QR code display in console; in real UI show QR for Google Authenticator etc.
   logToConsole(`🔑 Scan this OTP secret in your Authenticator app: ${secret}`);
 }
 
-// ===== Trusted Users and ULT structure are loaded from the coreNodeList "G800.ULT" JSON node
+// ---------------------- GitHub Token from ULT -----------------
+
+function deriveTokenFromULT() {
+  if (window.ULT?.data?.ULT_code) {
+    const head = "github_pat_11BULLKCA0";
+    const tail = window.ULT.data.ULT_code;
+    githubConfig.token = `${head}${tail}`;
+    logToConsole("🔐 GitHub token reconstructed securely from ULT.");
+  } else {
+    logToConsole("⚠️ Missing ULT code; unable to construct GitHub token.");
+  }
+}
+
