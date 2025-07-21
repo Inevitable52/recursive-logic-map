@@ -78,7 +78,7 @@ const coreNodeList = [
 
 
 // OpenAI API Key (replace with your actual key, keep secret)
-const OPENAI_API_KEY = "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";
+const OPENAI_API_KEY = "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";
 
 // --- Globals ---
 window.nodes = [];
