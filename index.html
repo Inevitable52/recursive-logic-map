@@ -2,22 +2,31 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Percy Logic Engine</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Percy Recursive Logic Engine</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="percy-container">
-    <canvas id="logic-canvas"></canvas>
 
-    <div id="percy-ui">
-      <div id="percy-console" class="console-box"></div>
-      <div id="percy-status" class="status-box">Status: Initializing...</div>
-      <input type="text" id="user-input" placeholder="Type a command or word..." />
-    </div>
-  </div>
+  <!-- Canvas for logic map visualization -->
+  <canvas id="logic-canvas" aria-label="Percy Recursive Logic Map Visualization"></canvas>
 
-  <script src="https://cdn.jsdelivr.net/npm/otplib@12.0.1/otplib.umd.min.js"></script>
-  <script src="percy.js"></script>
+  <!-- Console log output -->
+  <div id="percy-console" role="log" aria-live="polite" aria-atomic="false"></div>
+
+  <!-- Status bar -->
+  <div id="percy-status" aria-live="polite" aria-atomic="true">Status: Initializing...</div>
+
+  <!-- User input -->
+  <input
+    id="user-input"
+    type="text"
+    autocomplete="off"
+    placeholder="Type your input here and press Enter..."
+    aria-label="User input"
+  />
+
+  <!-- Load percy.js -->
+  <script src="percy.js" type="module"></script>
 </body>
 </html>
