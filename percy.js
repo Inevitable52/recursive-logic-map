@@ -89,6 +89,8 @@ document.addEventListener("DOMContentLoaded", () => {
     console.error("❌ Unable to get canvas context.");
     return;
   }
+  
+window.otplib = window.otplib || window.otplib_umd;
 
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
@@ -497,8 +499,13 @@ function generateOTPSecret() {
 }
 
 function verifyOTP(code) {
-  // Very simple stub: accept '123456' as valid OTP for demo
-  return code === "123456";
+  if (!window.otpSecret) {
+    logToConsole("⚠️ No OTP secret set.");
+    return false;
+  }
+
+  const isValid = window.otplib.authenticator.check(code, window.otpSecret);
+  return isValid;
 }
 
 function showOTPQRCode(secret) {
