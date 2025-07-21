@@ -79,26 +79,17 @@ const coreNodeList = [
 
 document.addEventListener("DOMContentLoaded", () => {
   const canvas = document.getElementById("logic-canvas");
-  if (!canvas) {
-    console.error("❌ Canvas element with id 'logic-canvas' not found.");
-    return;
-  }
-
+  if (!canvas) return console.error("❌ Canvas element with id 'logic-canvas' not found.");
   const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    console.error("❌ Unable to get canvas context.");
-    return;
-  }
-  
-window.otplib = window.otplib || window.otplib_umd;
-
+  if (!ctx) return console.error("❌ Unable to get canvas context.");
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
+
+  window.otplib = window.otplib || window.otplib_umd;
 
   const consoleBox = document.getElementById("percy-console");
   const statusDisplay = document.getElementById("percy-status");
 
-  // Declare globals inside DOMContentLoaded to ensure they're ready and in scope
   window.ctx = ctx;
   window.canvas = canvas;
   window.consoleBox = consoleBox;
@@ -114,10 +105,36 @@ window.otplib = window.otplib || window.otplib_umd;
     fabian: { name: "Fabian Villarreal", dob: "1978-03-04" },
     lorena: { name: "Lorena Villarreal", dob: "2003-06-14" }
   };
-
-  // OTP and 2FA state
   window.otpSecret = null;
   window.otpVerified = false;
+
+  const savedDict = localStorage.getItem("percy_dictionary");
+  if (savedDict) {
+    try {
+      window.dictionary = JSON.parse(savedDict);
+      updateStatusDisplay(`📘 Definitions loaded: ${Object.keys(window.dictionary).length}`);
+    } catch (e) {
+      console.warn("⚠️ Failed to parse saved dictionary.", e);
+    }
+  }
+
+  logToConsole("🧠 Initializing Percy’s recursive logic engine...");
+  loadNodes().then(() => {
+    animateThinking();
+    scanAndDefineAllWords();
+    if (window.ULT) {
+      deriveTokenFromULT();
+      window.otpSecret = generateOTPSecret();
+      logToConsole("🔐 OTP secret generated for 2FA.");
+      showOTPQRCode(window.otpSecret);
+    }
+  });
+
+  const userInput = document.getElementById("user-input");
+  if (userInput) {
+    userInput.addEventListener("keydown", handleUserInput);
+  }
+});
 
   // ===== DICTIONARY + localStorage LOAD =====
   const savedDict = localStorage.getItem("percy_dictionary");
