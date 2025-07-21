@@ -170,7 +170,6 @@ document.addEventListener("DOMContentLoaded", () => {
   } else {
     console.warn("❌ Input element with id 'user-input' not found.");
   }
-});
 
 // --- Core functions ---
 
