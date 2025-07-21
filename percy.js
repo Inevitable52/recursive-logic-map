@@ -463,11 +463,34 @@ Provide a clear, logical, and thoughtful response.
 function setupUserInputHandler() {
   const userInput = document.getElementById("user-input");
   if (!userInput) return;
+
   userInput.addEventListener("keydown", async (event) => {
     if (event.key === "Enter") {
       const input = event.target.value.trim();
       if (!input) return;
+
       logToConsole(`💬 You: ${input}`);
+      event.target.value = "";
+
+      // Fetch from local OpenAI proxy
+      fetch('http://localhost:3001/api/openai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: input }]
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        const reply = data.choices?.[0]?.message?.content;
+        logToConsole(`🤖 Percy: ${reply}`);
+      })
+      .catch(err => {
+        logToConsole('❌ OpenAI error:', err);
+      });
+    }
+  });
+}
 
       // 2FA check (existing logic)
       if (!window.otpVerified && input.toLowerCase().startsWith("otp ")) {
