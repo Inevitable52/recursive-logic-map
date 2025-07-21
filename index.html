@@ -2,50 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Percy Recursive Logic Engine</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Percy Logic Engine</title>
   <link rel="stylesheet" href="style.css" />
-  <link rel="icon" href="percy.ico" />
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/otplib@12.0.1/otplib.umd.min.js"></script>
 </head>
 <body>
-  <header>
-    <h1>Percy Recursive Logic Engine</h1>
-    <p id="percy-status">Status: Initializing...</p>
-  </header>
+  <div id="percy-container">
+    <canvas id="logic-canvas"></canvas>
 
-  <main>
-    <canvas id="logic-canvas" aria-label="Logic visualization canvas"></canvas>
+    <div id="percy-ui">
+      <div id="percy-console" class="console-box"></div>
+      <div id="percy-status" class="status-box">Status: Initializing...</div>
+      <input type="text" id="user-input" placeholder="Type a command or word..." />
+    </div>
+  </div>
 
-    <section id="console-container" aria-live="polite" aria-atomic="false" role="log">
-      <div id="percy-console" tabindex="0" aria-label="Percy console output"></div>
-    </section>
-
-    <form id="input-form" onsubmit="return false;">
-      <input
-        type="text"
-        id="user-input"
-        placeholder="Type a command or question and press Enter"
-        autocomplete="off"
-        aria-describedby="input-help"
-        aria-label="User input for Percy"
-        autofocus
-      />
-      <small id="input-help">Tip: To enter OTP, type <code>otp 123456</code></small>
-    </form>
-
-    <section id="qr-code-section" aria-label="QR code for Authenticator setup" hidden>
-      <h2>Scan this QR code with your authenticator app</h2>
-      <canvas id="qr-code-canvas"></canvas>
-      <button id="close-qr-btn" aria-label="Close QR code display">Close</button>
-    </section>
-  </main>
-
-  <footer>
-    <p>© 2025 Percy Recursive Logic Engine</p>
-  </footer>
-
+  <script src="https://cdn.jsdelivr.net/npm/otplib@12.0.1/otplib.umd.min.js"></script>
   <script src="percy.js"></script>
 </body>
 </html>
