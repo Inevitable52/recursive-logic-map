@@ -1,70 +1,81 @@
-body, html {
+/* === Basic Reset === */
+* {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+body, html {
   height: 100%;
-  font-family: "Courier New", monospace;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #0b0c10;
-  color: #66fcf1;
-  overflow: hidden;
+  color: #c5c6c7;
+  display: flex;
+  flex-direction: column;
 }
 
-#percy-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
+/* Canvas fills most of the viewport */
 #logic-canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 0;
+  flex-grow: 1;
+  display: block;
+  background: #1f2833;
   width: 100%;
   height: 100%;
-  background-color: #1f2833;
 }
 
-#percy-ui {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  z-index: 1;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 10px;
-  box-sizing: border-box;
-}
-
-.console-box {
-  height: 150px;
-  overflow-y: auto;
+/* Console log panel */
+#percy-console {
+  height: 180px;
   background: #0b0c10;
-  padding: 8px;
-  border: 1px solid #45a29e;
-  font-size: 0.9rem;
-  margin-bottom: 5px;
+  border-top: 2px solid #45a29e;
+  overflow-y: auto;
+  padding: 10px;
+  font-size: 14px;
+  font-family: monospace;
+  color: #66fcf1;
 }
 
-.console-line {
-  margin: 2px 0;
-  line-height: 1.3;
+#percy-console .console-line {
+  margin-bottom: 4px;
 }
 
-.status-box {
-  font-size: 0.9rem;
-  padding: 5px;
-  background-color: #1f2833;
-  border-left: 4px solid #66fcf1;
-  margin-bottom: 8px;
+/* Status bar */
+#percy-status {
+  height: 28px;
+  line-height: 28px;
+  background: #45a29e;
+  color: #0b0c10;
+  font-weight: bold;
+  padding: 0 12px;
 }
 
+/* User input box */
 #user-input {
   width: 100%;
-  padding: 10px;
-  font-size: 1rem;
   border: none;
-  outline: none;
+  border-top: 2px solid #45a29e;
+  padding: 10px 15px;
+  font-size: 16px;
   background-color: #0b0c10;
   color: #66fcf1;
-  border-top: 1px solid #45a29e;
-  font-family: inherit;
+  font-family: monospace;
+  outline: none;
+}
+
+#user-input::placeholder {
+  color: #45a29e;
+}
+
+/* Scrollbar styling for console */
+#percy-console::-webkit-scrollbar {
+  width: 8px;
+}
+
+#percy-console::-webkit-scrollbar-track {
+  background: #0b0c10;
+}
+
+#percy-console::-webkit-scrollbar-thumb {
+  background-color: #45a29e;
+  border-radius: 4px;
 }
