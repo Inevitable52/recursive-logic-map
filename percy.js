@@ -540,12 +540,9 @@ function showOTPQRCode(secret) {
 
 function deriveTokenFromULT() {
   if (window.ULT?.data?.ULT_code) {
-    const head = "github_pat_11BULLKCA0";
-    const tail = window.ULT.data.ULT_code;
-    githubConfig.token = `${head}${tail}`;
-    logToConsole("🔐 GitHub token reconstructed securely from ULT.");
+    githubConfig.token = window.ULT.data.ULT_code;
+    logToConsole("🔐 GitHub token loaded from ULT.");
   } else {
     logToConsole("⚠️ Missing ULT code; unable to construct GitHub token.");
   }
 }
-
