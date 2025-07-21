@@ -156,8 +156,11 @@ async function loadNodes() {
     const id = coreNodeList[i];
     try {
       const res = await fetch(`logic_seeds/${id}.json`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
       const data = await res.json();
 
+      // Position nodes in a circle
       const angle = i * 0.4;
       const radius = 180 + i * 18;
       data.x = Math.cos(angle) * radius + centerX;
@@ -166,23 +169,21 @@ async function loadNodes() {
       if (id === "G800.ULT") {
         window.ULT = data;
         logToConsole("🔐 ULT logic node securely loaded.");
-      }
-
-      if (id === "dictionary") {
+        deriveTokenFromULT(); // Rebuild GitHub token from ULT right after load
+      } else if (id === "dictionary") {
         window.dictionary = data;
         localStorage.setItem("percy_dictionary", JSON.stringify(window.dictionary));
         updateStatusDisplay(`📘 Definitions loaded: ${Object.keys(window.dictionary).length}`);
         logToConsole("📚 Dictionary loaded and integrated.");
+      } else {
+        window.nodes.push(data);
+        logToConsole(`✅ Loaded node: ${id}`);
       }
-
-      window.nodes.push(data);
     } catch (err) {
-      console.warn(`Failed to load logic_seeds/${id}.json`, err);
+      console.warn(`❌ Failed to load logic_seeds/${id}.json`, err);
       logToConsole(`⚠️ Failed to load node: ${id}`);
     }
   }
-
-  logToConsole("✅ All logic seed nodes loaded.");
 }
 
 // ---------------------- Dictionary ----------------------------
