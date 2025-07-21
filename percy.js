@@ -77,6 +77,24 @@ const coreNodeList = [
 ];
 
 
+function logToConsole(message) {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => logToConsole(message));
+    return;
+  }
+
+  const consoleOutput = document.getElementById("percy-console");
+  if (!consoleOutput) {
+    console.warn("⚠️ Console output element not found. Skipping log:", message);
+    return;
+  }
+
+  const newLine = document.createElement("div");
+  newLine.textContent = message;
+  consoleOutput.appendChild(newLine);
+  consoleOutput.scrollTop = consoleOutput.scrollHeight;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const canvas = document.getElementById("logic-canvas");
   if (!canvas) return console.error("❌ Canvas element with id 'logic-canvas' not found.");
@@ -136,17 +154,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-  // ===== DICTIONARY + localStorage LOAD =====
-  const savedDict = localStorage.getItem("percy_dictionary");
-  if (savedDict) {
-    try {
-      window.dictionary = JSON.parse(savedDict);
-      console.log(`📦 Dictionary restored from localStorage with ${Object.keys(window.dictionary).length} entries.`);
-      updateStatusDisplay(`📘 Definitions loaded: ${Object.keys(window.dictionary).length}`);
-    } catch (e) {
-      console.warn("⚠️ Failed to parse saved dictionary from localStorage.", e);
-    }
-  }
   // ===========================================
 
   // Kick off engine after DOM is ready
