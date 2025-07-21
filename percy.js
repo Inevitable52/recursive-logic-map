@@ -470,29 +470,8 @@ function setupUserInputHandler() {
       if (!input) return;
 
       logToConsole(`💬 You: ${input}`);
-      event.target.value = "";
 
-      // Fetch from local OpenAI proxy
-      fetch('http://localhost:3001/api/openai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: input }]
-        })
-      })
-      .then(res => res.json())
-      .then(data => {
-        const reply = data.choices?.[0]?.message?.content;
-        logToConsole(`🤖 Percy: ${reply}`);
-      })
-      .catch(err => {
-        logToConsole('❌ OpenAI error:', err);
-      });
-    }
-  });
-}
-
-      // 2FA check (existing logic)
+      // ✅ 2FA check (must be inside event handler)
       if (!window.otpVerified && input.toLowerCase().startsWith("otp ")) {
         const code = input.slice(4).trim();
         if (verifyOTP(code)) {
@@ -504,10 +483,10 @@ function setupUserInputHandler() {
           updateStatusDisplay("Invalid OTP. Try again.");
         }
         event.target.value = "";
-        return;
+        return; // ✅ LEGAL now that we're inside a function
       }
 
-      // Dictionary lookup if exact match
+      // ✅ Dictionary lookup
       const lowerInput = input.toLowerCase();
       if (window.dictionary && window.dictionary[lowerInput]) {
         const def = window.dictionary[lowerInput];
@@ -519,8 +498,21 @@ function setupUserInputHandler() {
         return;
       }
 
-      // Otherwise respond via LLM + Gnodes context + memory
-      await respondWithLogicAndContext(input);
+      // ✅ Use local OpenAI proxy
+      try {
+        const res = await fetch('http://localhost:3001/api/openai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: [{ role: 'user', content: input }]
+          })
+        });
+        const data = await res.json();
+        const reply = data.choices?.[0]?.message?.content || "🤖 No response from Percy.";
+        logToConsole(`🤖 Percy: ${reply}`);
+      } catch (err) {
+        logToConsole(`❌ OpenAI error: ${err.message}`);
+      }
 
       event.target.value = "";
     }
