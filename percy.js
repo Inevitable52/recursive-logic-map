@@ -77,24 +77,6 @@ const coreNodeList = [
 ];
 
 
-function logToConsole(message) {
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => logToConsole(message));
-    return;
-  }
-
-  const consoleOutput = document.getElementById("percy-console");
-  if (!consoleOutput) {
-    console.warn("⚠️ Console output element not found. Skipping log:", message);
-    return;
-  }
-
-  const newLine = document.createElement("div");
-  newLine.textContent = message;
-  consoleOutput.appendChild(newLine);
-  consoleOutput.scrollTop = consoleOutput.scrollHeight;
-}
-
 document.addEventListener("DOMContentLoaded", () => {
   const canvas = document.getElementById("logic-canvas");
   if (!canvas) return console.error("❌ Canvas element with id 'logic-canvas' not found.");
@@ -112,6 +94,9 @@ document.addEventListener("DOMContentLoaded", () => {
   window.canvas = canvas;
   window.consoleBox = consoleBox;
   window.statusDisplay = statusDisplay;
+  
+  logToConsole("🧠 Initializing Percy’s recursive logic engine..."); // Only call once here
+  
   window.nodes = [];
   window.currentNodeIndex = 0;
   window.lastUpdate = Date.now();
@@ -136,7 +121,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  logToConsole("🧠 Initializing Percy’s recursive logic engine...");
   loadNodes().then(() => {
     animateThinking();
     scanAndDefineAllWords();
@@ -153,30 +137,6 @@ document.addEventListener("DOMContentLoaded", () => {
     userInput.addEventListener("keydown", handleUserInput);
   }
 });
-
-  // ===========================================
-
-  // Kick off engine after DOM is ready
-  logToConsole("🧠 Initializing Percy’s recursive logic engine...");
-  loadNodes().then(() => {
-    animateThinking();
-    scanAndDefineAllWords();
-    if (window.ULT) {
-      // Attempt GitHub token reconstruction securely
-      deriveTokenFromULT();
-      // Generate OTP secret for 2FA (simulate here)
-      window.otpSecret = generateOTPSecret();
-      logToConsole("🔐 OTP secret generated for 2FA.");
-      showOTPQRCode(window.otpSecret);
-    }
-  });
-
-  const userInput = document.getElementById("user-input");
-  if (userInput) {
-    userInput.addEventListener("keydown", handleUserInput);
-  } else {
-    console.warn("❌ Input element with id 'user-input' not found.");
-  }
 
 // --- Core functions ---
 
@@ -537,4 +497,3 @@ function showOTPQRCode(secret) {
 }
 
 // ===== Trusted Users and ULT structure are loaded from the coreNodeList "G800.ULT" JSON node
-
