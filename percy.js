@@ -77,9 +77,6 @@ const coreNodeList = [
 ];
 
 
-// OpenAI API Key (replace with your actual key, keep secret)
-const OPENAI_API_KEY = "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";
-
 // --- Globals ---
 window.nodes = [];
 window.memory = []; // Logs past interactions for progressive learning
