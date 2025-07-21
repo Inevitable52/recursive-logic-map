@@ -1,81 +1,89 @@
-/* === Basic Reset === */
-* {
-  box-sizing: border-box;
+body {
   margin: 0;
-  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #101820;
+  color: #f3f3f3;
 }
 
-body, html {
-  height: 100%;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #0b0c10;
-  color: #c5c6c7;
+header {
+  padding: 1rem;
+  background-color: #1c2530;
+  border-bottom: 2px solid #3a4a5a;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#percy-status {
+  font-size: 1rem;
+  color: #aaffaa;
+}
+
+main {
   display: flex;
   flex-direction: column;
+  height: 100vh;
 }
 
-/* Canvas fills most of the viewport */
-#logic-canvas {
+canvas#logic-canvas {
   flex-grow: 1;
+  background-color: #0d1117;
   display: block;
-  background: #1f2833;
-  width: 100%;
-  height: 100%;
 }
 
-/* Console log panel */
+#console-section {
+  background-color: #1c1c1c;
+  padding: 1rem;
+  border-top: 1px solid #444;
+}
+
 #percy-console {
-  height: 180px;
-  background: #0b0c10;
-  border-top: 2px solid #45a29e;
+  max-height: 200px;
   overflow-y: auto;
-  padding: 10px;
-  font-size: 14px;
   font-family: monospace;
-  color: #66fcf1;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  margin-bottom: 0.5rem;
 }
 
-#percy-console .console-line {
-  margin-bottom: 4px;
-}
-
-/* Status bar */
-#percy-status {
-  height: 28px;
-  line-height: 28px;
-  background: #45a29e;
-  color: #0b0c10;
-  font-weight: bold;
-  padding: 0 12px;
-}
-
-/* User input box */
 #user-input {
   width: 100%;
+  padding: 0.5rem;
+  font-size: 1rem;
   border: none;
-  border-top: 2px solid #45a29e;
-  padding: 10px 15px;
-  font-size: 16px;
-  background-color: #0b0c10;
-  color: #66fcf1;
-  font-family: monospace;
-  outline: none;
+  border-radius: 0.25rem;
+  background-color: #2b2b2b;
+  color: #f0f0f0;
 }
 
-#user-input::placeholder {
-  color: #45a29e;
+#user-input:focus {
+  outline: 2px solid #3fa9f5;
 }
 
-/* Scrollbar styling for console */
-#percy-console::-webkit-scrollbar {
-  width: 8px;
+#otp-section {
+  padding: 1rem;
+  background-color: #222;
+  border-top: 1px solid #444;
+  color: #fff;
 }
 
-#percy-console::-webkit-scrollbar-track {
-  background: #0b0c10;
+#otp-section input {
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  background-color: #2d2d2d;
+  border: none;
+  color: #fff;
 }
 
-#percy-console::-webkit-scrollbar-thumb {
-  background-color: #45a29e;
-  border-radius: 4px;
+#otp-section button {
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #3fa9f5;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+#otp-section button:hover {
+  background-color: #338fcc;
 }
