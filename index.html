@@ -2,11 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Percy Recursive Logic Engine</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="icon" href="percy.ico" />
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/otplib@12.0.1/otplib.umd.min.js"></script>
 </head>
 <body>
   <header>
@@ -33,19 +34,18 @@
       />
       <small id="input-help">Tip: To enter OTP, type <code>otp 123456</code></small>
     </form>
+
+    <section id="qr-code-section" aria-label="QR code for Authenticator setup" hidden>
+      <h2>Scan this QR code with your authenticator app</h2>
+      <canvas id="qr-code-canvas"></canvas>
+      <button id="close-qr-btn" aria-label="Close QR code display">Close</button>
+    </section>
   </main>
 
   <footer>
     <p>© 2025 Percy Recursive Logic Engine</p>
   </footer>
 
-  <section id="qr-code-section" aria-label="QR code for Twilio OTP secret" hidden>
-  <h2>Scan this QR code with your authenticator app</h2>
-  <canvas id="qr-code-canvas"></canvas>
-  <button id="close-qr-btn" aria-label="Close QR code display">Close</button>
-</section>
-
-  <script src="https://cdn.jsdelivr.net/npm/otplib@12.0.1/otplib.umd.min.js"></script>
   <script src="percy.js"></script>
 </body>
 </html>
