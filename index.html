@@ -2,31 +2,32 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Percy Recursive Logic Engine</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Percy Recursive Logic Map</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="percy.ico" />
 </head>
 <body>
+  <header>
+    <h1>Percy Recursive Logic Map</h1>
+    <div id="percy-status">🟢 Status: Ready</div>
+  </header>
 
-  <!-- Canvas for logic map visualization -->
-  <canvas id="logic-canvas" aria-label="Percy Recursive Logic Map Visualization"></canvas>
+  <main>
+    <canvas id="logic-canvas"></canvas>
+    <section id="console-section">
+      <div id="percy-console"></div>
+      <input type="text" id="user-input" placeholder="Ask Percy a question or define logic..." autocomplete="off" />
+    </section>
+    <section id="otp-section" style="display: none;">
+      <h3>2FA Setup</h3>
+      <div id="otp-qr"></div>
+      <input type="text" id="otp-code" placeholder="Enter OTP code" />
+      <button id="otp-verify">Verify</button>
+    </section>
+  </main>
 
-  <!-- Console log output -->
-  <div id="percy-console" role="log" aria-live="polite" aria-atomic="false"></div>
-
-  <!-- Status bar -->
-  <div id="percy-status" aria-live="polite" aria-atomic="true">Status: Initializing...</div>
-
-  <!-- User input -->
-  <input
-    id="user-input"
-    type="text"
-    autocomplete="off"
-    placeholder="Type your input here and press Enter..."
-    aria-label="User input"
-  />
-
-  <!-- Load percy.js -->
-  <script src="percy.js" type="module"></script>
+  <script src="https://cdn.jsdelivr.net/npm/otplib@12.0.1/otplib.umd.min.js"></script>
+  <script src="percy.js"></script>
 </body>
 </html>
