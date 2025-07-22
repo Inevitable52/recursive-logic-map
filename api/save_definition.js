@@ -1,23 +1,34 @@
+const allowedOrigins = [
+  'https://inevitable52.github.io',
+  'https://recursive-logic-grxmmb8x9-fabian-villarreals-projects.vercel.app',
+  'https://recursive-logic-map.vercel.app',
+  'http://localhost:3000'
+];
+
 export default async function handler(req, res) {
-  // ✅ Allow CORS from GitHub Pages
-  res.setHeader("Access-Control-Allow-Origin", "https://inevitable52.github.io");
+  const origin = req.headers.origin;
+
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+
+  res.setHeader("Vary", "Origin"); // Let caches know responses vary by Origin
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
 
-  // ✅ Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return res.status(200).end();
+    return res.status(200).end(); // Preflight OK
   }
 
   if (req.method === "POST") {
     const { word, def } = req.body;
 
-    // 🔐 You can add auth/validation here if needed
+    // Optional: Add auth or validation here
 
     console.log("📝 Saving:", word, "=", def);
 
-    // TODO: Save to GitHub repo here (or local file/db/etc)
-
+    // TODO: Replace with your actual saving logic (GitHub, database, etc.)
     return res.status(200).json({ message: "Definition saved." });
   }
 
