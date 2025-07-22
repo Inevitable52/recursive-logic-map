@@ -199,19 +199,20 @@ function restoreDictionary() {
 
 async function fetchOnlineDefinition(word) {
   try {
-    const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`;
-    const res = await fetch(url);
+    const res = await fetch('http://localhost:3000/api/openai', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ prompt: word })
+    });
     const data = await res.json();
-    if (Array.isArray(data) && data.length > 0) {
-      const entry = data[0];
-      const def = entry.meanings?.[0]?.definitions?.[0]?.definition || "No definition found.";
-      const example = entry.meanings?.[0]?.definitions?.[0]?.example || "";
-      return { definition: def, examples: example ? [example] : [], related: [] };
-    }
-  } catch (e) {
-    console.warn("Dictionary fetch failed:", e);
+    console.log("📥 Definition received:", data);
+    return data; // ✅ make sure to return the definition so it can be saved
+  } catch (err) {
+    console.error('❌ Error fetching from OpenAI proxy:', err);
+    return null; // Safely return null to avoid breaking anything
   }
-  return null;
 }
 
 async function scanAndDefineAllWords() {
