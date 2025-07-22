@@ -495,6 +495,19 @@ function setupUserInputHandler() {
         return;
       }
 
+      // ✅ Ask Percy Logic
+if (input.toLowerCase().startsWith("message;")) {
+  const parsedQuery = input.slice(8).trim(); // Remove "message;" prefix
+  if (parsedQuery.length > 0) {
+    logToConsole(`🧠 Ask Percy: "${parsedQuery}"`);
+    await respondWithLogicAndContext(parsedQuery);
+  } else {
+    logToConsole("⚠️ Please provide a message after 'message;'");
+  }
+  event.target.value = "";
+  return;
+}
+
       // ✅ Use local OpenAI proxy
       try {
         const res = await fetch('http://localhost:3001/api/openai', {
