@@ -35,7 +35,7 @@ export default async function handler(req, res) {
           ]
         };
 
-        const openaiRes = await fetch("http://localhost:3000/api/openai", {
+        const openaiRes = await fetch("http://localhost:3000", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
