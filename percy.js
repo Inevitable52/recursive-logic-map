@@ -511,7 +511,7 @@ if (input.toLowerCase().startsWith("message;")) {
 
       // ✅ Use local OpenAI proxy
       try {
-        const res = await fetch('http://localhost:3000', {
+        const res = await fetch('http://localhost:3000/api/openai', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
