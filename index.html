@@ -53,20 +53,22 @@
         logToConsole(`💬 You: ${input}`);
 
         try {
-          const apiUrl = `${location.origin}/api/openai`; // 🔄 Dynamic API URL
+          const apiUrl = `https://recursive-logic-map.vercel.app/api/save_definition`;
+
           const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              model: 'gpt-4',
-              messages: [{ role: 'user', content: input }]
+              word: input,
+              def: "Placeholder definition or generated logic"
             })
           });
 
+
           const data = await response.json();
-          const reply = data.choices?.[0]?.message?.content || 'No response from Percy.';
+          const reply = data.message || 'No response from Percy.';
           logToConsole(`🤖 Percy: ${reply}`);
         } catch (err) {
           logToConsole('❌ Error reaching Percy server:', err.message);
