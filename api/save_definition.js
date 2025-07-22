@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     res.setHeader("Access-Control-Allow-Origin", origin);
   }
 
-  res.setHeader("Vary", "Origin"); // Let caches know responses vary by Origin
+  res.setHeader("Vary", "Origin");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.setHeader("Access-Control-Allow-Credentials", "true");
@@ -22,14 +22,43 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "POST") {
-    const { word, def } = req.body;
+    const { word, def, message } = req.body;
 
-    // Optional: Add auth or validation here
+    // 🧠 Ask Percy (OpenAI Proxy)
+    if (message) {
+      try {
+        const payload = {
+          model: "gpt-4",
+          messages: [
+            { role: "system", content: "You are Percy, a recursive logic AI assistant." },
+            { role: "user", content: message }
+          ]
+        };
 
-    console.log("📝 Saving:", word, "=", def);
+        const openaiRes = await fetch("http://localhost:3000/api/openai", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
 
-    // TODO: Replace with your actual saving logic (GitHub, database, etc.)
-    return res.status(200).json({ message: "Definition saved." });
+        const openaiData = await openaiRes.json();
+        const reply = openaiData?.choices?.[0]?.message?.content || "🤖 No response from Percy.";
+
+        return res.status(200).json({ reply });
+      } catch (err) {
+        console.error("🔥 Percy OpenAI Proxy Error:", err);
+        return res.status(500).json({ error: "Percy failed to fetch from OpenAI." });
+      }
+    }
+
+    // 📝 Save Definition
+    if (word && def) {
+      console.log("📝 Saving:", word, "=", def);
+      // TODO: Replace with your actual saving logic (GitHub, database, etc.)
+      return res.status(200).json({ message: "Definition saved." });
+    }
+
+    return res.status(400).json({ error: "Missing required fields." });
   }
 
   res.status(405).json({ error: "Method not allowed" });
