@@ -1,82 +1,48 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Percy Recursive Logic Map</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="icon" href="percy.ico" />
-</head>
-<body>
-  <header>
-    <h1>Percy Recursive Logic Map</h1>
-    <div id="percy-status">🟢 Status: Ready</div>
-  </header>
+<script>
+  function logToConsole(...messages) {
+    const consoleDiv = document.getElementById("percy-console");
+    const message = messages.join(" ");
+    const line = document.createElement("div");
+    line.textContent = message;
+    consoleDiv.appendChild(line);
+    consoleDiv.scrollTop = consoleDiv.scrollHeight;
+  }
 
-  <main>
-    <canvas id="logic-canvas"></canvas>
-    <section id="console-section">
-      <div id="percy-console"></div>
-      <input type="text" id="user-input" placeholder="Ask Percy a question or define logic..." autocomplete="off" />
-    </section>
-    <section id="otp-section" style="display: none;">
-      <h3>2FA Setup</h3>
-      <div id="otp-qr"></div>
-      <input type="text" id="otp-code" placeholder="Enter OTP code" />
-      <button id="otp-verify">Verify</button>
-    </section>
-  </main>
+  function setupUserInputHandler() {
+    const userInput = document.getElementById("user-input");
+    if (!userInput) return;
 
-  <script src="https://cdn.jsdelivr.net/npm/otplib@12.0.1/otplib.umd.min.js"></script>
-  <script src="percy.js"></script>
+    userInput.addEventListener("keydown", async (event) => {
+      if (event.key === "Enter") {
+        const input = event.target.value.trim();
+        if (!input) return;
 
-  <!-- Add Percy server connection script -->
-  <script>
-    function logToConsole(...messages) {
-      const consoleDiv = document.getElementById("percy-console");
-      const message = messages.join(" ");
-      const line = document.createElement("div");
-      line.textContent = message;
-      consoleDiv.appendChild(line);
-      consoleDiv.scrollTop = consoleDiv.scrollHeight;
-    }
+        logToConsole(`💬 You: ${input}`);
 
-    function setupUserInputHandler() {
-      const userInput = document.getElementById("user-input");
-      if (!userInput) return;
+        try {
+          const apiUrl = `${location.origin}/api/openai`; // 🔄 Dynamic API URL
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model: 'gpt-4',
+              messages: [{ role: 'user', content: input }]
+            })
+          });
 
-      userInput.addEventListener("keydown", async (event) => {
-        if (event.key === "Enter") {
-          const input = event.target.value.trim();
-          if (!input) return;
-
-          logToConsole(`💬 You: ${input}`);
-
-          try {
-            const response = await fetch('http://localhost:3000/api/openai', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                model: 'gpt-4',
-                messages: [{ role: 'user', content: input }]
-              })
-            });
-
-            const data = await response.json();
-            const reply = data.choices?.[0]?.message?.content || 'No response from Percy.';
-            logToConsole(`🤖 Percy: ${reply}`);
-          } catch (err) {
-            logToConsole('❌ Error reaching Percy server:', err.message);
-          }
-
-          event.target.value = '';
+          const data = await response.json();
+          const reply = data.choices?.[0]?.message?.content || 'No response from Percy.';
+          logToConsole(`🤖 Percy: ${reply}`);
+        } catch (err) {
+          logToConsole('❌ Error reaching Percy server:', err.message);
         }
-      });
-    }
 
-    window.addEventListener('DOMContentLoaded', setupUserInputHandler);
-  </script>
-</body>
-</html>
+        event.target.value = '';
+      }
+    });
+  }
+
+  window.addEventListener('DOMContentLoaded', setupUserInputHandler);
+</script>
