@@ -199,7 +199,8 @@ function restoreDictionary() {
 
 async function fetchOnlineDefinition(word) {
   try {
-    const res = await fetch('https://recursive-logic-map.vercel.app/api', {
+    const res = await fetch('https://api.openai.com/v1/chat/completions
+', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
