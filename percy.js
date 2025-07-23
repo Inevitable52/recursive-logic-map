@@ -538,4 +538,25 @@ function capitalize(str) {
 function generateOTPSecret() {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
   let secret = "";
-  for (let i = 0; i < 16;
+  for (let i = 0; i < 16; i++) {
+    secret += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return secret;
+}
+
+function verifyOTP(code) {
+  // For demonstration only — replace with real TOTP validation
+  const expected = "123456"; // Replace with real generated value in production
+  return code === expected;
+}
+
+function showOTPQRCode(secret) {
+  const qrCodeElement = document.getElementById("otp-qrcode");
+  if (qrCodeElement) {
+    const uri = `otpauth://totp/PercyAI?secret=${secret}&issuer=Percy`;
+    const encoded = encodeURIComponent(uri);
+    qrCodeElement.src = `https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=${encoded}`;
+    qrCodeElement.style.display = "block";
+  }
+}
+
