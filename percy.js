@@ -200,7 +200,7 @@ function restoreDictionary() {
 // *** Calls backend API to fetch definition via your Vercel proxy ***
 async function fetchOnlineDefinition(word) {
   try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await fetch('https://recursive-logic-map.vercel.app/api/save_definition', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
