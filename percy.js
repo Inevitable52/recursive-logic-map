@@ -1,4 +1,5 @@
 // percy.js — Recursive Logic Engine with LLM + Progressive Learning + SMS + Goal Planning + Meta Mutation + GitHub Sync + Dictionary + Vercel Proxy
+
 const coreNodeList = [
   "G001", "G002", "G003", "G004", "G005", "G080",
   "G081", "G082", "G083", "G084", "G085", "G086", "G087", "G088", "G089", "G090",
@@ -75,7 +76,6 @@ const coreNodeList = [
   "G791", "G792", "G793", "G794", "G795", "G796", "G797", "G798", "G799", "G800",
   "G800.ULT", "dictionary"
 ];
-
 
 // --- Globals ---
 window.nodes = [];
@@ -197,37 +197,25 @@ function restoreDictionary() {
   }
 }
 
+// *** Calls backend API to fetch definition via your Vercel proxy ***
 async function fetchOnlineDefinition(word) {
   try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await fetch('https://recursive-logic-map.vercel.app/api/save_definition', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}` // Make sure this is defined
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'gpt-4',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a helpful dictionary assistant. Return concise definitions.'
-          },
-          {
-            role: 'user',
-            content: `Define the word: ${word}`
-          }
-        ]
+        message: `Define the word: ${word}`
       })
     });
 
     if (!res.ok) {
-      throw new Error(`OpenAI API error: ${res.status}`);
+      throw new Error(`API error: ${res.status}`);
     }
 
     const data = await res.json();
-    const reply = data.choices?.[0]?.message?.content?.trim() || 'No definition found.';
-    return reply;
-
+    return data.reply || 'No definition found.';
   } catch (error) {
     console.error('Error fetching definition:', error);
     return 'Error fetching definition.';
@@ -246,11 +234,11 @@ async function scanAndDefineAllWords() {
         seen.add(word);
         const def = await fetchOnlineDefinition(word);
         if (def) {
-          window.dictionary[word] = def;
+          window.dictionary[word] = { definition: def }; // Wrap definition so code expecting .definition works
           localStorage.setItem("percy_dictionary", JSON.stringify(window.dictionary));
           updateStatusDisplay(`📘 Definitions loaded: ${Object.keys(window.dictionary).length}`);
           await saveDefinition(word, def);
-          logToConsole(`📥 Auto-learned: ${word} → ${def.definition}`);
+          logToConsole(`📥 Auto-learned: ${word} → ${def}`);
         }
         await new Promise(res => setTimeout(res, 300)); // throttle API calls
       }
@@ -405,34 +393,27 @@ async function updateGithubSeed(seed) {
 
 // ---------------------- LLM Integration ----------------------
 
+// Calls backend proxy, not direct OpenAI (key security)
 async function queryLLM(prompt) {
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch("https://recursive-logic-map.vercel.app/api/save_definition", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: 300,
-        temperature: 0.7
-      })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: prompt })
     });
     const data = await response.json();
-    if (data.choices && data.choices.length > 0) {
-      return data.choices[0].message.content.trim();
+    if (data.reply) {
+      return data.reply.trim();
     }
-    return "🤖 Sorry, no response from LLM.";
+    return "🤖 Sorry, no response from Percy.";
   } catch (e) {
     console.error("❌ LLM query error:", e);
-    return "❌ Error communicating with LLM.";
+    return "❌ Error communicating with Percy.";
   }
 }
 
 function getRelevantGnodes(query) {
-  const matches = window.nodes.filter(n => 
+  const matches = window.nodes.filter(n =>
     (n.id && n.id.toLowerCase().includes(query.toLowerCase())) ||
     (n.label && n.label.toLowerCase().includes(query.toLowerCase()))
   );
@@ -443,7 +424,7 @@ async function respondWithLogicAndContext(userInput) {
   // Build context from relevant Gnodes + memory (progressive learning)
   const gnodeContext = getRelevantGnodes(userInput);
   const memoryContext = window.memory
-    .slice(-10) // last 10 memory items to keep prompt concise
+    .slice(-10) // last 10 memory items
     .map(m => `Memory[${new Date(m.time).toLocaleString()}]: ${m.context || m.input || ""}`)
     .join("\n");
 
@@ -469,9 +450,9 @@ Provide a clear, logical, and thoughtful response.
   // Add user input + LLM response to memory for future context
   window.memory.push({ time: Date.now(), input: userInput, response: answer });
 
-  // Optionally persist memory (could be localStorage or server-side for real progressive learning)
+  // Persist memory locally
   try {
-    localStorage.setItem("percy_memory", JSON.stringify(window.memory.slice(-1000))); // keep last 1000 entries max
+    localStorage.setItem("percy_memory", JSON.stringify(window.memory.slice(-1000)));
   } catch (e) {
     console.warn("⚠️ Failed to save memory:", e);
   }
@@ -488,7 +469,7 @@ function setupUserInputHandler() {
 
       logToConsole(`💬 You: ${input}`);
 
-      // ✅ 2FA check (must be inside event handler)
+      // 2FA check
       if (!window.otpVerified && input.toLowerCase().startsWith("otp ")) {
         const code = input.slice(4).trim();
         if (verifyOTP(code)) {
@@ -500,10 +481,10 @@ function setupUserInputHandler() {
           updateStatusDisplay("Invalid OTP. Try again.");
         }
         event.target.value = "";
-        return; // ✅ LEGAL now that we're inside a function
+        return;
       }
 
-      // ✅ Dictionary lookup
+      // Dictionary lookup
       const lowerInput = input.toLowerCase();
       if (window.dictionary && window.dictionary[lowerInput]) {
         const def = window.dictionary[lowerInput];
@@ -515,30 +496,28 @@ function setupUserInputHandler() {
         return;
       }
 
-      // ✅ Ask Percy Logic
-if (input.toLowerCase().startsWith("message;")) {
-  const parsedQuery = input.slice(8).trim(); // Remove "message;" prefix
-  if (parsedQuery.length > 0) {
-    logToConsole(`🧠 Ask Percy: "${parsedQuery}"`);
-    await respondWithLogicAndContext(parsedQuery);
-  } else {
-    logToConsole("⚠️ Please provide a message after 'message;'");
-  }
-  event.target.value = "";
-  return;
-}
+      // Ask Percy logic (message prefix)
+      if (input.toLowerCase().startsWith("message;")) {
+        const parsedQuery = input.slice(8).trim();
+        if (parsedQuery.length > 0) {
+          logToConsole(`🧠 Ask Percy: "${parsedQuery}"`);
+          await respondWithLogicAndContext(parsedQuery);
+        } else {
+          logToConsole("⚠️ Please provide a message after 'message;'");
+        }
+        event.target.value = "";
+        return;
+      }
 
-      // ✅ Use local OpenAI proxy
+      // Fallback: call backend OpenAI proxy with raw input
       try {
-        const res = await fetch('https://recursive-logic-map.vercel.app/api', {
+        const res = await fetch('https://recursive-logic-map.vercel.app/api/save_definition', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages: [{ role: 'user', content: input }]
-          })
+          body: JSON.stringify({ message: input })
         });
         const data = await res.json();
-        const reply = data.choices?.[0]?.message?.content || "🤖 No response from Percy.";
+        const reply = data.reply || "🤖 No response from Percy.";
         logToConsole(`🤖 Percy: ${reply}`);
       } catch (err) {
         logToConsole(`❌ OpenAI error: ${err.message}`);
@@ -556,39 +535,7 @@ function capitalize(str) {
 // ---------------------- OTP / 2FA -----------------------------
 
 // Placeholder OTP generation/verification logic — replace with real TOTP lib in prod
-
 function generateOTPSecret() {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
   let secret = "";
-  for (let i = 0; i < 16; i++) {
-    secret += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return secret;
-}
-
-function verifyOTP(code) {
-  if (!window.otpSecret) {
-    logToConsole("⚠️ No OTP secret set.");
-    return false;
-  }
-  // Using otplib if loaded (or mock)
-  if (window.otplib && window.otplib.authenticator) {
-    return window.otplib.authenticator.check(code, window.otpSecret);
-  }
-  return false;
-}
-
-function showOTPQRCode(secret) {
-  logToConsole(`🔑 Scan this OTP secret in your Authenticator app: ${secret}`);
-}
-
-// ---------------------- GitHub Token from ULT -----------------
-
-function deriveTokenFromULT() {
-  if (window.ULT?.data?.ULT_code) {
-    githubConfig.token = window.ULT.data.ULT_code;
-    logToConsole("🔐 GitHub token loaded from ULT.");
-  } else {
-    logToConsole("⚠️ Missing ULT code; unable to construct GitHub token.");
-  }
-}
+  for (let i = 0; i < 16;
