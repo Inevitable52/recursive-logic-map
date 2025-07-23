@@ -1,7 +1,7 @@
 const allowedOrigins = [
   'https://inevitable52.github.io',
   'https://recursive-logic-grxmmb8x9-fabian-villarreals-projects.vercel.app',
-  'https://recursive-logic-map.vercel.app',
+  'https://recursive-logic-map.vercel.app/api',
 ];
 
 export default async function handler(req, res) {
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
           ]
         };
 
-        const openaiRes = await fetch("https://recursive-logic-map.vercel.app", {
+        const openaiRes = await fetch("https://recursive-logic-map.vercel.app/save_definition.js", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
