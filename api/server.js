@@ -6,7 +6,6 @@ const fetch = require('node-fetch');
 const cors = require('cors');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 // 🔒 Check for API key
