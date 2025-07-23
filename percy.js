@@ -369,7 +369,7 @@ async function updateGithubSeed(seed) {
   const content = btoa(JSON.stringify(seed, null, 2));
 
   try {
-    const res = await fetch(`https://api.github.com/repos/${githubConfig.username}/${githubConfig.repo}/contents/${path}`, {
+    const res = await fetch(`https://api.openai.com/v1/chat/completions`, {
       method: "PUT",
       headers: {
         "Authorization": `token ${githubConfig.token}`,
