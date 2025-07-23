@@ -386,29 +386,25 @@ async function updateGithubSeed(seed) {
 
     // PUT updated file
     const res = await fetch(`https://api.github.com/repos/${githubConfig.username}/${githubConfig.repo}/contents/${path}`, {
-      method: "PUT",
-      headers: {
-        "Authorization": `token ${githubConfig.token}`,
-        "Accept": "application/vnd.github.v3+json",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        message: `Percy auto-commit: update ${seed.id}`,
-        content,
-        branch: githubConfig.branch,
-        sha: sha
-      })
-    });
+  method: "PUT",
+  headers: {
+    "Authorization": `Bearer ${githubConfig.token}`,
+    "Accept": "application/vnd.github.v3+json",
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    message: `Percy auto-commit: update ${seed.id}`,
+    content,       // base64 encoded string
+    branch: githubConfig.branch,
+    sha            // current SHA of the file being updated
+  })
+});
 
-    if (res.ok) {
-      logToConsole(`✅ GitHub updated for node ${seed.id}`);
-    } else {
-      const err = await res.json();
-      logToConsole(`⚠️ GitHub update failed for ${seed.id}: ${err.message}`);
-    }
-  } catch (e) {
-    logToConsole(`⚠️ GitHub update error for ${seed.id}: ${e.message}`);
-  }
+if (res.ok) {
+  logToConsole(`✅ GitHub updated for node ${seed.id}`);
+} else {
+  const err = await res.json();
+  logToConsole(`⚠️ GitHub update failed for ${seed.id}: ${err.message}`);
 }
 
 // ---------------------- LLM Integration ----------------------
