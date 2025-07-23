@@ -384,27 +384,20 @@ async function updateGithubSeed(seed) {
     }
 
     // PUT updated file
-    const res = await fetch(`https://api.github.com/repos/${githubConfig.username}/${githubConfig.repo}/contents/${path}`, {
+    const res = await fetch(`https://api.github.com/repos/inevitable52/recursive-logic-map/contents/logic_seeds/dictionary.json`, {
   method: "PUT",
   headers: {
-    "Authorization": `Bearer ${githubConfig.token}`,
+    "Authorization": `token ${githubConfig.token}`,  // or `Bearer`, both work
     "Accept": "application/vnd.github.v3+json",
     "Content-Type": "application/json"
   },
   body: JSON.stringify({
     message: `Percy auto-commit: update ${seed.id}`,
-    content,       // base64 encoded string
+    content,  // base64-encoded content
     branch: githubConfig.branch,
-    sha            // current SHA of the file being updated
+    sha       // current SHA of the file you're updating
   })
 });
-
-if (res.ok) {
-  logToConsole(`✅ GitHub updated for node ${seed.id}`);
-} else {
-  const err = await res.json();
-  logToConsole(`⚠️ GitHub update failed for ${seed.id}: ${err.message}`);
-}
 
 // ---------------------- LLM Integration ----------------------
 
