@@ -199,20 +199,38 @@ function restoreDictionary() {
 
 async function fetchOnlineDefinition(word) {
   try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions
-', {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}` // Make sure this is defined
       },
-      body: JSON.stringify({ prompt: word })
+      body: JSON.stringify({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a helpful dictionary assistant. Return concise definitions.'
+          },
+          {
+            role: 'user',
+            content: `Define the word: ${word}`
+          }
+        ]
+      })
     });
+
+    if (!res.ok) {
+      throw new Error(`OpenAI API error: ${res.status}`);
+    }
+
     const data = await res.json();
-    console.log("📥 Definition received:", data);
-    return data; // ✅ make sure to return the definition so it can be saved
-  } catch (err) {
-    console.error('❌ Error fetching from OpenAI proxy:', err);
-    return null; // Safely return null to avoid breaking anything
+    const reply = data.choices?.[0]?.message?.content?.trim() || 'No definition found.';
+    return reply;
+
+  } catch (error) {
+    console.error('Error fetching definition:', error);
+    return 'Error fetching definition.';
   }
 }
 
