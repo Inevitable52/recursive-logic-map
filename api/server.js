@@ -47,5 +47,5 @@ app.post('/api/openai', async (req, res) => {
 
 // 🚀 Launch the Percy Proxy Server
 app.listen(PORT, () => {
-  console.log(`✅ Percy Proxy Server is live at: http://localhost:${PORT}/api/openai`);
+  console.log(`✅ Percy Proxy Server is live at: https://recursive-logic-map.vercel.app/api`);
 });
