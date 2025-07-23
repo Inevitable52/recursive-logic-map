@@ -199,7 +199,7 @@ function restoreDictionary() {
 
 async function fetchOnlineDefinition(word) {
   try {
-    const res = await fetch('http://localhost:3000', {
+    const res = await fetch('http://localhost:3000/api/openai', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
