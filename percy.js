@@ -369,22 +369,41 @@ async function updateGithubSeed(seed) {
   const content = btoa(JSON.stringify(seed, null, 2));
 
   try {
-    const res = await fetch(`https://api.openai.com/v1/chat/completions`, {
+    // Fetch SHA first
+    const shaRes = await fetch(`https://api.github.com/repos/${githubConfig.username}/${githubConfig.repo}/contents/${path}`, {
+      headers: {
+        "Authorization": `token ${githubConfig.token}`,
+        "Accept": "application/vnd.github.v3+json"
+      }
+    });
+
+    let sha;
+    if (shaRes.ok) {
+      const shaData = await shaRes.json();
+      sha = shaData.sha;
+    }
+
+    // PUT updated file
+    const res = await fetch(`https://api.github.com/repos/${githubConfig.username}/${githubConfig.repo}/contents/${path}`, {
       method: "PUT",
       headers: {
         "Authorization": `token ${githubConfig.token}`,
+        "Accept": "application/vnd.github.v3+json",
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
         message: `Percy auto-commit: update ${seed.id}`,
         content,
-        branch: githubConfig.branch
+        branch: githubConfig.branch,
+        sha: sha
       })
     });
+
     if (res.ok) {
       logToConsole(`✅ GitHub updated for node ${seed.id}`);
     } else {
-      logToConsole(`⚠️ GitHub update failed for ${seed.id}`);
+      const err = await res.json();
+      logToConsole(`⚠️ GitHub update failed for ${seed.id}: ${err.message}`);
     }
   } catch (e) {
     logToConsole(`⚠️ GitHub update error for ${seed.id}: ${e.message}`);
