@@ -6,7 +6,6 @@ const fetch = require('node-fetch');
 const cors = require('cors');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 // 🔒 Check for API key
@@ -47,5 +46,5 @@ app.post('/api/openai', async (req, res) => {
 
 // 🚀 Launch the Percy Proxy Server
 app.listen(PORT, () => {
-  console.log(`✅ Percy Proxy Server is live at: http://localhost:${PORT}/api/openai`);
+  console.log(`✅ Percy Proxy Server is live at: https://recursive-logic-map.vercel.app/api`);
 });
