@@ -152,7 +152,7 @@ async function loadNodes() {
   for (let i = 0; i < coreNodeList.length; i++) {
     const id = coreNodeList[i];
     try {
-      const res = await fetch(`logic_seeds/${id}.json`);
+      const res = await fetch("https://inevitable52.github.io/recursive-logic-map/logic_seeds/dictionary.json");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = await res.json();
