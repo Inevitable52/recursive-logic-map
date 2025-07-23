@@ -1,7 +1,7 @@
 const allowedOrigins = [
   'https://inevitable52.github.io',
   'https://recursive-logic-grxmmb8x9-fabian-villarreals-projects.vercel.app',
-  'https://recursive-logic-map.vercel.app/api',
+  'https://recursive-logic-map.vercel.app/api/save_definition.js',
 ];
 
 export default async function handler(req, res) {
