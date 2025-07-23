@@ -17,3 +17,14 @@ export default async function handler(req, res) {
   const data = await response.json();
   res.status(200).json(data);
 }
+
+const res = await fetch("/api/ask-openai", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({ userMessage: "What's the weather?" })
+});
+
+const result = await res.json();
+console.log(result.choices[0].message.content);
