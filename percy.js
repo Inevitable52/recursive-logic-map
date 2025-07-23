@@ -567,4 +567,3 @@ function showOTPQRCode(secret) {
     qrCodeElement.style.display = "block";
   }
 }
-
