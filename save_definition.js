@@ -1,7 +1,7 @@
 const allowedOrigins = [
   'https://inevitable52.github.io',
   'https://your-vercel-frontend.vercel.app', // Add your Vercel frontend if needed
-  'https://inevitable52.github.io/recursive-logic-map/logic_seeds/dictionary.json');
+  'https://inevitable52.github.io/recursive-logic-map/logic_seeds/dictionary.json',
 
 ];
 
