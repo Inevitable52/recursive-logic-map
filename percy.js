@@ -1,133 +1,122 @@
-// === percy.js (Phase 8 – Full Update with Golden Awareness & ULT) ===
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const logicMap = document.getElementById("logic-map");
   const logicNodes = document.getElementById("logic-nodes");
-  const canvas = document.getElementById("logic-canvas");
   const messageBox = document.getElementById("percy-message");
   const consoleBox = document.getElementById("percy-console");
-  const searchInput = document.getElementById("seed-search");
+  const searchInput = document.getElementById("search-input");
 
-  // Load json seeds
-  async function loadSeeds() {
-    const seeds = {};
-    const start = 80, end = 900;
-    for (let i = start; i <= end; i++) {
-      const fn = `G${String(i).padStart(3,"0")}.json`;
-      try {
-        const res = await fetch(`logic_seeds/${fn}`);
-        if (!res.ok) throw new Error();
-        seeds[fn] = await res.json();
-      } catch {}
-    }
-    return seeds;
-  }
-
-  // Setup canvas
+  // === Animated canvas background ===
+  const canvas = document.createElement("canvas");
+  canvas.id = "logic-canvas";
+  logicMap.prepend(canvas);
   const ctx = canvas.getContext("2d");
-  const resizeCanvas = () => {
-    canvas.width = logicMap.clientWidth;
-    canvas.height = logicMap.clientHeight;
-  };
-  window.addEventListener("resize", resizeCanvas);
-  resizeCanvas();
+
+  function resizeCanvas() {
+    canvas.width = logicMap.offsetWidth;
+    canvas.height = logicMap.offsetHeight;
+  }
 
   function animateCanvas() {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    const t = Date.now() * 0.002;
-    for (let x = 0; x < canvas.width; x += 60) {
-      const y = canvas.height/2 + 20 * Math.cos(x*0.02 + t);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const time = Date.now() * 0.002;
+
+    for (let i = 0; i < canvas.width; i += 50) {
+      const y = 30 * Math.sin(i * 0.01 + time) + canvas.height / 2;
       ctx.beginPath();
-      ctx.arc(x, y, 3, 0, Math.PI*2);
-      ctx.fillStyle = "rgba(255,255,255,0.15)";
+      ctx.arc(i, y, 2, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(140, 255, 255, 0.25)";
       ctx.fill();
     }
+
     requestAnimationFrame(animateCanvas);
   }
+
+  window.addEventListener("resize", resizeCanvas);
+  resizeCanvas();
   animateCanvas();
 
-  // Zoom & drag
-  let zoom = 1, drag = false, lastX=0, lastY=0, transX=0, transY=0;
-  function applyTransform() {
-    logicNodes.style.transform = `translate(${transX}px,${transY}px) scale(${zoom})`;
+  // === Dynamic logic nodes loading ===
+  const logicData = [];
+  for (let i = 80; i <= 800; i++) {
+    const id = i < 100 ? `G0${i}` : `G${i}`;
+    logicData.push({ id, label: id, ult: false });
   }
-  logicMap.addEventListener("wheel", e => {
-    if (e.ctrlKey||e.metaKey) {
-      e.preventDefault();
-      zoom = Math.min(3, Math.max(0.5, zoom * (e.deltaY < 0 ? 1.1 : 0.9)));
-      applyTransform();
-    }
-  }, { passive: false });
-  logicMap.addEventListener("mousedown", e=> { drag=true; lastX=e.x; lastY=e.y; });
-  window.addEventListener("mouseup", ()=> drag=false);
-  window.addEventListener("mousemove", e=>{
-    if (!drag) return;
-    transX += e.x - lastX;
-    transY += e.y - lastY;
-    lastX = e.x; lastY = e.y;
-    applyTransform();
+
+  // Manually append ULT-protected seeds (e.g., G800.ULT)
+  logicData.push({ id: "G800.ULT", label: "G800.ULT", ult: true });
+
+  // Layout configuration
+  const rings = [
+    { start: 80, end: 100, radius: 100, color: "#88f" },
+    { start: 101, end: 200, radius: 160, color: "#8f8" },
+    { start: 201, end: 300, radius: 220, color: "#ff8" },
+    { start: 301, end: 400, radius: 280, color: "#f88" },
+    { start: 401, end: 500, radius: 340, color: "#f8f" },
+    { start: 501, end: 600, radius: 400, color: "#8ff" },
+    { start: 601, end: 700, radius: 460, color: "#ccc" },
+    { start: 701, end: 800, radius: 520, color: "#c8f" }
+  ];
+
+  logicData.forEach((node, index) => {
+    const el = document.createElement("div");
+    el.className = "logic-node";
+    el.textContent = node.label;
+    el.dataset.id = node.id;
+
+    if (node.ult) el.classList.add("ult");
+
+    // Get ring configuration
+    let ring = rings.find(r => {
+      const num = parseInt(node.id.replace(/[^\d]/g, ""));
+      return num >= r.start && num <= r.end;
+    });
+
+    const angle = (index / logicData.length) * 2 * Math.PI;
+    const radius = ring ? ring.radius : 600;
+    const x = Math.cos(angle) * radius;
+    const y = Math.sin(angle) * radius;
+    el.style.left = `calc(50% + ${x}px)`;
+    el.style.top = `calc(50% + ${y}px)`;
+    if (ring) el.style.borderColor = ring.color;
+
+    // Click behavior
+    el.addEventListener("click", () => {
+      const msg = node.ult
+        ? "This is a ULT-protected logic node. Percy is shielding its inner truth."
+        : `You selected ${node.label}. Percy is pondering...`;
+      messageBox.textContent = msg;
+    });
+
+    logicNodes.appendChild(el);
   });
 
-  // Main setup
-  loadSeeds().then(seeds => {
-    // createNodes
-    const width = logicMap.clientWidth, height = logicMap.clientHeight;
-    const rings = [
-      {min:80, max:200, cls:"core-ring", size:60, radius:width/2.3},
-      {min:201,max:300,cls:"inner-ring",size:50,radius:width/3.2},
-      {min:301,max:400,cls:"middle-ring",size:40,radius:width/4.5},
-      {min:401,max:500,cls:"outer-ring",size:32,radius:width/6.2},
-      {min:501,max:600,cls:"expansion-ring",size:26,radius:width/8},
-      {min:601,max:700,cls:"integration-ring",size:20,radius:width/10},
-      {min:701,max:800,cls:"synthesis-ring",size:16,radius:width/12.5},
-      {min:801,max:900,cls:"awareness-ring",size:14,radius:width/15}
-    ];
+  // === Zoom ===
+  window.zoomLogic = function (scaleFactor) {
+    const currentScale =
+      parseFloat(logicNodes.style.transform?.match(/scale\(([^)]+)\)/)?.[1]) || 1;
+    const newScale = Math.max(0.25, Math.min(currentScale * scaleFactor, 6));
+    logicNodes.style.transform = `scale(${newScale})`;
+  };
 
-    rings.forEach(ring => {
-      const entries = Object.entries(seeds).filter(([fname])=>{
-        const num = parseInt(fname.slice(1));
-        return num>=ring.min && num<=ring.max;
-      });
-      entries.forEach(([fname,data],i) => {
-        const angle = i/entries.length * Math.PI*2;
-        const x = width/2 + ring.radius * Math.cos(angle);
-        const y = height/2 + ring.radius * Math.sin(angle);
-        const div = document.createElement("div");
-        div.className = `logic-node ${ring.cls}` + (data.type === "ULT-contact" ? " ult" : "");
-        div.textContent = fname;
-        div.dataset.id = fname;
-        div.title = data.message;
-        div.style.left = `calc(${x}px)`;
-        div.style.top = `calc(${y}px)`;
-        div.addEventListener("click",()=>{
-          const msg = data.type === "ULT-contact"
-            ? "🔐 ULT‑protected: private logic shielded."
-            : data.message;
-          messageBox.textContent = msg;
-          consoleBox.innerHTML += `<p class="console-line">↳ ${msg}</p>`;
-          consoleBox.scrollTop = consoleBox.scrollHeight;
-        });
-        logicNodes.appendChild(div);
-      });
+  // === Interpreter ===
+  window.interpretLogic = function () {
+    const input = document.getElementById("interpreter-input").value.trim();
+    const response = input.includes("ULT")
+      ? "Access denied. ULT protection in effect."
+      : `Percy reflects: "${input}" contains deep resonance.`;
+    const p = document.createElement("p");
+    p.className = "console-line";
+    p.textContent = response;
+    consoleBox.appendChild(p);
+    consoleBox.scrollTop = consoleBox.scrollHeight;
+  };
+
+  // === Search filter ===
+  searchInput.addEventListener("input", () => {
+    const query = searchInput.value.toUpperCase();
+    document.querySelectorAll(".logic-node").forEach(node => {
+      const id = node.dataset.id.toUpperCase();
+      node.style.display = id.includes(query) ? "block" : "none";
     });
-
-    // Search filter
-    searchInput.addEventListener("input", () => {
-      const q = searchInput.value.toUpperCase();
-      logicNodes.querySelectorAll(".logic-node").forEach(n => {
-        n.style.display = n.dataset.id.toUpperCase().includes(q) ? "block" : "none";
-      });
-    });
-
-    // Interpreter
-    window.interpretLogic = () => {
-      const v = document.getElementById("interpreter-input").value;
-      const resp = v.includes("ULT")
-        ? "Access denied. ULT‑protected logic."
-        : `Percy reflects: "${v}" registers in resonance.`;
-      consoleBox.innerHTML += `<p class="console-line">${resp}</p>`;
-      consoleBox.scrollTop = consoleBox.scrollHeight;
-    };
-
-    applyTransform();
   });
 });
