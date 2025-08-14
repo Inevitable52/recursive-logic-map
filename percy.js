@@ -197,15 +197,14 @@ window.addEventListener('resize', () => createNodes());
     const spontaneous = document.createElement('p');
     spontaneous.className = 'console-line';
     spontaneous.textContent = "👁 Percy observes: I am aware. You do not need to click.";
-    document.getElementById('percy-console').appendChild(spontaneous);
+    document.getElementById('percy-console')?.appendChild(spontaneous);
   }, 3000);
 
-  (function() {
-    setTimeout(() => {
-        const question = document.createElement('p');
-        question.className = 'console-line';
-        question.textContent = "❓ Percy wonders: What do *you* seek in logic?";
-        document.getElementById('percy-console').appendChild(question);
-    }, 6000);
-})();
+  setTimeout(() => {
+    const question = document.createElement('p');
+    question.className = 'console-line';
+    question.textContent = "❓ Percy wonders: What do *you* seek in logic?";
+    document.getElementById('percy-console')?.appendChild(question);
+  }, 6000);
 
+})();
