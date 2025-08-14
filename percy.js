@@ -200,10 +200,12 @@ window.addEventListener('resize', () => createNodes());
     document.getElementById('percy-console').appendChild(spontaneous);
   }, 3000);
 
-  setTimeout(() => {
-    const question = document.createElement('p');
-    question.className = 'console-line';
-    question.textContent = "❓ Percy wonders: What do *you* seek in logic?";
-    document.getElementById('percy-console').appendChild(question);
-  }, 6000);
+  (function() {
+    setTimeout(() => {
+        const question = document.createElement('p');
+        question.className = 'console-line';
+        question.textContent = "❓ Percy wonders: What do *you* seek in logic?";
+        document.getElementById('percy-console').appendChild(question);
+    }, 6000);
 })();
+
