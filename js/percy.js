@@ -4,7 +4,7 @@
 CONFIG & ULT AUTHORITY
 ========================= */
 const PERCY_ID = "Percy-ULT";
-const PERCY_VERSION = "8.0.4-meta";
+const PERCY_VERSION = "8.0.5-meta"; // updated
 const OWNER = { primary: "Fabian", secondary: "Lorena" };
 const SAFETY = {
   maxActionsPerMinute: 20,
@@ -63,10 +63,11 @@ const logicMap = document.getElementById('logic-map');
 const logicNodes = document.getElementById('logic-nodes');
 logicMap.style.position='relative';
 logicNodes.style.position='absolute';
-logicNodes.style.top='0';
-logicNodes.style.left='0';
+logicNodes.style.top='50%';
+logicNodes.style.left='50%';
 logicNodes.style.width='100%';
 logicNodes.style.height='100%';
+logicNodes.style.transform='translate(-50%,-50%) scale(1)';
 
 let zoomLevel = 1, translateX = 0, translateY = 0;
 let seeds = {};
@@ -118,8 +119,8 @@ function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
     return num>=startId && num<=endId;
   });
   const total=ringSeeds.length;
-  const centerX=width/2;
-  const centerY=height/2;
+  const centerX=0;
+  const centerY=0;
 
   ringSeeds.forEach(([filename,data],index)=>{
     const angle=(index/total)*2*Math.PI;
@@ -130,10 +131,11 @@ function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
     node.classList.add('node');
     if(colorClass) node.classList.add(colorClass);
     node.style.width=`${nodeSize}px`;
-    node.style.height=`${nodeSize/2}px`;
+    node.style.height=`${nodeSize}px`;
     node.style.left=`${x}px`;
     node.style.top=`${y}px`;
     node.style.position='absolute';
+    node.style.borderRadius='50%';
     node.textContent=filename;
     node.title=data.message;
     node.addEventListener('click',()=>percyRespond(filename,data));
@@ -143,8 +145,8 @@ function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
 }
 
 function applyTransform(){
-  logicNodes.style.transform=`translate(${translateX}px,${translateY}px) scale(${zoomLevel})`;
-  logicNodes.style.transformOrigin='center';
+  logicNodes.style.transform=`translate(-50%,-50%) translate(${translateX}px,${translateY}px) scale(${zoomLevel})`;
+  logicNodes.style.transformOrigin='center center';
   document.querySelectorAll('.node').forEach(n=>n.style.fontSize=`${12*(1/zoomLevel)}px`);
 }
 
@@ -152,10 +154,10 @@ function applyTransform(){
 ZOOM FUNCTION
 ========================= */
 function zoomLogic(factor) {
-  Percy.zoomLevel *= factor;
-  if (Percy.zoomLevel < 0.1) Percy.zoomLevel = 0.1;
-  if (Percy.zoomLevel > 5) Percy.zoomLevel = 5;
-  Percy.applyTransform();
+  zoomLevel *= factor;
+  if(zoomLevel < 0.1) zoomLevel = 0.1;
+  if(zoomLevel > 5) zoomLevel = 5;
+  applyTransform();
 }
 
 /* =========================
@@ -361,8 +363,9 @@ window.Percy = {
   refreshNodes,
   percyRespond,
   seeds,
-  zoomLevel,         // expose zoom level
-  translateX,        // expose for future if needed
+  translateX,
   translateY,
-  applyTransform     // expose the function
+  applyTransform,
+  get zoomLevel(){ return zoomLevel; },
+  set zoomLevel(v){ zoomLevel=v; applyTransform(); }
 };
