@@ -1,4 +1,4 @@
-/* === Percy Phase 8+ CSS (Blossoming Rings & Zoom-Friendly) === */
+/* === Percy Phase 8+ CSS (Blossoming Rings & Zoom-Friendly v8.3) === */
 
 body {
     margin: 0;
@@ -141,7 +141,9 @@ body {
     transition: left 0.25s ease, top 0.25s ease;
 }
 
-/* === REMOVE THIS: it broke the node positions */
-/* #logic-nodes .node {
+/* === Fix Node Centering for Zoom & Ring Expansion === */
+#logic-nodes .node {
+    left: unset !important;
+    top: unset !important;
     transform: translate(0,0) !important;
-} */
+}
