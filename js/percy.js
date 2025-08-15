@@ -34,12 +34,13 @@ function createNodes() {
   const width = logicMap.clientWidth;
   const height = logicMap.clientHeight;
 
-  layoutRing(80, 200, width, height, width / 2.5, '', 60);              // Outer Green
-  layoutRing(201, 300, width, height, width / 3.4, 'blue-ring', 45);    // Middle Blue
-  layoutRing(301, 400, width, height, width / 4.8, 'purple-ring', 30);  // Inner Purple
-  layoutRing(401, 500, width, height, width / 6.6, 'red-ring', 22);     // Core Red Ring
-  layoutRing(501, 600, width, height, width / 8.5, 'crimson-ring', 18); // Fifth Crimson Ring
-  layoutRing(601, 700, width, height, width / 11, 'gold-ring', 14);     // Sixth Crimson-Gold Trust Ring
+  layoutRing(80, 200, width, height, width / 2.5, '', 60);                // Outer Green
+  layoutRing(201, 300, width, height, width / 3.4, 'blue-ring', 45);      // Middle Blue
+  layoutRing(301, 400, width, height, width / 4.8, 'purple-ring', 30);    // Inner Purple
+  layoutRing(401, 500, width, height, width / 6.6, 'red-ring', 22);       // Core Red Ring
+  layoutRing(501, 600, width, height, width / 8.5, 'crimson-ring', 18);   // Fifth Crimson Ring
+  layoutRing(601, 700, width, height, width / 11, 'gold-ring', 14);       // Sixth Crimson-Gold Trust Ring
+  layoutRing(701, 800, width, height, width / 14, 'neon-pink-ring', 12);  // Seventh Dark Neon Pink Ring
   applyTransform();
 }
 
