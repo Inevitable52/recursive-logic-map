@@ -1,10 +1,10 @@
-// === percy.js (Phase 8 + Self-Writing / Meta-Mutation + Autonomous Learning) ===
+// === percy.js (Phase 8 + Self-Writing / Meta-Mutation + Auto-Learn) ===
 
 /* =========================
 CONFIG & ULT AUTHORITY
 ========================= */
 const PERCY_ID = "Percy-ULT";
-const PERCY_VERSION = "8.0.2-meta-learn";
+const PERCY_VERSION = "8.0.2-meta";
 const OWNER = { primary: "Fabian", secondary: "Lorena" };
 const SAFETY = {
   maxActionsPerMinute: 20,
@@ -71,7 +71,6 @@ const logicMap = document.getElementById('logic-map');
 const logicNodes = document.getElementById('logic-nodes');
 let zoomLevel = 1, translateX = 0, translateY = 0;
 let seeds = {};
-
 const seedsFolder = 'logic_seeds/';
 const seedRange = { start: 80, end: 800 };
 
@@ -89,9 +88,7 @@ async function loadSeeds() {
       const data = await res.json();
       seeds[filename] = data;
       Memory.save(`seed:${filename}`, data);
-    } catch (e) {
-      console.warn(e.message);
-    }
+    } catch (e) { console.warn(e.message); }
   }
   logicNodes.removeChild(loadingNotice);
   Memory.save("seeds:index", Object.keys(seeds));
@@ -179,6 +176,7 @@ function metaMutationCycle() {
   const maxPerCycle = SAFETY.maxSeedsPerCycle;
   let created = 0;
 
+  // Scan for TODO/gaps
   Object.entries(seeds).forEach(([id, seed]) => {
     if(created >= maxPerCycle) return;
     if(/TODO|missing|empty/.test(seed.message)) {
@@ -187,11 +185,53 @@ function metaMutationCycle() {
     }
   });
 
+  // Random emergent insights
   while(created < maxPerCycle && Math.random() < 0.5) {
     Mutation.createSeed("Emergent insight: Percy discovered a new logical connection.");
     created++;
   }
 }
+
+/* =========================
+VISUAL REFRESH
+========================= */
+function refreshNodes() {
+  createNodes();
+  UI.say(`🔄 Logic map refreshed with ${Object.keys(seeds).length} seeds`);
+}
+
+/* =========================
+PERCY RESPOND
+========================= */
+function percyRespond(id, data) {
+  UI.say(`↳ ${data.message}`);
+  UI.setStatus(data.message);
+}
+
+/* =========================
+AUTONOMY + PLANNER
+========================= */
+const Tasks = {
+  queue: Memory.load("tasks:queue", []),
+  done: Memory.load("tasks:done", []),
+  rate: { stamps: [] },
+  _allowNow() {
+    const now = Date.now();
+    this.rate.stamps = this.rate.stamps.filter(t => now - t < 60_000);
+    if(this.rate.stamps.length >= SAFETY.maxActionsPerMinute) return false;
+    this.rate.stamps.push(now); return true;
+  },
+  register: {
+    speak: async ({ text }) => UI.say(text),
+    highlightSeed: async ({ seedId }) => UI.say(`🔎 focusing ${seedId}`)
+  },
+  enqueue(task) { task.id = task.id ?? `t_${Math.random().toString(36).slice(2,8)}`; task.ts = Date.now(); this.queue.push(task); Memory.save("tasks:queue", this.queue); },
+  async step() { if(!this.queue.length || !this._allowNow()) return;
+    const task = this.queue.shift(); Memory.save("tasks:queue", this.queue);
+    try { const fn = this.register[task.type]; if(!fn) throw new Error(`No handler for ${task.type}`); await fn(task.params ?? {}); this.done.push({...task, doneTs: Date.now()}); Memory.save("tasks:done", this.done); }
+    catch(e){ UI.say(`❌ task error: ${e.message}`); }
+  }
+};
 
 /* =========================
 AUTONOMOUS LEARNING
@@ -239,61 +279,8 @@ Tasks.register.autoLearn = async ({ url }) => {
 };
 
 /* =========================
-INTERPRETER / LEARN COMMAND
+PLANNER
 ========================= */
-const input = document.getElementById('interpreter-input');
-if(input) input.addEventListener('keydown', e => {
-  if(e.key!=='Enter') return;
-  const q = input.value.trim();
-  input.value="";
-
-  if(q.toLowerCase().startsWith("learn ")) {
-    const url = q.slice(6).trim();
-    Tasks.enqueue({ type:"autoLearn", params:{ url } });
-  }
-});
-
-/* =========================
-VISUAL REFRESH
-========================= */
-function refreshNodes() {
-  createNodes();
-  UI.say(`🔄 Logic map refreshed with ${Object.keys(seeds).length} seeds`);
-}
-
-/* =========================
-PERCY RESPOND
-========================= */
-function percyRespond(id, data) {
-  UI.say(`↳ ${data.message}`);
-  UI.setStatus(data.message);
-}
-
-/* =========================
-AUTONOMY + PLANNER
-========================= */
-const Tasks = {
-  queue: Memory.load("tasks:queue", []),
-  done: Memory.load("tasks:done", []),
-  rate: { stamps: [] },
-  _allowNow() {
-    const now = Date.now();
-    this.rate.stamps = this.rate.stamps.filter(t => now - t < 60_000);
-    if(this.rate.stamps.length >= SAFETY.maxActionsPerMinute) return false;
-    this.rate.stamps.push(now); return true;
-  },
-  register: {
-    speak: async ({ text }) => UI.say(text),
-    highlightSeed: async ({ seedId }) => UI.say(`🔎 focusing ${seedId}`)
-  },
-  enqueue(task) { task.id = task.id ?? `t_${Math.random().toString(36).slice(2,8)}`; task.ts = Date.now(); this.queue.push(task); Memory.save("tasks:queue", this.queue); },
-  async step() { if(!this.queue.length || !this._allowNow()) return;
-    const task = this.queue.shift(); Memory.save("tasks:queue", this.queue);
-    try { const fn = this.register[task.type]; if(!fn) throw new Error(`No handler for ${task.type}`); await fn(task.params ?? {}); this.done.push({...task, doneTs: Date.now()}); Memory.save("tasks:done", this.done); }
-    catch(e){ UI.say(`❌ task error: ${e.message}`); }
-  }
-};
-
 const Planner = {
   goals: Memory.load("goals", [
     { id: "greetOwner", when: "onStart", task: { type: "speak", params: { text: "👋 Percy online. Autonomy loop active." } } }
@@ -307,7 +294,7 @@ const Autonomy = {
   tickMs: 1000, _t:null, _secCounter:0,
   start() { if(this._t) return; Planner.onStart(); this._t=setInterval(async()=>{
     this._secCounter++; await Tasks.step();
-    if(this._secCounter%15===0) metaMutationCycle();
+    if(this._secCounter%15===0) metaMutationCycle(); // Percy mutates every 15s
   }, this.tickMs); UI.say(`🧠 Percy ${PERCY_VERSION} autonomy started.`); },
   stop() { if(this._t){ clearInterval(this._t); this._t=null; UI.say("⏹ Autonomy paused."); } }
 };
@@ -320,7 +307,7 @@ STARTUP
   await loadSeeds();
   createNodes();
   Autonomy.start();
-  UI.say("✅ Percy online. Autonomy, memory, meta-mutation, and autonomous learning active.");
+  UI.say("✅ Percy online. Autonomy, memory, meta-mutation, and learning active.");
 })();
 
 /* =========================
