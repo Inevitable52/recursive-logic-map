@@ -4,61 +4,87 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Percy Recursive Logic Map</title>
-  <link rel="stylesheet" href="style.css?v=6.1" />
-
-  <!-- Favicon Set (Uncomment and adjust paths if favicons are present) -->
-  <!--
-  <link rel="apple-touch-icon" sizes="180x180" href="percy_io/apple-touch-icon.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="percy_io/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="percy_io/favicon-16x16.png">
-  <link rel="manifest" href="percy_io/site.webmanifest">
-  -->
+  <link rel="stylesheet" href="style.css?v=6.3" />
 </head>
 <body>
-  <header>
+  <header style="text-align:center; padding:10px;">
     <h1>Percy Recursive Logic Map</h1>
     <p>Visualizing Logic Seeds G080–G800</p>
   </header>
 
   <main>
-    <!-- Search -->
-    <input type="text" id="seed-search" placeholder="Search G-seed...">
+    <!-- Optional Search -->
+    <input type="text" id="seed-search" placeholder="Search G-seed..." style="margin:10px;padding:6px;border-radius:6px;border:1px solid #444;width:200px;">
 
     <!-- Zoom Controls -->
-    <div class="zoom-controls">
+    <div class="zoom-controls" style="margin:10px;">
       <button onclick="zoomLogic(1.2)">Zoom In</button>
       <button onclick="zoomLogic(0.8)">Zoom Out</button>
     </div>
 
-    <!-- Logic Map Viewport -->
-    <div id="viewport">
-      <div id="logic-map">
-        <div id="logic-nodes"></div>
-      </div>
+    <!-- Logic Map -->
+    <div id="logic-map" style="width:100vw;height:80vh;position:relative;">
+      <div id="logic-nodes"></div>
     </div>
 
-    <!-- Message Display -->
-    <div id="percy-message" class="percy-message">
+    <!-- Message & Console -->
+    <div id="percy-message" style="position:fixed;top:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);padding:6px 12px;border-radius:8px;font-size:0.85rem;z-index:1000;">
       Click a logic node to hear Percy’s thoughts...
     </div>
 
-    <!-- Console Output -->
-    <div id="percy-console" class="console">
+    <div id="percy-console" style="position:fixed;bottom:0;width:100%;max-height:180px;background:rgba(20,20,20,0.95);overflow-y:auto;font-size:0.8rem;padding:4px 8px;box-shadow:0 -3px 10px rgba(0,0,0,0.6);z-index:1000;">
       <p class="console-line">Percy initialized. Click a node.</p>
-    </div>
-
-    <!-- Interpreter -->
-    <div id="interpreter-box">
-      <input id="interpreter-input" placeholder="Ask Percy...">
-      <button onclick="interpretLogic()">Ask</button>
     </div>
   </main>
 
-  <footer>
+  <footer style="text-align:center;padding:8px;margin-top:10px;">
     <p>© 2025 Fabian V Omega — Percy Recursive Logic System</p>
   </footer>
 
-  <!-- Percy Script Logic -->
-  <script src="js/percy.js?v=6.1"></script>
+  <!-- Percy Script -->
+  <script src="js/percy.js?v=6.3"></script>
+
+  <!-- Zoom & Search Helpers -->
+  <script>
+    // Zoom helper using Percy internal transform
+    function zoomLogic(factor) {
+      Percy.zoomLevel *= factor;
+      Percy.applyTransform();
+    }
+
+    // Simple G-seed search
+    const searchInput = document.getElementById('seed-search');
+    searchInput.addEventListener('input', () => {
+      const val = searchInput.value.trim().toUpperCase();
+      document.querySelectorAll('.node').forEach(n => {
+        if(val && !n.textContent.includes(val)) n.style.display = 'none';
+        else n.style.display = 'flex';
+      });
+    });
+  </script>
+
+  <!-- Percy Ask UI (floating) -->
+  <script>
+    const askWrapper = document.createElement('div');
+    askWrapper.id = 'percy-ask';
+    askWrapper.style.cssText = `position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;gap:4px;`;
+    askWrapper.innerHTML = `
+      <input type="text" id="ask-input" placeholder="Ask Percy..." style="padding:6px 10px;border-radius:6px;border:none;width:300px;" />
+      <button id="ask-btn" style="padding:6px 10px;border-radius:6px;background:#3764ff;color:white;border:none;">Ask</button>
+    `;
+    document.body.appendChild(askWrapper);
+
+    document.getElementById('ask-btn').addEventListener('click', () => {
+      const input = document.getElementById('ask-input');
+      if(input.value.trim()) {
+        Percy.percyRespond('User', { message: input.value });
+        input.value = '';
+      }
+    });
+
+    document.getElementById('ask-input').addEventListener('keydown', (e) => {
+      if(e.key === 'Enter') document.getElementById('ask-btn').click();
+    });
+  </script>
 </body>
 </html>
