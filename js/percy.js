@@ -1,10 +1,10 @@
-// === percy.js (Phase 8.2 + Persistent Self-Writing / Meta-Mutation + Auto-Learn + Search & Zoom) ===
+// === percy.js (Phase 8.3 + Persistent Self-Writing / Meta-Mutation + Auto-Learn + Dictionary + Sentence Examples) ===
 
 /* =========================
 CONFIG & ULT AUTHORITY
 ========================= */
 const PERCY_ID = "Percy-ULT";
-const PERCY_VERSION = "8.2.0-meta"; 
+const PERCY_VERSION = "8.3.0-meta"; 
 const OWNER = { primary: "Fabian", secondary: "Lorena" };
 const SAFETY = {
   maxActionsPerMinute: 20,
@@ -131,7 +131,7 @@ async function loadSeeds(){
     const filename=`G${String(i).padStart(3,'0')}.json`;
     promises.push(fetch(seedsFolder+filename).then(res=>{
       if(!res.ok) throw new Error(`Failed to load ${filename}`);
-      return res.json().then(data=>{ 
+      return res.json().then(data=>{
         PercyState.gnodes[filename]=data;
         Memory.save("gnodes",PercyState.gnodes);
         seeds[filename]=data;
@@ -230,9 +230,34 @@ VISUAL REFRESH
 function refreshNodes(){ createNodes(); UI.say(`🔄 Logic map refreshed with ${Object.keys(seeds).length} seeds`); }
 
 /* =========================
-PERCY RESPOND
+PERCY RESPOND (with dictionary auto-learning)
 ========================= */
-function percyRespond(id,data){ UI.say(`↳ ${data.message}`); UI.setStatus(data.message); }
+async function percyRespond(id,data){
+  const msg = (data.message||'').trim();
+  UI.say(`↳ ${msg}`);
+  UI.setStatus(msg);
+
+  // define word
+  if(msg.toLowerCase().startsWith("define ")){
+    const word = msg.slice(7).trim();
+    await Tasks.enqueue({type:"learnWord", params:{word}});
+    UI.say(`↳ Searching definition for "${word}"...`);
+    return;
+  }
+
+  // put word in sentence
+  if(msg.toLowerCase().startsWith("put ") && msg.toLowerCase().includes(" in a sentence")){
+    const word = msg.slice(4,msg.toLowerCase().indexOf(" in a sentence")).trim();
+    const seed = Object.values(seeds).find(s=>s.data?.word===word);
+    if(seed){
+      const example = seed.data.examples?.[0] || `Here's an example using "${word}".`;
+      UI.say(`↳ ${example}`);
+    } else {
+      UI.say(`↳ Percy has no example for "${word}" yet.`);
+    }
+    return;
+  }
+}
 
 /* =========================
 TASKS & AUTONOMY
@@ -250,7 +275,41 @@ const Tasks={
   },
   register:{
     speak: async ({text})=>UI.say(text),
-    highlightSeed: async ({seedId})=>UI.say(`🔎 focusing ${seedId}`)
+    highlightSeed: async ({seedId})=>UI.say(`🔎 focusing ${seedId}`),
+
+    /* =========================
+    WEB INTERACTIVE WORD LEARNING
+    ========================= */
+    learnWord: async ({word, site="https://www.dictionary.com"})=>{
+      if(!TrustedSources.some(domain=>site.includes(domain))){
+        UI.say(`❌ Site not trusted: ${site}`); return;
+      }
+
+      const ok=await UI.confirmModal({
+        title:"Percy requests to learn a word",
+        body:`Allow Percy to fetch the definition and examples of "${word}" from:\n${site}`,
+        allowLabel:"Allow once",
+        denyLabel:"Deny"
+      });
+      if(!ok){ UI.say("❌ Learning denied."); return; }
+
+      try{
+        const searchUrl = `${site}/browse/${encodeURIComponent(word)}`;
+        const res = await fetch(searchUrl);
+        const text = await res.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text,"text/html");
+
+        let definition = "";
+        try { definition = doc.querySelector(".css-1urpfgu").innerText; } catch{}
+        let examples = [];
+        try{ examples = Array.from(doc.querySelectorAll(".one-click-content")).map(e=>e.innerText); } catch{}
+
+        const seedId = PercyState.createSeed(definition||`Definition for "${word}" unavailable`,"learned",{ word, examples, source: site });
+        UI.say(`📚 Percy learned "${word}" and stored as seed ${seedId}`);
+        return { definition, examples, seedId };
+      }catch(e){ UI.say(`❌ Failed to learn "${word}": ${e.message}`); }
+    }
   },
   enqueue(task){
     if(!this.queue.some(t=>t.type===task.type && JSON.stringify(t.params)===JSON.stringify(task.params))){
@@ -315,15 +374,11 @@ Tasks.register.autoLearn=async ({url})=>{
 /* =========================
 PLANNER & AUTONOMY LOOP
 ========================= */
-const Planner={
-  goals: Memory.load("goals",[
-    {id:"greetOwner",when:"onStart",task:{type:"speak",params:{text:"👋 Percy online. Autonomy loop active."}}}
-  ]),
+const Planner={ goals: Memory.load("goals",[{id:"greetOwner",when:"onStart",task:{type:"speak",params:{text:"👋 Percy online. Autonomy loop active."}}}]),
   onStart(){ this.goals.filter(g=>g.when==="onStart").forEach(g=>Tasks.enqueue(g.task)); }
 };
 
-const Autonomy={
-  tickMs:1000,_t:null,_secCounter:0,
+const Autonomy={ tickMs:1000,_t:null,_secCounter:0,
   start(){
     if(this._t) return;
     Planner.onStart();
@@ -343,22 +398,16 @@ STARTUP
 (async function startupPercy(){
   UI.say(`🚀 Percy ${PERCY_VERSION} initializing…`);
   await loadSeeds();
-
-  // merge persisted seeds
-  Object.entries(PercyState.gnodes).forEach(([id,seed])=>{
-    seeds[id]=seed;
-  });
-
+  Object.entries(PercyState.gnodes).forEach(([id,seed])=>{ seeds[id]=seed; });
   createNodes();
   Autonomy.start();
-  UI.say("✅ Percy online. Autonomy, persistent memory, meta-mutation, and learning active.");
+  UI.say("✅ Percy online. Autonomy, persistent memory, meta-mutation, learning, and dictionary active.");
 })();
 
 /* =========================
 GLOBAL SHORTCUTS
 ========================= */
-window.Percy={
-  Memory, Tasks, Planner, Autonomy, UI, PercyState,
+window.Percy={ Memory, Tasks, Planner, Autonomy, UI, PercyState,
   refreshNodes, percyRespond, seeds,
   translateX, translateY, applyTransform,
   get zoomLevel(){ return zoomLevel; },
