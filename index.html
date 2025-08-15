@@ -14,25 +14,25 @@
 
   <main>
     <!-- Optional Search -->
-    <input type="text" id="seed-search" placeholder="Search G-seed..." style="margin:10px;padding:6px;border-radius:6px;border:1px solid #444;width:200px;">
+    <input type="text" id="seed-search" placeholder="Search G-seed..." />
 
     <!-- Zoom Controls -->
-    <div class="zoom-controls" style="margin:10px;">
-      <button onclick="zoomLogic(1.2)">Zoom In</button>
-      <button onclick="zoomLogic(0.8)">Zoom Out</button>
+    <div class="zoom-controls">
+      <button onclick="Percy.zoomLevel *= 1.2; Percy.applyTransform();">Zoom In</button>
+      <button onclick="Percy.zoomLevel *= 0.8; Percy.applyTransform();">Zoom Out</button>
     </div>
 
     <!-- Logic Map -->
-    <div id="logic-map" style="width:100vw;height:80vh;position:relative;">
+    <div id="logic-map">
       <div id="logic-nodes"></div>
     </div>
 
     <!-- Message & Console -->
-    <div id="percy-message" style="position:fixed;top:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);padding:6px 12px;border-radius:8px;font-size:0.85rem;z-index:1000;">
+    <div id="percy-message">
       Click a logic node to hear Percy’s thoughts...
     </div>
 
-    <div id="percy-console" style="position:fixed;bottom:0;width:100%;max-height:180px;background:rgba(20,20,20,0.95);overflow-y:auto;font-size:0.8rem;padding:4px 8px;box-shadow:0 -3px 10px rgba(0,0,0,0.6);z-index:1000;">
+    <div id="percy-console">
       <p class="console-line">Percy initialized. Click a node.</p>
     </div>
   </main>
@@ -44,33 +44,28 @@
   <!-- Percy Script -->
   <script src="js/percy.js?v=6.3"></script>
 
-  <!-- Zoom & Search Helpers -->
+  <!-- Seed Search -->
   <script>
-    // Zoom helper using Percy internal transform
-    function zoomLogic(factor) {
-      Percy.zoomLevel *= factor;
-      Percy.applyTransform();
-    }
-
-    // Simple G-seed search
     const searchInput = document.getElementById('seed-search');
     searchInput.addEventListener('input', () => {
       const val = searchInput.value.trim().toUpperCase();
       document.querySelectorAll('.node').forEach(n => {
-        if(val && !n.textContent.includes(val)) n.style.display = 'none';
-        else n.style.display = 'flex';
+        n.style.display = (!val || n.textContent.includes(val)) ? 'flex' : 'none';
       });
     });
   </script>
 
-  <!-- Percy Ask UI (floating) -->
+  <!-- Ask Percy Input -->
   <script>
     const askWrapper = document.createElement('div');
     askWrapper.id = 'percy-ask';
-    askWrapper.style.cssText = `position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;gap:4px;`;
+    askWrapper.style.cssText = `
+      position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+      z-index:1000; display:flex; gap:4px;
+    `;
     askWrapper.innerHTML = `
-      <input type="text" id="ask-input" placeholder="Ask Percy..." style="padding:6px 10px;border-radius:6px;border:none;width:300px;" />
-      <button id="ask-btn" style="padding:6px 10px;border-radius:6px;background:#3764ff;color:white;border:none;">Ask</button>
+      <input type="text" id="ask-input" placeholder="Ask Percy..." />
+      <button id="ask-btn">Ask</button>
     `;
     document.body.appendChild(askWrapper);
 
