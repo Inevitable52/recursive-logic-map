@@ -218,13 +218,92 @@ seedSearch.addEventListener('input',()=>{
 });
 
 /* =========================
-ASK PERCY HTML INPUT
+MULTI-COMMAND INTERPRETER
 ========================= */
-const interpreterInput=document.getElementById('interpreter-input');
-window.interpretLogic=()=>{
-  const val=interpreterInput.value.trim();
-  if(val){ percyRespond('User',{message:val}); interpreterInput.value=''; }
-};
+async function interpretCommand(input){
+  const text = input.trim();
+  if(!text) return;
+
+  UI.say(`📝 Interpreting: "${text}"`);
+
+  // Split multiple commands by 'and' or 'then' (case-insensitive)
+  const commands = text.split(/\s+(?:and|then)\s+/i);
+
+  for(const cmd of commands){
+    const lower = cmd.toLowerCase();
+
+    // Show a seed
+    const showMatch = lower.match(/show\s+(g\d{3})/);
+    if(showMatch){
+      const id = showMatch[1].toUpperCase();
+      const seed = seeds[id];
+      if(seed) {
+        UI.say(`🔹 ${id}: ${seed.message}`);
+      } else {
+        UI.say(`⚠ Seed ${id} not found.`);
+      }
+      continue;
+    }
+
+    // Compare seeds
+    const compareMatch = lower.match(/compare\s+(g\d{3})\s+(?:and|with)\s+(g\d{3})/);
+    if(compareMatch){
+      const [_, id1, id2] = compareMatch;
+      const seed1 = seeds[id1.toUpperCase()];
+      const seed2 = seeds[id2.toUpperCase()];
+      if(seed1 && seed2){
+        UI.say(`🔹 Comparing ${id1.toUpperCase()} ↔ ${id2.toUpperCase()}`);
+        UI.say(`${id1.toUpperCase()}: ${seed1.message}`);
+        UI.say(`${id2.toUpperCase()}: ${seed2.message}`);
+      } else {
+        UI.say(`⚠ One or both seeds not found: ${id1}, ${id2}`);
+      }
+      continue;
+    }
+
+    // Define word
+    if(lower.startsWith("define ")){
+      const word = cmd.slice(7).trim();
+      await Tasks.enqueue({type:"learnWord", params:{word}});
+      UI.say(`🔹 Looking up definition for "${word}"...`);
+      continue;
+    }
+
+    // Put in a sentence
+    const inSentenceMatch = lower.match(/put\s+(.+?)\s+in a sentence/);
+    if(inSentenceMatch){
+      const word = inSentenceMatch[1].trim();
+      const seed = Object.values(seeds).find(s=>s.data?.word===word);
+      if(seed){
+        const example = seed.data.examples?.[0] || `Here's an example using "${word}".`;
+        UI.say(`🔹 ${example}`);
+      } else {
+        UI.say(`⚠ No example found for "${word}".`);
+      }
+      continue;
+    }
+
+    // Fallback: emergent seed
+    const newId = PercyState.createSeed(`User requested: "${cmd}"`, "emergent");
+    UI.say(`✨ Emergent insight recorded as ${newId}. Percy will learn to interpret this command next time.`);
+  }
+}
+
+/* =========================
+HOOK ASK PERCY BOX TO MULTI-COMMAND INTERPRETER
+========================= */
+const askInputBox = document.getElementById('ask-input');
+const askButton = document.getElementById('ask-btn');
+
+askButton.addEventListener('click', async ()=>{
+  if(askInputBox.value.trim()){
+    await interpretCommand(askInputBox.value);
+    askInputBox.value='';
+  }
+});
+askInputBox.addEventListener('keydown', async e=>{
+  if(e.key==='Enter') askButton.click();
+});
 
 /* =========================
 VISUAL REFRESH
