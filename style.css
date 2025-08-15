@@ -40,11 +40,12 @@ body {
     white-space: nowrap;
     overflow: hidden;
     padding: 2px 4px;
-    min-width: 24px;
+    min-width: 12px;
     min-height: 12px;
-    max-width: 60px;
-    max-height: 30px;
+    max-width: 80px;
+    max-height: 80px;
     z-index: 1;
+    font-size: unset; /* let JS control font size */
 }
 
 /* Node Hover Effects */
@@ -60,14 +61,10 @@ body {
     box-shadow: 0 0 8px rgba(74,144,226,0.8);
 }
 
-.light-purple-ring { /* New third ring G301-400 */
+/* Third ring G301-400 (light purple) */
+.purple-ring {
     background-color: #CDA4FF;
     box-shadow: 0 0 8px rgba(205,164,255,0.8);
-}
-
-.purple-ring {
-    background-color: #B399FF;
-    box-shadow: 0 0 8px rgba(179,153,255,0.8);
 }
 
 .red-ring {
