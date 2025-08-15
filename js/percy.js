@@ -1,10 +1,10 @@
-// === percy.js (Phase 8 + Self-Writing / Meta-Mutation + Auto-Learn + Full UI Integration) ===
+// === percy.js (Phase 8 + Self-Writing / Meta-Mutation + Auto-Learn) ===
 
 /* =========================
 CONFIG & ULT AUTHORITY
 ========================= */
 const PERCY_ID = "Percy-ULT";
-const PERCY_VERSION = "8.0.3-meta";
+const PERCY_VERSION = "8.0.3-meta"; // updated version
 const OWNER = { primary: "Fabian", secondary: "Lorena" };
 const SAFETY = {
   maxActionsPerMinute: 20,
@@ -18,9 +18,17 @@ SOFT PERSISTENCE (Memory)
 ========================= */
 const Memory = {
   _k: (k) => `percy:${k}`,
-  load(k, fallback) { try { return JSON.parse(localStorage.getItem(this._k(k))) ?? fallback; } catch { return fallback; } },
+  load(k, fallback) {
+    try { return JSON.parse(localStorage.getItem(this._k(k))) ?? fallback; }
+    catch { return fallback; }
+  },
   save(k, v) { localStorage.setItem(this._k(k), JSON.stringify(v)); },
-  push(k, v, max = 1000) { const arr = this.load(k, []); arr.push(v); if (arr.length > max) arr.shift(); this.save(k, arr); }
+  push(k, v, max = 1000) {
+    const arr = this.load(k, []);
+    arr.push(v);
+    if (arr.length > max) arr.shift();
+    this.save(k, arr);
+  }
 };
 
 /* =========================
@@ -29,7 +37,6 @@ CONSOLE / UI HELPERS
 const UI = {
   elConsole: () => document.getElementById('percy-console'),
   elMsg: () => document.getElementById('percy-message'),
-  elInput: () => document.getElementById('ask-input'),
   say(txt) {
     const box = this.elConsole(); if (!box) return;
     const p = document.createElement('p'); p.className = 'console-line'; p.textContent = txt;
@@ -62,6 +69,13 @@ LOGIC MAP & SEEDS
 ========================= */
 const logicMap = document.getElementById('logic-map');
 const logicNodes = document.getElementById('logic-nodes');
+logicMap.style.position = 'relative';
+logicNodes.style.position = 'absolute';
+logicNodes.style.top = '0';
+logicNodes.style.left = '0';
+logicNodes.style.width = '100%';
+logicNodes.style.height = '100%';
+
 let zoomLevel = 1, translateX = 0, translateY = 0;
 let seeds = {};
 const seedsFolder = 'logic_seeds/';
@@ -102,86 +116,76 @@ function createNodes() {
   layoutRing(501, 600, width, height, width / 8.5, 'crimson-ring', 18);
   layoutRing(601, 700, width, height, width / 11, 'gold-ring', 14);
   layoutRing(701, 800, width, height, width / 14, 'neon-pink-ring', 12);
+
   applyTransform();
 }
 
 function layoutRing(startId, endId, width, height, radius, colorClass, nodeSize) {
-    const ringSeeds = Object.entries(seeds).filter(([id]) => {
-        const num = parseInt(id.replace("G", ""));
-        return num >= startId && num <= endId;
-    });
-    const total = ringSeeds.length;
-    const centerX = width / 2;
-    const centerY = height / 2;
+  const ringSeeds = Object.entries(seeds).filter(([id]) => {
+      const num = parseInt(id.replace("G", ""));
+      return num >= startId && num <= endId;
+  });
+  const total = ringSeeds.length;
+  const centerX = width / 2;
+  const centerY = height / 2;
 
-    ringSeeds.forEach(([filename, data], index) => {
-        const angle = (index / total) * 2 * Math.PI;
-        const x = centerX + radius * Math.cos(angle) - nodeSize / 2;
-        const y = centerY + radius * Math.sin(angle) - nodeSize / 2;
+  ringSeeds.forEach(([filename, data], index) => {
+      const angle = (index / total) * 2 * Math.PI;
+      const x = centerX + radius * Math.cos(angle) - nodeSize / 2;
+      const y = centerY + radius * Math.sin(angle) - nodeSize / 2;
 
-        const node = document.createElement('div');
-        node.classList.add('node');
-        if (colorClass) node.classList.add(colorClass);
+      const node = document.createElement('div');
+      node.classList.add('node');
+      if (colorClass) node.classList.add(colorClass);
 
-        node.style.width = `${nodeSize}px`;
-        node.style.height = `${nodeSize / 2}px`; 
-        node.style.left = `${x}px`;
-        node.style.top = `${y}px`;
+      node.style.width = `${nodeSize}px`;
+      node.style.height = `${nodeSize / 2}px`;
+      node.style.left = `${x}px`;
+      node.style.top = `${y}px`;
+      node.style.position = 'absolute';
 
-        node.textContent = filename;
-        node.title = data.message;
+      node.textContent = filename;
+      node.title = data.message;
 
-        node.addEventListener('click', () => percyRespond(filename, data));
-        node.addEventListener('mouseenter', () => UI.setStatus(data.message));
+      node.addEventListener('click', () => percyRespond(filename, data));
+      node.addEventListener('mouseenter', () => UI.setStatus(data.message));
 
-        logicNodes.appendChild(node);
-    });
+      logicNodes.appendChild(node);
+  });
 }
 
-/* =========================
-TRANSFORM & ZOOM
-========================= */
 function applyTransform() {
   logicNodes.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomLevel})`;
   logicNodes.style.transformOrigin = 'center';
   document.querySelectorAll('.node').forEach(n => n.style.fontSize = `${12 * (1 / zoomLevel)}px`);
 }
 
-function zoom(factor) {
-    zoomLevel *= factor;
-    if(zoomLevel < 0.2) zoomLevel = 0.2;
-    if(zoomLevel > 5) zoomLevel = 5;
-    applyTransform();
-}
+/* =========================
+ASK PERCY UI
+========================= */
+const askWrapper = document.createElement('div');
+askWrapper.id = 'percy-ask';
+askWrapper.style.cssText = `position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;gap:4px;`;
+askWrapper.innerHTML = `
+  <input type="text" id="ask-input" placeholder="Ask Percy..." style="padding:6px 10px;border-radius:6px;border:none;width:300px;" />
+  <button id="ask-btn" style="padding:6px 10px;border-radius:6px;background:#3764ff;color:white;border:none;">Ask</button>
+`;
+document.body.appendChild(askWrapper);
 
-document.addEventListener('keydown', (e) => {
-    if(e.key === '+') zoom(1.2);
-    if(e.key === '-') zoom(0.8);
+document.getElementById('ask-btn').addEventListener('click', () => {
+  const input = document.getElementById('ask-input');
+  if(input.value.trim()) {
+    percyRespond('User', { message: input.value });
+    input.value = '';
+  }
+});
+
+document.getElementById('ask-input').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') document.getElementById('ask-btn').click();
 });
 
 /* =========================
-LOGIC NODE FILTER (TYPE-AHEAD)
-========================= */
-function filterNodes(query) {
-    const q = query.trim();
-    if(!q) {
-        document.querySelectorAll('.node').forEach(n => n.style.display = 'block');
-        return;
-    }
-    document.querySelectorAll('.node').forEach(n => {
-        n.style.display = n.textContent.includes(q) ? 'block' : 'none';
-    });
-}
-
-const askInput = UI.elInput();
-if(askInput) {
-    askInput.addEventListener('input', (e) => {
-        filterNodes(e.target.value);
-    });
-}
-
-/* =========================
-MUTATION ENGINE
+MUTATION ENGINE (SELF-WRITING)
 ========================= */
 const Mutation = {
   generateId() {
@@ -208,7 +212,8 @@ const Mutation = {
   },
   validateSeed(id) {
     const seed = seeds[id];
-    return !!(seed && seed.message);
+    if(!seed || !seed.message) return false;
+    return true;
   }
 };
 
@@ -216,6 +221,7 @@ function metaMutationCycle() {
   const maxPerCycle = SAFETY.maxSeedsPerCycle;
   let created = 0;
 
+  // Scan for TODO/gaps
   Object.entries(seeds).forEach(([id, seed]) => {
     if(created >= maxPerCycle) return;
     if(/TODO|missing|empty/.test(seed.message)) {
@@ -224,6 +230,7 @@ function metaMutationCycle() {
     }
   });
 
+  // Random emergent insights
   while(created < maxPerCycle && Math.random() < 0.5) {
     Mutation.createSeed("Emergent insight: Percy discovered a new logical connection.");
     created++;
@@ -247,7 +254,7 @@ function percyRespond(id, data) {
 }
 
 /* =========================
-AUTONOMY & TASKS
+AUTONOMY + PLANNER
 ========================= */
 const Tasks = {
   queue: Memory.load("tasks:queue", []),
@@ -261,29 +268,10 @@ const Tasks = {
   },
   register: {
     speak: async ({ text }) => UI.say(text),
-    highlightSeed: async ({ seedId }) => UI.say(`🔎 focusing ${seedId}`),
-    autoLearn: async ({ url }) => {
-        if(!["dictionary.com","merriam-webster.com","wikipedia.org"].some(d=>url.includes(d))) return UI.say(`❌ URL not trusted: ${url}`);
-        const ok = await UI.confirmModal({ title:"Percy requests to learn", body:url });
-        if(!ok) return UI.say("❌ Learning denied.");
-        try {
-            const text = await (await fetch(url)).text();
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(text,"text/html");
-            const content = doc.body.innerText;
-            const chunkSize = 300;
-            let count=0;
-            for(let i=0;i<content.length;i+=chunkSize){
-                const chunk = content.slice(i,i+chunkSize).trim();
-                if(chunk){ Mutation.createSeed(chunk,"learned",{source:url}); count++; }
-            }
-            UI.say(`📚 Percy learned ${count} new seeds from ${url}`);
-        } catch(e){ UI.say(`❌ Learning failed: ${e.message}`); }
-    }
+    highlightSeed: async ({ seedId }) => UI.say(`🔎 focusing ${seedId}`)
   },
   enqueue(task) { task.id = task.id ?? `t_${Math.random().toString(36).slice(2,8)}`; task.ts = Date.now(); this.queue.push(task); Memory.save("tasks:queue", this.queue); },
-  async step() {
-    if(!this.queue.length || !this._allowNow()) return;
+  async step() { if(!this.queue.length || !this._allowNow()) return;
     const task = this.queue.shift(); Memory.save("tasks:queue", this.queue);
     try { const fn = this.register[task.type]; if(!fn) throw new Error(`No handler for ${task.type}`); await fn(task.params ?? {}); this.done.push({...task, doneTs: Date.now()}); Memory.save("tasks:done", this.done); }
     catch(e){ UI.say(`❌ task error: ${e.message}`); }
@@ -291,20 +279,67 @@ const Tasks = {
 };
 
 /* =========================
-PLANNER & AUTONOMY
+AUTONOMOUS LEARNING
+========================= */
+const TrustedSources = [
+  "https://www.dictionary.com",
+  "https://www.merriam-webster.com",
+  "https://en.wikipedia.org"
+];
+
+Tasks.register.autoLearn = async ({ url }) => {
+  if(!TrustedSources.some(domain => url.includes(domain))) {
+    UI.say(`❌ URL not trusted for learning: ${url}`);
+    return;
+  }
+
+  const ok = await UI.confirmModal({
+    title: "Percy requests to learn from a website",
+    body: `Allow Percy to fetch and learn from:\n${url}`,
+    allowLabel: "Allow once",
+    denyLabel: "Deny"
+  });
+
+  if(!ok) { UI.say("❌ Learning denied."); return; }
+
+  try {
+    const res = await fetch(url);
+    const text = await res.text();
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, "text/html");
+    const content = doc.body.innerText;
+
+    const chunkSize = 300;
+    let count = 0;
+    for(let i=0;i<content.length;i+=chunkSize) {
+      const chunk = content.slice(i, i+chunkSize).trim();
+      if(chunk) { Mutation.createSeed(chunk, "learned", { source: url }); count++; }
+    }
+
+    UI.say(`📚 Percy learned ${count} new seeds from ${url}`);
+  } catch(e){
+    UI.say(`❌ Learning failed: ${e.message}`);
+  }
+};
+
+/* =========================
+PLANNER
 ========================= */
 const Planner = {
   goals: Memory.load("goals", [
     { id: "greetOwner", when: "onStart", task: { type: "speak", params: { text: "👋 Percy online. Autonomy loop active." } } }
   ]),
-  onStart() { this.goals.filter(g=>g.when==="onStart").forEach(g=>Tasks.enqueue(g.task)); }
+  onStart() {
+    this.goals.filter(g=>g.when==="onStart").forEach(g=>Tasks.enqueue(g.task));
+  }
 };
 
 const Autonomy = {
-  tickMs:1000,_t:null,_secCounter:0,
+  tickMs: 1000, _t:null, _secCounter:0,
   start() { if(this._t) return; Planner.onStart(); this._t=setInterval(async()=>{
-      this._secCounter++; await Tasks.step();
-      if(this._secCounter%15===0) metaMutationCycle();
+    this._secCounter++; await Tasks.step();
+    if(this._secCounter%15===0) metaMutationCycle(); // Percy mutates every 15s
   }, this.tickMs); UI.say(`🧠 Percy ${PERCY_VERSION} autonomy started.`); },
   stop() { if(this._t){ clearInterval(this._t); this._t=null; UI.say("⏹ Autonomy paused."); } }
 };
@@ -312,7 +347,7 @@ const Autonomy = {
 /* =========================
 STARTUP
 ========================= */
-(async function startupPercy(){
+(async function startupPercy() {
   UI.say(`🚀 Percy ${PERCY_VERSION} initializing…`);
   await loadSeeds();
   createNodes();
@@ -323,4 +358,15 @@ STARTUP
 /* =========================
 GLOBAL SHORTCUTS
 ========================= */
-window.Percy = { Memory, Tasks, Planner, Autonomy, UI, Mutation, metaMutationCycle, refreshNodes, percyRespond, seeds, filterNodes, zoom };
+window.Percy = {
+  Memory,
+  Tasks,
+  Planner,
+  Autonomy,
+  UI,
+  Mutation,
+  metaMutationCycle,
+  refreshNodes,
+  percyRespond,
+  seeds
+};
