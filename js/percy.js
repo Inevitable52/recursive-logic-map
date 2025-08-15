@@ -1,10 +1,10 @@
-// === percy.js (Phase 8 + Self-Writing / Meta-Mutation + Auto-Learn + Search & Zoom) ===
+// === percy.js (Phase 8.1 + Self-Writing / Meta-Mutation + Auto-Learn + Search & Zoom) ===
 
 /* =========================
 CONFIG & ULT AUTHORITY
 ========================= */
 const PERCY_ID = "Percy-ULT";
-const PERCY_VERSION = "8.0.5-meta"; // updated
+const PERCY_VERSION = "8.1.0-meta"; 
 const OWNER = { primary: "Fabian", secondary: "Lorena" };
 const SAFETY = {
   maxActionsPerMinute: 20,
@@ -17,10 +17,10 @@ const SAFETY = {
 SOFT PERSISTENCE (Memory)
 ========================= */
 const Memory = {
-  _k: (k) => `percy:${k}`,
+  _k: k => `percy:${k}`,
   load(k, fallback) { try { return JSON.parse(localStorage.getItem(this._k(k))) ?? fallback; } catch { return fallback; } },
-  save(k, v) { localStorage.setItem(this._k(k), JSON.stringify(v)); },
-  push(k, v, max = 1000) { const arr = this.load(k, []); arr.push(v); if(arr.length>max) arr.shift(); this.save(k, arr); }
+  save(k, v) { try { localStorage.setItem(this._k(k), JSON.stringify(v)); } catch{} },
+  push(k, v, max=1000){ const arr=this.load(k,[]); arr.push(v); if(arr.length>max) arr.shift(); this.save(k,arr); }
 };
 
 /* =========================
@@ -29,7 +29,7 @@ CONSOLE / UI HELPERS
 const UI = {
   elConsole: () => document.getElementById('percy-console'),
   elMsg: () => document.getElementById('percy-message'),
-  say(txt) {
+  say(txt){
     const box = this.elConsole(); if(!box) return;
     const p = document.createElement('p'); p.className='console-line'; p.textContent=txt;
     box.appendChild(p); box.scrollTop=box.scrollHeight;
@@ -37,13 +37,13 @@ const UI = {
     while(box.children.length>max) box.removeChild(box.firstChild);
   },
   setStatus(txt){ const m=this.elMsg(); if(m) m.textContent=txt; },
-  confirmModal({title, body, allowLabel="Allow", denyLabel="Deny"}) {
-    return new Promise(resolve => {
-      const wrap = document.createElement('div');
-      wrap.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:99999`;
-      const card = document.createElement('div');
-      card.style.cssText = `background:#0b0b12;color:#eee;max-width:520px;width:92%;border:1px solid #444;border-radius:16px;padding:16px 18px;box-shadow:0 6px 32px rgba(0,0,0,.5)`;
-      card.innerHTML = `<h3 style="margin:0 0 8px 0;font-size:18px;">${title}</h3>
+  confirmModal({title, body, allowLabel="Allow", denyLabel="Deny"}){
+    return new Promise(resolve=>{
+      const wrap=document.createElement('div');
+      wrap.style.cssText=`position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:99999`;
+      const card=document.createElement('div');
+      card.style.cssText=`background:#0b0b12;color:#eee;max-width:520px;width:92%;border:1px solid #444;border-radius:16px;padding:16px 18px;box-shadow:0 6px 32px rgba(0,0,0,.5)`;
+      card.innerHTML=`<h3 style="margin:0 0 8px 0;font-size:18px;">${title}</h3>
         <div style="font-size:14px;opacity:.9;margin-bottom:12px;white-space:pre-wrap">${body}</div>
         <div style="display:flex;gap:8px;justify-content:flex-end">
           <button id="deny" style="padding:8px 12px;border-radius:10px;background:#252535;border:1px solid #3a3a50;color:#ddd">${denyLabel}</button>
@@ -74,22 +74,21 @@ let seeds = {};
 const seedsFolder = 'logic_seeds/';
 const seedRange = { start: 80, end: 800 };
 
-async function loadSeeds() {
-  const loadingNotice = document.createElement('p');
+async function loadSeeds(){
+  const loadingNotice=document.createElement('p');
   loadingNotice.id='loading-indicator';
   loadingNotice.textContent="Loading logic seeds...";
   logicNodes.appendChild(loadingNotice);
 
+  const promises=[];
   for(let i=seedRange.start;i<=seedRange.end;i++){
     const filename=`G${String(i).padStart(3,'0')}.json`;
-    try{
-      const res = await fetch(seedsFolder+filename);
+    promises.push(fetch(seedsFolder+filename).then(res=>{
       if(!res.ok) throw new Error(`Failed to load ${filename}`);
-      const data = await res.json();
-      seeds[filename]=data;
-      Memory.save(`seed:${filename}`, data);
-    } catch(e){ console.warn(e.message); }
+      return res.json().then(data=>{ seeds[filename]=data; Memory.save(`seed:${filename}`,data); });
+    }).catch(e=>console.warn(e.message)));
   }
+  await Promise.all(promises);
   logicNodes.removeChild(loadingNotice);
   Memory.save("seeds:index", Object.keys(seeds));
 }
@@ -97,11 +96,9 @@ async function loadSeeds() {
 /* =========================
 NODE CREATION & VISUALIZATION
 ========================= */
-function createNodes() {
+function createNodes(){
   logicNodes.innerHTML='';
-  const width = logicMap.clientWidth;
-  const height = logicMap.clientHeight;
-
+  const width=logicMap.clientWidth, height=logicMap.clientHeight;
   layoutRing(80,200,width,height,width/2.5,'',60);
   layoutRing(201,300,width,height,width/3.4,'blue-ring',45);
   layoutRing(301,400,width,height,width/4.8,'purple-ring',30);
@@ -109,35 +106,27 @@ function createNodes() {
   layoutRing(501,600,width,height,width/8.5,'crimson-ring',18);
   layoutRing(601,700,width,height,width/11,'gold-ring',14);
   layoutRing(701,800,width,height,width/14,'neon-pink-ring',12);
-
   applyTransform();
 }
 
 function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
-  const ringSeeds = Object.entries(seeds).filter(([id])=>{
+  const ringSeeds=Object.entries(seeds).filter(([id])=>{
     const num=parseInt(id.replace("G",""));
     return num>=startId && num<=endId;
   });
   const total=ringSeeds.length;
-  const centerX=0;
-  const centerY=0;
-
+  const centerX=0, centerY=0;
   ringSeeds.forEach(([filename,data],index)=>{
     const angle=(index/total)*2*Math.PI;
     const x=centerX+radius*Math.cos(angle)-nodeSize/2;
     const y=centerY+radius*Math.sin(angle)-nodeSize/2;
-
     const node=document.createElement('div');
     node.classList.add('node');
     if(colorClass) node.classList.add(colorClass);
-    node.style.width=`${nodeSize}px`;
-    node.style.height=`${nodeSize}px`;
-    node.style.left=`${x}px`;
-    node.style.top=`${y}px`;
-    node.style.position='absolute';
-    node.style.borderRadius='50%';
-    node.textContent=filename;
-    node.title=data.message;
+    node.style.width=node.style.height=`${nodeSize}px`;
+    node.style.left=`${x}px`; node.style.top=`${y}px`;
+    node.style.position='absolute'; node.style.borderRadius='50%';
+    node.textContent=filename; node.title=data.message;
     node.addEventListener('click',()=>percyRespond(filename,data));
     node.addEventListener('mouseenter',()=>UI.setStatus(data.message));
     logicNodes.appendChild(node);
@@ -153,40 +142,39 @@ function applyTransform(){
 /* =========================
 ZOOM FUNCTION
 ========================= */
-function zoomLogic(factor) {
-  zoomLevel *= factor;
-  if(zoomLevel < 0.1) zoomLevel = 0.1;
-  if(zoomLevel > 5) zoomLevel = 5;
+function zoomLogic(factor){
+  zoomLevel=Math.min(5, Math.max(0.1, zoomLevel*factor));
   applyTransform();
 }
 
 /* =========================
 LOGIC SEED SEARCH
 ========================= */
-const seedSearch = document.getElementById('seed-search');
-seedSearch.addEventListener('input', ()=>{
-  const query = seedSearch.value.trim();
-  document.querySelectorAll('.node').forEach(node=>{
-    node.style.display = node.textContent.includes(query)? 'block':'none';
-  });
+const seedSearch=document.getElementById('seed-search');
+let searchThrottle=null;
+seedSearch.addEventListener('input',()=>{
+  clearTimeout(searchThrottle);
+  searchThrottle=setTimeout(()=>{
+    const query=seedSearch.value.trim();
+    document.querySelectorAll('.node').forEach(node=>{
+      node.style.display=node.textContent.includes(query)? 'block':'none';
+    });
+  },150);
 });
 
 /* =========================
 ASK PERCY HTML INPUT
 ========================= */
-const interpreterInput = document.getElementById('interpreter-input');
-window.interpretLogic = ()=>{
-  const val = interpreterInput.value.trim();
-  if(val){
-    percyRespond('User',{message:val});
-    interpreterInput.value='';
-  }
+const interpreterInput=document.getElementById('interpreter-input');
+window.interpretLogic=()=>{
+  const val=interpreterInput.value.trim();
+  if(val){ percyRespond('User',{message:val}); interpreterInput.value=''; }
 };
 
 /* =========================
 MUTATION ENGINE (SELF-WRITING)
 ========================= */
-const Mutation = {
+const Mutation={
   generateId(){ let next=801; while(seeds[`G${String(next).padStart(3,'0')}`]) next++; return `G${String(next).padStart(3,'0')}`; },
   createSeed(message,type='emergent',data={}){ 
     if(!OWNER.primary) return UI.say("❌ ULT required to create seed");
@@ -197,19 +185,22 @@ const Mutation = {
     UI.say(`✨ Percy created new seed ${id}: ${message}`);
     refreshNodes(); return id;
   },
-  updateSeed(id,update){ if(!seeds[id]) return UI.say(`⚠ Cannot update: ${id} not found`);
+  updateSeed(id,update){ 
+    if(!seeds[id]) return UI.say(`⚠ Cannot update: ${id} not found`);
     Object.assign(seeds[id],update); Memory.save(`seed:${id}`,seeds[id]); UI.say(`🔧 Percy updated seed ${id}`); refreshNodes();
   },
-  validateSeed(id){ const seed=seeds[id]; return !!(seed && seed.message); }
+  validateSeed(id){ return !!(seeds[id] && seeds[id].message); }
 };
 
 function metaMutationCycle(){
   const maxPerCycle=SAFETY.maxSeedsPerCycle;
   let created=0;
+  const updatedIds=new Set();
   Object.entries(seeds).forEach(([id,seed])=>{
     if(created>=maxPerCycle) return;
-    if(/TODO|missing|empty/.test(seed.message)){
+    if(/TODO|missing|empty/.test(seed.message) && !updatedIds.has(id)){
       Mutation.updateSeed(id,{message:seed.message.replace(/TODO|missing|empty/,"auto-resolved by Percy")});
+      updatedIds.add(id);
       created++;
     }
   });
@@ -232,116 +223,109 @@ function percyRespond(id,data){ UI.say(`↳ ${data.message}`); UI.setStatus(data
 /* =========================
 AUTONOMY + PLANNER
 ========================= */
-const Tasks = {
+const Tasks={
   queue: Memory.load("tasks:queue",[]),
   done: Memory.load("tasks:done",[]),
   rate:{stamps:[]},
-    _allowNow() {
-    const now = Date.now();
-    this.rate.stamps = this.rate.stamps.filter(t => now - t < 60_000);
-    if(this.rate.stamps.length >= SAFETY.maxActionsPerMinute) return false;
+  _allowNow(){ 
+    const now=Date.now();
+    this.rate.stamps=this.rate.stamps.filter(t=>now-t<60_000);
+    if(this.rate.stamps.length>=SAFETY.maxActionsPerMinute) return false;
     this.rate.stamps.push(now);
     return true;
   },
-  register: {
-    speak: async ({ text }) => UI.say(text),
-    highlightSeed: async ({ seedId }) => UI.say(`🔎 focusing ${seedId}`)
+  register:{
+    speak: async ({text})=>UI.say(text),
+    highlightSeed: async ({seedId})=>UI.say(`🔎 focusing ${seedId}`)
   },
-  enqueue(task) {
-    task.id = task.id ?? `t_${Math.random().toString(36).slice(2,8)}`;
-    task.ts = Date.now();
-    this.queue.push(task);
-    Memory.save("tasks:queue", this.queue);
+  enqueue(task){
+    if(!this.queue.some(t=>t.type===task.type && JSON.stringify(t.params)===JSON.stringify(task.params))){
+      task.id=task.id??`t_${Math.random().toString(36).slice(2,8)}`;
+      task.ts=Date.now();
+      this.queue.push(task);
+      Memory.save("tasks:queue",this.queue);
+    }
   },
-  async step() {
+  async step(){
     if(!this.queue.length || !this._allowNow()) return;
-    const task = this.queue.shift();
-    Memory.save("tasks:queue", this.queue);
-    try {
-      const fn = this.register[task.type];
+    const task=this.queue.shift();
+    Memory.save("tasks:queue",this.queue);
+    try{
+      const fn=this.register[task.type];
       if(!fn) throw new Error(`No handler for ${task.type}`);
-      await fn(task.params ?? {});
-      this.done.push({...task, doneTs: Date.now()});
-      Memory.save("tasks:done", this.done);
-    } catch(e){ UI.say(`❌ task error: ${e.message}`); }
+      await fn(task.params??{});
+      this.done.push({...task,doneTs:Date.now()});
+      Memory.save("tasks:done",this.done);
+    }catch(e){ UI.say(`❌ task error: ${e.message}`); }
   }
 };
 
 /* =========================
 AUTONOMOUS LEARNING
 ========================= */
-const TrustedSources = [
+const TrustedSources=[
   "https://www.dictionary.com",
   "https://www.merriam-webster.com",
   "https://en.wikipedia.org"
 ];
 
-Tasks.register.autoLearn = async ({ url }) => {
-  if(!TrustedSources.some(domain => url.includes(domain))) {
-    UI.say(`❌ URL not trusted for learning: ${url}`);
-    return;
+Tasks.register.autoLearn=async ({url})=>{
+  if(!TrustedSources.some(domain=>url.includes(domain))){
+    UI.say(`❌ URL not trusted for learning: ${url}`); return;
   }
-
-  const ok = await UI.confirmModal({
-    title: "Percy requests to learn from a website",
-    body: `Allow Percy to fetch and learn from:\n${url}`,
-    allowLabel: "Allow once",
-    denyLabel: "Deny"
+  const ok=await UI.confirmModal({
+    title:"Percy requests to learn from a website",
+    body:`Allow Percy to fetch and learn from:\n${url}`,
+    allowLabel:"Allow once",
+    denyLabel:"Deny"
   });
+  if(!ok){ UI.say("❌ Learning denied."); return; }
 
-  if(!ok) { UI.say("❌ Learning denied."); return; }
-
-  try {
-    const res = await fetch(url);
-    const text = await res.text();
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(text, "text/html");
-    const content = doc.body.innerText;
-    const chunkSize = 300;
-    let count = 0;
-    for(let i=0; i<content.length; i+=chunkSize) {
-      const chunk = content.slice(i, i+chunkSize).trim();
-      if(chunk) { Mutation.createSeed(chunk, "learned", { source: url }); count++; }
+  try{
+    const res=await fetch(url);
+    const text=await res.text();
+    const parser=new DOMParser();
+    const doc=parser.parseFromString(text,"text/html");
+    const content=doc.body.innerText;
+    const chunkSize=300;
+    let count=0;
+    for(let i=0;i<content.length;i+=chunkSize){
+      const chunk=content.slice(i,i+chunkSize).trim();
+      if(chunk){ Mutation.createSeed(chunk,"learned",{source:url}); count++; }
     }
     UI.say(`📚 Percy learned ${count} new seeds from ${url}`);
-  } catch(e){
-    UI.say(`❌ Learning failed: ${e.message}`);
-  }
+  }catch(e){ UI.say(`❌ Learning failed: ${e.message}`); }
 };
 
 /* =========================
 PLANNER & AUTONOMY LOOP
 ========================= */
-const Planner = {
-  goals: Memory.load("goals", [
-    { id: "greetOwner", when: "onStart", task: { type: "speak", params: { text: "👋 Percy online. Autonomy loop active." } } }
+const Planner={
+  goals: Memory.load("goals",[
+    {id:"greetOwner",when:"onStart",task:{type:"speak",params:{text:"👋 Percy online. Autonomy loop active."}}}
   ]),
-  onStart() {
-    this.goals.filter(g => g.when==="onStart").forEach(g => Tasks.enqueue(g.task));
-  }
+  onStart(){ this.goals.filter(g=>g.when==="onStart").forEach(g=>Tasks.enqueue(g.task)); }
 };
 
-const Autonomy = {
-  tickMs: 1000, _t:null, _secCounter:0,
-  start() {
+const Autonomy={
+  tickMs:1000,_t:null,_secCounter:0,
+  start(){
     if(this._t) return;
     Planner.onStart();
-    this._t = setInterval(async ()=>{
+    this._t=setInterval(async ()=>{
       this._secCounter++;
       await Tasks.step();
-      if(this._secCounter % 15 === 0) metaMutationCycle();
-    }, this.tickMs);
+      if(this._secCounter%15===0) metaMutationCycle();
+    },this.tickMs);
     UI.say(`🧠 Percy ${PERCY_VERSION} autonomy started.`);
   },
-  stop() {
-    if(this._t){ clearInterval(this._t); this._t=null; UI.say("⏹ Autonomy paused."); }
-  }
+  stop(){ if(this._t){ clearInterval(this._t); this._t=null; UI.say("⏹ Autonomy paused."); } }
 };
 
 /* =========================
 STARTUP
 ========================= */
-(async function startupPercy() {
+(async function startupPercy(){
   UI.say(`🚀 Percy ${PERCY_VERSION} initializing…`);
   await loadSeeds();
   createNodes();
@@ -352,20 +336,10 @@ STARTUP
 /* =========================
 GLOBAL SHORTCUTS
 ========================= */
-window.Percy = {
-  Memory,
-  Tasks,
-  Planner,
-  Autonomy,
-  UI,
-  Mutation,
-  metaMutationCycle,
-  refreshNodes,
-  percyRespond,
-  seeds,
-  translateX,
-  translateY,
-  applyTransform,
+window.Percy={
+  Memory, Tasks, Planner, Autonomy, UI, Mutation, metaMutationCycle,
+  refreshNodes, percyRespond, seeds,
+  translateX, translateY, applyTransform,
   get zoomLevel(){ return zoomLevel; },
   set zoomLevel(v){ zoomLevel=v; applyTransform(); }
 };
