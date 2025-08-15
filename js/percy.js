@@ -151,11 +151,11 @@ function applyTransform(){
 /* =========================
 ZOOM FUNCTION
 ========================= */
-function zoomLogic(factor){
-  zoomLevel *= factor;
-  if(zoomLevel<0.1) zoomLevel=0.1;
-  if(zoomLevel>5) zoomLevel=5;
-  applyTransform();
+function zoomLogic(factor) {
+  Percy.zoomLevel *= factor;
+  if (Percy.zoomLevel < 0.1) Percy.zoomLevel = 0.1;
+  if (Percy.zoomLevel > 5) Percy.zoomLevel = 5;
+  Percy.applyTransform();
 }
 
 /* =========================
@@ -361,6 +361,8 @@ window.Percy = {
   refreshNodes,
   percyRespond,
   seeds,
-  zoomLogic
+  zoomLevel,         // expose zoom level
+  translateX,        // expose for future if needed
+  translateY,
+  applyTransform     // expose the function
 };
-
