@@ -168,21 +168,21 @@ function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
     const centerX = width / 2;
     const centerY = height / 2;
 
-    ringSeeds.forEach(([filename,data],index)=>{
+    ringSeeds.forEach(([id,data],index)=>{
         const angle = (index / total) * 2 * Math.PI;
-        const x = centerX + radius * Math.cos(angle) - nodeSize/2 + (Math.random()*4-2); // tiny jitter to reduce exact overlap
+        const x = centerX + radius * Math.cos(angle) - nodeSize/2 + (Math.random()*4-2);
         const y = centerY + radius * Math.sin(angle) - nodeSize/2 + (Math.random()*4-2);
 
         const node=document.createElement('div');
-        node.classList.add('node');
+        node.className='node';
         if(colorClass) node.classList.add(colorClass);
-        node.setAttribute('data-ring', colorClass);
+        node.setAttribute('data-ring', colorClass||'');
         node.style.width=node.style.height=`${nodeSize}px`;
         node.style.left=`${x}px`;
         node.style.top=`${y}px`;
-        node.textContent=filename;
+        node.textContent=id;
         node.title=data.message;
-        node.addEventListener('click',()=>percyRespond(filename,data));
+        node.addEventListener('click',()=>percyRespond(id,data));
         node.addEventListener('mouseenter',()=>UI.setStatus(data.message));
         logicNodes.appendChild(node);
     });
@@ -357,15 +357,10 @@ const Tasks={
   register:{
     speak: async ({text})=>UI.say(text),
     highlightSeed: async ({seedId})=>UI.say(`🔎 focusing ${seedId}`),
-
-    /* =========================
-    WEB INTERACTIVE WORD LEARNING
-    ========================= */
     learnWord: async ({word, site="https://www.dictionary.com"})=>{
       if(!TrustedSources.some(domain=>site.includes(domain))){
         UI.say(`❌ Site not trusted: ${site}`); return;
       }
-
       const ok=await UI.confirmModal({
         title:"Percy requests to learn a word",
         body:`Allow Percy to fetch the definition and examples of "${word}" from:\n${site}`,
@@ -373,7 +368,6 @@ const Tasks={
         denyLabel:"Deny"
       });
       if(!ok){ UI.say("❌ Learning denied."); return; }
-
       try{
         const searchUrl = `${site}/browse/${encodeURIComponent(word)}`;
         const res = await fetch(searchUrl);
@@ -424,7 +418,7 @@ const TrustedSources=[
   "https://api.allorigins.win"
 ];
 
-Tasks.register.autoLearn=async ({url})=>{
+Tasks.register.autoLearn = async ({url})=>{
   if(!TrustedSources.some(domain=>url.includes(domain))){
     UI.say(`❌ URL not trusted for learning: ${url}`); return;
   }
@@ -437,15 +431,15 @@ Tasks.register.autoLearn=async ({url})=>{
   if(!ok){ UI.say("❌ Learning denied."); return; }
 
   try{
-    const res=await fetch(url);
-    const text=await res.text();
-    const parser=new DOMParser();
-    const doc=parser.parseFromString(text,"text/html");
-    const content=doc.body.innerText;
-    const chunkSize=300;
-    let count=0;
+    const res = await fetch(url);
+    const text = await res.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text,"text/html");
+    const content = doc.body.innerText;
+    const chunkSize = 300;
+    let count = 0;
     for(let i=0;i<content.length;i+=chunkSize){
-      const chunk=content.slice(i,i+chunkSize).trim();
+      const chunk = content.slice(i,i+chunkSize).trim();
       if(chunk){ PercyState.createSeed(chunk,"learned",{source:url}); count++; }
     }
     UI.say(`📚 Percy learned ${count} new seeds from ${url}`);
@@ -453,44 +447,16 @@ Tasks.register.autoLearn=async ({url})=>{
 };
 
 /* =========================
-PLANNER & AUTONOMY LOOP
+MAIN LOOP
 ========================= */
-const Planner={ goals: Memory.load("goals",[{id:"greetOwner",when:"onStart",task:{type:"speak",params:{text:"👋 Percy online. Autonomy loop active."}}}]),
-  onStart(){ this.goals.filter(g=>g.when==="onStart").forEach(g=>Tasks.enqueue(g.task)); }
-};
+setInterval(async ()=>{
+  PercyState.evaluateSelf();
+  await Tasks.step();
+},1000);
 
-const Autonomy={ tickMs:1000,_t:null,_secCounter:0,
-  start(){
-    if(this._t) return;
-    Planner.onStart();
-    this._t=setInterval(async ()=>{
-      this._secCounter++;
-      await Tasks.step();
-      if(this._secCounter%15===0) PercyState.evaluateSelf();
-    },this.tickMs);
-    UI.say(`🧠 Percy ${PERCY_VERSION} autonomy started.`);
-  },
-  stop(){ if(this._t){ clearInterval(this._t); this._t=null; UI.say("⏹ Autonomy paused."); } }
-};
-
-/* =========================
-STARTUP
-========================= */
-(async function startupPercy(){
-  UI.say(`🚀 Percy ${PERCY_VERSION} initializing…`);
+(async function init(){
   await loadSeeds();
-  Object.entries(PercyState.gnodes).forEach(([id,seed])=>{ seeds[id]=seed; });
+  seeds = {...PercyState.gnodes};
   createNodes();
-  Autonomy.start();
-  UI.say("✅ Percy online. Autonomy, persistent memory, meta-mutation, learning, and dictionary active.");
+  UI.say(`✅ Percy v${PERCY_VERSION} initialized with ${Object.keys(seeds).length} seeds`);
 })();
-
-/* =========================
-GLOBAL SHORTCUTS
-========================= */
-window.Percy={ Memory, Tasks, Planner, Autonomy, UI, PercyState,
-  refreshNodes, percyRespond, seeds,
-  translateX, translateY, applyTransform,
-  get zoomLevel(){ return zoomLevel; },
-  set zoomLevel(v){ zoomLevel=v; applyTransform(); }
-};
