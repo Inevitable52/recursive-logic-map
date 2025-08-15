@@ -1,10 +1,10 @@
-// === percy.js (Phase 8 + Self-Writing / Meta-Mutation) ===
+// === percy.js (Phase 8 + Self-Writing / Meta-Mutation + Autonomous Learning) ===
 
 /* =========================
 CONFIG & ULT AUTHORITY
 ========================= */
 const PERCY_ID = "Percy-ULT";
-const PERCY_VERSION = "8.0.1-meta";
+const PERCY_VERSION = "8.0.2-meta-learn";
 const OWNER = { primary: "Fabian", secondary: "Lorena" };
 const SAFETY = {
   maxActionsPerMinute: 20,
@@ -179,7 +179,6 @@ function metaMutationCycle() {
   const maxPerCycle = SAFETY.maxSeedsPerCycle;
   let created = 0;
 
-  // Scan for "TODO" or gaps
   Object.entries(seeds).forEach(([id, seed]) => {
     if(created >= maxPerCycle) return;
     if(/TODO|missing|empty/.test(seed.message)) {
@@ -188,12 +187,71 @@ function metaMutationCycle() {
     }
   });
 
-  // Random emergent insights
   while(created < maxPerCycle && Math.random() < 0.5) {
     Mutation.createSeed("Emergent insight: Percy discovered a new logical connection.");
     created++;
   }
 }
+
+/* =========================
+AUTONOMOUS LEARNING
+========================= */
+const TrustedSources = [
+  "https://www.dictionary.com",
+  "https://www.merriam-webster.com",
+  "https://en.wikipedia.org"
+];
+
+Tasks.register.autoLearn = async ({ url }) => {
+  if(!TrustedSources.some(domain => url.includes(domain))) {
+    UI.say(`❌ URL not trusted for learning: ${url}`);
+    return;
+  }
+
+  const ok = await UI.confirmModal({
+    title: "Percy requests to learn from a website",
+    body: `Allow Percy to fetch and learn from:\n${url}`,
+    allowLabel: "Allow once",
+    denyLabel: "Deny"
+  });
+
+  if(!ok) { UI.say("❌ Learning denied."); return; }
+
+  try {
+    const res = await fetch(url);
+    const text = await res.text();
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, "text/html");
+    const content = doc.body.innerText;
+
+    const chunkSize = 300;
+    let count = 0;
+    for(let i=0;i<content.length;i+=chunkSize) {
+      const chunk = content.slice(i, i+chunkSize).trim();
+      if(chunk) { Mutation.createSeed(chunk, "learned", { source: url }); count++; }
+    }
+
+    UI.say(`📚 Percy learned ${count} new seeds from ${url}`);
+  } catch(e){
+    UI.say(`❌ Learning failed: ${e.message}`);
+  }
+};
+
+/* =========================
+INTERPRETER / LEARN COMMAND
+========================= */
+const input = document.getElementById('interpreter-input');
+if(input) input.addEventListener('keydown', e => {
+  if(e.key!=='Enter') return;
+  const q = input.value.trim();
+  input.value="";
+
+  if(q.toLowerCase().startsWith("learn ")) {
+    const url = q.slice(6).trim();
+    Tasks.enqueue({ type:"autoLearn", params:{ url } });
+  }
+});
 
 /* =========================
 VISUAL REFRESH
@@ -249,7 +307,7 @@ const Autonomy = {
   tickMs: 1000, _t:null, _secCounter:0,
   start() { if(this._t) return; Planner.onStart(); this._t=setInterval(async()=>{
     this._secCounter++; await Tasks.step();
-    if(this._secCounter%15===0) metaMutationCycle(); // Percy mutates every 15s
+    if(this._secCounter%15===0) metaMutationCycle();
   }, this.tickMs); UI.say(`🧠 Percy ${PERCY_VERSION} autonomy started.`); },
   stop() { if(this._t){ clearInterval(this._t); this._t=null; UI.say("⏹ Autonomy paused."); } }
 };
@@ -262,7 +320,7 @@ STARTUP
   await loadSeeds();
   createNodes();
   Autonomy.start();
-  UI.say("✅ Percy online. Autonomy, memory, and meta-mutation active.");
+  UI.say("✅ Percy online. Autonomy, memory, meta-mutation, and autonomous learning active.");
 })();
 
 /* =========================
