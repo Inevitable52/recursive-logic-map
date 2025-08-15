@@ -45,7 +45,7 @@ body {
     max-width: 80px;
     max-height: 80px;
     z-index: 1;
-    font-size: unset; /* let JS control font size */
+    font-size: unset; /* controlled by JS */
 }
 
 /* Node Hover Effects */
@@ -56,36 +56,12 @@ body {
 }
 
 /* === Ring Colors & Glow === */
-.blue-ring {
-    background-color: #4A90E2;
-    box-shadow: 0 0 8px rgba(74,144,226,0.8);
-}
-
-/* Third ring G301-400 (light purple) */
-.purple-ring {
-    background-color: #CDA4FF;
-    box-shadow: 0 0 8px rgba(205,164,255,0.8);
-}
-
-.red-ring {
-    background-color: #FF6B6B;
-    box-shadow: 0 0 8px rgba(255,107,107,0.8);
-}
-
-.crimson-ring {
-    background-color: #DC143C;
-    box-shadow: 0 0 8px rgba(220,20,60,0.8);
-}
-
-.gold-ring {
-    background-color: #FFD700;
-    box-shadow: 0 0 8px rgba(255,215,0,0.8);
-}
-
-.neon-pink-ring {
-    background-color: #FF6EC7;
-    box-shadow: 0 0 8px rgba(255,110,199,0.8);
-}
+.blue-ring      { background-color: #4A90E2; box-shadow: 0 0 8px rgba(74,144,226,0.8); }
+.purple-ring    { background-color: #CDA4FF; box-shadow: 0 0 8px rgba(205,164,255,0.8); }
+.red-ring       { background-color: #FF6B6B; box-shadow: 0 0 8px rgba(255,107,107,0.8); }
+.crimson-ring   { background-color: #DC143C; box-shadow: 0 0 8px rgba(220,20,60,0.8); }
+.gold-ring      { background-color: #FFD700; box-shadow: 0 0 8px rgba(255,215,0,0.8); }
+.neon-pink-ring { background-color: #FF6EC7; box-shadow: 0 0 8px rgba(255,110,199,0.8); }
 
 /* === Tooltip via title attribute === */
 .node::after {
@@ -104,11 +80,10 @@ body {
     word-wrap: break-word;
     max-width: 200px;
     transition: opacity 0.15s ease-in-out;
+    z-index: 100;
 }
 
-.node:hover::after {
-    opacity: 1;
-}
+.node:hover::after { opacity: 1; }
 
 /* === Console Styling === */
 #percy-console {
@@ -124,9 +99,7 @@ body {
     z-index: 1000;
 }
 
-.console-line {
-    margin: 2px 0;
-}
+.console-line { margin: 2px 0; }
 
 /* === Status Message === */
 #percy-message {
@@ -154,7 +127,6 @@ body {
 
 /* === Responsive Adjustments === */
 @media (max-width: 768px) {
-    .node {
-        font-size: 10px;
-    }
+    .node { font-size: 10px; min-width: 10px; min-height: 10px; }
+    .node::after { font-size: 0.65rem; max-width: 150px; }
 }
