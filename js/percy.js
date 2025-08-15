@@ -115,11 +115,14 @@ function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
     return num>=startId && num<=endId;
   });
   const total=ringSeeds.length;
-  const centerX=0, centerY=0;
+  const centerX = logicMap.clientWidth / 2;
+  const centerY = logicMap.clientHeight / 2;
+
   ringSeeds.forEach(([filename,data],index)=>{
-    const angle=(index/total)*2*Math.PI;
-    const x=centerX+radius*Math.cos(angle)-nodeSize/2;
-    const y=centerY+radius*Math.sin(angle)-nodeSize/2;
+    const angle = (index / total) * 2 * Math.PI;
+    const x = centerX + radius * Math.cos(angle) - nodeSize / 2;
+    const y = centerY + radius * Math.sin(angle) - nodeSize / 2;
+
     const node=document.createElement('div');
     node.classList.add('node');
     if(colorClass) node.classList.add(colorClass);
@@ -134,9 +137,9 @@ function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
 }
 
 function applyTransform(){
-  logicNodes.style.transform=`translate(-50%,-50%) translate(${translateX}px,${translateY}px) scale(${zoomLevel})`;
-  logicNodes.style.transformOrigin='center center';
-  document.querySelectorAll('.node').forEach(n=>n.style.fontSize=`${12*(1/zoomLevel)}px`);
+  logicNodes.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomLevel})`;
+  logicNodes.style.transformOrigin = 'center center';
+  document.querySelectorAll('.node').forEach(n => n.style.fontSize = `${12*(1/zoomLevel)}px`);
 }
 
 /* =========================
