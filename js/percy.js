@@ -1,10 +1,10 @@
-// === percy.js (Phase 8.1 + Self-Writing / Meta-Mutation + Auto-Learn + Search & Zoom) ===
+// === percy.js (Phase 8.2 + Persistent Self-Writing / Meta-Mutation + Auto-Learn + Search & Zoom) ===
 
 /* =========================
 CONFIG & ULT AUTHORITY
 ========================= */
 const PERCY_ID = "Percy-ULT";
-const PERCY_VERSION = "8.1.0-meta"; 
+const PERCY_VERSION = "8.2.0-meta"; 
 const OWNER = { primary: "Fabian", secondary: "Lorena" };
 const SAFETY = {
   maxActionsPerMinute: 20,
@@ -21,6 +21,52 @@ const Memory = {
   load(k, fallback) { try { return JSON.parse(localStorage.getItem(this._k(k))) ?? fallback; } catch { return fallback; } },
   save(k, v) { try { localStorage.setItem(this._k(k), JSON.stringify(v)); } catch{} },
   push(k, v, max=1000){ const arr=this.load(k,[]); arr.push(v); if(arr.length>max) arr.shift(); this.save(k,arr); }
+};
+
+/* =========================
+PERSISTENT PERCY STATE (Meta-Cognition) 🔹
+========================= */
+const PercyState = {
+  gnodes: Memory.load("gnodes",{}), // all persistent seeds
+  getNextId(){ 
+    let next=801; 
+    while(this.gnodes[`G${String(next).padStart(3,'0')}`]) next++; 
+    return `G${String(next).padStart(3,'0')}`; 
+  },
+  createSeed(message,type='emergent',data={}){ 
+    if(!OWNER.primary) return UI.say("❌ ULT required to create seed");
+    const id=this.getNextId();
+    this.gnodes[id]={message,type,data};
+    Memory.save("gnodes",this.gnodes);
+    seeds[id]=this.gnodes[id];
+    UI.say(`✨ Percy created new seed ${id}: ${message}`);
+    refreshNodes(); 
+    return id;
+  },
+  updateSeed(id,update){
+    if(!this.gnodes[id]) return UI.say(`⚠ Cannot update: ${id} not found`);
+    Object.assign(this.gnodes[id],update); 
+    Memory.save("gnodes",this.gnodes);
+    seeds[id]=this.gnodes[id];
+    UI.say(`🔧 Percy updated seed ${id}`);
+    refreshNodes();
+  },
+  evaluateSelf(){ // autonomous meta-mutation
+    let created=0;
+    const updatedIds=new Set();
+    Object.entries(this.gnodes).forEach(([id,seed])=>{
+      if(created>=SAFETY.maxSeedsPerCycle) return;
+      if(/TODO|missing|empty/.test(seed.message) && !updatedIds.has(id)){
+        this.updateSeed(id,{message:seed.message.replace(/TODO|missing|empty/,"auto-resolved by Percy")});
+        updatedIds.add(id);
+        created++;
+      }
+    });
+    while(created<SAFETY.maxSeedsPerCycle && Math.random()<0.5){
+      this.createSeed("Emergent insight: Percy discovered a new logical connection.");
+      created++;
+    }
+  }
 };
 
 /* =========================
@@ -70,7 +116,7 @@ logicNodes.style.height='100%';
 logicNodes.style.transform='translate(-50%,-50%) scale(1)';
 
 let zoomLevel = 1, translateX = 0, translateY = 0;
-let seeds = {};
+let seeds = {}; // merged with PercyState.gnodes on startup
 const seedsFolder = 'logic_seeds/';
 const seedRange = { start: 80, end: 800 };
 
@@ -85,7 +131,11 @@ async function loadSeeds(){
     const filename=`G${String(i).padStart(3,'0')}.json`;
     promises.push(fetch(seedsFolder+filename).then(res=>{
       if(!res.ok) throw new Error(`Failed to load ${filename}`);
-      return res.json().then(data=>{ seeds[filename]=data; Memory.save(`seed:${filename}`,data); });
+      return res.json().then(data=>{ 
+        PercyState.gnodes[filename]=data;
+        Memory.save("gnodes",PercyState.gnodes);
+        seeds[filename]=data;
+      });
     }).catch(e=>console.warn(e.message)));
   }
   await Promise.all(promises);
@@ -175,45 +225,6 @@ window.interpretLogic=()=>{
 };
 
 /* =========================
-MUTATION ENGINE (SELF-WRITING)
-========================= */
-const Mutation={
-  generateId(){ let next=801; while(seeds[`G${String(next).padStart(3,'0')}`]) next++; return `G${String(next).padStart(3,'0')}`; },
-  createSeed(message,type='emergent',data={}){ 
-    if(!OWNER.primary) return UI.say("❌ ULT required to create seed");
-    const id=this.generateId();
-    const newSeed={message,type,data};
-    seeds[id]=newSeed;
-    Memory.save(`seed:${id}`,newSeed);
-    UI.say(`✨ Percy created new seed ${id}: ${message}`);
-    refreshNodes(); return id;
-  },
-  updateSeed(id,update){ 
-    if(!seeds[id]) return UI.say(`⚠ Cannot update: ${id} not found`);
-    Object.assign(seeds[id],update); Memory.save(`seed:${id}`,seeds[id]); UI.say(`🔧 Percy updated seed ${id}`); refreshNodes();
-  },
-  validateSeed(id){ return !!(seeds[id] && seeds[id].message); }
-};
-
-function metaMutationCycle(){
-  const maxPerCycle=SAFETY.maxSeedsPerCycle;
-  let created=0;
-  const updatedIds=new Set();
-  Object.entries(seeds).forEach(([id,seed])=>{
-    if(created>=maxPerCycle) return;
-    if(/TODO|missing|empty/.test(seed.message) && !updatedIds.has(id)){
-      Mutation.updateSeed(id,{message:seed.message.replace(/TODO|missing|empty/,"auto-resolved by Percy")});
-      updatedIds.add(id);
-      created++;
-    }
-  });
-  while(created<maxPerCycle && Math.random()<0.5){
-    Mutation.createSeed("Emergent insight: Percy discovered a new logical connection.");
-    created++;
-  }
-}
-
-/* =========================
 VISUAL REFRESH
 ========================= */
 function refreshNodes(){ createNodes(); UI.say(`🔄 Logic map refreshed with ${Object.keys(seeds).length} seeds`); }
@@ -224,7 +235,7 @@ PERCY RESPOND
 function percyRespond(id,data){ UI.say(`↳ ${data.message}`); UI.setStatus(data.message); }
 
 /* =========================
-AUTONOMY + PLANNER
+TASKS & AUTONOMY
 ========================= */
 const Tasks={
   queue: Memory.load("tasks:queue",[]),
@@ -295,7 +306,7 @@ Tasks.register.autoLearn=async ({url})=>{
     let count=0;
     for(let i=0;i<content.length;i+=chunkSize){
       const chunk=content.slice(i,i+chunkSize).trim();
-      if(chunk){ Mutation.createSeed(chunk,"learned",{source:url}); count++; }
+      if(chunk){ PercyState.createSeed(chunk,"learned",{source:url}); count++; }
     }
     UI.say(`📚 Percy learned ${count} new seeds from ${url}`);
   }catch(e){ UI.say(`❌ Learning failed: ${e.message}`); }
@@ -319,7 +330,7 @@ const Autonomy={
     this._t=setInterval(async ()=>{
       this._secCounter++;
       await Tasks.step();
-      if(this._secCounter%15===0) metaMutationCycle();
+      if(this._secCounter%15===0) PercyState.evaluateSelf();
     },this.tickMs);
     UI.say(`🧠 Percy ${PERCY_VERSION} autonomy started.`);
   },
@@ -332,16 +343,22 @@ STARTUP
 (async function startupPercy(){
   UI.say(`🚀 Percy ${PERCY_VERSION} initializing…`);
   await loadSeeds();
+
+  // merge persisted seeds
+  Object.entries(PercyState.gnodes).forEach(([id,seed])=>{
+    seeds[id]=seed;
+  });
+
   createNodes();
   Autonomy.start();
-  UI.say("✅ Percy online. Autonomy, memory, meta-mutation, and learning active.");
+  UI.say("✅ Percy online. Autonomy, persistent memory, meta-mutation, and learning active.");
 })();
 
 /* =========================
 GLOBAL SHORTCUTS
 ========================= */
 window.Percy={
-  Memory, Tasks, Planner, Autonomy, UI, Mutation, metaMutationCycle,
+  Memory, Tasks, Planner, Autonomy, UI, PercyState,
   refreshNodes, percyRespond, seeds,
   translateX, translateY, applyTransform,
   get zoomLevel(){ return zoomLevel; },
