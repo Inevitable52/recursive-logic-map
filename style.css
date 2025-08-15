@@ -20,6 +20,8 @@ body {
     position: absolute;
     top: 50%;
     left: 50%;
+    width: 100%;
+    height: 100%;
     transform: translate(-50%, -50%) scale(1);
     transform-origin: center center;
     transition: transform 0.2s ease-out;
@@ -139,7 +141,7 @@ body {
     transition: left 0.25s ease, top 0.25s ease;
 }
 
-/* === Fix for initial bloom alignment === */
-#logic-nodes .node {
+/* === REMOVE THIS: it broke the node positions */
+/* #logic-nodes .node {
     transform: translate(0,0) !important;
-}
+} */
