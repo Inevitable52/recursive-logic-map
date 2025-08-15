@@ -4,7 +4,7 @@
 CONFIG & ULT AUTHORITY
 ========================= */
 const PERCY_ID = "Percy-ULT";
-const PERCY_VERSION = "8.0.2-meta";
+const PERCY_VERSION = "8.0.3-meta"; // updated version
 const OWNER = { primary: "Fabian", secondary: "Lorena" };
 const SAFETY = {
   maxActionsPerMinute: 20,
@@ -69,6 +69,13 @@ LOGIC MAP & SEEDS
 ========================= */
 const logicMap = document.getElementById('logic-map');
 const logicNodes = document.getElementById('logic-nodes');
+logicMap.style.position = 'relative';
+logicNodes.style.position = 'absolute';
+logicNodes.style.top = '0';
+logicNodes.style.left = '0';
+logicNodes.style.width = '100%';
+logicNodes.style.height = '100%';
+
 let zoomLevel = 1, translateX = 0, translateY = 0;
 let seeds = {};
 const seedsFolder = 'logic_seeds/';
@@ -109,40 +116,42 @@ function createNodes() {
   layoutRing(501, 600, width, height, width / 8.5, 'crimson-ring', 18);
   layoutRing(601, 700, width, height, width / 11, 'gold-ring', 14);
   layoutRing(701, 800, width, height, width / 14, 'neon-pink-ring', 12);
+
   applyTransform();
 }
 
 function layoutRing(startId, endId, width, height, radius, colorClass, nodeSize) {
-    const ringSeeds = Object.entries(seeds).filter(([id]) => {
-        const num = parseInt(id.replace("G", ""));
-        return num >= startId && num <= endId;
-    });
-    const total = ringSeeds.length;
-    const centerX = width / 2;
-    const centerY = height / 2;
+  const ringSeeds = Object.entries(seeds).filter(([id]) => {
+      const num = parseInt(id.replace("G", ""));
+      return num >= startId && num <= endId;
+  });
+  const total = ringSeeds.length;
+  const centerX = width / 2;
+  const centerY = height / 2;
 
-    ringSeeds.forEach(([filename, data], index) => {
-        const angle = (index / total) * 2 * Math.PI;
-        const x = centerX + radius * Math.cos(angle) - nodeSize / 2;
-        const y = centerY + radius * Math.sin(angle) - nodeSize / 2;
+  ringSeeds.forEach(([filename, data], index) => {
+      const angle = (index / total) * 2 * Math.PI;
+      const x = centerX + radius * Math.cos(angle) - nodeSize / 2;
+      const y = centerY + radius * Math.sin(angle) - nodeSize / 2;
 
-        const node = document.createElement('div');
-        node.classList.add('node');
-        if (colorClass) node.classList.add(colorClass);
+      const node = document.createElement('div');
+      node.classList.add('node');
+      if (colorClass) node.classList.add(colorClass);
 
-        node.style.width = `${nodeSize}px`;
-        node.style.height = `${nodeSize / 2}px`; // keep your current aspect ratio
-        node.style.left = `${x}px`;
-        node.style.top = `${y}px`;
+      node.style.width = `${nodeSize}px`;
+      node.style.height = `${nodeSize / 2}px`;
+      node.style.left = `${x}px`;
+      node.style.top = `${y}px`;
+      node.style.position = 'absolute';
 
-        node.textContent = filename;
-        node.title = data.message;
+      node.textContent = filename;
+      node.title = data.message;
 
-        node.addEventListener('click', () => percyRespond(filename, data));
-        node.addEventListener('mouseenter', () => UI.setStatus(data.message));
+      node.addEventListener('click', () => percyRespond(filename, data));
+      node.addEventListener('mouseenter', () => UI.setStatus(data.message));
 
-        logicNodes.appendChild(node);
-    });
+      logicNodes.appendChild(node);
+  });
 }
 
 function applyTransform() {
@@ -150,6 +159,30 @@ function applyTransform() {
   logicNodes.style.transformOrigin = 'center';
   document.querySelectorAll('.node').forEach(n => n.style.fontSize = `${12 * (1 / zoomLevel)}px`);
 }
+
+/* =========================
+ASK PERCY UI
+========================= */
+const askWrapper = document.createElement('div');
+askWrapper.id = 'percy-ask';
+askWrapper.style.cssText = `position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;gap:4px;`;
+askWrapper.innerHTML = `
+  <input type="text" id="ask-input" placeholder="Ask Percy..." style="padding:6px 10px;border-radius:6px;border:none;width:300px;" />
+  <button id="ask-btn" style="padding:6px 10px;border-radius:6px;background:#3764ff;color:white;border:none;">Ask</button>
+`;
+document.body.appendChild(askWrapper);
+
+document.getElementById('ask-btn').addEventListener('click', () => {
+  const input = document.getElementById('ask-input');
+  if(input.value.trim()) {
+    percyRespond('User', { message: input.value });
+    input.value = '';
+  }
+});
+
+document.getElementById('ask-input').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') document.getElementById('ask-btn').click();
+});
 
 /* =========================
 MUTATION ENGINE (SELF-WRITING)
