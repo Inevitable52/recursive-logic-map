@@ -4,37 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Percy Recursive Logic Map</title>
+
+  <!-- Percy CSS -->
   <link rel="stylesheet" href="style.css?v=6.4" />
-  <style>
-    /* Minimal CSS fixes for nodes & map */
-    #logic-map {
-      position: relative;
-      width: 100%;
-      height: 70vh;
-      background: #111;
-      overflow: hidden;
-    }
-    #logic-nodes .node {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      font-size: 12px;
-      color: #fff;
-      background: rgba(50,50,50,0.7);
-      border: 1px solid #888;
-      cursor: pointer;
-      transition: all 0.2s;
-      user-select: none;
-    }
-    #logic-nodes .node:hover { background: #3764ff; color: #fff; transform: scale(1.2); }
-    .zoom-controls { text-align:center; margin:8px 0; }
-    #percy-console { max-height: 200px; overflow-y: auto; background:#1a1a1a; padding:6px; margin-top:8px; border-radius:6px; font-size:12px; }
-    #percy-message { margin-top:4px; font-style:italic; color:#ccc; text-align:center; min-height:24px; }
-    #seed-search { width: 200px; padding:4px 6px; margin:6px auto; display:block; border-radius:4px; border:1px solid #444; background:#111; color:#eee; }
-    #ask-input { padding:4px 6px; border-radius:4px; border:1px solid #444; background:#111; color:#eee; width:180px; }
-    #ask-btn { padding:4px 8px; border-radius:4px; background:#3764ff; border:1px solid #2a4de0; color:#fff; cursor:pointer; }
-  </style>
 </head>
 <body>
   <header style="text-align:center; padding:10px;">
@@ -58,10 +30,7 @@
     </div>
 
     <!-- Message & Console -->
-    <div id="percy-message">
-      Click a logic node to hear Percy’s thoughts...
-    </div>
-
+    <div id="percy-message">Click a logic node to hear Percy’s thoughts...</div>
     <div id="percy-console">
       <p class="console-line">Percy initialized. Click a node.</p>
     </div>
