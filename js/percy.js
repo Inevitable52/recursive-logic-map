@@ -113,24 +113,36 @@ function createNodes() {
 }
 
 function layoutRing(startId, endId, width, height, radius, colorClass, nodeSize) {
-  const ringSeeds = Object.entries(seeds).filter(([id]) => {
-    const num = parseInt(id.replace("G", ""));
-    return num >= startId && num <= endId;
-  });
-  const total = ringSeeds.length;
-  ringSeeds.forEach(([filename, data], index) => {
-    const angle = (index / total) * 2 * Math.PI;
-    const node = document.createElement('div');
-    node.classList.add('node');
-    if (colorClass) node.classList.add(colorClass);
-    node.style.width = `${nodeSize}px`;
-    node.style.height = `${nodeSize / 2}px`;
-    node.textContent = filename;
-    node.title = data.message;
-    node.addEventListener('click', () => percyRespond(filename, data));
-    node.addEventListener('mouseenter', () => UI.setStatus(data.message));
-    logicNodes.appendChild(node);
-  });
+    const ringSeeds = Object.entries(seeds).filter(([id]) => {
+        const num = parseInt(id.replace("G", ""));
+        return num >= startId && num <= endId;
+    });
+    const total = ringSeeds.length;
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    ringSeeds.forEach(([filename, data], index) => {
+        const angle = (index / total) * 2 * Math.PI;
+        const x = centerX + radius * Math.cos(angle) - nodeSize / 2;
+        const y = centerY + radius * Math.sin(angle) - nodeSize / 2;
+
+        const node = document.createElement('div');
+        node.classList.add('node');
+        if (colorClass) node.classList.add(colorClass);
+
+        node.style.width = `${nodeSize}px`;
+        node.style.height = `${nodeSize / 2}px`; // keep your current aspect ratio
+        node.style.left = `${x}px`;
+        node.style.top = `${y}px`;
+
+        node.textContent = filename;
+        node.title = data.message;
+
+        node.addEventListener('click', () => percyRespond(filename, data));
+        node.addEventListener('mouseenter', () => UI.setStatus(data.message));
+
+        logicNodes.appendChild(node);
+    });
 }
 
 function applyTransform() {
