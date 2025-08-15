@@ -269,7 +269,8 @@ AUTONOMOUS LEARNING
 const TrustedSources=[
   "https://www.dictionary.com",
   "https://www.merriam-webster.com",
-  "https://en.wikipedia.org"
+  "https://en.wikipedia.org",
+  "https://api.allorigins.win"
 ];
 
 Tasks.register.autoLearn=async ({url})=>{
