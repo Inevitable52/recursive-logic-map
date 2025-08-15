@@ -136,8 +136,8 @@ function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
   });
 }
 
-function applyTransform(){
-  logicNodes.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomLevel})`;
+function applyTransform() {
+  logicNodes.style.transform = `translate(-50%, -50%) translate(${translateX}px, ${translateY}px) scale(${zoomLevel})`;
   logicNodes.style.transformOrigin = 'center center';
   document.querySelectorAll('.node').forEach(n => n.style.fontSize = `${12*(1/zoomLevel)}px`);
 }
