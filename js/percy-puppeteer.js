@@ -44,6 +44,22 @@ async function browsePage(url, clickSelector = null, waitSelector = null) {
     return text;
 }
 
+async function clickSelector(url, selector) {
+    const browser = await launchBrowser(false);
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: 'networkidle2' });
+    await page.click(selector);
+    return `Clicked ${selector} on ${url}`;
+}
+
+async function typeText(url, selector, text) {
+    const browser = await launchBrowser(false);
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: 'networkidle2' });
+    await page.type(selector, text, { delay: 50 });
+    return `Typed text into ${selector} on ${url}`;
+}
+
 async function takeScreenshot(url, path = 'screenshot.png') {
     const browser = await launchBrowser(true);
     const page = await browser.newPage();
@@ -74,6 +90,12 @@ wss.on('connection', ws => {
             switch (action) {
                 case 'browse':
                     result = await browsePage(params.url, params.clickSelector, params.waitSelector);
+                    break;
+                case 'click':
+                    result = await clickSelector(params.url, params.selector);
+                    break;
+                case 'type':
+                    result = await typeText(params.url, params.selector, params.text);
                     break;
                 case 'screenshot':
                     result = await takeScreenshot(params.url, params.path);
