@@ -402,10 +402,79 @@ PUPPETEER CONTROL PANEL
 })();
 
 /* =========================
-GLOBAL SHORTCUTS
+PUPPETEER AUTONOMOUS BROWSER & FORM MODULE
 ========================= */
-window.Percy={Memory,Tasks,Planner,Autonomy,UI,PercyState,refreshNodes,percyRespond,seeds,translateX,translateY,applyTransform,
-  get zoomLevel(){ return zoomLevel; },
-  set zoomLevel(v){ zoomLevel=v; applyTransform(); }
+Percy.AutoPuppeteer = {
+  active: false,
+  intervalMs: 5000,      // delay between actions
+  maxSteps: 5,           // max actions per session
+  stepsTaken: 0,
+  urls: [
+    "https://www.google.com",
+    "https://www.wikipedia.org",
+    "https://www.dictionary.com"
+  ],
+  queries: [
+    "AI learning",
+    "Percy AI test",
+    "Javascript automation",
+    "Node.js tutorial",
+    "Logical reasoning"
+  ],
+
+  start() {
+    if(this.active) return UI.say("⚠ AutoPuppeteer already running");
+    this.active = true;
+    this.stepsTaken = 0;
+    UI.say("🤖 Percy AutoPuppeteer started");
+    this._tick();
+  },
+
+  stop() {
+    this.active = false;
+    UI.say("⏹ Percy AutoPuppeteer stopped");
+  },
+
+  async _tick() {
+    if(!this.active || this.stepsTaken >= this.maxSteps) return this.stop();
+    this.stepsTaken++;
+
+    try {
+      // Pick a random URL
+      const url = this.urls[Math.floor(Math.random() * this.urls.length)];
+      await Tasks.enqueue({ type: "autoLearn", params: { url } });
+
+      // Pick a query
+      const query = this.queries[Math.floor(Math.random() * this.queries.length)];
+
+      // Type in search boxes if Google
+      if(url.includes("google.com")) {
+        await Tasks.enqueue({ type: "type", params: { url, selector: 'input[name="q"]', text: query } });
+        await Tasks.enqueue({ type: "click", params: { url, selector: 'input[name="btnK"]' } });
+      }
+
+      // Scrape page text after delay
+      setTimeout(async ()=>{
+        await Tasks.enqueue({ type: "autoLearn", params: { url } });
+      }, this.intervalMs / 2);
+
+      UI.say(`🧠 Percy action: visited ${url}, searched "${query}"`);
+    } catch(e){
+      UI.say(`❌ AutoPuppeteer error: ${e.message}`);
+    }
+
+    // Schedule next tick
+    setTimeout(()=>this._tick(), this.intervalMs + Math.random()*2000);
+  }
 };
 
+// =========================
+// GLOBAL SHORTCUTS & EXPORT
+// =========================
+window.Percy={Memory,Tasks,Planner,Autonomy,UI,PercyState,refreshNodes,percyRespond,seeds,translateX,translateY,applyTransform,
+  get zoomLevel(){ return zoomLevel; },
+  set zoomLevel(v){ zoomLevel=v; applyTransform(); },
+  // expose AutoPuppeteer controls
+  startAutoPuppeteer: ()=>Percy.AutoPuppeteer.start(),
+  stopAutoPuppeteer: ()=>Percy.AutoPuppeteer.stop()
+};
