@@ -1,42 +1,100 @@
-// === percy-puppeteer.js ===
-// Percy Puppeteer Control Module
-// Run with: node js/percy-puppeteer.js
+// === percy-puppeteer.js (Updated Phase 8.3+) ===
+// Percy Puppeteer Control Module with WebSocket Integration
+// Run: node js/percy-puppeteer.js
 
+const WebSocket = require('ws');
 const puppeteer = require('puppeteer');
 
-async function percyBrowse(url, clickSelector = null, waitSelector = null) {
-    console.log(`[Percy] Launching browser to visit: ${url}`);
+const PORT = 8787;
+const wss = new WebSocket.Server({ port: PORT });
 
-    // Launch browser
-    const browser = await puppeteer.launch({
-        headless: false, // Show the browser so you can see what's happening
-        defaultViewport: null,
-        args: ['--start-maximized']
-    });
+console.log(`🚀 Percy Puppeteer WebSocket running on ws://localhost:${PORT}`);
 
+// Default browser instance (optional)
+let browser = null;
+
+async function launchBrowser(headless = true) {
+    if (!browser) {
+        browser = await puppeteer.launch({
+            headless,
+            defaultViewport: null,
+            args: ['--start-maximized']
+        });
+    }
+    return browser;
+}
+
+// === Puppeteer Action Handlers ===
+async function browsePage(url, clickSelector = null, waitSelector = null) {
+    const browser = await launchBrowser(false);
     const page = await browser.newPage();
-
-    // Go to the URL
     await page.goto(url, { waitUntil: 'networkidle2' });
 
-    // Optional: wait for a selector before clicking
     if (waitSelector) {
-        console.log(`[Percy] Waiting for: ${waitSelector}`);
+        console.log(`[Percy] Waiting for selector: ${waitSelector}`);
         await page.waitForSelector(waitSelector);
     }
 
-    // Optional: click an element
     if (clickSelector) {
-        console.log(`[Percy] Clicking on: ${clickSelector}`);
+        console.log(`[Percy] Clicking selector: ${clickSelector}`);
         await page.click(clickSelector);
     }
 
-    // Keep browser open until you close manually
-    console.log("[Percy] Browser ready. Close it when you're done.");
+    const text = await page.evaluate(() => document.body.innerText);
+    return text;
 }
 
-(async () => {
-    // === Example usage ===
-    // Visit Google, wait for the search box, then click on it.
-    await percyBrowse("https://google.com", "input[name='q']", "input[name='q']");
-})();
+async function takeScreenshot(url, path = 'screenshot.png') {
+    const browser = await launchBrowser(true);
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: 'networkidle2' });
+    await page.screenshot({ path, fullPage: true });
+    return `Screenshot saved to ${path}`;
+}
+
+async function extractLinks(url) {
+    const browser = await launchBrowser(true);
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: 'networkidle2' });
+    const links = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('a')).map(a => a.href)
+    );
+    return links;
+}
+
+// === WebSocket Server ===
+wss.on('connection', ws => {
+    console.log('🔗 Percy connected');
+
+    ws.on('message', async message => {
+        try {
+            const { action, params } = JSON.parse(message);
+            let result = null;
+
+            switch (action) {
+                case 'browse':
+                    result = await browsePage(params.url, params.clickSelector, params.waitSelector);
+                    break;
+                case 'screenshot':
+                    result = await takeScreenshot(params.url, params.path);
+                    break;
+                case 'extractLinks':
+                    result = await extractLinks(params.url);
+                    break;
+                default:
+                    result = `❌ Unknown action: ${action}`;
+            }
+
+            ws.send(JSON.stringify({ success: true, result }));
+        } catch (err) {
+            ws.send(JSON.stringify({ success: false, error: err.message }));
+        }
+    });
+});
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+    console.log('\n🛑 Shutting down Puppeteer server...');
+    if (browser) await browser.close();
+    process.exit();
+});
