@@ -211,30 +211,91 @@ function refreshNodes(){ createNodes(); UI.say(`🔄 Logic map refreshed with ${
 /* =========================
 TASKS & AUTONOMY
 ========================= */
-const Tasks={
-  queue: Memory.load("tasks:queue",[]),
-  done: Memory.load("tasks:done",[]),
-  rate:{stamps:[]},
-  _allowNow(){ const now=Date.now(); this.rate.stamps=this.rate.stamps.filter(t=>now-t<60_000); if(this.rate.stamps.length>=SAFETY.maxActionsPerMinute) return false; this.rate.stamps.push(now); return true; },
-  register:{
-    speak: async ({text})=>UI.say(text),
-    highlightSeed: async ({seedId})=>UI.say(`🔎 focusing ${seedId}`)
+const Tasks = {
+  queue: Memory.load("tasks:queue", []),
+  done:  Memory.load("tasks:done", []),
+  rate: { stamps: [] },
+
+  _allowNow() {
+    const now = Date.now();
+    this.rate.stamps = this.rate.stamps.filter(t => now - t < 60_000);
+    if (this.rate.stamps.length >= SAFETY.maxActionsPerMinute) return false;
+    this.rate.stamps.push(now);
+    return true;
   },
-  enqueue(task){
-    if(!this.queue.some(t=>t.type===task.type && JSON.stringify(t.params)===JSON.stringify(task.params))){
-      task.id=task.id??`t_${Math.random().toString(36).slice(2,8)}`; task.ts=Date.now();
-      this.queue.push(task); Memory.save("tasks:queue",this.queue);
+
+  register: {
+    speak: async ({ text }) => UI.say(text),
+
+    highlightSeed: async ({ seedId }) => UI.say(`🔎 focusing ${seedId}`),
+
+    puppeteerCommand: async ({ action, params }) => {
+      const ws = new WebSocket('ws://localhost:8787');
+      ws.onopen = () => ws.send(JSON.stringify({ action, params }));
+      ws.onmessage = (msg) => {
+        const data = JSON.parse(msg.data);
+        UI.say(`🤖 Puppeteer: ${data.result}`);
+        ws.close();
+      };
+    },
+
+    autoLearn: async ({ url }) => {
+      if(!TrustedSources.some(domain => url.includes(domain))){
+        UI.say(`❌ URL not trusted for learning: ${url}`);
+        return;
+      }
+      const ok = await UI.confirmModal({
+        title: "Percy requests to learn from a website",
+        body: `Allow Percy to fetch and learn from:\n${url}`,
+        allowLabel: "Allow once",
+        denyLabel: "Deny"
+      });
+      if(!ok){ UI.say("❌ Learning denied."); return; }
+
+      try{
+        const res = await fetch(url);
+        const text = await res.text();
+        const parser = new DOMParser(); 
+        const doc = parser.parseFromString(text,"text/html");
+        const content = doc.body.innerText; 
+        const chunkSize = 300; 
+        let count = 0;
+        for(let i = 0; i < content.length; i += chunkSize){
+          const chunk = content.slice(i, i + chunkSize).trim();
+          if(chunk){
+            PercyState.createSeed(chunk, "learned", { source: url });
+            count++;
+          }
+        }
+        UI.say(`📚 Percy learned ${count} new seeds from ${url}`);
+      } catch(e){
+        UI.say(`❌ Learning failed: ${e.message}`);
+      }
     }
   },
-  async step(){
-    if(!this.queue.length||!this._allowNow()) return;
-    const task=this.queue.shift(); Memory.save("tasks:queue",this.queue);
-    try{
-      const fn=this.register[task.type]; if(!fn) throw new Error(`No handler for ${task.type}`);
-      await fn(task.params??{});
-      this.done.push({...task,doneTs:Date.now()});
-      Memory.save("tasks:done",this.done);
-    }catch(e){ UI.say(`❌ task error: ${e.message}`); }
+
+  enqueue(task) {
+    if (!this.queue.some(t => t.type === task.type && JSON.stringify(t.params) === JSON.stringify(task.params))) {
+      task.id = task.id ?? `t_${Math.random().toString(36).slice(2, 8)}`;
+      task.ts = Date.now();
+      this.queue.push(task);
+      Memory.save("tasks:queue", this.queue);
+    }
+  },
+
+  async step() {
+    if (!this.queue.length || !this._allowNow()) return;
+    const task = this.queue.shift();
+    Memory.save("tasks:queue", this.queue);
+    try {
+      const fn = this.register[task.type];
+      if (!fn) throw new Error(`No handler for ${task.type}`);
+      await fn(task.params ?? {});
+      this.done.push({ ...task, doneTs: Date.now() });
+      Memory.save("tasks:done", this.done);
+    } catch (e) {
+      UI.say(`❌ task error: ${e.message}`);
+    }
   }
 };
 
@@ -244,33 +305,6 @@ const TrustedSources=[
   "https://en.wikipedia.org",
   "https://api.allorigins.win"
 ];
-
-Tasks.register.autoLearn=async ({url})=>{
-  if(!TrustedSources.some(domain=>url.includes(domain))){ UI.say(`❌ URL not trusted for learning: ${url}`); return; }
-  const ok=await UI.confirmModal({title:"Percy requests to learn from a website", body:`Allow Percy to fetch and learn from:\n${url}`, allowLabel:"Allow once", denyLabel:"Deny"});
-  if(!ok){ UI.say("❌ Learning denied."); return; }
-  try{
-    const res=await fetch(url);
-    const text=await res.text();
-    const parser=new DOMParser(); const doc=parser.parseFromString(text,"text/html");
-    const content=doc.body.innerText; const chunkSize=300; let count=0;
-    for(let i=0;i<content.length;i+=chunkSize){ const chunk=content.slice(i,i+chunkSize).trim(); if(chunk){ PercyState.createSeed(chunk,"learned",{source:url}); count++; } }
-    UI.say(`📚 Percy learned ${count} new seeds from ${url}`);
-  }catch(e){ UI.say(`❌ Learning failed: ${e.message}`); }
-};
-register: {
-  speak: async ({text}) => UI.say(text),
-  highlightSeed: async ({seedId}) => UI.say(`🔎 focusing ${seedId}`),
-  puppeteerCommand: async ({ action, params }) => {
-    const ws = new WebSocket('ws://localhost:8787');
-    ws.onopen = () => ws.send(JSON.stringify({ action, params }));
-    ws.onmessage = (msg) => {
-      const data = JSON.parse(msg.data);
-      UI.say(`🤖 Puppeteer: ${data.result}`);
-      ws.close();
-    };
-  }
-}
 
 /* =========================
 PLANNER & AUTONOMY LOOP
