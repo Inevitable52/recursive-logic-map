@@ -303,6 +303,7 @@ const TrustedSources=[
   "https://www.dictionary.com",
   "https://www.merriam-webster.com",
   "https://en.wikipedia.org",
+  "https://gemini.google.com/app",
   "https://api.allorigins.win"
 ];
 
