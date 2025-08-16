@@ -258,6 +258,19 @@ Tasks.register.autoLearn=async ({url})=>{
     UI.say(`📚 Percy learned ${count} new seeds from ${url}`);
   }catch(e){ UI.say(`❌ Learning failed: ${e.message}`); }
 };
+register: {
+  speak: async ({text}) => UI.say(text),
+  highlightSeed: async ({seedId}) => UI.say(`🔎 focusing ${seedId}`),
+  puppeteerCommand: async ({ action, params }) => {
+    const ws = new WebSocket('ws://localhost:8787');
+    ws.onopen = () => ws.send(JSON.stringify({ action, params }));
+    ws.onmessage = (msg) => {
+      const data = JSON.parse(msg.data);
+      UI.say(`🤖 Puppeteer: ${data.result}`);
+      ws.close();
+    };
+  }
+}
 
 /* =========================
 PLANNER & AUTONOMY LOOP
