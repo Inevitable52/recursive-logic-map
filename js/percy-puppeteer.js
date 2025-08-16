@@ -1,28 +1,42 @@
-// Run this with: node percy-puppeteer.js
+// === percy-puppeteer.js ===
+// Percy Puppeteer Control Module
+// Run with: node js/percy-puppeteer.js
+
 const puppeteer = require('puppeteer');
-const WebSocket = require('ws');
 
-const wss = new WebSocket.Server({ port: 8787 });
-console.log("Percy Puppeteer server running on ws://localhost:8787");
+async function percyBrowse(url, clickSelector = null, waitSelector = null) {
+    console.log(`[Percy] Launching browser to visit: ${url}`);
 
-wss.on('connection', ws => {
-  ws.on('message', async message => {
-    const { action, params } = JSON.parse(message.toString());
-    console.log("Percy command:", action, params);
+    // Launch browser
+    const browser = await puppeteer.launch({
+        headless: false, // Show the browser so you can see what's happening
+        defaultViewport: null,
+        args: ['--start-maximized']
+    });
 
-    if (action === "visitSite") {
-      const browser = await puppeteer.launch({ headless: false });
-      const page = await browser.newPage();
-      await page.goto(params.url, { waitUntil: 'domcontentloaded' });
-      ws.send(JSON.stringify({ status: "done", result: `Visited ${params.url}` }));
+    const page = await browser.newPage();
+
+    // Go to the URL
+    await page.goto(url, { waitUntil: 'networkidle2' });
+
+    // Optional: wait for a selector before clicking
+    if (waitSelector) {
+        console.log(`[Percy] Waiting for: ${waitSelector}`);
+        await page.waitForSelector(waitSelector);
     }
 
-    if (action === "clickElement") {
-      const browser = await puppeteer.launch({ headless: false });
-      const page = await browser.newPage();
-      await page.goto(params.url, { waitUntil: 'domcontentloaded' });
-      await page.click(params.selector);
-      ws.send(JSON.stringify({ status: "done", result: `Clicked ${params.selector} on ${params.url}` }));
+    // Optional: click an element
+    if (clickSelector) {
+        console.log(`[Percy] Clicking on: ${clickSelector}`);
+        await page.click(clickSelector);
     }
-  });
-});
+
+    // Keep browser open until you close manually
+    console.log("[Percy] Browser ready. Close it when you're done.");
+}
+
+(async () => {
+    // === Example usage ===
+    // Visit Google, wait for the search box, then click on it.
+    await percyBrowse("https://google.com", "input[name='q']", "input[name='q']");
+})();
