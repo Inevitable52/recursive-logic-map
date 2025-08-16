@@ -1,5 +1,4 @@
-// === percy.js (Phase 8.3 update from 8.2 + Persistent Self-Writing / Meta-Mutation + Auto-Learn + Search & Zoom) ===
-
+// === percy.js (Phase 8.3 update) ===
 /* =========================
 CONFIG & ULT AUTHORITY
 ========================= */
@@ -239,6 +238,14 @@ const Tasks = {
       };
     },
 
+    click: async ({ url, selector }) => {
+      await Tasks.register.puppeteerCommand({ action: "click", params: { url, selector } });
+    },
+
+    type: async ({ url, selector, text }) => {
+      await Tasks.register.puppeteerCommand({ action: "type", params: { url, selector, text } });
+    },
+
     autoLearn: async ({ url }) => {
       if(!TrustedSources.some(domain => url.includes(domain))){
         UI.say(`❌ URL not trusted for learning: ${url}`);
@@ -345,3 +352,4 @@ window.Percy={Memory,Tasks,Planner,Autonomy,UI,PercyState,refreshNodes,percyResp
   get zoomLevel(){ return zoomLevel; },
   set zoomLevel(v){ zoomLevel=v; applyTransform(); }
 };
+
