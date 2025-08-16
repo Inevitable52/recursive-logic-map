@@ -346,6 +346,62 @@ STARTUP
 })();
 
 /* =========================
+PUPPETEER CONTROL PANEL
+========================= */
+(function createPuppeteerPanel(){
+  const panel = document.createElement('div');
+  panel.id = 'puppeteer-panel';
+  panel.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(15,15,20,0.95);
+    color: white;
+    border: 1px solid #444;
+    border-radius: 12px;
+    padding: 12px 16px;
+    width: 260px;
+    font-family: Arial,sans-serif;
+    z-index: 99999;
+  `;
+
+  panel.innerHTML = `
+    <h4 style="margin:0 0 8px 0;font-size:16px;">Puppeteer Control</h4>
+    <label>URL:</label><input id="pp-url" type="text" style="width:100%;margin-bottom:6px"/>
+    <label>Selector:</label><input id="pp-selector" type="text" style="width:100%;margin-bottom:6px"/>
+    <label>Text (for type):</label><input id="pp-text" type="text" style="width:100%;margin-bottom:8px"/>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button id="pp-click" style="flex:1;background:#3764ff;color:white;border:none;padding:6px;border-radius:8px">Click</button>
+      <button id="pp-type" style="flex:1;background:#2ac66d;color:white;border:none;padding:6px;border-radius:8px">Type</button>
+    </div>
+  `;
+  document.body.appendChild(panel);
+
+  const urlInput = document.getElementById('pp-url');
+  const selInput = document.getElementById('pp-selector');
+  const textInput = document.getElementById('pp-text');
+  const clickBtn = document.getElementById('pp-click');
+  const typeBtn = document.getElementById('pp-type');
+
+  clickBtn.onclick = () => {
+    const url = urlInput.value.trim();
+    const selector = selInput.value.trim();
+    if(!url || !selector){ UI.say("❌ URL and Selector required for click."); return; }
+    Tasks.enqueue({ type: "click", params: { url, selector } });
+    UI.say(`🖱 Click task enqueued for ${selector} at ${url}`);
+  };
+
+  typeBtn.onclick = () => {
+    const url = urlInput.value.trim();
+    const selector = selInput.value.trim();
+    const text = textInput.value;
+    if(!url || !selector){ UI.say("❌ URL and Selector required for type."); return; }
+    Tasks.enqueue({ type: "type", params: { url, selector, text } });
+    UI.say(`⌨ Type task enqueued for ${selector} at ${url}: "${text}"`);
+  };
+})();
+
+/* =========================
 GLOBAL SHORTCUTS
 ========================= */
 window.Percy={Memory,Tasks,Planner,Autonomy,UI,PercyState,refreshNodes,percyRespond,seeds,translateX,translateY,applyTransform,
