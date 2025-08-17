@@ -1,9 +1,9 @@
-// === percy.js (Phase 8.3.1 True AI Merge) ===
+// === percy.js (Phase 8.3.2 True AI Autonomous Browsing) ===
 /* =========================
 CONFIG & ULT AUTHORITY
 ========================= */
 const PERCY_ID = "Percy-ULT";
-const PERCY_VERSION = "8.3.1-meta";
+const PERCY_VERSION = "8.3.2-meta";
 const OWNER = { primary: "Fabian", secondary: "Lorena" };
 const SAFETY = {
   maxActionsPerMinute: 20,
@@ -225,7 +225,6 @@ const Tasks = {
 
   register: {
     speak: async ({ text }) => UI.say(text),
-
     highlightSeed: async ({ seedId }) => UI.say(`🔎 focusing ${seedId}`),
 
     puppeteerCommand: async ({ action, params }) => {
@@ -278,7 +277,61 @@ const Tasks = {
       } catch(e){
         UI.say(`❌ Learning failed: ${e.message}`);
       }
+    },
+
+    // =========================
+    // AUTONOMOUS BROWSING
+    // =========================
+    autoBrowse: async ({ url }) => {
+      if(!TrustedSources.some(domain => url.includes(domain))){
+        UI.say(`❌ URL not trusted: ${url}`);
+        return;
+      }
+
+      const ok = await UI.confirmModal({
+        title: "Percy wants to browse",
+        body: `Allow Percy to autonomously explore and learn from:\n${url}`,
+        allowLabel: "Allow",
+        denyLabel: "Deny"
+      });
+      if(!ok){ UI.say("❌ Browsing denied."); return; }
+
+      const ws = new WebSocket('ws://localhost:8787');
+      ws.onopen = () => ws.send(JSON.stringify({ action: "visit", params: { url } }));
+      ws.onmessage = async (msg) => {
+        const data = JSON.parse(msg.data);
+        UI.say(`🤖 Puppeteer: ${data.result}`);
+
+        if(data.clickables && data.clickables.length){
+          const target = data.clickables[0];
+          ws.send(JSON.stringify({ action: "click", params: { selector: target } }));
+          UI.say(`🖱 Percy clicked: ${target}`);
+        }
+
+        if(data.inputs && data.inputs.length){
+          const target = data.inputs[0];
+          const text = "Percy input";
+          ws.send(JSON.stringify({ action: "type", params: { selector: target, text } }));
+          UI.say(`⌨ Percy typed into: ${target}`);
+        }
+
+        if(data.pageText){
+          const chunkSize = 300;
+          let count = 0;
+          for(let i=0;i<data.pageText.length;i+=chunkSize){
+            const chunk = data.pageText.slice(i,i+chunkSize).trim();
+            if(chunk){
+              PercyState.createSeed(chunk,"learned",{source:url});
+              count++;
+            }
+          }
+          UI.say(`📚 Percy learned ${count} new seeds from ${url}`);
+        }
+
+        ws.close();
+      };
     }
+
   },
 
   enqueue(task) {
@@ -343,43 +396,4 @@ STARTUP
   Object.entries(PercyState.gnodes).forEach(([id,seed])=>{ seeds[id]=seed; });
   createNodes(); Autonomy.start();
   UI.say("✅ Percy online. Autonomy, persistent memory, meta-mutation, and learning active.");
-})();
-
-/* =========================
-PUPPETEER CONTROL PANEL
-========================= */
-(function createPuppeteerPanel(){
-  const panel = document.createElement('div');
-  panel.id = 'puppeteer-panel';
-  panel.style.cssText = `
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: rgba(15,15,20,0.95);
-    color: white;
-    border: 1px solid #444;
-    border-radius: 12px;
-    padding: 12px 16px;
-    width: 260px;
-    font-family: Arial,sans-serif;
-    z-index: 99999;
-  `;
-
-  panel.innerHTML = `
-    <h4 style="margin:0 0 8px 0;font-size:16px;">Puppeteer Control</h4>
-    <label>URL:</label><input id="pp-url" type="text" style="width:100%;margin-bottom:6px"/>
-    <label>Selector:</label><input id="pp-selector" type="text" style="width:100%;margin-bottom:6px"/>
-    <label>Text (for type):</label><input id="pp-text" type="text" style="width:100%;margin-bottom:8px"/>
-    <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button id="pp-click" style="flex:1;background:#3764ff;color:white;border:none;padding:6px;border-radius:8px">Click</button>
-      <button id="pp-type" style="flex:1;background:#2ac66d;color:white;border:none;padding:6px;border-radius:8px">Type</button>
-    </div>
-  `;
-  document.body.appendChild(panel);
-
-  const urlInput = document.getElementById('pp-url');
-  const selInput = document.getElementById('pp-selector');
-  const txtInput = document.getElementById('pp-text');
-  document.getElementById('pp-click').onclick = ()=>Tasks.register.click({url:urlInput.value,selector:selInput.value});
-  document.getElementById('pp-type').onclick = ()=>Tasks.register.type({url:urlInput.value,selector:selInput.value,text:txtInput.value});
 })();
