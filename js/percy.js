@@ -224,26 +224,56 @@ const Tasks = {
   },
 
   register: {
-    speak: async ({ text }) => UI.say(text),
-    highlightSeed: async ({ seedId }) => UI.say(`🔎 focusing ${seedId}`),
+  speak: async ({ text }) => UI.say(text),
+  highlightSeed: async ({ seedId }) => UI.say(`🔎 focusing ${seedId}`),
 
-    puppeteerCommand: async ({ action, params }) => {
+  puppeteerCommand: ({ action, params }) => {
+    return new Promise((resolve, reject) => {
+      if(!params || !params.url) return resolve("❌ Missing URL");
       const ws = new WebSocket('ws://localhost:8787');
-      ws.onopen = () => ws.send(JSON.stringify({ action, params }));
-      ws.onmessage = (msg) => {
-        const data = JSON.parse(msg.data);
-        UI.say(`🤖 Puppeteer: ${data.result}`);
-        ws.close();
+
+      ws.onopen = () => {
+        UI.say(`🔗 Puppeteer connected, sending action: ${action}`);
+        ws.send(JSON.stringify({ action, params }));
       };
-    },
 
-    click: async ({ url, selector }) => {
-      await Tasks.register.puppeteerCommand({ action: "click", params: { url, selector } });
-    },
+      ws.onmessage = (msg) => {
+        try {
+          const data = JSON.parse(msg.data);
+          const resultMsg = data.result ?? "✅ Action executed";
+          UI.say(`🤖 Puppeteer: ${resultMsg}`);
+          ws.close();
+          resolve(resultMsg);
+        } catch(e) {
+          UI.say(`❌ Puppeteer error parsing response: ${e.message}`);
+          ws.close();
+          resolve(`❌ Error`);
+        }
+      };
 
-    type: async ({ url, selector, text }) => {
-      await Tasks.register.puppeteerCommand({ action: "type", params: { url, selector, text } });
-    },
+      ws.onerror = (err) => {
+        UI.say(`❌ Puppeteer WebSocket error: ${err.message}`);
+        ws.close();
+        resolve(`❌ WebSocket error`);
+      };
+    });
+  },
+
+  click: async ({ url, selector }) => {
+    if(!url) return UI.say("❌ Click failed: URL missing");
+    if(!selector) return UI.say("❌ Click failed: selector missing");
+    await Tasks.register.puppeteerCommand({ action: "click", params: { url, selector } });
+  },
+
+  type: async ({ url, selector, text }) => {
+    if(!url) return UI.say("❌ Type failed: URL missing");
+    if(!selector) return UI.say("❌ Type failed: selector missing");
+    if(!text) return UI.say("❌ Type failed: text missing");
+    await Tasks.register.puppeteerCommand({ action: "type", params: { url, selector, text } });
+  },
+  
+  // ... rest of autoLearn and autoBrowse remain unchanged
+}
 
     autoLearn: async ({ url }) => {
       if(!TrustedSources.some(domain => url.includes(domain))){
