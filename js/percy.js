@@ -226,7 +226,8 @@ const Tasks = {
   register: {
   speak: async ({ text }) => UI.say(text),
   highlightSeed: async ({ seedId }) => UI.say(`🔎 focusing ${seedId}`),
-
+  },
+  
   puppeteerCommand: ({ action, params }) => {
     return new Promise((resolve, reject) => {
       if(!params || !params.url) return resolve("❌ Missing URL");
