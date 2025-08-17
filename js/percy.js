@@ -1,4 +1,4 @@
-// === percy.js (Phase 8.3.2 True AI Autonomous Browsing) ===
+// === percy.js (Phase 8.3.2 True AI Autonomous Browsing + Puppeteer Panel) ===
 /* =========================
 CONFIG & ULT AUTHORITY
 ========================= */
@@ -279,9 +279,6 @@ const Tasks = {
       }
     },
 
-    // =========================
-    // AUTONOMOUS BROWSING
-    // =========================
     autoBrowse: async ({ url }) => {
       if(!TrustedSources.some(domain => url.includes(domain))){
         UI.say(`❌ URL not trusted: ${url}`);
@@ -331,7 +328,6 @@ const Tasks = {
         ws.close();
       };
     }
-
   },
 
   enqueue(task) {
@@ -371,7 +367,9 @@ const TrustedSources=[
 PLANNER & AUTONOMY LOOP
 ========================= */
 const Planner={
+
   goals: Memory.load("goals",[ {id:"greetOwner",when:"onStart",task:{type:"speak",params:{text:"👋 Percy online. Autonomy loop active."}}} ]),
+
   onStart(){ this.goals.filter(g=>g.when==="onStart").forEach(g=>Tasks.enqueue(g.task)); }
 };
 
@@ -388,6 +386,31 @@ const Autonomy={
 };
 
 /* =========================
+PUPPETEER CONTROL PANEL
+========================= */
+(function createPuppeteerPanel(){
+  const panel = document.createElement('div');
+  panel.id = 'puppeteer-panel';
+  panel.style.cssText = "position:fixed;bottom:12px;right:12px;background:#111;padding:12px;border:1px solid #444;border-radius:12px;color:white;z-index:99999;width:260px;font-size:12px;";
+  panel.innerHTML = `
+    <h4 style="margin:0 0 6px 0;font-size:14px;">Puppeteer Control</h4>
+    <input id="pp-url" placeholder="URL" style="width:100%;margin-bottom:4px;font-size:12px;">
+    <input id="pp-selector" placeholder="Selector" style="width:100%;margin-bottom:4px;font-size:12px;">
+    <input id="pp-text" placeholder="Text" style="width:100%;margin-bottom:4px;font-size:12px;">
+    <button id="pp-click" style="width:48%;margin-right:4%;font-size:12px;">Click</button>
+    <button id="pp-type" style="width:48%;font-size:12px;">Type</button>
+  `;
+  document.body.appendChild(panel);
+
+  const urlInput = document.getElementById('pp-url');
+  const selInput = document.getElementById('pp-selector');
+  const txtInput = document.getElementById('pp-text');
+
+  document.getElementById('pp-click').onclick = ()=>Tasks.register.click({url:urlInput.value,selector:selInput.value});
+  document.getElementById('pp-type').onclick = ()=>Tasks.register.type({url:urlInput.value,selector:selInput.value,text:txtInput.value});
+})();
+
+/* =========================
 STARTUP
 ========================= */
 (async function startupPercy(){
@@ -395,5 +418,5 @@ STARTUP
   await loadSeeds();
   Object.entries(PercyState.gnodes).forEach(([id,seed])=>{ seeds[id]=seed; });
   createNodes(); Autonomy.start();
-  UI.say("✅ Percy online. Autonomy, persistent memory, meta-mutation, and learning active.");
+  UI.say("✅ Percy online. Autonomy, persistent memory, meta-mutation, learning, and Puppeteer control active.");
 })();
