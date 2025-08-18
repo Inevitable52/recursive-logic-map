@@ -274,23 +274,38 @@ const Tasks = {
     },
 
     autoLearn: async ({ url }) => {
-      if(!TrustedSources.some(domain=>url.includes(domain))){ UI.say(`❌ URL not trusted: ${url}`); return; }
-      const ok = await UI.confirmModal({ title:"Percy requests to learn from a website", body:`Allow Percy to fetch and learn from:\n${url}`, allowLabel:"Allow once", denyLabel:"Deny" });
-      if(!ok){ UI.say("❌ Learning denied."); return; }
-      try{
-        const res = await fetch(url); const text = await res.text();
-        const parser = new DOMParser(); const doc = parser.parseFromString(text,"text/html");
-        const content = doc.body.innerText; 
-        const chunkSize = 300; let count = 0;
-        for(let i=0;i<content.length;i+=chunkSize){
-          const chunk = content.slice(i,i+chunkSize).trim();
-          if(chunk){ PercyState.createSeed(chunk,"learned",{source:url}); count++; }
-        }
-        UI.say(`📚 Percy learned ${count} new seeds from ${url}`);
-      }catch(e){ UI.say(`❌ Learning failed: ${e.message}`); }
+      if (!TrustedSources.some(domain => url.includes(domain))) {
+        UI.say(`❌ URL not trusted: ${url}`);
+        return;
+      }
+
+      const ok = await UI.confirmModal({
+        title: "Percy requests to learn from a website",
+        body: `Allow Percy to fetch and learn from:\n${url}`,
+        allowLabel: "Allow once",
+        denyLabel: "Deny"
+      });
+      if (!ok) { UI.say("❌ Learning denied."); return; }
+
+      const ws = new WebSocket('ws://localhost:8787');
+      ws.onopen = () => ws.send(JSON.stringify({ action: "getText", params: { url } }));
+      ws.onmessage = async msg => {
+        try {
+          const data = JSON.parse(msg.data);
+          if (!data.pageText) { UI.say("⚠ No text returned."); ws.close(); return; }
+          const chunkSize = 300; let count = 0;
+          for (let i = 0; i < data.pageText.length; i += chunkSize) {
+            const chunk = data.pageText.slice(i, i + chunkSize).trim();
+            if (chunk) { PercyState.createSeed(chunk, "learned", { source: url }); count++; }
+          }
+          UI.say(`📚 Percy learned ${count} new seeds from ${url}`);
+        } catch(e) { UI.say(`❌ Learning failed: ${e.message}`); }
+        ws.close();
+      };
+      ws.onerror = err => { UI.say(`❌ WebSocket error: ${err.message}`); ws.close(); };
     },
 
-    autoBrowse: async ({ url })=>{
+    autoBrowse: async ({ url })=>{ 
       if(!TrustedSources.some(domain=>url.includes(domain))){ UI.say(`❌ URL not trusted: ${url}`); return; }
       const ok = await UI.confirmModal({ title:"Percy wants to browse", body:`Allow Percy to autonomously explore and learn from:\n${url}`, allowLabel:"Allow", denyLabel:"Deny" });
       if(!ok){ UI.say("❌ Browsing denied."); return; }
