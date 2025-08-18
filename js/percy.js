@@ -227,6 +227,7 @@ const TrustedSources=[
   "https://www.merriam-webster.com",
   "https://en.wikipedia.org",
   "https://gemini.google.com/app",
+  "https://chatgpt.com/c/68a29784-d3b0-832b-9327-b3abf00c98fc",
   "https://api.allorigins.win"
 ];
 
