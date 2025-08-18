@@ -1,11 +1,10 @@
 // =========================
-// Percy Puppeteer WebSocket Server
+// Percy Puppeteer WebSocket Server (Improved)
 // =========================
 const WebSocket = require('ws');
 const puppeteer = require('puppeteer');
 
 const wss = new WebSocket.Server({ port: 8787 });
-
 console.log("🚀 Percy Puppeteer WS server running on ws://localhost:8787");
 
 wss.on('connection', ws => {
@@ -26,13 +25,20 @@ wss.on('connection', ws => {
       if (!page) page = await browser.newPage();
 
       if (action === "visit") {
-        await page.goto(params.url, { waitUntil: "domcontentloaded" });
-        ws.send(JSON.stringify({ 
-          result: `Visited ${params.url}`, 
-          pageText: await page.evaluate(() => document.body.innerText), 
-          clickables: await page.evaluate(() => Array.from(document.querySelectorAll('a,button')).map(el=>el.tagName==="A"?el.href:el.textContent)), 
-          inputs: await page.evaluate(() => Array.from(document.querySelectorAll('input,textarea')).map(el=>el.name || el.id || el.type))
-        }));
+        await page.goto(params.url, { waitUntil: "networkidle2" }); // <-- wait for network to finish
+        await page.waitForTimeout(2000); // optional: allow dynamic JS to render
+
+        const pageText = await page.evaluate(() => document.body.innerText);
+        const clickables = await page.evaluate(() =>
+          Array.from(document.querySelectorAll('a,button'))
+            .map(el => el.tagName === "A" ? el.href : el.textContent)
+        );
+        const inputs = await page.evaluate(() =>
+          Array.from(document.querySelectorAll('input,textarea'))
+            .map(el => el.name || el.id || el.type)
+        );
+
+        ws.send(JSON.stringify({ result: `Visited ${params.url}`, pageText, clickables, inputs }));
       }
 
       else if (action === "click") {
@@ -58,3 +64,4 @@ wss.on('connection', ws => {
     if (browser) await browser.close(); 
   });
 });
+
