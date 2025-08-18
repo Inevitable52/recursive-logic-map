@@ -30,17 +30,17 @@ const PercyState = {
   gnodes: Memory.load("gnodes",{}),
 
   getNextId() {
-    let next=801;
+    let next = 801;
     while(this.gnodes[`G${String(next).padStart(3,'0')}`]) next++;
     return `G${String(next).padStart(3,'0')}`;
   },
 
-  createSeed(message,type='emergent',data={}){ 
+  createSeed(message,type='emergent',data={}) {
     if(!OWNER.primary) return UI.say("❌ ULT required to create seed");
-    const id=this.getNextId();
-    this.gnodes[id]={message,type,data};
+    const id = this.getNextId();
+    this.gnodes[id] = { message, type, data };
     Memory.save("gnodes",this.gnodes);
-    seeds[id]=this.gnodes[id];
+    seeds[id] = this.gnodes[id];
     UI.say(`✨ Percy created new seed ${id}: ${message}`);
     refreshNodes();
     return id;
@@ -50,14 +50,14 @@ const PercyState = {
     if(!this.gnodes[id]) return UI.say(`⚠ Cannot update: ${id} not found`);
     Object.assign(this.gnodes[id],update);
     Memory.save("gnodes",this.gnodes);
-    seeds[id]=this.gnodes[id];
+    seeds[id] = this.gnodes[id];
     UI.say(`🔧 Percy updated seed ${id}`);
     refreshNodes();
   },
 
   evaluateSelf(){
-    let created=0;
-    const updatedIds=new Set();
+    let created = 0;
+    const updatedIds = new Set();
     Object.entries(this.gnodes).forEach(([id,seed])=>{
       if(created>=SAFETY.maxSeedsPerCycle) return;
       if(/TODO|missing|empty/.test(seed.message) && !updatedIds.has(id)){
@@ -117,7 +117,7 @@ logicNodes.style.width='100%'; logicNodes.style.height='100%';
 logicNodes.style.transform='translate(-50%,-50%) scale(1)';
 
 let zoomLevel=1,translateX=0,translateY=0;
-let seeds={}; 
+let seeds={};
 const seedsFolder='logic_seeds/';
 const seedRange={start:80,end:800};
 
@@ -246,8 +246,9 @@ const Tasks = {
   register: {
     speak: async ({ text }) => UI.say(text),
     highlightSeed: async ({ seedId }) => UI.say(`🔎 focusing ${seedId}`),
+
     puppeteerCommand: async ({ action, params }) => {
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve)=>{
         if(!params || !params.url) return resolve("❌ Missing URL");
         const ws = new WebSocket('ws://localhost:8787');
         ws.onopen = ()=>{ UI.say(`🔗 Puppeteer connected, sending action: ${action}`); ws.send(JSON.stringify({action,params})); };
@@ -257,13 +258,12 @@ const Tasks = {
             UI.say(`🤖 Puppeteer: ${data.result ?? "✅ Action executed"}`);
             ws.close();
             resolve(data.result ?? "✅ Action executed");
-          }catch(e){
-            UI.say(`❌ Puppeteer error: ${e.message}`); ws.close(); resolve("❌ Error");
-          }
+          }catch(e){ UI.say(`❌ Puppeteer error: ${e.message}`); ws.close(); resolve("❌ Error"); }
         };
         ws.onerror = err => { UI.say(`❌ Puppeteer WebSocket error: ${err.message}`); ws.close(); resolve("❌ WebSocket error"); };
       });
     },
+
     click: async ({ url, selector }) => { 
       if(!url || !selector) return UI.say("❌ Click failed: missing URL or selector"); 
       await Tasks.register.puppeteerCommand({ action: "click", params: { url, selector } }); 
@@ -272,6 +272,7 @@ const Tasks = {
       if(!url || !selector || !text) return UI.say("❌ Type failed: missing parameters"); 
       await Tasks.register.puppeteerCommand({ action: "type", params: { url, selector, text } }); 
     },
+
     autoLearn: async ({ url }) => {
       if(!TrustedSources.some(domain=>url.includes(domain))){ UI.say(`❌ URL not trusted: ${url}`); return; }
       const ok = await UI.confirmModal({ title:"Percy requests to learn from a website", body:`Allow Percy to fetch and learn from:\n${url}`, allowLabel:"Allow once", denyLabel:"Deny" });
@@ -288,18 +289,36 @@ const Tasks = {
         UI.say(`📚 Percy learned ${count} new seeds from ${url}`);
       }catch(e){ UI.say(`❌ Learning failed: ${e.message}`); }
     },
+
     autoBrowse: async ({ url })=>{
       if(!TrustedSources.some(domain=>url.includes(domain))){ UI.say(`❌ URL not trusted: ${url}`); return; }
       const ok = await UI.confirmModal({ title:"Percy wants to browse", body:`Allow Percy to autonomously explore and learn from:\n${url}`, allowLabel:"Allow", denyLabel:"Deny" });
       if(!ok){ UI.say("❌ Browsing denied."); return; }
+
       const ws = new WebSocket('ws://localhost:8787');
       ws.onopen = ()=> ws.send(JSON.stringify({ action:"visit", params:{ url } }));
       ws.onmessage = async msg=>{
         const data = JSON.parse(msg.data);
         UI.say(`🤖 Puppeteer: ${data.result}`);
-        if(data.clickables?.length){ const target=data.clickables[0]; ws.send(JSON.stringify({ action:"click", params:{ selector:target }})); UI.say(`🖱 Percy clicked: ${target}`); }
-        if(data.inputs?.length){ const target=data.inputs[0]; const text="Percy input"; ws.send(JSON.stringify({ action:"type", params:{ selector:target, text }})); UI.say(`⌨ Percy typed into: ${target}`); }
-        if(data.pageText){ const chunkSize=300; let count=0; for(let i=0;i<data.pageText.length;i+=chunkSize){ const chunk=data.pageText.slice(i,i+chunkSize).trim(); if(chunk){ PercyState.createSeed(chunk,"learned",{source:url}); count++; } } UI.say(`📚 Percy learned ${count} new seeds from ${url}`); }
+        if(data.clickables?.length){ 
+          const target=data.clickables[0]; 
+          ws.send(JSON.stringify({ action:"click", params:{ selector:target }})); 
+          UI.say(`🖱 Percy clicked: ${target}`); 
+        }
+        if(data.inputs?.length){ 
+          const target=data.inputs[0]; 
+          const text="Percy input"; 
+          ws.send(JSON.stringify({ action:"type", params:{ selector:target, text }})); 
+          UI.say(`⌨ Percy typed into: ${target}`); 
+        }
+        if(data.pageText){ 
+          const chunkSize=300; let count=0; 
+          for(let i=0;i<data.pageText.length;i+=chunkSize){ 
+            const chunk=data.pageText.slice(i,i+chunkSize).trim(); 
+            if(chunk){ PercyState.createSeed(chunk,"learned",{source:url}); count++; } 
+          } 
+          UI.say(`📚 Percy learned ${count} new seeds from ${url}`); 
+        }
         ws.close();
       };
     }
