@@ -230,6 +230,7 @@ const TrustedSources=[
   "https://chatgpt.com/c/68a29784-d3b0-832b-9327-b3abf00c98fc",
   "https://gemini.google.com/app/6ba6333c6e0e6252",
   "https://developer.mozilla.org/en-US/docs/Learn",
+  "https://vero.co.in",
   "https://api.allorigins.win"
 ];
 
