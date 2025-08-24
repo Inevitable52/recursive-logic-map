@@ -1,5 +1,5 @@
 // =========================
-// Percy Puppeteer WebSocket Server (Improved + AutoLearn)
+// Percy Puppeteer WebSocket Server (Improved + AutoLearn Full Page)
 // =========================
 const WebSocket = require('ws');
 const puppeteer = require('puppeteer');
@@ -29,15 +29,11 @@ wss.on('connection', ws => {
       // =========================
       if (action === "visit") {
         await page.goto(params.url, { waitUntil: "networkidle2" });
-        await page.waitForTimeout(2000); // allow dynamic JS to render
+        await page.waitForTimeout(2000);
 
         const pageText = await page.evaluate(() => document.body.innerText);
         const clickables = await page.evaluate(() =>
-          Array.from(document.querySelectorAll('a,button')).map(el => ({
-            type: el.tagName,
-            text: el.textContent,
-            href: el.href || null
-          }))
+          Array.from(document.querySelectorAll('a,button')).map(el => (el.href || el.textContent))
         );
         const inputs = await page.evaluate(() =>
           Array.from(document.querySelectorAll('input,textarea'))
@@ -54,7 +50,7 @@ wss.on('connection', ws => {
         const el = await page.$(params.selector);
         if (!el) throw new Error(`Selector not found: ${params.selector}`);
         await el.click();
-        await page.waitForTimeout(500); // allow dynamic update
+        await page.waitForTimeout(500);
         ws.send(JSON.stringify({ result: `Clicked ${params.selector}` }));
       }
 
@@ -70,21 +66,27 @@ wss.on('connection', ws => {
       }
 
       // =========================
-      // AutoLearn Action
+      // AutoLearn Action (full page or optional selector)
       // =========================
       else if (action === "autoLearn") {
-        const selector = params.selector;
-        await page.waitForSelector(selector, { timeout: 5000 }).catch(() => null);
-        const text = await page.evaluate(sel => {
-          const el = document.querySelector(sel);
-          return el ? el.innerText.trim() : null;
-        }, selector);
+        if (params.url) await page.goto(params.url, { waitUntil: "networkidle2" });
+        await page.waitForTimeout(2000);
+
+        let text;
+        if (params.selector) {
+          await page.waitForSelector(params.selector, { timeout: 5000 }).catch(() => null);
+          text = await page.evaluate(sel => {
+            const el = document.querySelector(sel);
+            return el ? el.innerText.trim() : null;
+          }, params.selector);
+        } else {
+          text = await page.evaluate(() => document.body.innerText.trim());
+        }
 
         if (!text) {
-          ws.send(JSON.stringify({ result: `⚠ No text returned from selector: ${selector}` }));
+          ws.send(JSON.stringify({ result: `⚠ No text returned` }));
         } else {
-          // You can integrate Percy logic mapping here
-          ws.send(JSON.stringify({ result: `AutoLearn succeeded`, selector, text }));
+          ws.send(JSON.stringify({ result: `AutoLearn succeeded`, text }));
         }
       }
 
