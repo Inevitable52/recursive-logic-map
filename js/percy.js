@@ -1,5 +1,3 @@
-pls rewrite it all my good sir
-
 // === percy.js (Phase 8.3.2 True AI Autonomous Browsing + Puppeteer Panel w/ Neon Aura Rings) ===
 
 /* =========================
