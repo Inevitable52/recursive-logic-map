@@ -7,6 +7,9 @@ const puppeteer = require('puppeteer');
 const wss = new WebSocket.Server({ port: 8787 });
 console.log("🚀 Percy Puppeteer WS server running on ws://localhost:8787");
 
+// Universal delay function (replaces page.waitForTimeout)
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 wss.on('connection', ws => {
   let browser, page;
 
@@ -29,7 +32,7 @@ wss.on('connection', ws => {
       // =========================
       if (action === "visit") {
         await page.goto(params.url, { waitUntil: "networkidle2" });
-        await page.waitForTimeout(2000);
+        await wait(2000);
 
         const pageText = await page.evaluate(() => document.body.innerText);
         const clickables = await page.evaluate(() =>
@@ -50,7 +53,7 @@ wss.on('connection', ws => {
         const el = await page.$(params.selector);
         if (!el) throw new Error(`Selector not found: ${params.selector}`);
         await el.click();
-        await page.waitForTimeout(500);
+        await wait(500);
         ws.send(JSON.stringify({ result: `Clicked ${params.selector}` }));
       }
 
@@ -61,7 +64,7 @@ wss.on('connection', ws => {
         const el = await page.$(params.selector);
         if (!el) throw new Error(`Selector not found: ${params.selector}`);
         await el.type(params.text);
-        await page.waitForTimeout(500);
+        await wait(500);
         ws.send(JSON.stringify({ result: `Typed into ${params.selector}` }));
       }
 
@@ -70,7 +73,7 @@ wss.on('connection', ws => {
       // =========================
       else if (action === "autoLearn") {
         if (params.url) await page.goto(params.url, { waitUntil: "networkidle2" });
-        await page.waitForTimeout(2000);
+        await wait(2000);
 
         let text;
         if (params.selector) {
