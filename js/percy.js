@@ -1,4 +1,6 @@
-// === percy.js (Phase 8.3.2 — Autonomous Browsing + Puppeteer Panel, no solid rings) ===
+pls rewrite it all my good sir
+
+// === percy.js (Phase 8.3.2 True AI Autonomous Browsing + Puppeteer Panel w/ Neon Aura Rings) ===
 
 /* =========================
 CONFIG & ULT AUTHORITY
@@ -41,7 +43,7 @@ const PercyState = {
     this.gnodes[id] = { message, type, data };
     Memory.save("gnodes",this.gnodes);
     seeds[id] = this.gnodes[id];
-    UI.say(`✨ Created seed ${id}`);
+    UI.say(`✨ Percy created new seed ${id}: ${message}`);
     refreshNodes();
     return id;
   },
@@ -51,7 +53,7 @@ const PercyState = {
     Object.assign(this.gnodes[id],update);
     Memory.save("gnodes",this.gnodes);
     seeds[id] = this.gnodes[id];
-    UI.say(`🔧 Updated seed ${id}`);
+    UI.say(`🔧 Percy updated seed ${id}`);
     refreshNodes();
   },
 
@@ -106,7 +108,7 @@ const UI = {
 };
 
 /* =========================
-LOGIC MAP & NODE VISUALIZATION  (no solid rings)
+LOGIC MAP & NODE VISUALIZATION (✨ Neon Aura Upgrade)
 ========================= */
 const logicMap=document.getElementById('logic-map');
 const logicNodes=document.getElementById('logic-nodes');
@@ -121,7 +123,23 @@ let seeds={};
 const seedsFolder='logic_seeds/';
 const seedRange={start:80,end:800};
 
-// NOTE: removed the SVG ring drawing entirely
+// === NEW: Neon Aura Ring Drawer ===
+function drawRing(radius, color) {
+  const svg = logicMap.querySelector("svg");
+  if (!svg) return;
+
+  const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  circle.setAttribute("cx", logicMap.clientWidth / 2);
+  circle.setAttribute("cy", logicMap.clientHeight / 2);
+  circle.setAttribute("r", radius);
+  circle.setAttribute("fill", "none");
+  circle.setAttribute("stroke", color);
+  circle.setAttribute("stroke-width", "12");
+  circle.setAttribute("opacity", "0.5");
+  circle.setAttribute("filter", "url(#glow)");
+
+  svg.appendChild(circle);
+}
 
 async function loadSeeds(){
   const loadingNotice=document.createElement('p');
@@ -135,13 +153,13 @@ async function loadSeeds(){
       if(!res.ok) throw new Error(`Failed to load ${id}.json`);
       return res.json().then(data=>{
         PercyState.gnodes[id]=data;
+        Memory.save("gnodes",PercyState.gnodes);
         seeds[id]=data;
       });
     }).catch(e=>console.warn(e.message)));
   }
   await Promise.all(promises);
   logicNodes.removeChild(loadingNotice);
-  Memory.save("gnodes",PercyState.gnodes);
   Memory.save("seeds:index",Object.keys(seeds));
 }
 
@@ -149,14 +167,23 @@ function createNodes(){
   logicNodes.innerHTML='';
   const width=logicMap.clientWidth,height=logicMap.clientHeight;
 
-  // keep concentric placement (invisible rings), just positions
+  // 🔮 Draw Neon Aura Rings
+  drawRing(width/2.5, "cyan");
+  drawRing(width/3.4, "magenta");
+  drawRing(width/4.8, "yellow");
+  drawRing(width/6.6, "red");
+  drawRing(width/8.5, "orange");
+  drawRing(width/11, "lime");
+  drawRing(width/14, "purple");
+
+  // 🟣 Place interactive nodes
   layoutRing(80,200,width,height,width/2.5,'',60);
-  layoutRing(201,300,width,height,width/3.4,'',45);
-  layoutRing(301,400,width,height,width/4.8,'',30);
-  layoutRing(401,500,width,height,width/6.6,'',22);
-  layoutRing(501,600,width,height,width/8.5,'',18);
-  layoutRing(601,700,width,height,width/11,'',14);
-  layoutRing(701,800,width,height,width/14,'',12);
+  layoutRing(201,300,width,height,width/3.4,'blue-ring',45);
+  layoutRing(301,400,width,height,width/4.8,'purple-ring',30);
+  layoutRing(401,500,width,height,width/6.6,'red-ring',22);
+  layoutRing(501,600,width,height,width/8.5,'crimson-ring',18);
+  layoutRing(601,700,width,height,width/11,'gold-ring',14);
+  layoutRing(701,800,width,height,width/14,'neon-pink-ring',12);
 
   applyTransform();
 }
@@ -166,7 +193,7 @@ function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
     const num=parseInt(id.replace("G",""));
     return num>=startId && num<=endId;
   });
-  const total=ringSeeds.length || 1;
+  const total=ringSeeds.length;
   const centerX=width/2,centerY=height/2;
 
   ringSeeds.forEach(([id,data],index)=>{
@@ -175,18 +202,13 @@ function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
     const y=centerY+radius*Math.sin(angle)-nodeSize/2;
 
     const node=document.createElement('div');
-    node.classList.add('node');
+    node.classList.add('node'); if(colorClass) node.classList.add(colorClass);
     node.style.width=node.style.height=`${nodeSize}px`;
     node.style.left=`${x}px`; node.style.top=`${y}px`;
     node.style.position='absolute'; node.style.borderRadius='50%';
-    node.style.border="1px solid #384057";
-    node.style.background="radial-gradient(ellipse at center, #182031 0%, #0f1524 70%)";
-    node.style.boxShadow="0 2px 10px rgba(0,0,0,.35)";
-    node.style.display="grid"; node.style.placeItems="center";
-    node.style.color="#cfe3ff"; node.style.fontFamily="ui-monospace, Menlo, monospace";
-    node.textContent=id; node.title=data.message || id;
+    node.textContent=id; node.title=data.message;
     node.addEventListener('click',()=>percyRespond(id,data));
-    node.addEventListener('mouseenter',()=>UI.setStatus(data.message || id));
+    node.addEventListener('mouseenter',()=>UI.setStatus(data.message));
     logicNodes.appendChild(node);
   });
 }
@@ -226,19 +248,22 @@ window.interpretLogic=()=>{
 /* =========================
 NODE RESPONSE
 ========================= */
-function percyRespond(id,data){ UI.say(`↳ ${data.message || id}`); UI.setStatus(data.message || id); }
-function refreshNodes(){ createNodes(); UI.say(`🔄 Map refreshed with ${Object.keys(seeds).length} seeds`); }
+function percyRespond(id,data){ UI.say(`↳ ${data.message}`); UI.setStatus(data.message); }
+function refreshNodes(){ createNodes(); UI.say(`🔄 Logic map refreshed with ${Object.keys(seeds).length} seeds`); }
 
 /* =========================
-TASKS, AUTONOMY & AUTOLEARN
+TASKS & AUTONOMY
 ========================= */
 const TrustedSources=[
   "https://www.dictionary.com",
   "https://www.merriam-webster.com",
   "https://en.wikipedia.org",
-  "https://developer.mozilla.org",
-  "https://gemini.google.com",
-  "https://chatgpt.com"
+  "https://gemini.google.com/app",
+  "https://chatgpt.com/c/68a29784-d3b0-832b-9327-b3abf00c98fc",
+  "https://en.wikipedia.org/wiki/Introduction_to_quantum_mechanics",
+  "https://developer.mozilla.org/en-US/docs/Learn",
+  "https://en.wikipedia.org/wiki/Artificial_intelligence",
+  "https://api.allorigins.win"
 ];
 
 const Tasks = {
@@ -258,92 +283,95 @@ const Tasks = {
     speak: async ({ text }) => UI.say(text),
     highlightSeed: async ({ seedId }) => UI.say(`🔎 focusing ${seedId}`),
 
-    // Centralized WS command (no forced url for non-visit)
-    puppeteerCommand: async ({ action, params = {} }) => {
-      return new Promise((resolve) => {
-        if (action === "visit" && !params.url) {
-          UI.say("❌ visit requires a URL");
-          return resolve("❌ visit requires a URL");
-        }
+    puppeteerCommand: async ({ action, params }) => {
+      return new Promise((resolve)=>{
+        if(!params || !params.url) return resolve("❌ Missing URL");
         const ws = new WebSocket('ws://localhost:8787');
-        let settled = false;
-
-        const safeResolve = (val) => { if (!settled) { settled = true; try{ws.close()}catch{} resolve(val); } };
-
-        ws.onopen = ()=>{ 
-          UI.say(`🔗 Puppeteer connected → ${action}`); 
-          ws.send(JSON.stringify({action, params})); 
-        };
-        ws.onmessage = (msg) => {
+        ws.onopen = ()=>{ UI.say(`🔗 Puppeteer connected, sending action: ${action}`); ws.send(JSON.stringify({action,params})); };
+        ws.onmessage = msg => {
           try{
             const data = JSON.parse(msg.data);
-            if (data.pageText) {
-              // optional: stream a small preview
-              UI.say(`📄 Received text (${Math.min(data.pageText.length,120)} chars)…`);
-            }
-            UI.say(`🤖 Puppeteer: ${data.result ?? "✅ OK"}`);
-            safeResolve(data);
-          }catch(e){
-            UI.say(`❌ Puppeteer parse error: ${e.message}`);
-            safeResolve({ result: "❌ Error parsing message" });
-          }
+            UI.say(`🤖 Puppeteer: ${data.result ?? "✅ Action executed"}`);
+            ws.close();
+            resolve(data.result ?? "✅ Action executed");
+          }catch(e){ UI.say(`❌ Puppeteer error: ${e.message}`); ws.close(); resolve("❌ Error"); }
         };
-        ws.onerror = (err) => { UI.say(`❌ WS error: ${err.message||err}`); safeResolve({ result: "❌ WebSocket error" }); };
-        ws.onclose = () => safeResolve({ result: "WS closed" });
+        ws.onerror = err => { UI.say(`❌ Puppeteer WebSocket error: ${err.message}`); ws.close(); resolve("❌ WebSocket error"); };
       });
     },
 
-    // simple helpers
-    click: async ({ selector }) => { 
-      if(!selector) return UI.say("❌ Click failed: missing selector");
-      await Tasks.register.puppeteerCommand({ action: "click", params: { selector } }); 
+    click: async ({ url, selector }) => { 
+      if(!url || !selector) return UI.say("❌ Click failed: missing URL or selector"); 
+      await Tasks.register.puppeteerCommand({ action: "click", params: { url, selector } }); 
     },
-    type: async ({ selector, text }) => { 
-      if(!selector || !text) return UI.say("❌ Type failed: missing params");
-      await Tasks.register.puppeteerCommand({ action: "type", params: { selector, text } }); 
+    type: async ({ url, selector, text }) => { 
+      if(!url || !selector || !text) return UI.say("❌ Type failed: missing parameters"); 
+      await Tasks.register.puppeteerCommand({ action: "type", params: { url, selector, text } }); 
     },
 
-    // ✅ FIXED: uses "autoLearn" action (not getText), accepts pageText or text
-    autoLearn: async ({ url, selector = "body" }) => {
-      if (!TrustedSources.some(domain => url.includes(domain))) { UI.say(`❌ URL not trusted: ${url}`); return; }
+    autoLearn: async ({ url }) => {
+      if (!TrustedSources.some(domain => url.includes(domain))) {
+        UI.say(`❌ URL not trusted: ${url}`);
+        return;
+      }
 
       const ok = await UI.confirmModal({
-        title: "Percy requests to learn",
-        body: `Allow Percy to fetch text from:\n${url}\n\nSelector: ${selector}`,
+        title: "Percy requests to learn from a website",
+        body: `Allow Percy to fetch and learn from:\n${url}`,
         allowLabel: "Allow once",
         denyLabel: "Deny"
       });
       if (!ok) { UI.say("❌ Learning denied."); return; }
 
-      const resp = await Tasks.register.puppeteerCommand({ action: "autoLearn", params: { url, selector } });
-      const raw = resp.pageText || resp.text || "";
-      if (!raw) { UI.say("⚠ No text returned."); return; }
-
-      const chunkSize = 300; let count = 0;
-      for (let i = 0; i < raw.length; i += chunkSize) {
-        const chunk = raw.slice(i, i + chunkSize).trim();
-        if (chunk) { PercyState.createSeed(chunk, "learned", { source: url, selector }); count++; }
-      }
-      UI.say(`📚 Learned ${count} new seeds from ${url}`);
+      const ws = new WebSocket('ws://localhost:8787');
+      ws.onopen = () => ws.send(JSON.stringify({ action: "getText", params: { url } }));
+      ws.onmessage = async msg => {
+        try {
+          const data = JSON.parse(msg.data);
+          if (!data.pageText) { UI.say("⚠ No text returned."); ws.close(); return; }
+          const chunkSize = 300; let count = 0;
+          for (let i = 0; i < data.pageText.length; i += chunkSize) {
+            const chunk = data.pageText.slice(i, i + chunkSize).trim();
+            if (chunk) { PercyState.createSeed(chunk, "learned", { source: url }); count++; }
+          }
+          UI.say(`📚 Percy learned ${count} new seeds from ${url}`);
+        } catch(e) { UI.say(`❌ Learning failed: ${e.message}`); }
+        ws.close();
+      };
+      ws.onerror = err => { UI.say(`❌ WebSocket error: ${err.message}`); ws.close(); };
     },
 
-    // Simpler auto-browse: visit + learn (no auto-click because server returns objects, not selectors)
-    autoBrowse: async ({ url }) => { 
+    autoBrowse: async ({ url })=>{ 
       if(!TrustedSources.some(domain=>url.includes(domain))){ UI.say(`❌ URL not trusted: ${url}`); return; }
-      const ok = await UI.confirmModal({ title:"Percy wants to browse", body:`Allow Percy to visit and learn from:\n${url}`, allowLabel:"Allow", denyLabel:"Deny" });
+      const ok = await UI.confirmModal({ title:"Percy wants to browse", body:`Allow Percy to autonomously explore and learn from:\n${url}`, allowLabel:"Allow", denyLabel:"Deny" });
       if(!ok){ UI.say("❌ Browsing denied."); return; }
 
-      const data = await Tasks.register.puppeteerCommand({ action:"visit", params:{ url } });
-      if (data.pageText) {
-        const chunkSize=300; let count=0; 
-        for(let i=0;i<data.pageText.length;i+=chunkSize){ 
-          const chunk=data.pageText.slice(i,i+chunkSize).trim(); 
-          if(chunk){ PercyState.createSeed(chunk,"learned",{source:url}); count++; } 
+      const ws = new WebSocket('ws://localhost:8787');
+      ws.onopen = ()=> ws.send(JSON.stringify({ action:"visit", params:{ url } }));
+      ws.onmessage = async msg=>{
+        const data = JSON.parse(msg.data);
+        UI.say(`🤖 Puppeteer: ${data.result}`);
+        if(data.clickables?.length){ 
+          const target=data.clickables[0]; 
+          ws.send(JSON.stringify({ action:"click", params:{ selector:target }})); 
+          UI.say(`🖱 Percy clicked: ${target}`); 
         }
-        UI.say(`📚 Learned ${count} new seeds from ${url}`); 
-      } else {
-        UI.say("⚠ No text received from visit.");
-      }
+        if(data.inputs?.length){ 
+          const target=data.inputs[0]; 
+          const text="Percy input"; 
+          ws.send(JSON.stringify({ action:"type", params:{ selector:target, text }})); 
+          UI.say(`⌨ Percy typed into: ${target}`); 
+        }
+        if(data.pageText){ 
+          const chunkSize=300; let count=0; 
+          for(let i=0;i<data.pageText.length;i+=chunkSize){ 
+            const chunk=data.pageText.slice(i,i+chunkSize).trim(); 
+            if(chunk){ PercyState.createSeed(chunk,"learned",{source:url}); count++; } 
+          } 
+          UI.say(`📚 Percy learned ${count} new seeds from ${url}`); 
+        }
+        ws.close();
+      };
     }
   },
 
@@ -400,26 +428,17 @@ PUPPETEER CONTROL PANEL
   panel.innerHTML = `
     <h4 style="margin:0 0 6px 0;font-size:14px;">Puppeteer Control</h4>
     <input id="pp-url" placeholder="URL" style="width:100%;margin-bottom:4px;font-size:12px;">
-    <input id="pp-selector" placeholder="Selector (default: body)" style="width:100%;margin-bottom:4px;font-size:12px;">
+    <input id="pp-selector" placeholder="Selector" style="width:100%;margin-bottom:4px;font-size:12px;">
     <input id="pp-text" placeholder="Text" style="width:100%;margin-bottom:4px;font-size:12px;">
-    <div style="display:flex;gap:6px;margin-top:6px;">
-      <button id="pp-visit" style="flex:1;font-size:12px;">Visit</button>
-      <button id="pp-learn" style="flex:1;font-size:12px;">AutoLearn</button>
-    </div>
-    <div style="display:flex;gap:6px;margin-top:6px;">
-      <button id="pp-click" style="flex:1;font-size:12px;">Click</button>
-      <button id="pp-type" style="flex:1;font-size:12px;">Type</button>
-    </div>
+    <button id="pp-click" style="width:48%;margin-right:4%;font-size:12px;">Click</button>
+    <button id="pp-type" style="width:48%;font-size:12px;">Type</button>
   `;
   document.body.appendChild(panel);
   const urlInput=document.getElementById('pp-url');
   const selInput=document.getElementById('pp-selector');
   const txtInput=document.getElementById('pp-text');
-
-  document.getElementById('pp-visit').onclick=()=>Tasks.register.puppeteerCommand({ action:"visit", params:{ url:urlInput.value } });
-  document.getElementById('pp-learn').onclick=()=>Tasks.register.autoLearn({ url:urlInput.value, selector: selInput.value || "body" });
-  document.getElementById('pp-click').onclick=()=>Tasks.register.click({ selector: selInput.value || "body a, body button" });
-  document.getElementById('pp-type').onclick=()=>Tasks.register.type({ selector: selInput.value, text: txtInput.value });
+  document.getElementById('pp-click').onclick=()=>Tasks.register.click({url:urlInput.value,selector:selInput.value});
+  document.getElementById('pp-type').onclick=()=>Tasks.register.type({url:urlInput.value,selector:selInput.value,text:txtInput.value});
 })();
 
 /* =========================
@@ -430,5 +449,5 @@ STARTUP
   await loadSeeds();
   Object.entries(PercyState.gnodes).forEach(([id,seed])=>{ seeds[id]=seed; });
   createNodes(); Autonomy.start();
-  UI.say("✅ Percy online with autonomy, memory, learning, and Puppeteer control.");
+  UI.say("✅ Percy online. Autonomy, persistent memory, meta-mutation, learning, and Puppeteer control active.");
 })();
