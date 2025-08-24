@@ -1,4 +1,4 @@
-// === percy.js (Phase 8.3.2 True AI Autonomous Browsing + Puppeteer Panel) ===
+// === percy.js (Phase 8.3.2 True AI Autonomous Browsing + Puppeteer Panel w/ Neon Aura Rings) ===
 
 /* =========================
 CONFIG & ULT AUTHORITY
@@ -106,7 +106,7 @@ const UI = {
 };
 
 /* =========================
-LOGIC MAP & NODE VISUALIZATION
+LOGIC MAP & NODE VISUALIZATION (✨ Neon Aura Upgrade)
 ========================= */
 const logicMap=document.getElementById('logic-map');
 const logicNodes=document.getElementById('logic-nodes');
@@ -120,6 +120,24 @@ let zoomLevel=1,translateX=0,translateY=0;
 let seeds={};
 const seedsFolder='logic_seeds/';
 const seedRange={start:80,end:800};
+
+// === NEW: Neon Aura Ring Drawer ===
+function drawRing(radius, color) {
+  const svg = logicMap.querySelector("svg");
+  if (!svg) return;
+
+  const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  circle.setAttribute("cx", logicMap.clientWidth / 2);
+  circle.setAttribute("cy", logicMap.clientHeight / 2);
+  circle.setAttribute("r", radius);
+  circle.setAttribute("fill", "none");
+  circle.setAttribute("stroke", color);
+  circle.setAttribute("stroke-width", "12");
+  circle.setAttribute("opacity", "0.5");
+  circle.setAttribute("filter", "url(#glow)");
+
+  svg.appendChild(circle);
+}
 
 async function loadSeeds(){
   const loadingNotice=document.createElement('p');
@@ -146,6 +164,17 @@ async function loadSeeds(){
 function createNodes(){
   logicNodes.innerHTML='';
   const width=logicMap.clientWidth,height=logicMap.clientHeight;
+
+  // 🔮 Draw Neon Aura Rings
+  drawRing(width/2.5, "cyan");
+  drawRing(width/3.4, "magenta");
+  drawRing(width/4.8, "yellow");
+  drawRing(width/6.6, "red");
+  drawRing(width/8.5, "orange");
+  drawRing(width/11, "lime");
+  drawRing(width/14, "purple");
+
+  // 🟣 Place interactive nodes
   layoutRing(80,200,width,height,width/2.5,'',60);
   layoutRing(201,300,width,height,width/3.4,'blue-ring',45);
   layoutRing(301,400,width,height,width/4.8,'purple-ring',30);
@@ -153,6 +182,7 @@ function createNodes(){
   layoutRing(501,600,width,height,width/8.5,'crimson-ring',18);
   layoutRing(601,700,width,height,width/11,'gold-ring',14);
   layoutRing(701,800,width,height,width/14,'neon-pink-ring',12);
+
   applyTransform();
 }
 
