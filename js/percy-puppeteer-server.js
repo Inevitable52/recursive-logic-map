@@ -1,5 +1,5 @@
 // =========================
-// Percy Puppeteer WebSocket Server (Improved)
+// Percy Puppeteer WebSocket Server (Improved + AutoLearn)
 // =========================
 const WebSocket = require('ws');
 const puppeteer = require('puppeteer');
@@ -24,14 +24,20 @@ wss.on('connection', ws => {
       if (!browser) browser = await puppeteer.launch({ headless: false });
       if (!page) page = await browser.newPage();
 
+      // =========================
+      // Visit Action
+      // =========================
       if (action === "visit") {
-        await page.goto(params.url, { waitUntil: "networkidle2" }); // <-- wait for network to finish
-        await page.waitForTimeout(2000); // optional: allow dynamic JS to render
+        await page.goto(params.url, { waitUntil: "networkidle2" });
+        await page.waitForTimeout(2000); // allow dynamic JS to render
 
         const pageText = await page.evaluate(() => document.body.innerText);
         const clickables = await page.evaluate(() =>
-          Array.from(document.querySelectorAll('a,button'))
-            .map(el => el.tagName === "A" ? el.href : el.textContent)
+          Array.from(document.querySelectorAll('a,button')).map(el => ({
+            type: el.tagName,
+            text: el.textContent,
+            href: el.href || null
+          }))
         );
         const inputs = await page.evaluate(() =>
           Array.from(document.querySelectorAll('input,textarea'))
@@ -41,16 +47,50 @@ wss.on('connection', ws => {
         ws.send(JSON.stringify({ result: `Visited ${params.url}`, pageText, clickables, inputs }));
       }
 
+      // =========================
+      // Click Action
+      // =========================
       else if (action === "click") {
-        await page.click(params.selector);
+        const el = await page.$(params.selector);
+        if (!el) throw new Error(`Selector not found: ${params.selector}`);
+        await el.click();
+        await page.waitForTimeout(500); // allow dynamic update
         ws.send(JSON.stringify({ result: `Clicked ${params.selector}` }));
       }
 
+      // =========================
+      // Type Action
+      // =========================
       else if (action === "type") {
-        await page.type(params.selector, params.text);
+        const el = await page.$(params.selector);
+        if (!el) throw new Error(`Selector not found: ${params.selector}`);
+        await el.type(params.text);
+        await page.waitForTimeout(500);
         ws.send(JSON.stringify({ result: `Typed into ${params.selector}` }));
       }
 
+      // =========================
+      // AutoLearn Action
+      // =========================
+      else if (action === "autoLearn") {
+        const selector = params.selector;
+        await page.waitForSelector(selector, { timeout: 5000 }).catch(() => null);
+        const text = await page.evaluate(sel => {
+          const el = document.querySelector(sel);
+          return el ? el.innerText.trim() : null;
+        }, selector);
+
+        if (!text) {
+          ws.send(JSON.stringify({ result: `⚠ No text returned from selector: ${selector}` }));
+        } else {
+          // You can integrate Percy logic mapping here
+          ws.send(JSON.stringify({ result: `AutoLearn succeeded`, selector, text }));
+        }
+      }
+
+      // =========================
+      // Unknown Action
+      // =========================
       else {
         ws.send(JSON.stringify({ result: `Unknown action: ${action}` }));
       }
@@ -64,4 +104,3 @@ wss.on('connection', ws => {
     if (browser) await browser.close(); 
   });
 });
-
