@@ -1,4 +1,6 @@
-// === percy.js (Phase 8.3.2 True AI Autonomous Browsing + Puppeteer Panel w/ Neon Aura Bubbles) ===
+pleace correct and rewrite, my good sir
+
+// === percy.js (Phase 8.3.2 True AI Autonomous Browsing + Puppeteer Panel w/ Neon Aura Rings) ===
 
 /* =========================
 CONFIG & ULT AUTHORITY
@@ -106,7 +108,7 @@ const UI = {
 };
 
 /* =========================
-LOGIC MAP & NODE VISUALIZATION (✨ Neon Aura Bubbles)
+LOGIC MAP & NODE VISUALIZATION (✨ Neon Aura Upgrade)
 ========================= */
 const logicMap=document.getElementById('logic-map');
 const logicNodes=document.getElementById('logic-nodes');
@@ -121,52 +123,58 @@ let seeds={};
 const seedsFolder='logic_seeds/';
 const seedRange={start:80,end:800};
 
-// === Neon Aura Bubble Generator ===
-function createNeonBubbles(){
-  const colors = ["cyan","magenta","yellow","red","orange","lime","purple"];
-  const radii = [logicMap.clientWidth/2.5,logicMap.clientWidth/3.4,logicMap.clientWidth/4.8,
-                 logicMap.clientWidth/6.6,logicMap.clientWidth/8.5,logicMap.clientWidth/11,logicMap.clientWidth/14];
+// === NEW: Neon Aura Ring Drawer ===
+function drawRing(radius, color) {
+  const svg = logicMap.querySelector("svg");
+  if (!svg) return;
 
-  radii.forEach((radius,rIdx)=>{
-    for(let i=0;i<12;i++){
-      const bubble=document.createElement('div');
-      bubble.className='neon-bubble';
-      bubble.style.background=colors[rIdx];
-      bubble.style.width=bubble.style.height=`${6 + Math.random()*4}px`;
-      bubble.style.borderRadius='50%';
-      bubble.style.opacity=0.5 + Math.random()*0.5;
-      bubble.style.position='absolute';
-      bubble.dataset.radius=radius;
-      bubble.dataset.angle=(i/12)*2*Math.PI;
-      logicNodes.appendChild(bubble);
-    }
-  });
+  const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  circle.setAttribute("cx", logicMap.clientWidth / 2);
+  circle.setAttribute("cy", logicMap.clientHeight / 2);
+  circle.setAttribute("r", radius);
+  circle.setAttribute("fill", "none");
+  circle.setAttribute("stroke", color);
+  circle.setAttribute("stroke-width", "12");
+  circle.setAttribute("opacity", "0.5");
+  circle.setAttribute("filter", "url(#glow)");
+
+  svg.appendChild(circle);
 }
 
-function animateNeonBubbles(){
-  const width=logicMap.clientWidth;
-  const height=logicMap.clientHeight;
-  document.querySelectorAll('.neon-bubble').forEach(bubble=>{
-    const radius=parseFloat(bubble.dataset.radius);
-    let angle=parseFloat(bubble.dataset.angle);
-    angle += 0.005 + Math.random()*0.003;
-    bubble.dataset.angle=angle;
-    const x=width/2 + radius*Math.cos(angle) - bubble.offsetWidth/2;
-    const y=height/2 + radius*Math.sin(angle) - bubble.offsetHeight/2;
-    bubble.style.left=`${x}px`;
-    bubble.style.top=`${y}px`;
-  });
-  requestAnimationFrame(animateNeonBubbles);
+async function loadSeeds(){
+  const loadingNotice=document.createElement('p');
+  loadingNotice.id='loading-indicator'; loadingNotice.textContent="Loading logic seeds...";
+  logicNodes.appendChild(loadingNotice);
+
+  const promises=[];
+  for(let i=seedRange.start;i<=seedRange.end;i++){
+    const id=`G${String(i).padStart(3,'0')}`;
+    promises.push(fetch(`${seedsFolder}${id}.json`).then(res=>{
+      if(!res.ok) throw new Error(`Failed to load ${id}.json`);
+      return res.json().then(data=>{
+        PercyState.gnodes[id]=data;
+        Memory.save("gnodes",PercyState.gnodes);
+        seeds[id]=data;
+      });
+    }).catch(e=>console.warn(e.message)));
+  }
+  await Promise.all(promises);
+  logicNodes.removeChild(loadingNotice);
+  Memory.save("seeds:index",Object.keys(seeds));
 }
 
 function createNodes(){
   logicNodes.innerHTML='';
-
   const width=logicMap.clientWidth,height=logicMap.clientHeight;
 
-  // 🟣 Generate Neon Aura Bubbles
-  createNeonBubbles();
-  animateNeonBubbles();
+  // 🔮 Draw Neon Aura Rings
+  drawRing(width/2.5, "cyan");
+  drawRing(width/3.4, "magenta");
+  drawRing(width/4.8, "yellow");
+  drawRing(width/6.6, "red");
+  drawRing(width/8.5, "orange");
+  drawRing(width/11, "lime");
+  drawRing(width/14, "purple");
 
   // 🟣 Place interactive nodes
   layoutRing(80,200,width,height,width/2.5,'',60);
