@@ -1,10 +1,10 @@
-// === percy.js (Phase 8.3.2 True AI Autonomous Browsing + Puppeteer Panel w/ Neon Aura Rings) ===
+// === percy.js (Phase 8.3.3 — Neon Bubbles + Built-in Voice) ===
 
 /* =========================
 CONFIG & ULT AUTHORITY
 ========================= */
 const PERCY_ID = "Percy-ULT";
-const PERCY_VERSION = "8.3.2-meta";
+const PERCY_VERSION = "8.3.3-neon-bubbles-voice";
 const OWNER = { primary: "Fabian", secondary: "Lorena" };
 const SAFETY = {
   maxActionsPerMinute: 20,
@@ -106,7 +106,35 @@ const UI = {
 };
 
 /* =========================
-LOGIC MAP & NODE VISUALIZATION (✨ Neon Aura Upgrade)
+VOICE (Built-in TTS, no external libs)
+========================= */
+const Voice = {
+  enabled: true,
+  lastSpoken: 0,
+  speak(text){
+    try{
+      if(!this.enabled || !('speechSynthesis' in window) || !text) return;
+      // Rate-limit a bit to avoid overlaps on rapid logs
+      const now = Date.now();
+      if(now - this.lastSpoken < 300) return;
+      this.lastSpoken = now;
+
+      const u = new SpeechSynthesisUtterance(text);
+      // Try to pick an English voice, fallback to default
+      const pick = (voices)=>voices.find(v=>/en(-|_|$)/i.test(v.lang)) || voices[0];
+      const ensureVoice = ()=>{
+        const vs = speechSynthesis.getVoices();
+        if(vs?.length){ u.voice = pick(vs); speechSynthesis.speak(u); }
+        else { speechSynthesis.onvoiceschanged = ()=>{ const v2 = speechSynthesis.getVoices(); u.voice = pick(v2); speechSynthesis.speak(u); }; }
+      };
+      u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0;
+      ensureVoice();
+    }catch{}
+  }
+};
+
+/* =========================
+LOGIC MAP & NODE VISUALIZATION (Neon Bubbles)
 ========================= */
 const logicMap=document.getElementById('logic-map');
 const logicNodes=document.getElementById('logic-nodes');
@@ -121,23 +149,45 @@ let seeds={};
 const seedsFolder='logic_seeds/';
 const seedRange={start:80,end:800};
 
-// === NEW: Neon Aura Ring Drawer ===
-function drawRing(radius, color) {
-  const svg = logicMap.querySelector("svg");
-  if (!svg) return;
+// Inject neon bubble styles (so you don’t need to touch CSS files)
+(function injectBubbleStyles(){
+  const css = `
+    #logic-map { background:#0a0a0f; overflow:hidden; }
+    .node {
+      position:absolute; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-weight:700; color:#fff; cursor:pointer;
+      background: radial-gradient(100% 100% at 30% 30%, rgba(255,255,255,0.10), rgba(0,0,0,0.10));
+      border:2px solid currentColor;
+      box-shadow:
+        0 0 6px currentColor,
+        0 0 14px currentColor,
+        inset 0 0 12px rgba(255,255,255,0.08);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+      user-select:none;
+      transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+      backdrop-filter: blur(1px);
+    }
+    .node:hover { transform: scale(1.08); filter: brightness(1.15); }
+    .node:active { transform: scale(0.98); }
 
-  const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-  circle.setAttribute("cx", logicMap.clientWidth / 2);
-  circle.setAttribute("cy", logicMap.clientHeight / 2);
-  circle.setAttribute("r", radius);
-  circle.setAttribute("fill", "none");
-  circle.setAttribute("stroke", color);
-  circle.setAttribute("stroke-width", "12");
-  circle.setAttribute("opacity", "0.5");
-  circle.setAttribute("filter", "url(#glow)");
+    /* Bubble color themes */
+    .cyan-bubble{    color:#00eaff; }
+    .blue-bubble{    color:#27a0ff; }
+    .magenta-bubble{ color:#ff4af0; }
+    .red-bubble{     color:#ff3b3b; }
+    .orange-bubble{  color:#ff9d2e; }
+    .yellow-bubble{  color:#ffe44a; }
+    .pink-bubble{    color:#ff6bd8; }
 
-  svg.appendChild(circle);
-}
+    /* Console lines (optional polish) */
+    .console-line { margin:2px 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size:12px; color:#d6d8ff; }
+  `;
+  const style = document.createElement('style');
+  style.setAttribute('data-percy-style','neon-bubbles');
+  style.textContent = css;
+  document.head.appendChild(style);
+})();
 
 async function loadSeeds(){
   const loadingNotice=document.createElement('p');
@@ -163,25 +213,17 @@ async function loadSeeds(){
 
 function createNodes(){
   logicNodes.innerHTML='';
+
   const width=logicMap.clientWidth,height=logicMap.clientHeight;
 
-  // 🔮 Draw Neon Aura Rings
-  drawRing(width/2.5, "cyan");
-  drawRing(width/3.4, "magenta");
-  drawRing(width/4.8, "yellow");
-  drawRing(width/6.6, "red");
-  drawRing(width/8.5, "orange");
-  drawRing(width/11, "lime");
-  drawRing(width/14, "purple");
-
-  // 🟣 Place interactive nodes
-  layoutRing(80,200,width,height,width/2.5,'',60);
-  layoutRing(201,300,width,height,width/3.4,'blue-ring',45);
-  layoutRing(301,400,width,height,width/4.8,'purple-ring',30);
-  layoutRing(401,500,width,height,width/6.6,'red-ring',22);
-  layoutRing(501,600,width,height,width/8.5,'crimson-ring',18);
-  layoutRing(601,700,width,height,width/11,'gold-ring',14);
-  layoutRing(701,800,width,height,width/14,'neon-pink-ring',12);
+  // ✨ Bubbles ONLY — removed all solid neon rings
+  layoutRing(80,200,width,height,width/2.5,'cyan-bubble',60);
+  layoutRing(201,300,width,height,width/3.4,'blue-bubble',45);
+  layoutRing(301,400,width,height,width/4.8,'magenta-bubble',30);
+  layoutRing(401,500,width,height,width/6.6,'red-bubble',22);
+  layoutRing(501,600,width,height,width/8.5,'orange-bubble',18);
+  layoutRing(601,700,width,height,width/11,'yellow-bubble',14);
+  layoutRing(701,800,width,height,width/14,'pink-bubble',12);
 
   applyTransform();
 }
@@ -191,7 +233,7 @@ function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
     const num=parseInt(id.replace("G",""));
     return num>=startId && num<=endId;
   });
-  const total=ringSeeds.length;
+  const total=Math.max(1, ringSeeds.length);
   const centerX=width/2,centerY=height/2;
 
   ringSeeds.forEach(([id,data],index)=>{
@@ -203,7 +245,6 @@ function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
     node.classList.add('node'); if(colorClass) node.classList.add(colorClass);
     node.style.width=node.style.height=`${nodeSize}px`;
     node.style.left=`${x}px`; node.style.top=`${y}px`;
-    node.style.position='absolute'; node.style.borderRadius='50%';
     node.textContent=id; node.title=data.message;
     node.addEventListener('click',()=>percyRespond(id,data));
     node.addEventListener('mouseenter',()=>UI.setStatus(data.message));
@@ -227,7 +268,7 @@ SEARCH & INTERPRETER
 ========================= */
 const seedSearch=document.getElementById('seed-search');
 let searchThrottle=null;
-seedSearch.addEventListener('input',()=>{
+seedSearch?.addEventListener('input',()=>{
   clearTimeout(searchThrottle);
   searchThrottle=setTimeout(()=>{
     const query=seedSearch.value.trim();
@@ -244,9 +285,14 @@ window.interpretLogic=()=>{
 };
 
 /* =========================
-NODE RESPONSE
+NODE RESPONSE (speaks too)
 ========================= */
-function percyRespond(id,data){ UI.say(`↳ ${data.message}`); UI.setStatus(data.message); }
+function percyRespond(id,data){
+  const msg = typeof data === 'string' ? data : (data?.message ?? '');
+  UI.say(`↳ ${msg}`);
+  UI.setStatus(msg);
+  Voice.speak(msg);
+}
 function refreshNodes(){ createNodes(); UI.say(`🔄 Logic map refreshed with ${Object.keys(seeds).length} seeds`); }
 
 /* =========================
@@ -278,7 +324,7 @@ const Tasks = {
   },
 
   register: {
-    speak: async ({ text }) => UI.say(text),
+    speak: async ({ text }) => { UI.say(text); Voice.speak(text); },
     highlightSeed: async ({ seedId }) => UI.say(`🔎 focusing ${seedId}`),
 
     puppeteerCommand: async ({ action, params }) => {
