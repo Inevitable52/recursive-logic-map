@@ -1,4 +1,4 @@
-/* === Percy Phase 8.3.1 CSS (Blossoming Rings & Zoom-Friendly) === */
+/* === Percy Phase 8.3.2 CSS (Neon Glow Bubbles Edition) === */
 
 body {
     margin: 0;
@@ -29,7 +29,7 @@ body {
     display: block;
 }
 
-/* === Node Styles === */
+/* === Node Styles (Neon Glow Bubbles) === */
 .node {
     position: absolute;
     border-radius: 50%;
@@ -37,7 +37,6 @@ body {
     justify-content: center;
     align-items: center;
     text-align: center;
-    color: white;
     cursor: pointer;
     font-weight: 500;
     transition: transform 0.2s ease, box-shadow 0.2s ease, z-index 0.2s ease, left 0.25s ease, top 0.25s ease;
@@ -51,23 +50,28 @@ body {
     z-index: 1;
     font-size: unset; /* controlled dynamically by JS */
     user-select: none;
+
+    color: white; /* fallback text */
+    background: rgba(0,0,0,0.15); /* translucent bubble center */
+    border: 2px solid currentColor; /* neon edge */
+    box-shadow: 0 0 12px currentColor, 0 0 24px currentColor; /* glowing aura */
 }
 
 /* Node Hover Effects */
 .node:hover {
     transform: scale(1.35);
-    box-shadow: 0 0 28px rgba(255, 255, 255, 0.85);
+    box-shadow: 0 0 24px currentColor, 0 0 48px currentColor;
     z-index: 100;
 }
 
-/* === Ring Colors & Glow === */
-.blue-ring      { background-color: #4A90E2; box-shadow: 0 0 14px rgba(74,144,226,0.9); }
-.purple-ring    { background-color: #CDA4FF; box-shadow: 0 0 14px rgba(205,164,255,0.9); }
-.red-ring       { background-color: #FF6B6B; box-shadow: 0 0 14px rgba(255,107,107,0.9); }
-.crimson-ring   { background-color: #DC143C; box-shadow: 0 0 14px rgba(220,20,60,0.9); }
-.gold-ring      { background-color: #FFD700; box-shadow: 0 0 14px rgba(255,215,0,0.9); }
-.neon-pink-ring { background-color: #FF6EC7; box-shadow: 0 0 14px rgba(255,110,199,0.9); }
-.teal-ring      { background-color: #1DE9B6; box-shadow: 0 0 14px rgba(29,233,182,0.9); }
+/* === Neon Ring Colors (use as text + glow color) === */
+.blue-ring      { color: #4A90E2; }
+.purple-ring    { color: #CDA4FF; }
+.red-ring       { color: #FF6B6B; }
+.crimson-ring   { color: #DC143C; }
+.gold-ring      { color: #FFD700; }
+.neon-pink-ring { color: #FF6EC7; }
+.teal-ring      { color: #1DE9B6; }
 
 /* === Tooltip via title attribute === */
 .node::after {
@@ -123,7 +127,7 @@ body {
 /* === Locked / ULT Node Highlight === */
 .node.locked {
     border: 2px solid #FFD700;
-    box-shadow: 0 0 18px #FFD700;
+    box-shadow: 0 0 24px #FFD700, 0 0 48px #FFD700;
 }
 
 /* === Zoom-Scaling Helpers === */
