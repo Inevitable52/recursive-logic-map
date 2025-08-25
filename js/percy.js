@@ -307,6 +307,7 @@ const TrustedSources=[
   "https://en.wikipedia.org/wiki/Introduction_to_quantum_mechanics",
   "https://developer.mozilla.org/en-US/docs/Learn",
   "https://en.wikipedia.org/wiki/Artificial_intelligence",
+  "https://www.dictionary.com/e/word-of-the-day/",
   "https://api.allorigins.win"
 ];
 
