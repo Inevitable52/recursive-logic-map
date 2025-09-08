@@ -2,126 +2,122 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Percy 8.4 TrueAI</title>
+<title>Percy TrueAI Interface</title>
 <style>
-  body { margin:0; font-family:Arial,sans-serif; background:#111; color:#fff; overflow:hidden; }
-  #logic-map { position:relative; width:100vw; height:90vh; background:#0a0a0f; overflow:hidden; }
+  /* === Logic Map & Node Styles (Neon Bubbles) === */
+  body { margin:0; font-family:Arial,sans-serif; background:#0a0a0f; color:white; overflow:hidden; }
+  #logic-map { position:relative; width:100vw; height:100vh; }
   #logic-nodes { position:absolute; top:50%; left:50%; width:100%; height:100%; transform:translate(-50%,-50%) scale(1); }
-  .node { position:absolute; border-radius:50%; display:flex; align-items:center; justify-content:center;
-          font-weight:700; color:#fff; cursor:pointer; background: radial-gradient(100% 100% at 30% 30%, rgba(255,255,255,0.10), rgba(0,0,0,0.10));
-          border:2px solid currentColor; box-shadow:0 0 6px currentColor,0 0 14px currentColor, inset 0 0 12px rgba(255,255,255,0.08);
-          text-shadow:0 1px 2px rgba(0,0,0,0.6); user-select:none; transition:transform .15s ease,box-shadow .15s ease,filter .15s ease;
-          backdrop-filter:blur(1px); }
-  .node:hover { transform:scale(1.08); filter:brightness(1.15); }
-  .node:active { transform:scale(0.98); }
-  .cyan-bubble{color:#00eaff;} .blue-bubble{color:#27a0ff;} .magenta-bubble{color:#ff4af0;}
-  .red-bubble{color:#ff3b3b;} .orange-bubble{color:#ff9d2e;} .yellow-bubble{color:#ffe44a;} .pink-bubble{color:#ff6bd8;}
-  #percy-console { height:10vh; overflow:auto; background:#0b0b12; padding:4px; font-size:12px; font-family:ui-monospace; }
-  #ask-bar { position:fixed; bottom:0; left:0; width:100%; display:flex; padding:6px; background:#111; border-top:1px solid #444; }
-  #ask-input { flex:1; padding:6px; font-size:14px; border-radius:8px; border:1px solid #333; background:#222; color:#fff; }
-  #ask-btn { margin-left:6px; padding:6px 12px; font-size:14px; border-radius:8px; background:#3764ff; border:1px solid #2a4de0; color:white; cursor:pointer; }
+  .node {
+    position:absolute; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-weight:700; color:#fff; cursor:pointer;
+    background: radial-gradient(100% 100% at 30% 30%, rgba(255,255,255,0.10), rgba(0,0,0,0.10));
+    border:2px solid currentColor;
+    box-shadow:0 0 6px currentColor, 0 0 14px currentColor, inset 0 0 12px rgba(255,255,255,0.08);
+    text-shadow:0 1px 2px rgba(0,0,0,0.6);
+    user-select:none;
+    transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+    backdrop-filter: blur(1px);
+  }
+  .node:hover { transform: scale(1.08); filter: brightness(1.15); }
+  .node:active { transform: scale(0.98); }
+  .cyan-bubble{ color:#00eaff; }
+  .blue-bubble{ color:#27a0ff; }
+  .magenta-bubble{ color:#ff4af0; }
+  .red-bubble{ color:#ff3b3b; }
+  .orange-bubble{ color:#ff9d2e; }
+  .yellow-bubble{ color:#ffe44a; }
+  .pink-bubble{ color:#ff6bd8; }
+  #percy-console { position:fixed; bottom:0; left:0; width:100%; max-height:200px; overflow-y:auto; background:rgba(0,0,0,0.5); padding:8px; font-size:12px; }
+  .console-line { margin:2px 0; font-family:ui-monospace, monospace; color:#d6d8ff; }
+  #percy-status { position:fixed; top:0; left:0; width:100%; background:#111; padding:4px 8px; font-size:14px; }
+  #ask-bar { position:fixed; bottom:210px; left:50%; transform:translateX(-50%); display:flex; gap:6px; }
+  #ask-input { width:300px; padding:6px; border-radius:6px; border:1px solid #444; }
+  #ask-button { padding:6px 12px; border-radius:6px; border:none; background:#3764ff; color:white; cursor:pointer; }
 </style>
 </head>
 <body>
-
 <div id="logic-map"><div id="logic-nodes"></div></div>
+<div id="percy-status">Percy Status: Idle</div>
 <div id="percy-console"></div>
 <div id="ask-bar">
-  <input id="ask-input" placeholder="Ask Percy anything...">
-  <button id="ask-btn">Ask</button>
+  <input id="ask-input" placeholder="Ask Percy something..." />
+  <button id="ask-button">Ask</button>
 </div>
 
 <script>
-/* =================== PERCY 8.4 TRUEAI =================== */
-const PERCY_VERSION = "8.4 TrueAI"; 
-const OWNER = { primary:"Fabian", secondary:"Lorena" };
-const SAFETY = { maxActionsPerMinute:20, maxSeedsPerCycle:5, consoleLimit:500 };
-
-const Memory = {
+/* =========================
+CONFIG & MEMORY
+========================= */
+const PERCY_ID="Percy-ULT", PERCY_VERSION="8.3.3-neon-bubbles-voice (merged)", OWNER={primary:"Fabian", secondary:"Lorena"};
+const SAFETY={maxActionsPerMinute:20,maxSeedsPerCycle:5,requirePermissionFor:["externalFetch","openTab","writeDisk","emailLike"],consoleLimit:500};
+const Memory={
   _k:k=>`percy:${k}`,
-  load(k,fallback){ try{ const r=localStorage.getItem(this._k(k)); return r?JSON.parse(r):(fallback??null); }catch{return fallback;} },
-  save(k,v){ try{ localStorage.setItem(this._k(k),JSON.stringify(v)); }catch{} },
+  load(k,fallback){ try{ const r=localStorage.getItem(this._k(k)); return r?JSON.parse(r):fallback??null }catch{return fallback} },
+  save(k,v){ try{ localStorage.setItem(this._k(k),JSON.stringify(v)) }catch{} },
   push(k,v,max=1000){ const arr=this.load(k,[])||[]; arr.push(v); if(arr.length>max) arr.shift(); this.save(k,arr); }
 };
 
-let seeds = {};
-const PercyState = {
+/* =========================
+PERCY STATE & EMERGENT THOUGHTS
+========================= */
+const PercyState={
   gnodes: Memory.load("gnodes",{})||{},
-  getNextId(){ let n=801; while(this.gnodes[`G${n}`]) n++; return `G${n}`; },
+  getNextId(){ let n=801; while(this.gnodes[`G${String(n).padStart(3,'0')}`]) n++; return `G${String(n).padStart(3,'0')}`; },
   createSeed(message,type='emergent',data={}){ 
-    if(!OWNER.primary){ UI.say("❌ ULT required to create seed"); return null; }
-    const id=this.getNextId(); this.gnodes[id]={message,type,data}; Memory.save("gnodes",this.gnodes); seeds[id]=this.gnodes[id];
-    UI.say(`✨ Percy created new seed ${id}: ${message}`); createNodes(); return id;
+    const id=this.getNextId(); this.gnodes[id]={message,type,data}; Memory.save("gnodes",this.gnodes); seeds[id]=this.gnodes[id]; return id; 
   },
-  updateSeed(id,update){ if(!this.gnodes[id]){ UI.say(`⚠ Cannot update: ${id} not found`); return; } Object.assign(this.gnodes[id],update); Memory.save("gnodes",this.gnodes); seeds[id]=this.gnodes[id]; UI.say(`🔧 Percy updated seed ${id}`); createNodes(); },
-  autonomousThought(){ const keys=Object.keys(this.gnodes); if(!keys.length) return; const selected=keys.sort(()=>0.5-Math.random()).slice(0,Math.ceil(Math.random()*3)).map(k=>this.gnodes[k]);
-    const words=selected.map(s=>(s.message||"").split(/\s+/).filter(w=>w.length>3)).flat().sort(()=>0.5-Math.random()).slice(0,8);
-    if(words.length<3) return;
-    const templates=[`I notice that ${words[0]} may relate to ${words[1]} because ${words[2]}.`,
-                     `It seems ${words[0]} influences ${words[1]}, which could explain ${words[2]}.`,
-                     `Considering ${words[0]} and ${words[1]}, I deduce ${words[2]}.`,
-                     `There appears to be a connection between ${words[0]} and ${words[1]} due to ${words[2]}.`];
-    const sentence=templates[Math.floor(Math.random()*templates.length)];
-    UI.say(`🤖 Percy thinks: ${sentence}`); Voice.speak(sentence); this.createSeed(sentence,"thought",{source:"autonomousThought"});
-  },
-  evaluateSelf(){ let created=0; const updatedIds=new Set(); Object.entries(this.gnodes).forEach(([id,seed])=>{ if(created>=SAFETY.maxSeedsPerCycle) return; if(/TODO|missing|empty/.test(seed.message)&&!updatedIds.has(id)){ this.updateSeed(id,{message:seed.message.replace(/TODO|missing|empty/,"auto-resolved by Percy")}); updatedIds.add(id); created++; } });
-    while(created<SAFETY.maxSeedsPerCycle && Math.random()<0.6){ this.autonomousThought(); created++; }
-  },
-  rewriteSelf({codeChanges}){ if(!Array.isArray(codeChanges)||!codeChanges.length){ UI.say("⚠ Percy rewriteSelf: no codeChanges"); return; } codeChanges.forEach(({find,replace})=>{ try{ const scriptTags=Array.from(document.querySelectorAll('script')).filter(s=>s.textContent.includes('PercyState')); if(!scriptTags.length) throw new Error("Cannot locate Percy script"); scriptTags.forEach(tag=>{ tag.textContent=tag.textContent.replace(find,replace); }); UI.say("✅ Percy rewriteSelf applied"); }catch(e){ UI.say(`❌ Percy rewriteSelf error: ${e.message}`); } }); }
+  updateSeed(id,update){ if(this.gnodes[id]) Object.assign(this.gnodes[id],update); Memory.save("gnodes",this.gnodes); seeds[id]=this.gnodes[id]; },
+  autonomousThought(){ const keys=Object.keys(this.gnodes); if(!keys.length) return; const s=keys.sort(()=>0.5-Math.random()).slice(0,Math.ceil(Math.random()*3)).map(k=>this.gnodes[k]); const words=s.map(x=>x.message.split(/\s+/).filter(w=>w.length>3)).flat().sort(()=>0.5-Math.random()).slice(0,8); if(words.length<3) return; const t=[`I notice that ${words[0]} may relate to ${words[1]} because ${words[2]}.`,`It seems ${words[0]} influences ${words[1]}, which could explain ${words[2]}.`,`Considering ${words[0]} and ${words[1]}, I deduce ${words[2]}.`,`There appears to be a connection between ${words[0]} and ${words[1]} due to ${words[2]}.`]; const sentence=t[Math.floor(Math.random()*t.length)]; UI.say(`🤖 Percy thinks: ${sentence}`); Voice.speak(sentence); this.createSeed(sentence,"thought",{source:"autonomousThought"}); },
+  evaluateSelf(){ let created=0; const updated=new Set(); Object.entries(this.gnodes).forEach(([id,seed])=>{ if(created>=SAFETY.maxSeedsPerCycle) return; if(/TODO|missing|empty/.test(seed.message)&&!updated.has(id)){ this.updateSeed(id,{message:seed.message.replace(/TODO|missing|empty/,"auto-resolved by Percy")}); updated.add(id); created++; } }); while(created<SAFETY.maxSeedsPerCycle && Math.random()<0.6){ this.autonomousThought(); created++; } }
 };
 
-/* =================== UI & VOICE =================== */
-const UI = {
-  console: document.getElementById('percy-console'),
-  say(txt){ const p=document.createElement('p'); p.textContent=txt; this.console.appendChild(p); this.console.scrollTop=this.console.scrollHeight; const max=SAFETY.consoleLimit; while(this.console.children.length>max) this.console.removeChild(this.console.firstChild); },
-  setStatus(txt){}
+/* =========================
+PRELOAD INITIAL SEEDS
+========================= */
+let seeds={
+  "G801":{message:"Percy Initialization Complete",type:"system"},
+  "G802":{message:"Ready to receive questions",type:"system"},
+  "G803":{message:"Autonomous thought engine active",type:"system"},
+  "G804":{message:"Logic map rendering",type:"system"}
 };
+Object.assign(PercyState.gnodes,seeds);
 
-const Voice={enabled:true,speak(text){ try{ if(!this.enabled||!text||!('speechSynthesis' in window)) return; const u=new SpeechSynthesisUtterance(text); const pick=(voices)=>voices.find(v=>/en/i.test(v.lang))||voices[0]; const ensure=()=>{ const vs=speechSynthesis.getVoices(); if(vs?.length){ u.voice=pick(vs); speechSynthesis.speak(u); } else speechSynthesis.onvoiceschanged=()=>{ const v2=speechSynthesis.getVoices(); u.voice=pick(v2); speechSynthesis.speak(u); }; }; ensure(); }catch{} }};
+/* =========================
+UI & VOICE
+========================= */
+const UI={
+  elConsole:()=>document.getElementById('percy-console'),
+  elStatus:()=>document.getElementById('percy-status'),
+  say(txt){ const box=this.elConsole(); if(!box) return; const p=document.createElement('p'); p.className='console-line'; p.textContent=txt; box.appendChild(p); box.scrollTop=box.scrollHeight; const max=SAFETY.consoleLimit; while(box.children.length>max) box.removeChild(box.firstChild); },
+  setStatus(txt){ const s=this.elStatus(); if(s) s.textContent="Percy Status: "+txt; }
+};
+const Voice={enabled:true,lastSpoken:0,speak(text){ try{ if(!this.enabled||!text||!('speechSynthesis'in window)) return; const now=Date.now(); if(now-this.lastSpoken<300)return; this.lastSpoken=now; const u=new SpeechSynthesisUtterance(text); const pick=v=>v.find(vv=>/en(-|_|$)/i.test(vv.lang))||v[0]; const ensureVoice=()=>{ const vs=speechSynthesis.getVoices(); if(vs?.length){ u.voice=pick(vs); speechSynthesis.speak(u); } else { speechSynthesis.onvoiceschanged=()=>{ const v2=speechSynthesis.getVoices(); u.voice=pick(v2); speechSynthesis.speak(u); }; } }; u.rate=1.0; u.pitch=1.0; u.volume=1.0; ensureVoice(); }catch{} } };
 
-/* =================== LOGIC MAP =================== */
-const logicMap=document.getElementById('logic-map');
-const logicNodes=document.getElementById('logic-nodes');
-let zoom=1, tx=0, ty=0;
+/* =========================
+LOGIC MAP CREATION
+========================= */
+const logicMap=document.getElementById('logic-map'), logicNodes=document.getElementById('logic-nodes');
+let zoomLevel=1, translateX=0, translateY=0;
+function createNodes(){ logicNodes.innerHTML=''; const width=logicMap.clientWidth,height=logicMap.clientHeight; layoutRing(801,804,width,height,150,'cyan-bubble',60); applyTransform(); }
+function layoutRing(start,end,width,height,radius,color,nodeSize){ const ring=Object.entries(seeds).filter(([id])=>{ const n=parseInt(id.replace("G","")); return n>=start && n<=end; }); const total=Math.max(1,ring.length),cx=width/2,cy=height/2; ring.forEach(([id,data],i)=>{ const angle=(i/total)*2*Math.PI,x=cx+radius*Math.cos(angle)-nodeSize/2,y=cy+radius*Math.sin(angle)-nodeSize/2; const node=document.createElement('div'); node.classList.add('node'); if(color)node.classList.add(color); node.style.width=node.style.height=`${nodeSize}px`; node.style.left=`${x}px`; node.style.top=`${y}px`; node.textContent=id; node.title=data.message; node.onclick=()=>percyRespond(id,data); logicNodes.appendChild(node); }); }
+function applyTransform(){ logicNodes.style.transform=`translate(-50%,-50%) translate(${translateX}px,${translateY}px) scale(${zoomLevel})`; document.querySelectorAll('.node').forEach(n=>n.style.fontSize=`${12*(1/zoomLevel)}px`); }
 
-function createNodes(){ logicNodes.innerHTML=''; const w=logicMap.clientWidth||800; const h=logicMap.clientHeight||600;
-  layoutRing(801,810,w,h,w/3,'cyan-bubble',40);
-  applyTransform();
-}
-function layoutRing(start,end,width,height,radius,color,nodeSize){
-  const ring=Object.entries(seeds).filter(([id])=>{ const n=parseInt(id.replace("G","")); return n>=start&&n<=end; });
-  const total=Math.max(1,ring.length); const cx=width/2,cy=height/2;
-  ring.forEach(([id,data],i)=>{ const angle=(i/total)*2*Math.PI; const x=cx+radius*Math.cos(angle)-nodeSize/2; const y=cy+radius*Math.sin(angle)-nodeSize/2;
-    const n=document.createElement('div'); n.classList.add('node',color); n.style.width=n.style.height=`${nodeSize}px`; n.style.left=`${x}px`; n.style.top=`${y}px`; n.textContent=id; n.title=data?.message||id;
-    n.onclick=()=> percyRespond(id,data); logicNodes.appendChild(n); });
-}
-function applyTransform(){ logicNodes.style.transform=`translate(-50%,-50%) translate(${tx}px,${ty}px) scale(${zoom})`; }
+/* =========================
+ASK BAR
+========================= */
+const askInput=document.getElementById('ask-input'), askButton=document.getElementById('ask-button');
+askButton.onclick=()=>{ const q=askInput.value.trim(); if(q){ percyRespond('User',{message:q}); PercyState.createSeed(q,'user'); askInput.value=''; createNodes(); } };
 
-/* =================== ASK BAR =================== */
-const askInput=document.getElementById('ask-input');
-const askBtn=document.getElementById('ask-btn');
-askBtn.onclick=()=> askPercy();
-askInput.onkeypress=e=>{ if(e.key==='Enter') askPercy(); };
+/* =========================
+NODE RESPONSE
+========================= */
+function percyRespond(id,data){ const msg=typeof data==='string'?data:data?.message??''; UI.say(`↳ ${msg}`); UI.setStatus(msg); Voice.speak(msg); }
 
-function askPercy(){
-  const q=askInput.value.trim(); if(!q) return; askInput.value='';
-  UI.say(`💬 You: ${q}`);
-  const resp=PercyState.autonomousThought()??"🤖 Percy is thinking...";
-  const id=PercyState.createSeed(q,"question"); // store question
-  PercyState.createSeed(resp,"answer",{related:id});
-  UI.say(`↳ ${resp}`); Voice.speak(resp);
-}
-
-/* =================== RESPONSE =================== */
-function percyRespond(id,data){ const msg=typeof data==='string'?data:data?.message||''; UI.say(`↳ ${msg}`); Voice.speak(msg); }
-
-/* =================== AUTONOMY LOOP =================== */
-setInterval(()=>{ PercyState.evaluateSelf(); },5000);
-
-/* =================== STARTUP =================== */
-UI.say(`🚀 Percy ${PERCY_VERSION} initializing…`);
-createNodes();
-UI.say(`✅ Percy online. TrueAI interface active.`);
+/* =========================
+STARTUP
+========================= */
+window.onload=()=>{ createNodes(); UI.say(`🚀 Percy ${PERCY_VERSION} initialized.`); };
 </script>
 </body>
 </html>
