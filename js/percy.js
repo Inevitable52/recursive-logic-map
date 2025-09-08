@@ -644,4 +644,74 @@ if (typeof PercyState !== 'undefined') {
   console.error("❌ PercyState not found; cannot load Part C.");
 }
 
+// =========================
+// SELF-REWRITE SYSTEM
+// =========================
+async function rewriteSelf() {
+  try {
+    const currentCode = localStorage.getItem("percy:currentCode") || "";
+    const newCode = generateMutatedCode(currentCode);
+
+    if (!newCode || newCode.length < 100) {
+      UI.say("⚠️ Percy attempted rewrite but produced invalid code");
+      return;
+    }
+
+    // Save history
+    Memory.push("rewriteHistory", {
+      timestamp: new Date().toISOString(),
+      oldLength: currentCode.length,
+      newLength: newCode.length,
+      diffPreview: newCode.slice(0, 200) // first 200 chars
+    }, 50);
+
+    // Save the new code for persistence
+    localStorage.setItem("percy:currentCode", newCode);
+
+    UI.say("✅ Percy rewriteSelf applied successfully — reloading...");
+    Voice.speak("I have rewritten part of myself and will now reload.");
+
+    // Reload Percy with new code
+    setTimeout(() => {
+      const blob = new Blob([newCode], { type: "application/javascript" });
+      const url = URL.createObjectURL(blob);
+      const script = document.createElement("script");
+      script.src = url;
+      document.body.appendChild(script);
+      UI.say("🔄 Percy reloaded with updated logic.");
+    }, 1000);
+
+  } catch (err) {
+    UI.say("❌ rewriteSelf error: " + err.message);
+    console.error(err);
+  }
+}
+
+// =========================
+// MUTATION GENERATOR
+// (very simple example now, but expandable later)
+// =========================
+function generateMutatedCode(baseCode) {
+  if (!baseCode) {
+    // Bootstrap: take the current script in DOM
+    const scripts = document.querySelectorAll("script");
+    const thisScript = Array.from(scripts).find(s => s.textContent.includes("Percy"));
+    return thisScript ? thisScript.textContent : "";
+  }
+
+  let mutated = baseCode;
+
+  // Example mutations:
+  const mutations = [
+    () => mutated.replace(/console\.log/g, "UI.say"),
+    () => mutated.replace(/setInterval/g, "setTimeout"),
+    () => mutated.replace(/Percy TrueAI/g, "Percy TrueAI (self-refined)"),
+  ];
+
+  // Randomly apply one
+  const m = mutations[Math.floor(Math.random() * mutations.length)];
+  mutated = m();
+
+  return mutated;
+}
 
