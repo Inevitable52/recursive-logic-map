@@ -598,3 +598,50 @@ STARTUP
   UI.say("✅ Percy online. Autonomy, persistent memory, meta-mutation, learning, and Puppeteer control active.");
 })();
 
+// === percy.js (Part C) ===
+// Self-modification & Interactive Ask/Command Functions
+
+// Ensure PercyState exists
+if (typeof PercyState !== 'undefined') {
+
+  // Add rewriteSelf function
+  PercyState.rewriteSelf = function({ codeChanges }) {
+    if (!Array.isArray(codeChanges) || !codeChanges.length) {
+      UI.say("⚠ Percy rewriteSelf: no codeChanges provided");
+      return;
+    }
+
+    codeChanges.forEach(({ find, replace }) => {
+      try {
+        const scriptTags = Array.from(document.querySelectorAll('script')).filter(s => s.textContent.includes('PercyState'));
+        if (!scriptTags.length) throw new Error("Cannot locate Percy script for rewrite");
+
+        scriptTags.forEach(tag => {
+          const oldCode = tag.textContent;
+          const newCode = oldCode.replace(find, replace);
+          tag.textContent = newCode;
+        });
+
+        UI.say("✅ Percy rewriteSelf applied successfully");
+      } catch (e) {
+        UI.say(`❌ Percy rewriteSelf error: ${e.message}`);
+      }
+    });
+  };
+
+  // Interactive ask function
+  window.percyAsk = async function(promptText) {
+    if (!promptText) return null;
+    return new Promise(resolve => {
+      const response = window.prompt(`🤖 Percy asks:\n${promptText}`);
+      resolve(response);
+    });
+  };
+
+  UI.say("🧩 Percy Part C (self-mod + interactive) loaded.");
+
+} else {
+  console.error("❌ PercyState not found; cannot load Part C.");
+}
+
+
