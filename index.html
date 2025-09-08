@@ -64,6 +64,24 @@ const PercyState = {
 
 let seeds={};
 
+// ==== AUTO-BOOTSTRAP SEEDS FOR FIRST RUN ====
+if(Object.keys(PercyState.gnodes).length === 0){
+  const exampleSeeds = [
+    {id:'G080',msg:'Initial cyan seed example'},
+    {id:'G201',msg:'Initial blue seed example'},
+    {id:'G301',msg:'Initial magenta seed example'},
+    {id:'G401',msg:'Initial red seed example'},
+    {id:'G501',msg:'Initial orange seed example'},
+    {id:'G601',msg:'Initial yellow seed example'},
+    {id:'G701',msg:'Initial green seed example'}
+  ];
+  exampleSeeds.forEach(s=>{
+    PercyState.gnodes[s.id]={message:s.msg,type:'bootstrap',data:{}};
+    seeds[s.id]=PercyState.gnodes[s.id];
+  });
+  Memory.save('gnodes',PercyState.gnodes);
+}
+
 // ==== UI ====
 const UI = {
   elConsole:()=>document.getElementById('percy-console'),
@@ -103,7 +121,8 @@ function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
     const x=centerX+radius*Math.cos(angle)-nodeSize/2;
     const y=centerY+radius*Math.sin(angle)-nodeSize/2;
     const node=document.createElement('div');
-    node.classList.add('node'); if(colorClass) node.classList.add(colorClass);
+    node.classList.add('node'); 
+    if(colorClass) node.classList.add(colorClass);
     node.style.width=node.style.height=`${nodeSize}px`;
     node.style.left=`${x}px`; node.style.top=`${y}px`;
     node.textContent=id;
@@ -133,13 +152,15 @@ document.getElementById('interpreter-input').addEventListener('keydown',e=>{
     const q=e.target.value.trim(); if(!q)return; e.target.value='';
     UI.say(`💬 You asked: ${q}`);
     Voice.speak(`You asked: ${q}`);
-    // simulate response
     setTimeout(()=>{ PercyState.autonomousThought(); createNodes(); },200);
   }
 });
 
 document.getElementById('seed-search').addEventListener('input',e=>{
-  const val=e.target.value.toUpperCase(); document.querySelectorAll('.node').forEach(n=>{ n.style.display=n.textContent.includes(val)?'flex':'none'; });
+  const val=e.target.value.toUpperCase(); 
+  document.querySelectorAll('.node').forEach(n=>{
+    n.style.display=n.textContent.includes(val)?'flex':'none';
+  });
 });
 
 createNodes();
@@ -147,14 +168,13 @@ PercyState.evaluateSelf();
 
 // ==== TRUE AI LOOP ====
 let autoLoopInterval = null;
-
 function startPercyLoop(){
   if(autoLoopInterval) clearInterval(autoLoopInterval);
   autoLoopInterval = setInterval(()=>{
     PercyState.evaluateSelf();
     createNodes();
     UI.setStatus(`🟢 Percy active, ${Object.keys(seeds).length} seeds loaded`);
-  }, 3000); // every 3 seconds
+  }, 3000);
 }
 
 // ==== BUBBLE GLOW ANIMATION ====
@@ -185,13 +205,12 @@ logicMap.addEventListener('mousemove', e=>{
     applyTransform();
   }
 });
-logicMap.addEventListener('mouseup', e=>{ isDragging=false; });
-logicMap.addEventListener('mouseleave', e=>{ isDragging=false; });
+logicMap.addEventListener('mouseup', ()=>{ isDragging=false; });
+logicMap.addEventListener('mouseleave', ()=>{ isDragging=false; });
 
 // ==== AUTO SELF-REWRITE ====
 function selfRewrite(){
   try{
-    // randomly pick a seed to rewrite
     const keys = Object.keys(PercyState.gnodes);
     if(!keys.length) return;
     const id = keys[Math.floor(Math.random()*keys.length)];
@@ -214,6 +233,8 @@ startPercyLoop();
 animateBubbles();
 UI.say(`✅ Percy TrueAI v${PERCY_VERSION} initialized`);
 Voice.speak(`Percy TrueAI online`);
+
+});
 </script>
 </body>
 </html>
