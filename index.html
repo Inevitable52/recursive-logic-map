@@ -13,11 +13,16 @@
     position: fixed; bottom: 210px; width: 100%; height: 24px; color: #0f0;
     font-family: monospace;
   }
+
   /* Logic map container */
   #logic-map {
     position: relative; width: 100vw; height: 90vh; background: #0a0a0f; overflow: hidden;
   }
-  #logic-nodes { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+  #logic-nodes {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  }
+
+  /* Node styles */
   .node {
     position: absolute; border-radius: 50%; display: flex; align-items: center; justify-content: center;
     font-weight: 700; color: #fff; cursor: pointer;
@@ -31,15 +36,19 @@
   }
   .node:hover { transform: scale(1.08); filter: brightness(1.15); }
   .node:active { transform: scale(0.98); }
-  .cyan-bubble{ color:#00eaff; } .blue-bubble{ color:#27a0ff; }
-  .magenta-bubble{ color:#ff4af0; } .red-bubble{ color:#ff3b3b; }
-  .orange-bubble{ color:#ff9d2e; } .yellow-bubble{ color:#ffe44a; }
+
+  /* Bubble colors */
+  .cyan-bubble{ color:#00eaff; }
+  .blue-bubble{ color:#27a0ff; }
+  .magenta-bubble{ color:#ff4af0; }
+  .red-bubble{ color:#ff3b3b; }
+  .orange-bubble{ color:#ff9d2e; }
+  .yellow-bubble{ color:#ffe44a; }
   .pink-bubble{ color:#ff6bd8; }
 </style>
 </head>
 <body>
 
-<!-- UI Elements -->
 <div id="percy-console"></div>
 <div id="percy-message"></div>
 <div id="logic-map">
@@ -47,7 +56,6 @@
 </div>
 
 <script>
-// Wait for DOM to be ready
 document.addEventListener("DOMContentLoaded", () => {
 
   // ====== UI ======
@@ -97,25 +105,25 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // ====== PercyState skeleton ======
+  // ====== PercyState & Seeds ======
   window.PercyState = {
-    gnodes: {}, createSeed(msg){ UI.say("✨ Percy created seed: "+msg); }
+    gnodes: {}, 
+    createSeed(msg){ UI.say("✨ Percy created seed: "+msg); },
+    rewriteSelf({codeChanges}) {
+      if(!Array.isArray(codeChanges)) return UI.say("⚠ No codeChanges provided");
+      codeChanges.forEach(({find,replace})=>{
+        try{
+          const scriptTags = Array.from(document.querySelectorAll('script')).filter(s=>s.textContent.includes('PercyState'));
+          scriptTags.forEach(tag=>{
+            tag.textContent = tag.textContent.replace(find, replace);
+          });
+          UI.say("✅ Percy rewriteSelf applied");
+        } catch(e){ UI.say("❌ Percy rewriteSelf error: "+e.message); }
+      });
+    }
   };
 
-  // ====== Self-modification ======
-  PercyState.rewriteSelf = function({codeChanges}) {
-    if(!Array.isArray(codeChanges)) return UI.say("⚠ No codeChanges provided");
-    codeChanges.forEach(({find,replace})=>{
-      try{
-        const scriptTags = Array.from(document.querySelectorAll('script')).filter(s=>s.textContent.includes('PercyState'));
-        scriptTags.forEach(tag=>{
-          tag.textContent = tag.textContent.replace(find, replace);
-        });
-        UI.say("✅ Percy rewriteSelf applied");
-      } catch(e){ UI.say("❌ Percy rewriteSelf error: "+e.message); }
-    });
-  };
-
+  // ====== Ask Bar ======
   window.percyAsk = async function(promptText){
     if(!promptText) return null;
     return new Promise(resolve=>{
@@ -124,7 +132,23 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  UI.say("✅ UI & PercyState initialized. Percy can now rewrite his own code.");
+  // ====== Logic Map Example ======
+  const nodesContainer = document.getElementById('logic-nodes');
+  function addNode(name, color="cyan-bubble", x=0, y=0){
+    const node = document.createElement('div');
+    node.className = `node ${color}`;
+    node.style.width = "80px"; node.style.height="80px";
+    node.style.left = x+"px"; node.style.top = y+"px";
+    node.textContent = name;
+    nodesContainer.appendChild(node);
+  }
+  // Demo nodes
+  addNode("G1", "cyan-bubble", -100, -50);
+  addNode("G2", "blue-bubble", 120, -80);
+  addNode("G3", "magenta-bubble", -40, 130);
+
+  UI.say("✅ Full Percy system initialized: UI, Voice, Self-Rewrite, Ask Bar, and Logic Map.");
+  Voice.speak("Percy system is online.");
 
 });
 </script>
