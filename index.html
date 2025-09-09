@@ -50,7 +50,7 @@ const SAFETY = { maxActionsPerMinute:20, maxSeedsPerCycle:5, consoleLimit:500 };
 const OWNER = { primary:"Fabian", secondary:"Lorena" };
 const PERCY_VERSION="8.3.3-neon-bubbles-voice (optimized)";
 
-// ==== MEMORY ====
+// MEMORY
 const Memory = {
   _k:k=>`percy:${k}`,
   load(k,fallback){ try{ const raw=localStorage.getItem(this._k(k)); return raw?JSON.parse(raw):(fallback??null);}catch{return fallback;}},
@@ -58,7 +58,7 @@ const Memory = {
   push(k,v,max=1000){const arr=this.load(k,[])||[]; arr.push(v); if(arr.length>max) arr.shift(); this.save(k,arr);}
 };
 
-// ==== PERCY STATE ====
+// PERCY STATE
 const PercyState = {
   gnodes: Memory.load("gnodes",{})||{},
   getNextId(){ let next=801; while(this.gnodes[`G${String(next).padStart(3,'0')}`]) next++; return `G${String(next).padStart(3,'0')}`; },
@@ -75,7 +75,7 @@ const PercyState = {
 
 let seeds={...PercyState.gnodes};
 
-// ==== AUTO-BOOTSTRAP SEEDS ====
+// AUTO-BOOTSTRAP SEEDS
 if(Object.keys(PercyState.gnodes).length === 0){
   const exampleSeeds = [
     {id:'G080',msg:'Initial cyan seed example'},
@@ -90,7 +90,7 @@ if(Object.keys(PercyState.gnodes).length === 0){
   Memory.save('gnodes',PercyState.gnodes);
 }
 
-// ==== UI ====
+// UI
 const UI = {
   elConsole:()=>document.getElementById('percy-console'),
   elMsg:()=>document.getElementById('percy-message'),
@@ -98,14 +98,14 @@ const UI = {
   setStatus(txt){ const m=this.elMsg(); if(m)m.textContent=txt; }
 };
 
-// ==== VOICE ====
+// VOICE
 const Voice = { enabled:true, lastSpoken:0, speak(text){ try{ if(!this.enabled||!('speechSynthesis' in window)||!text)return; const now=Date.now(); if(now-this.lastSpoken<300)return; this.lastSpoken=now; const u=new SpeechSynthesisUtterance(text); const pick=v=>v.find(vv=>/en(-|_|$)/i.test(vv.lang))||v[0]; const ensureVoice=()=>{ const vs=speechSynthesis.getVoices(); if(vs?.length){ u.voice=pick(vs); speechSynthesis.speak(u);} else { speechSynthesis.onvoiceschanged=()=>{ const v2=speechSynthesis.getVoices(); u.voice=pick(v2); speechSynthesis.speak(u);}; }}; u.rate=1.0; u.pitch=1.0; u.volume=1.0; ensureVoice(); }catch{} } };
 
-// ==== LOGIC MAP & NODES ====
+// LOGIC MAP & NODES
 const logicMap=document.getElementById('logic-map');
 const logicNodes=document.getElementById('logic-nodes');
 
-// ==== CREATE NODES ====
+// CREATE NODES
 function createNodes(){
   logicNodes.innerHTML = '';
   const keys = Object.keys(seeds);
@@ -127,7 +127,7 @@ function createNodes(){
   });
 }
 
-// ==== PART C: INTERACTIVITY ====
+// PART C INTERACTIVITY
 (function waitForPercyState(){
   if(typeof PercyState === 'undefined'){
     setTimeout(waitForPercyState,200);
@@ -157,6 +157,8 @@ function createNodes(){
 
   Voice.speak(`Percy TrueAI online`);
 })();
+
+}); // <--- closes DOMContentLoaded listener
 </script>
 
 </body>
