@@ -35,78 +35,56 @@
 
 <script src="./js/percy.js"></script>
 <script>
-// Chat elements
 const chatBox = document.getElementById('chat-container');
 const input = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
 
-// Conversation memory
+// Memory for context
 const PercyMemory = [];
 
-// Async typeMessage function
-function typeMessageAsync(sender, msg, speed=25){
-    return new Promise(resolve=>{
-        const p = document.createElement('p');
-        p.textContent = `${sender}: `;
-        chatBox.appendChild(p);
-        let i=0;
-        function typeNext(){
-            if(i<msg.length){
-                p.textContent += msg[i];
-                i++;
-                chatBox.scrollTop = chatBox.scrollHeight;
-                setTimeout(typeNext, speed);
-            } else resolve();
+// Typed message helper
+function typeMessage(sender, msg, speed=25){
+    const p = document.createElement('p');
+    p.textContent = `${sender}: `;
+    chatBox.appendChild(p);
+    let i=0;
+    function typeNext(){
+        if(i<msg.length){
+            p.textContent += msg[i];
+            i++;
+            chatBox.scrollTop = chatBox.scrollHeight;
+            setTimeout(typeNext, speed);
         }
-        typeNext();
-    });
+    }
+    typeNext();
 }
 
-// Enhanced thinker with seed creation
-async function PercyThink(input){
+// Dynamic thinker
+function PercyThink(input){
     PercyMemory.push({role:'user', text:input});
     const lower = input.toLowerCase();
-
-    // Insight example: WatsonxGranitePanGu
-    if(lower.includes('watson')){
-        const insight = "There appears to be a connection between WatsonxGranitePanGu-ΣDeepSeekQwen and WatsonIBM due to AutoGPTRobot.";
-        
-        // Create seed in logic map
-        if(PercyState?.createSeed){
-            const seedId = PercyState.createSeed(insight, 'logicInsight');
-            await PercyState.speak(`✨ Percy created new seed G${seedId}: ${insight}`);
-            // Optional: refresh logic map UI
-            if(typeof PercyState.refreshLogicMap === 'function') PercyState.refreshLogicMap();
-        }
-        return `🤖 Percy thinks: ${insight}`;
-    }
-
-    // Basic keyword responses
     if(lower.includes('hello') || lower.includes('hi')) return "Hello! How are you today?";
     if(lower.includes('how are you')) return "I am fully operational, thank you for asking!";
     if(lower.includes('your name')) return "I am Percy, your AI companion.";
     if(lower.includes('what can you do')) return "I can speak, think, and even rewrite my own logic safely!";
-
-    // Context-aware fallback
-    if(PercyMemory.length > 3){
-        return "We've been chatting for a while. Tell me more!";
-    }
-
+    if(PercyMemory.length > 3) return "We've been chatting for a while. Tell me more!";
     return "Hmm, tell me more…";
 }
 
-// Override Percy speak to use typing
+// Hook PercyState to always type messages
 if(window.PercyState){
-    PercyState.speak = async function(msg){
-        await typeMessageAsync('🤖 Percy', msg);
+    const originalSpeak = PercyState.speak;
+    PercyState.speak = function(msg){
+        typeMessage('🤖 Percy', msg);
+        if(typeof originalSpeak==='function') originalSpeak.call(PercyState,msg);
     }
 }
 
 // Handle user input
 async function handleUserInput(msg){
     if(!msg) return;
-    await typeMessageAsync('You', msg);
-    const response = await PercyThink(msg);
+    typeMessage('You', msg);
+    const response = PercyThink(msg);
     PercyState.speak(response);
 }
 
@@ -132,7 +110,7 @@ async function enablePercyAutonomy(){
     while(true){
         if(PercyState.autonomousQueue.length){
             const thought = PercyState.autonomousQueue.shift();
-            await PercyState.speak(thought);
+            PercyState.speak(thought);
         }
 
         if(PercyState.canRewriteCode){
@@ -140,9 +118,9 @@ async function enablePercyAutonomy(){
                 const code = await PercyState.getCode();
                 const newCode = PercyState.rewriteCode(code);
                 PercyState.updateCode(newCode);
-                await PercyState.speak("I've improved my own logic autonomously!");
+                PercyState.speak("I've improved my own logic autonomously!");
             }catch(e){
-                await PercyState.speak("Error rewriting code: "+e.message);
+                PercyState.speak("Error rewriting code: "+e.message);
             }
         }
 
@@ -150,6 +128,7 @@ async function enablePercyAutonomy(){
     }
 }
 
+// Start autonomous thoughts
 enablePercyAutonomy();
 </script>
 </body>
