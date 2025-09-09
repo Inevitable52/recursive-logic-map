@@ -44,6 +44,25 @@
     content:''; position:absolute; bottom:-8px; left:50%; transform:translateX(-50%);
     border-width:8px; border-style:solid; border-color: rgba(0,0,0,0.6) transparent transparent transparent;
   }
+
+  /* ==== Voice Bars ==== */
+  #voice-bars { display:flex; justify-content:center; gap:3px; margin-top:4px; }
+  #voice-bars .bar {
+    width:4px; height:4px; background:#00eaff; border-radius:2px; transform-origin: bottom center;
+    animation: barWave 1s infinite ease-in-out paused;
+  }
+  #voice-bars .bar:nth-child(1){ animation-delay:0s; }
+  #voice-bars .bar:nth-child(2){ animation-delay:0.1s; }
+  #voice-bars .bar:nth-child(3){ animation-delay:0.2s; }
+  #voice-bars .bar:nth-child(4){ animation-delay:0.3s; }
+  #voice-bars .bar:nth-child(5){ animation-delay:0.4s; }
+  #voice-bars .bar:nth-child(6){ animation-delay:0.5s; }
+  #voice-bars .bar:nth-child(7){ animation-delay:0.6s; }
+
+  @keyframes barWave {
+    0%,100%{ transform: scaleY(0.3); }
+    50%{ transform: scaleY(1); }
+  }
 </style>
 </head>
 <body>
@@ -52,7 +71,17 @@
   <div id="logic-nodes"></div>
   <div id="percy-console" style="position:absolute;bottom:0;left:0;width:100%;max-height:200px;overflow-y:auto;background:rgba(0,0,0,0.4);padding:8px;"></div>
   <div id="percy-message" style="position:absolute;top:0;left:0;width:100%;padding:4px;font-size:14px;"></div>
-  <div id="voice-box"></div>
+  <div id="voice-box">
+    <div id="voice-bars">
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+    </div>
+  </div>
 </div>
 
 <input id="seed-search" placeholder="Search seeds..." style="position:absolute;top:36px;left:10px;width:200px;padding:4px;">
@@ -110,13 +139,18 @@ const Voice = {
 
       // -- Show voice bubble --
       const box = document.getElementById('voice-box');
+      const bars = document.querySelectorAll('#voice-bars .bar');
       if(box){
         box.textContent = text;
+        box.appendChild(document.getElementById('voice-bars')); // keep bars visible
         box.style.opacity = 1;
         box.style.transform = 'translateX(-50%) translateY(0)';
+        bars.forEach(bar=>bar.style.animationPlayState='running');
+
         setTimeout(()=>{
           box.style.opacity = 0;
           box.style.transform = 'translateX(-50%) translateY(-20px)';
+          bars.forEach(bar=>bar.style.animationPlayState='paused');
         }, 3500);
       }
 
@@ -139,7 +173,7 @@ const Voice = {
   } 
 };
 
-// ==== LOGIC MAP ====
+// ==== LOGIC MAP & NODE CREATION ====
 const logicMap=document.getElementById('logic-map');
 const logicNodes=document.getElementById('logic-nodes');
 let zoomLevel=1,translateX=0,translateY=0;
