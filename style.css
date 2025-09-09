@@ -1,4 +1,4 @@
-/* === Percy Phase 8.3.3 CSS (Optimized Neon Glow Bubbles with Blossoming Rings) === */
+/* === Percy Phase 8.3.4 CSS (Fully Corrected Neon Glow Bubbles & Voice Visualizer) === */
 
 body {
     margin: 0;
@@ -48,18 +48,18 @@ body {
     max-width: 80px;
     max-height: 80px;
     z-index: 1;
-    font-size: calc(0.85rem + 0.3vw); /* scales with viewport */
+    font-size: calc(0.85rem + 0.3vw);
     user-select: none;
 
-    color: white; /* fallback text */
-    background: rgba(0,0,0,0.15); /* translucent bubble */
+    color: white; 
+    background: rgba(0,0,0,0.15); 
     border: 2px solid currentColor;
     box-shadow: 0 0 12px rgba(255,255,255,0.25), 0 0 32px rgba(255,255,255,0.15);
-    backdrop-filter: blur(3px); /* soft glow interior */
+    backdrop-filter: blur(3px);
     animation: pulseGlow 2s infinite ease-in-out alternate;
 }
 
-/* === Outer Ring (Blossoming Halo) === */
+/* === Outer Ring / Halo === */
 .node::before {
     content: '';
     position: absolute;
@@ -67,7 +67,7 @@ body {
     border-radius: 50%;
     border: 1.5px solid currentColor;
     opacity: 0.35;
-    box-shadow: 0 0 16px currentColor, 0 0 32px currentColor;
+    box-shadow: 0 0 16px currentColor, 0 0 32px currentColor, inset 0 0 8px rgba(255,255,255,0.1);
     z-index: 0;
     transform-origin: center center;
     transition: transform 0.25s ease, opacity 0.25s ease;
@@ -85,14 +85,14 @@ body {
     opacity: 0.5;
 }
 
-/* === Neon Ring Colors === */
-.blue-ring      { color: #4A90E2; }
-.purple-ring    { color: #CDA4FF; }
-.red-ring       { color: #FF6B6B; }
-.crimson-ring   { color: #DC143C; }
-.gold-ring      { color: #FFD700; }
-.neon-pink-ring { color: #FF6EC7; }
-.teal-ring      { color: #1DE9B6; }
+/* === Neon Bubble Colors (matching your HTML) === */
+.cyan-bubble      { color: #00eaff; }
+.blue-bubble      { color: #27a0ff; }
+.magenta-bubble   { color: #ff4af0; }
+.red-bubble       { color: #ff3b3b; }
+.orange-bubble    { color: #ff9d2e; }
+.yellow-bubble    { color: #ffe44a; }
+.green-bubble     { color: #4caf50; }
 
 /* === Tooltip via title attribute === */
 .node::after {
@@ -156,13 +156,7 @@ body {
     transition: transform 0.15s ease, font-size 0.15s ease;
 }
 
-/* === Responsive Adjustments === */
-@media (max-width: 768px) {
-    .node { font-size: 10px; min-width: 10px; min-height: 10px; }
-    .node::after { font-size: 0.65rem; max-width: 150px; }
-}
-
-/* === Extra Helpers for Smooth Ring Layout === */
+/* === Smooth Ring Layout === */
 .node[data-ring] {
     transition: left 0.25s ease, top 0.25s ease, transform 0.25s ease;
 }
@@ -174,36 +168,52 @@ body {
 }
 
 /* === Voice Visualizer === */
-#voice-visualizer {
-    position: fixed;
-    bottom: 200px; /* above console */
+#voice-box {
+    position: absolute;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: rgba(0,0,0,0.6);
+    color: #00eaff;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    max-width: 60%;
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    z-index: 999;
+}
+#voice-box::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
     left: 50%;
     transform: translateX(-50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    z-index: 2000;
+    border-width: 8px;
+    border-style: solid;
+    border-color: rgba(0,0,0,0.6) transparent transparent transparent;
 }
 
 #voice-bars {
     display: flex;
-    gap: 3px;
-    height: 40px;
+    justify-content: center;
     align-items: flex-end;
+    margin-top: 6px;
+    height: 30px;
+}
+#voice-bars .bar {
+    width: 4px;
+    margin: 0 1px;
+    background: #00eaff;
+    border-radius: 2px;
 }
 
-.voice-bar {
-    width: 6px;
-    background: linear-gradient(180deg, #00e5ff, #2979ff);
-    border-radius: 3px;
-    height: 8px; /* will be animated by JS */
-    transition: height 0.05s linear;
-}
-
-#voice-waveform {
-    width: 220px;
-    height: 50px;
+#voice-wave {
+    display: block;
+    margin: 6px auto 0 auto;
     background: rgba(0,0,0,0.2);
     border-radius: 6px;
 }
