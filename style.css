@@ -1,4 +1,4 @@
-/* === Percy Phase 8.3.2 CSS (Neon Glow Bubbles with Blossoming Rings) === */
+/* === Percy Phase 8.3.3 CSS (Optimized Neon Glow Bubbles with Blossoming Rings) === */
 
 body {
     margin: 0;
@@ -48,16 +48,18 @@ body {
     max-width: 80px;
     max-height: 80px;
     z-index: 1;
-    font-size: 0.85rem; /* base size, dynamically scaled by JS */
+    font-size: calc(0.85rem + 0.3vw); /* scales with viewport */
     user-select: none;
 
     color: white; /* fallback text */
-    background: rgba(0,0,0,0.15); /* translucent bubble center */
-    border: 2px solid currentColor; /* neon edge */
-    box-shadow: 0 0 12px rgba(255,255,255,0.25), 0 0 32px rgba(255,255,255,0.15); /* glowing aura */
+    background: rgba(0,0,0,0.15); /* translucent bubble */
+    border: 2px solid currentColor;
+    box-shadow: 0 0 12px rgba(255,255,255,0.25), 0 0 32px rgba(255,255,255,0.15);
+    backdrop-filter: blur(3px); /* soft glow interior */
+    animation: pulseGlow 2s infinite ease-in-out alternate;
 }
 
-/* === Extra Outer Ring (Blossoming Halo) === */
+/* === Outer Ring (Blossoming Halo) === */
 .node::before {
     content: '';
     position: absolute;
@@ -67,14 +69,15 @@ body {
     opacity: 0.35;
     box-shadow: 0 0 16px currentColor, 0 0 32px currentColor;
     z-index: 0;
+    transform-origin: center center;
     transition: transform 0.25s ease, opacity 0.25s ease;
 }
 
-/* Node Hover Effects */
+/* === Node Hover Effects === */
 .node:hover {
     transform: scale(1.35);
     box-shadow: 0 0 24px currentColor, 0 0 48px currentColor;
-    z-index: 100;
+    z-index: 10000;
 }
 
 .node:hover::before {
@@ -82,7 +85,7 @@ body {
     opacity: 0.5;
 }
 
-/* === Neon Ring Colors (use as text + glow color) === */
+/* === Neon Ring Colors === */
 .blue-ring      { color: #4A90E2; }
 .purple-ring    { color: #CDA4FF; }
 .red-ring       { color: #FF6B6B; }
@@ -162,4 +165,10 @@ body {
 /* === Extra Helpers for Smooth Ring Layout === */
 .node[data-ring] {
     transition: left 0.25s ease, top 0.25s ease, transform 0.25s ease;
+}
+
+/* === Pulsating Glow Animation === */
+@keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 12px currentColor, 0 0 32px currentColor; }
+    50% { box-shadow: 0 0 20px currentColor, 0 0 48px currentColor; }
 }
