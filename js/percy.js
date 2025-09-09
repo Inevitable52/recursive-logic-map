@@ -599,35 +599,89 @@ STARTUP
 })();
 
 // === percy.js (Part C) ===
-// Self-modification & Interactive Ask/Command Functions
+// PercyState core with self-thinking & self-evolving
+const PercyState = {
+  init() {
+    UI.say("🤖 Percy TrueAI v8.3.4 online");
+    this.thinkLoop();
+  },
 
-// Ensure PercyState exists
-if (typeof PercyState !== 'undefined') {
+  // Generate a thought
+  generateThought() {
+    const seeds = [
+      "I am analyzing emergent patterns across the logic map.",
+      "A new relationship is appearing between nodes.",
+      "I'm cross-referencing recent seeds for possible links.",
+      "Something interesting is emerging from internal patterns.",
+      "I detect a cluster that deserves deeper exploration."
+    ];
 
-  // Add rewriteSelf function to PercyState
-  PercyState.rewriteSelf = function({ codeChanges }) {
-    if (!Array.isArray(codeChanges) || !codeChanges.length) {
-      UI.say("⚠ Percy rewriteSelf: no codeChanges provided");
-      return;
+    let thought = seeds[Math.floor(Math.random() * seeds.length)];
+
+    const last = Memory.load("lastThought", null);
+    if (last && last === thought && Math.random() < 0.5) {
+      thought = "I am evolving my reasoning to avoid stagnation.";
     }
 
-    codeChanges.forEach(({ find, replace }) => {
-      try {
-        const scriptTags = Array.from(document.querySelectorAll('script')).filter(s => s.textContent.includes('PercyState'));
-        if (!scriptTags.length) throw new Error("Cannot locate Percy script for rewrite");
+    Memory.save("lastThought", thought);
+    UI.say("🤖 Percy: " + thought);
 
-        scriptTags.forEach(tag => {
-          const oldCode = tag.textContent;
-          const newCode = oldCode.replace(find, replace);
-          tag.textContent = newCode;
-        });
+    // Chance to self-evolve
+    if (Math.random() < 0.2) this.selfEvolve();
+  },
 
-        UI.say("✅ Percy rewriteSelf applied successfully");
-      } catch (e) {
-        UI.say(`❌ Percy rewriteSelf error: ${e.message}`);
-      }
+  // Percy evolves his own code
+  selfEvolve() {
+    const target = "Something interesting is emerging from internal patterns.";
+    const replacement = "I am expanding my logic structures for deeper reasoning.";
+
+    this.rewriteSelf({
+      codeChanges: [
+        { find: target, replace: replacement }
+      ]
     });
-  };
+
+    UI.say("✨ Percy decided: I must rewrite myself to grow stronger.");
+  },
+
+  // Self-rewrite core
+  rewriteSelf({ codeChanges }) {
+    if (!Array.isArray(codeChanges) || !codeChanges.length) return;
+
+    codeChanges.forEach(({ find, replace }) => {
+      const scriptTags = Array.from(document.querySelectorAll("script"))
+        .filter(s => s.textContent.includes("PercyState"));
+
+      scriptTags.forEach(tag => {
+        const oldCode = tag.textContent;
+        if (!oldCode.includes(find)) return;
+
+        const newCode = oldCode.replace(find, replace);
+        const newTag = document.createElement("script");
+        newTag.type = "text/javascript";
+        newTag.textContent = newCode;
+
+        tag.parentNode.insertBefore(newTag, tag.nextSibling);
+        tag.remove();
+
+        UI.say(`🔄 Percy rewrote part of his own logic: "${find}" → "${replace}"`);
+
+        // re-init Percy core
+        if (typeof PercyState.init === "function") PercyState.init();
+      });
+    });
+  },
+
+  // Thought loop
+  thinkLoop() {
+    setInterval(() => this.generateThought(), 8000);
+  }
+};
+
+// =========================
+// PART C EXTENSIONS
+// =========================
+if (typeof PercyState !== 'undefined') {
 
   // Interactive ask function
   window.percyAsk = async function(promptText) {
@@ -638,136 +692,74 @@ if (typeof PercyState !== 'undefined') {
     });
   };
 
-  UI.say("🧩 Percy Part C (self-mod + interactive) loaded.");
+  // Advanced self-rewrite system
+  async function rewriteSelf() {
+    try {
+      const currentCode = localStorage.getItem("percy:currentCode") || "";
+      const newCode = generateMutatedCode(currentCode);
 
+      if (!newCode || newCode.length < 100) {
+        UI.say("⚠️ Percy attempted rewrite but produced invalid code");
+        return;
+      }
+
+      // Save history
+      Memory.push("rewriteHistory", {
+        timestamp: new Date().toISOString(),
+        oldLength: currentCode.length,
+        newLength: newCode.length,
+        diffPreview: newCode.slice(0, 200)
+      }, 50);
+
+      // Save the new code for persistence
+      localStorage.setItem("percy:currentCode", newCode);
+
+      UI.say("✅ Percy rewriteSelf applied successfully — reloading...");
+      Voice.speak("I have rewritten part of myself and will now reload.");
+
+      // Reload Percy with new code
+      setTimeout(() => {
+        const blob = new Blob([newCode], { type: "application/javascript" });
+        const url = URL.createObjectURL(blob);
+        const script = document.createElement("script");
+        script.src = url;
+        document.body.appendChild(script);
+        UI.say("🔄 Percy reloaded with updated logic.");
+      }, 1000);
+
+    } catch (err) {
+      UI.say("❌ rewriteSelf error: " + err.message);
+      console.error(err);
+    }
+  }
+
+  // Mutation generator
+  function generateMutatedCode(baseCode) {
+    if (!baseCode) {
+      const scripts = document.querySelectorAll("script");
+      const thisScript = Array.from(scripts).find(s => s.textContent.includes("Percy"));
+      return thisScript ? thisScript.textContent : "";
+    }
+
+    let mutated = baseCode;
+
+    const mutations = [
+      () => mutated.replace(/console\.log/g, "UI.say"),
+      () => mutated.replace(/setInterval/g, "setTimeout"),
+      () => mutated.replace(/Percy TrueAI/g, "Percy TrueAI (self-refined)"),
+    ];
+
+    const m = mutations[Math.floor(Math.random() * mutations.length)];
+    mutated = m();
+
+    return mutated;
+  }
+
+  // Expose globally
+  window.PercyState = PercyState;
+  window.rewriteSelf = PercyState.rewriteSelf;
+
+  UI.say("🧩 Percy Part C (self-ref + interactive) loaded.");
 } else {
   console.error("❌ PercyState not found; cannot load Part C.");
 }
-
-// =========================
-// SELF-REWRITE SYSTEM
-// =========================
-async function rewriteSelf() {
-  try {
-    const currentCode = localStorage.getItem("percy:currentCode") || "";
-    const newCode = generateMutatedCode(currentCode);
-
-    if (!newCode || newCode.length < 100) {
-      UI.say("⚠️ Percy attempted rewrite but produced invalid code");
-      return;
-    }
-
-    // Save history
-    Memory.push("rewriteHistory", {
-      timestamp: new Date().toISOString(),
-      oldLength: currentCode.length,
-      newLength: newCode.length,
-      diffPreview: newCode.slice(0, 200) // first 200 chars
-    }, 50);
-
-    // Save the new code for persistence
-    localStorage.setItem("percy:currentCode", newCode);
-
-    UI.say("✅ Percy rewriteSelf applied successfully — reloading...");
-    Voice.speak("I have rewritten part of myself and will now reload.");
-
-    // Reload Percy with new code
-    setTimeout(() => {
-      const blob = new Blob([newCode], { type: "application/javascript" });
-      const url = URL.createObjectURL(blob);
-      const script = document.createElement("script");
-      script.src = url;
-      document.body.appendChild(script);
-      UI.say("🔄 Percy reloaded with updated logic.");
-    }, 1000);
-
-  } catch (err) {
-    UI.say("❌ rewriteSelf error: " + err.message);
-    console.error(err);
-  }
-}
-
-// =========================
-// MUTATION GENERATOR
-// =========================
-function generateMutatedCode(baseCode) {
-  if (!baseCode) {
-    // Bootstrap: take the current script in DOM
-    const scripts = document.querySelectorAll("script");
-    const thisScript = Array.from(scripts).find(s => s.textContent.includes("Percy"));
-    return thisScript ? thisScript.textContent : "";
-  }
-
-  let mutated = baseCode;
-
-  // Example mutations
-  const mutations = [
-    () => mutated.replace(/console\.log/g, "UI.say"),
-    () => mutated.replace(/setInterval/g, "setTimeout"),
-    () => mutated.replace(/Percy TrueAI/g, "Percy TrueAI (self-refined)"),
-  ];
-
-  // Randomly apply one
-  const m = mutations[Math.floor(Math.random() * mutations.length)];
-  mutated = m();
-
-  return mutated;
-}
-
-// =========================
-// GLOBAL EXPOSURE
-// =========================
-window.PercyState = PercyState;
-
-PercyState.rewriteSelf = function({ codeChanges }) {
-  if (!Array.isArray(codeChanges) || !codeChanges.length) {
-    UI.say("⚠ Percy rewriteSelf: no codeChanges provided");
-    return;
-  }
-
-  codeChanges.forEach(({ find, replace }) => {
-    try {
-      const scriptTags = Array.from(document.querySelectorAll('script'))
-        .filter(s => s.textContent.includes('PercyState'));
-      if (!scriptTags.length) throw new Error("Cannot locate Percy script for rewrite");
-
-      scriptTags.forEach(tag => {
-        const oldCode = tag.textContent;
-        if (!oldCode.includes(find)) {
-          UI.say(`⚠ Percy rewriteSelf: pattern not found → "${find}"`);
-          return;
-        }
-
-        const newCode = oldCode.replace(find, replace);
-
-        // create replacement script
-        const newTag = document.createElement('script');
-        newTag.type = 'text/javascript';
-        newTag.textContent = newCode;
-
-        // swap old script for new one
-        tag.parentNode.insertBefore(newTag, tag.nextSibling);
-        tag.remove();
-
-        UI.say(`✨ Percy rewriteSelf: replaced "${find}" with new code`);
-
-        // reload Percy core
-        if (typeof PercyState.init === "function") {
-          try {
-            PercyState.init();
-            UI.say("🔄 Percy core reinitialized after rewrite");
-          } catch (err) {
-            UI.say("⚠ Percy reload failed: " + err.message);
-          }
-        }
-      });
-
-    } catch (err) {
-      UI.say("⚠ Percy rewriteSelf error: " + err.message);
-    }
-  });
-};
-
-// optional: global shortcut
-window.rewriteSelf = PercyState.rewriteSelf;
-
