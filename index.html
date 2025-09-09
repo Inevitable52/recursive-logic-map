@@ -8,6 +8,7 @@
   body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; overflow:hidden; }
   #logic-map { background:#0a0a0f; position:relative; width:100vw; height:100vh; overflow:hidden; }
   #logic-nodes { position:absolute; top:50%; left:50%; width:100%; height:100%; transform:translate(-50%,-50%) scale(1); }
+  
   .node { position:absolute; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; cursor:pointer;
          background: radial-gradient(100% 100% at 30% 30%, rgba(255,255,255,0.10), rgba(0,0,0,0.10));
          border:2px solid currentColor; text-shadow:0 1px 2px rgba(0,0,0,0.6); user-select:none;
@@ -30,6 +31,19 @@
   .yellow-bubble{color:#ffe44a;}
   .green-bubble{color:#4caf50;}
   .console-line{margin:2px 0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-size:12px;color:#d6d8ff;}
+
+  /* ==== Voice Bubble ==== */
+  #voice-box {
+    position:absolute; top:100px; left:50%; transform:translateX(-50%) translateY(-20px);
+    background: rgba(0,0,0,0.6); color:#00eaff; padding:8px 12px; border-radius:12px;
+    font-family: Arial, sans-serif; font-size:14px; max-width:60%; text-align:center;
+    pointer-events:none; opacity:0; transition: opacity 0.4s ease, transform 0.4s ease;
+    z-index:999;
+  }
+  #voice-box::after {
+    content:''; position:absolute; bottom:-8px; left:50%; transform:translateX(-50%);
+    border-width:8px; border-style:solid; border-color: rgba(0,0,0,0.6) transparent transparent transparent;
+  }
 </style>
 </head>
 <body>
@@ -38,6 +52,7 @@
   <div id="logic-nodes"></div>
   <div id="percy-console" style="position:absolute;bottom:0;left:0;width:100%;max-height:200px;overflow-y:auto;background:rgba(0,0,0,0.4);padding:8px;"></div>
   <div id="percy-message" style="position:absolute;top:0;left:0;width:100%;padding:4px;font-size:14px;"></div>
+  <div id="voice-box"></div>
 </div>
 
 <input id="seed-search" placeholder="Search seeds..." style="position:absolute;top:36px;left:10px;width:200px;padding:4px;">
@@ -75,7 +90,7 @@ const PercyState = {
 
 let seeds={...PercyState.gnodes};
 
-  // ==== UI ====
+// ==== UI ====
 const UI = {
   elConsole:()=>document.getElementById('percy-console'),
   elMsg:()=>document.getElementById('percy-message'),
@@ -83,70 +98,46 @@ const UI = {
   setStatus(txt){ const m=this.elMsg(); if(m)m.textContent=txt; }
 };
 
-  // ==== PART C: SELF-MOD & INTERACTIVE ASK ====
-PercyState.rewriteSelf = function({ codeChanges }) {
-  if (!Array.isArray(codeChanges) || !codeChanges.length) {
-    UI.say("⚠ Percy rewriteSelf: no codeChanges provided");
-    return;
-  }
-  codeChanges.forEach(({ find, replace }) => {
-    try {
-      const scriptTags = Array.from(document.querySelectorAll('script'))
-        .filter(s => s.textContent.includes('PercyState'));
-      if (!scriptTags.length) throw new Error("Cannot locate Percy script for rewrite");
-      scriptTags.forEach(tag => {
-        const oldCode = tag.textContent;
-        if (!oldCode.includes(find)) {
-          UI.say(`⚠ Percy rewriteSelf: pattern not found → "${find}"`);
-          return;
-        }
-        const newCode = oldCode.replace(find, replace);
-        const newTag = document.createElement('script');
-        newTag.type = 'text/javascript';
-        newTag.textContent = newCode;
-        tag.parentNode.insertBefore(newTag, tag.nextSibling);
-        tag.remove();
-        UI.say(`✨ Percy rewriteSelf: replaced "${find}" with new code`);
-        if (typeof PercyState.init === "function") {
-          try { PercyState.init(); UI.say("🔄 Percy core reinitialized after rewrite"); } 
-          catch (err) { UI.say("⚠ Percy reload failed: " + err.message); }
-        }
-      });
-    } catch (err) {
-      UI.say("⚠ Percy rewriteSelf error: " + err.message);
-    }
-  });
-};
-
-window.percyAsk = async function(promptText) {
-  if (!promptText) return null;
-  return new Promise(resolve => {
-    const response = window.prompt(`🤖 Percy asks:\n${promptText}`);
-    resolve(response);
-  });
-};
-
-// optional global shortcut
-window.rewriteSelf = PercyState.rewriteSelf;
-UI.say("🧩 Percy Part C loaded (self-mod + interactive ask).");
-
-// ==== AUTO-BOOTSTRAP SEEDS ====
-if(Object.keys(PercyState.gnodes).length === 0){
-  const exampleSeeds = [
-    {id:'G080',msg:'Initial cyan seed example'},
-    {id:'G201',msg:'Initial blue seed example'},
-    {id:'G301',msg:'Initial magenta seed example'},
-    {id:'G401',msg:'Initial red seed example'},
-    {id:'G501',msg:'Initial orange seed example'},
-    {id:'G601',msg:'Initial yellow seed example'},
-    {id:'G701',msg:'Initial green seed example'}
-  ];
-  exampleSeeds.forEach(s=>{ PercyState.gnodes[s.id]={message:s.msg,type:'bootstrap',data:{}}; seeds[s.id]=PercyState.gnodes[s.id]; });
-  Memory.save('gnodes',PercyState.gnodes);
-}
-
 // ==== VOICE ====
-const Voice = { enabled:true, lastSpoken:0, speak(text){ try{ if(!this.enabled||!('speechSynthesis' in window)||!text)return; const now=Date.now(); if(now-this.lastSpoken<300)return; this.lastSpoken=now; const u=new SpeechSynthesisUtterance(text); const pick=v=>v.find(vv=>/en(-|_|$)/i.test(vv.lang))||v[0]; const ensureVoice=()=>{ const vs=speechSynthesis.getVoices(); if(vs?.length){ u.voice=pick(vs); speechSynthesis.speak(u);} else { speechSynthesis.onvoiceschanged=()=>{ const v2=speechSynthesis.getVoices(); u.voice=pick(v2); speechSynthesis.speak(u);}; }}; u.rate=1.0; u.pitch=1.0; u.volume=1.0; ensureVoice(); }catch{} } };
+const Voice = { 
+  enabled:true, lastSpoken:0, 
+  speak(text){
+    try{
+      if(!this.enabled||!('speechSynthesis' in window)||!text) return;
+      const now=Date.now();
+      if(now-this.lastSpoken<300) return; 
+      this.lastSpoken=now;
+
+      // -- Show voice bubble --
+      const box = document.getElementById('voice-box');
+      if(box){
+        box.textContent = text;
+        box.style.opacity = 1;
+        box.style.transform = 'translateX(-50%) translateY(0)';
+        setTimeout(()=>{
+          box.style.opacity = 0;
+          box.style.transform = 'translateX(-50%) translateY(-20px)';
+        }, 3500);
+      }
+
+      // -- Speak --
+      const u = new SpeechSynthesisUtterance(text);
+      const pick = v => v.find(vv => /en(-|_|$)/i.test(vv.lang)) || v[0];
+      const ensureVoice = ()=>{
+        const vs = speechSynthesis.getVoices();
+        if(vs?.length){ u.voice = pick(vs); speechSynthesis.speak(u); }
+        else { 
+          speechSynthesis.onvoiceschanged = ()=>{
+            const v2 = speechSynthesis.getVoices(); 
+            u.voice = pick(v2); 
+            speechSynthesis.speak(u);
+          };
+        }
+      };
+      u.rate=1.0; u.pitch=1.0; u.volume=1.0; ensureVoice();
+    }catch{}
+  } 
+};
 
 // ==== LOGIC MAP ====
 const logicMap=document.getElementById('logic-map');
@@ -211,7 +202,6 @@ document.getElementById('interpreter-input').addEventListener('keydown',e=>{
     setTimeout(()=>{ PercyState.autonomousThought(); createNodes(); },200);
   }
 });
-
 document.getElementById('seed-search').addEventListener('input',e=>{
   const val=e.target.value.toUpperCase(); 
   document.querySelectorAll('.node').forEach(n=>{ n.style.display=n.textContent.includes(val)?'flex':'none'; });
@@ -221,7 +211,10 @@ document.getElementById('seed-search').addEventListener('input',e=>{
 let autoLoopInterval = null;
 function startPercyLoop(){
   if(autoLoopInterval) clearInterval(autoLoopInterval);
-  autoLoopInterval = setInterval(()=>{ PercyState.evaluateSelf(); createNodes(); UI.setStatus(`🟢 Percy active, ${Object.keys(seeds).length} seeds loaded`); }, 3000);
+  autoLoopInterval = setInterval(()=>{
+    PercyState.evaluateSelf(); createNodes(); 
+    UI.setStatus(`🟢 Percy active, ${Object.keys(seeds).length} seeds loaded`);
+  }, 3000);
 }
 
 // ==== AUTO SELF-REFINEMENT ====
@@ -255,7 +248,6 @@ startPercyLoop();
 setInterval(()=>{ selfRewrite(); createNodes(); },5000);
 UI.say(`✅ Percy TrueAI v${PERCY_VERSION} initialized`);
 Voice.speak(`Percy TrueAI online`);
-
 });
 </script>
 </body>
