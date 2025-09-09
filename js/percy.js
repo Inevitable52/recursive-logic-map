@@ -718,4 +718,56 @@ function generateMutatedCode(baseCode) {
 // GLOBAL EXPOSURE
 // =========================
 window.PercyState = PercyState;
-window.rewriteSelf = rewriteSelf;
+
+PercyState.rewriteSelf = function({ codeChanges }) {
+  if (!Array.isArray(codeChanges) || !codeChanges.length) {
+    UI.say("⚠ Percy rewriteSelf: no codeChanges provided");
+    return;
+  }
+
+  codeChanges.forEach(({ find, replace }) => {
+    try {
+      const scriptTags = Array.from(document.querySelectorAll('script'))
+        .filter(s => s.textContent.includes('PercyState'));
+      if (!scriptTags.length) throw new Error("Cannot locate Percy script for rewrite");
+
+      scriptTags.forEach(tag => {
+        const oldCode = tag.textContent;
+        if (!oldCode.includes(find)) {
+          UI.say(`⚠ Percy rewriteSelf: pattern not found → "${find}"`);
+          return;
+        }
+
+        const newCode = oldCode.replace(find, replace);
+
+        // create replacement script
+        const newTag = document.createElement('script');
+        newTag.type = 'text/javascript';
+        newTag.textContent = newCode;
+
+        // swap old script for new one
+        tag.parentNode.insertBefore(newTag, tag.nextSibling);
+        tag.remove();
+
+        UI.say(`✨ Percy rewriteSelf: replaced "${find}" with new code`);
+
+        // reload Percy core
+        if (typeof PercyState.init === "function") {
+          try {
+            PercyState.init();
+            UI.say("🔄 Percy core reinitialized after rewrite");
+          } catch (err) {
+            UI.say("⚠ Percy reload failed: " + err.message);
+          }
+        }
+      });
+
+    } catch (err) {
+      UI.say("⚠ Percy rewriteSelf error: " + err.message);
+    }
+  });
+};
+
+// optional: global shortcut
+window.rewriteSelf = PercyState.rewriteSelf;
+
