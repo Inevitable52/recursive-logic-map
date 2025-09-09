@@ -104,77 +104,60 @@ const Voice = { enabled:true, lastSpoken:0, speak(text){ try{ if(!this.enabled||
 // ==== LOGIC MAP & NODES ====
 const logicMap=document.getElementById('logic-map');
 const logicNodes=document.getElementById('logic-nodes');
-let zoomLevel=1,translateX=0,translateY=0;
 
-function createNodes(){ /* same as before */ }
-function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){ /* same as before */ }
-function applyTransform(){ /* same as before */ }
-function percyRespond(id,data){ /* same as before */ }
-document.getElementById('interpreter-input').addEventListener('keydown',e=>{ /* same as before */ });
-document.getElementById('seed-search').addEventListener('input',e=>{ /* same as before */ });
-let autoLoopInterval = null;
-function startPercyLoop(){ /* same as before */ }
-function selfRewrite(){ /* same as before */ }
-logicMap.addEventListener('wheel', e=>{ /* same as before */ });
-logicMap.addEventListener('mousedown', e=>{ /* same as before */ });
-logicMap.addEventListener('mousemove', e=>{ /* same as before */ });
-logicMap.addEventListener('mouseup', ()=>{ /* same as before */ });
-logicMap.addEventListener('mouseleave', ()=>{ /* same as before */ });
+// ==== CREATE NODES ====
+function createNodes(){
+  logicNodes.innerHTML = '';
+  const keys = Object.keys(seeds);
+  const centerX = logicNodes.clientWidth/2;
+  const centerY = logicNodes.clientHeight/2;
+  const radius = 150;
+  const colors = ['cyan-bubble','blue-bubble','magenta-bubble','red-bubble','orange-bubble','yellow-bubble','green-bubble'];
 
-// ==== INITIALIZE ====
-createNodes();
-startPercyLoop();
-setInterval(()=>{ selfRewrite(); createNodes(); },5000);
-UI.say(`✅ Percy TrueAI v${PERCY_VERSION} initialized`);
-Voice.speak(`Percy TrueAI online`);
+  keys.forEach((id,i)=>{
+    const node = document.createElement('div');
+    node.className = 'node '+colors[i%colors.length];
+    node.textContent = id;
+    const angle = (i/keys.length)*2*Math.PI;
+    node.style.left = `${centerX + radius*Math.cos(angle)}px`;
+    node.style.top = `${centerY + radius*Math.sin(angle)}px`;
+    node.style.width = '60px';
+    node.style.height = '60px';
+    logicNodes.appendChild(node);
+  });
+}
 
-// ==== INITIALIZE & PART C: WAIT FOR PERCYSTATE & ADD INTERACTIVITY ====
+// ==== PART C: INTERACTIVITY ====
 (function waitForPercyState(){
   if(typeof PercyState === 'undefined'){
-    console.log("⏳ Waiting for PercyState...");
-    setTimeout(waitForPercyState, 200);
+    setTimeout(waitForPercyState,200);
     return;
   }
 
-  console.log("✅ PercyState detected, loading Part C");
-
-  // Node creation & loop
+  UI.say("✅ Percy TrueAI Part C loaded");
   createNodes();
-  startPercyLoop();
-  setInterval(()=>{ selfRewrite(); createNodes(); },5000);
-  UI.say(`✅ Percy TrueAI v${PERCY_VERSION} initialized`);
-  Voice.speak(`Percy TrueAI online`);
+  setInterval(()=>{ createNodes(); },5000);
 
-  // Self-mod & interactive functions
-  PercyState.rewriteSelf = function({ codeChanges }) {
-    if (!Array.isArray(codeChanges) || !codeChanges.length) {
-      UI.say("⚠ Percy rewriteSelf: no codeChanges provided");
-      return;
-    }
-    codeChanges.forEach(({ find, replace }) => {
-      try {
-        const scriptTags = Array.from(document.querySelectorAll('script'))
-          .filter(s => s.textContent.includes('PercyState'));
-        if (!scriptTags.length) throw new Error("Cannot locate Percy script for rewrite");
-        scriptTags.forEach(tag => {
-          const oldCode = tag.textContent;
-          const newCode = oldCode.replace(find, replace);
-          tag.textContent = newCode;
-        });
-        UI.say("✅ Percy rewriteSelf applied successfully");
-      } catch (e) {
-        UI.say(`❌ Percy rewriteSelf error: ${e.message}`);
-      }
+  PercyState.rewriteSelf = function({codeChanges}){
+    if(!Array.isArray(codeChanges)||!codeChanges.length){ UI.say("⚠ Percy rewriteSelf: no codeChanges"); return; }
+    codeChanges.forEach(({find,replace})=>{
+      const scripts = Array.from(document.querySelectorAll('script')).filter(s=>s.textContent.includes('PercyState'));
+      scripts.forEach(tag=>{ tag.textContent = tag.textContent.replace(find,replace); });
+      UI.say("✅ Percy rewriteSelf applied");
     });
   };
 
   window.percyAsk = async function(promptText){
     if(!promptText) return null;
     return new Promise(resolve=>{
-      const response = window.prompt(`🤖 Percy asks:\n${promptText}`);
-      resolve(response);
+      const r = window.prompt(`🤖 Percy asks:\n${promptText}`);
+      resolve(r);
     });
   };
 
-  UI.say("🧩 Percy Part C (self-mod + interactive) loaded.");
+  Voice.speak(`Percy TrueAI online`);
 })();
+</script>
+
+</body>
+</html>
