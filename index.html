@@ -1,165 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Percy TrueAI</title>
-<style>
-  body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; overflow:hidden; }
-  #logic-map { background:#0a0a0f; position:relative; width:100vw; height:100vh; overflow:hidden; }
-  #logic-nodes { position:absolute; top:50%; left:50%; width:100%; height:100%; transform:translate(-50%,-50%) scale(1); }
-  .node { position:absolute; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; cursor:pointer;
-         background: radial-gradient(100% 100% at 30% 30%, rgba(255,255,255,0.10), rgba(0,0,0,0.10));
-         border:2px solid currentColor; text-shadow:0 1px 2px rgba(0,0,0,0.6); user-select:none;
-         transition:transform .15s ease, filter .15s ease; backdrop-filter: blur(1px);
-         animation: neonGlow 1.5s ease-in-out infinite alternate;}
-  .node:hover { transform: scale(1.08); filter: brightness(1.15); }
-  .node:active { transform: scale(0.98); }
+  <meta charset="UTF-8">
+  <title>Percy AI Interface</title>
+  <style>
+    html, body {
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      background: #0a0a0f; color: #fff; font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+    #logic-map { position: relative; width: 100%; height: 100%; overflow: hidden; }
+    #logic-nodes { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; height: 100%; }
 
-  @keyframes neonGlow {
-    0% { box-shadow: 0 0 4px currentColor, 0 0 8px currentColor, inset 0 0 6px rgba(255,255,255,0.08); }
-    50% { box-shadow: 0 0 6px currentColor, 0 0 12px currentColor, inset 0 0 8px rgba(255,255,255,0.08); }
-    100% { box-shadow: 0 0 4px currentColor, 0 0 8px currentColor, inset 0 0 6px rgba(255,255,255,0.08); }
-  }
+    .node {
+      position: absolute; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; cursor: pointer; text-align: center;
+      user-select: none; transition: transform .15s ease, filter .15s ease;
+      backdrop-filter: blur(1px);
+      color: #fff; border: 2px solid currentColor;
+      box-shadow: 0 0 6px currentColor, 0 0 14px currentColor, inset 0 0 12px rgba(255,255,255,0.08);
+      background: radial-gradient(100% 100% at 30% 30%, rgba(255,255,255,0.10), rgba(0,0,0,0.10));
+    }
+    .node:hover { transform: scale(1.08); filter: brightness(1.15); }
+    .node:active { transform: scale(0.98); }
 
-  .cyan-bubble{color:#00eaff;}
-  .blue-bubble{color:#27a0ff;}
-  .magenta-bubble{color:#ff4af0;}
-  .red-bubble{color:#ff3b3b;}
-  .orange-bubble{color:#ff9d2e;}
-  .yellow-bubble{color:#ffe44a;}
-  .green-bubble{color:#4caf50;}
-  .console-line{margin:2px 0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-size:12px;color:#d6d8ff;}
-</style>
+    .cyan-bubble{ color:#00eaff; }
+    .blue-bubble{ color:#27a0ff; }
+    .magenta-bubble{ color:#ff4af0; }
+    .red-bubble{ color:#ff3b3b; }
+    .orange-bubble{ color:#ff9d2e; }
+    .yellow-bubble{ color:#ffe44a; }
+    .pink-bubble{ color:#ff6bd8; }
+
+    #percy-console {
+      position: fixed; bottom: 0; left: 0; width: 100%; max-height: 200px;
+      overflow-y: auto; background: rgba(10,10,15,0.95); padding: 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px; border-top: 1px solid #333;
+    }
+    .console-line { margin: 2px 0; color: #d6d8ff; }
+    #percy-message { position: fixed; top: 0; left: 0; width: 100%; padding: 6px 12px; background: rgba(0,0,0,0.6); font-size: 14px; color: #fff; }
+    input { box-sizing: border-box; }
+  </style>
 </head>
 <body>
 
-<div id="logic-map">
-  <div id="logic-nodes"></div>
-  <div id="percy-console" style="position:absolute;bottom:0;left:0;width:100%;max-height:200px;overflow-y:auto;background:rgba(0,0,0,0.4);padding:8px;"></div>
-  <div id="percy-message" style="position:absolute;top:0;left:0;width:100%;padding:4px;font-size:14px;"></div>
-</div>
+  <div id="logic-map">
+    <div id="logic-nodes"></div>
+  </div>
 
-<input id="seed-search" placeholder="Search seeds..." style="position:absolute;top:36px;left:10px;width:200px;padding:4px;">
-<input id="interpreter-input" placeholder="Ask Percy..." style="position:absolute;top:60px;left:10px;width:200px;padding:4px;">
+  <div id="percy-message"></div>
+  <div id="percy-console"></div>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
+  <input id="seed-search" placeholder="Search seeds..." style="position:fixed;top:36px;right:12px;padding:6px;width:200px;background:#111;border:1px solid #333;color:#fff;">
+  <input id="interpreter-input" placeholder="Type command or ask Percy..." style="position:fixed;top:66px;right:12px;padding:6px;width:200px;background:#111;border:1px solid #333;color:#fff;" onkeydown="if(event.key==='Enter'){ interpretLogic(); }">
 
-const SAFETY = { maxActionsPerMinute:20, maxSeedsPerCycle:5, consoleLimit:500 };
-const OWNER = { primary:"Fabian", secondary:"Lorena" };
-const PERCY_VERSION="8.3.3-neon-bubbles-voice (optimized)";
+  <!-- Puppeteer and Percy JS -->
+  <script src="percy.js"></script>
 
-// MEMORY
-const Memory = {
-  _k:k=>`percy:${k}`,
-  load(k,fallback){ try{ const raw=localStorage.getItem(this._k(k)); return raw?JSON.parse(raw):(fallback??null);}catch{return fallback;}},
-  save(k,v){try{localStorage.setItem(this._k(k),JSON.stringify(v));}catch{}},
-  push(k,v,max=1000){const arr=this.load(k,[])||[]; arr.push(v); if(arr.length>max) arr.shift(); this.save(k,arr);}
-};
+  <script>
+    // Minimal bootstrapping in HTML
+    // Percy will load seeds, build nodes, start autonomy loop, and self-mod if needed
 
-// PERCY STATE
-const PercyState = {
-  gnodes: Memory.load("gnodes",{})||{},
-  getNextId(){ let next=801; while(this.gnodes[`G${String(next).padStart(3,'0')}`]) next++; return `G${String(next).padStart(3,'0')}`; },
-  createSeed(msg,type='emergent',data={}){ if(!OWNER.primary){ console.warn("ULT required"); return null;} const id=this.getNextId(); this.gnodes[id]={message:msg,type,data}; Memory.save("gnodes",this.gnodes); seeds[id]=this.gnodes[id]; return id; },
-  updateSeed(id,upd){ if(!this.gnodes[id]){ console.warn(id+" not found"); return;} Object.assign(this.gnodes[id],upd); Memory.save("gnodes",this.gnodes); seeds[id]=this.gnodes[id]; },
-  autonomousThought(){ const keys=Object.keys(this.gnodes); if(!keys.length)return; const selectedSeeds=keys.sort(()=>0.5-Math.random()).slice(0,Math.ceil(Math.random()*3)).map(k=>this.gnodes[k]); const words=selectedSeeds.map(s=>(s.message||"").split(/\s+/).filter(w=>w.length>3)).flat().sort(()=>0.5-Math.random()).slice(0,8); if(words.length<3)return; const templates=[
-    `I notice that ${words[0]} may relate to ${words[1]} because ${words[2]}.`,
-    `It seems ${words[0]} influences ${words[1]}, which could explain ${words[2]}.`,
-    `Considering ${words[0]} and ${words[1]}, I deduce ${words[2]}.`,
-    `There appears to be a connection between ${words[0]} and ${words[1]} due to ${words[2]}.`
-  ]; const sentence=templates[Math.floor(Math.random()*templates.length)]; UI.say(`🤖 Percy thinks: ${sentence}`); Voice.speak(sentence); this.createSeed(sentence,"thought",{source:"autonomousThought"}); },
-  evaluateSelf(){ let created=0; const updatedIds=new Set(); Object.entries(this.gnodes).forEach(([id,seed])=>{ if(created>=SAFETY.maxSeedsPerCycle) return; if(/TODO|missing|empty/.test(seed.message) && !updatedIds.has(id)){ this.updateSeed(id,{message:seed.message.replace(/TODO|missing|empty/,"auto-resolved by Percy")}); updatedIds.add(id); created++; }}); while(created<SAFETY.maxSeedsPerCycle && Math.random()<0.6){ this.autonomousThought(); created++; }}
-};
+    window.addEventListener('DOMContentLoaded', async () => {
+      // Expose basic interactive commands
+      window.interpretLogic = () => {
+        const val = document.getElementById('interpreter-input').value.trim();
+        if(val) { percyRespond('User', { message: val }); document.getElementById('interpreter-input').value = ''; }
+      };
 
-let seeds={...PercyState.gnodes};
-
-// AUTO-BOOTSTRAP SEEDS
-if(Object.keys(PercyState.gnodes).length === 0){
-  const exampleSeeds = [
-    {id:'G080',msg:'Initial cyan seed example'},
-    {id:'G201',msg:'Initial blue seed example'},
-    {id:'G301',msg:'Initial magenta seed example'},
-    {id:'G401',msg:'Initial red seed example'},
-    {id:'G501',msg:'Initial orange seed example'},
-    {id:'G601',msg:'Initial yellow seed example'},
-    {id:'G701',msg:'Initial green seed example'}
-  ];
-  exampleSeeds.forEach(s=>{ PercyState.gnodes[s.id]={message:s.msg,type:'bootstrap',data:{}}; seeds[s.id]=PercyState.gnodes[s.id]; });
-  Memory.save('gnodes',PercyState.gnodes);
-}
-
-// UI
-const UI = {
-  elConsole:()=>document.getElementById('percy-console'),
-  elMsg:()=>document.getElementById('percy-message'),
-  say(txt){ const box=this.elConsole(); if(!box)return; const p=document.createElement('p'); p.className='console-line'; p.textContent=txt; box.appendChild(p); box.scrollTop=box.scrollHeight; while(box.children.length>SAFETY.consoleLimit) box.removeChild(box.firstChild); },
-  setStatus(txt){ const m=this.elMsg(); if(m)m.textContent=txt; }
-};
-
-// VOICE
-const Voice = { enabled:true, lastSpoken:0, speak(text){ try{ if(!this.enabled||!('speechSynthesis' in window)||!text)return; const now=Date.now(); if(now-this.lastSpoken<300)return; this.lastSpoken=now; const u=new SpeechSynthesisUtterance(text); const pick=v=>v.find(vv=>/en(-|_|$)/i.test(vv.lang))||v[0]; const ensureVoice=()=>{ const vs=speechSynthesis.getVoices(); if(vs?.length){ u.voice=pick(vs); speechSynthesis.speak(u);} else { speechSynthesis.onvoiceschanged=()=>{ const v2=speechSynthesis.getVoices(); u.voice=pick(v2); speechSynthesis.speak(u);}; }}; u.rate=1.0; u.pitch=1.0; u.volume=1.0; ensureVoice(); }catch{} } };
-
-// LOGIC MAP & NODES
-const logicMap=document.getElementById('logic-map');
-const logicNodes=document.getElementById('logic-nodes');
-
-// CREATE NODES
-function createNodes(){
-  logicNodes.innerHTML = '';
-  const keys = Object.keys(seeds);
-  const centerX = logicNodes.clientWidth/2;
-  const centerY = logicNodes.clientHeight/2;
-  const radius = 150;
-  const colors = ['cyan-bubble','blue-bubble','magenta-bubble','red-bubble','orange-bubble','yellow-bubble','green-bubble'];
-
-  keys.forEach((id,i)=>{
-    const node = document.createElement('div');
-    node.className = 'node '+colors[i%colors.length];
-    node.textContent = id;
-    const angle = (i/keys.length)*2*Math.PI;
-    node.style.left = `${centerX + radius*Math.cos(angle)}px`;
-    node.style.top = `${centerY + radius*Math.sin(angle)}px`;
-    node.style.width = '60px';
-    node.style.height = '60px';
-    logicNodes.appendChild(node);
-  });
-}
-
-// PART C INTERACTIVITY
-(function waitForPercyState(){
-  if(typeof PercyState === 'undefined'){
-    setTimeout(waitForPercyState,200);
-    return;
-  }
-
-  UI.say("✅ Percy TrueAI Part C loaded");
-  createNodes();
-  setInterval(()=>{ createNodes(); },5000);
-
-  PercyState.rewriteSelf = function({codeChanges}){
-    if(!Array.isArray(codeChanges)||!codeChanges.length){ UI.say("⚠ Percy rewriteSelf: no codeChanges"); return; }
-    codeChanges.forEach(({find,replace})=>{
-      const scripts = Array.from(document.querySelectorAll('script')).filter(s=>s.textContent.includes('PercyState'));
-      scripts.forEach(tag=>{ tag.textContent = tag.textContent.replace(find,replace); });
-      UI.say("✅ Percy rewriteSelf applied");
+      UI.say("🚀 HTML interface ready for Percy.");
     });
-  };
 
-  window.percyAsk = async function(promptText){
-    if(!promptText) return null;
-    return new Promise(resolve=>{
-      const r = window.prompt(`🤖 Percy asks:\n${promptText}`);
-      resolve(r);
+    // Simple hotkey for Percy to rewrite self
+    document.addEventListener('keydown', e => {
+      if(e.ctrlKey && e.key === 'r') { 
+        e.preventDefault(); 
+        rewriteSelf(); 
+      }
     });
-  };
-
-  Voice.speak(`Percy TrueAI online`);
-})();
-
-}); // <--- closes DOMContentLoaded listener
-</script>
+  </script>
 
 </body>
 </html>
