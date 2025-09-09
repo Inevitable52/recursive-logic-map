@@ -1,3 +1,7 @@
+found one that worked were Percy also typed and talked.
+merge it with the new style
+ 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -42,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 const SAFETY = { maxActionsPerMinute:20, maxSeedsPerCycle:5, consoleLimit:500 };
 const OWNER = { primary:"Fabian", secondary:"Lorena" };
-const PERCY_VERSION="8.3.3-merged-type-and-talk";
+const PERCY_VERSION="8.3.3-neon-bubbles-voice (merged)";
 
 // ==== MEMORY ====
 const Memory = {
@@ -56,10 +60,10 @@ const Memory = {
 const PercyState = {
   gnodes: Memory.load("gnodes",{})||{},
   getNextId(){ let next=801; while(this.gnodes[`G${String(next).padStart(3,'0')}`]) next++; return `G${String(next).padStart(3,'0')}`; },
-  createSeed(msg,type='emergent',data={}){ const id=this.getNextId(); this.gnodes[id]={message:msg,type,data}; Memory.save("gnodes",this.gnodes); seeds[id]=this.gnodes[id]; return id; },
-  updateSeed(id,upd){ if(!this.gnodes[id]) return; Object.assign(this.gnodes[id],upd); Memory.save("gnodes",this.gnodes); seeds[id]=this.gnodes[id]; },
-  autonomousThought(){ const keys=Object.keys(this.gnodes); if(!keys.length)return; const sentence="I am processing knowledge and drawing new insights."; PercySpeak(sentence); this.createSeed(sentence,"thought"); },
-  evaluateSelf(){ if(Math.random()<0.5) this.autonomousThought(); }
+  createSeed(msg,type='emergent',data={}){ if(!OWNER.primary){ console.warn("ULT required"); return null;} const id=this.getNextId(); this.gnodes[id]={message:msg,type,data}; Memory.save("gnodes",this.gnodes); if(typeof seeds!=='undefined') seeds[id]=this.gnodes[id]; return id; },
+  updateSeed(id,upd){ if(!this.gnodes[id]){ console.warn(id+" not found"); return;} Object.assign(this.gnodes[id],upd); Memory.save("gnodes",this.gnodes); if(typeof seeds!=='undefined') seeds[id]=this.gnodes[id]; },
+  autonomousThought(){ const keys=Object.keys(this.gnodes); if(!keys.length)return; const selectedSeeds=keys.sort(()=>0.5-Math.random()).slice(0,Math.ceil(Math.random()*3)).map(k=>this.gnodes[k]); const words=selectedSeeds.map(s=>(s.message||"").split(/\s+/).filter(w=>w.length>3)).flat().sort(()=>0.5-Math.random()).slice(0,8); if(words.length<3)return; const templates=[`I notice that ${words[0]} may relate to ${words[1]} because ${words[2]}.`,`It seems ${words[0]} influences ${words[1]}, which could explain ${words[2]}.`,`Considering ${words[0]} and ${words[1]}, I deduce ${words[2]}.`,`There appears to be a connection between ${words[0]} and ${words[1]} due to ${words[2]}.`]; const sentence=templates[Math.floor(Math.random()*templates.length)]; UI.say(`🤖 Percy thinks: ${sentence}`); Voice.speak(sentence); this.createSeed(sentence,"thought",{source:"autonomousThought"}); },
+  evaluateSelf(){ let created=0; const updatedIds=new Set(); Object.entries(this.gnodes).forEach(([id,seed])=>{ if(created>=SAFETY.maxSeedsPerCycle) return; if(/TODO|missing|empty/.test(seed.message) && !updatedIds.has(id)){ this.updateSeed(id,{message:seed.message.replace(/TODO|missing|empty/,"auto-resolved by Percy")}); updatedIds.add(id); created++; }}); while(created<SAFETY.maxSeedsPerCycle && Math.random()<0.6){ this.autonomousThought(); created++; }}
 };
 
 let seeds={};
@@ -69,35 +73,29 @@ const UI = {
   elConsole:()=>document.getElementById('percy-console'),
   elMsg:()=>document.getElementById('percy-message'),
   say(txt){ const box=this.elConsole(); if(!box)return; const p=document.createElement('p'); p.className='console-line'; p.textContent=txt; box.appendChild(p); box.scrollTop=box.scrollHeight; const max=SAFETY.consoleLimit; while(box.children.length>max) box.removeChild(box.firstChild); },
-  setStatus(txt){ const m=this.elMsg(); if(m)m.textContent=txt; }
+  setStatus(txt){ const m=this.elMsg(); if(m)m.textContent=txt; },
+  confirmModal({title,body,allowLabel="Allow",denyLabel="Deny"}){ return new Promise(resolve=>{ const wrap=document.createElement('div'); wrap.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:99999"; const card=document.createElement('div'); card.style.cssText="background:#0b0b12;color:#eee;max-width:520px;width:92%;border:1px solid #444;border-radius:16px;padding:16px 18px;box-shadow:0 6px 32px rgba(0,0,0,.5)"; card.innerHTML=`<h3 style="margin:0 0 8px 0;font-size:18px;">${title}</h3><div style="font-size:14px;opacity:.9;margin-bottom:12px;white-space:pre-wrap">${body}</div><div style="display:flex;gap:8px;justify-content:flex-end"><button id="deny" style="padding:8px 12px;border-radius:10px;background:#252535;border:1px solid #3a3a50;color:#ddd">${denyLabel}</button><button id="allow" style="padding:8px 12px;border-radius:10px;background:#3764ff;border:1px solid #2a4de0;color:white">${allowLabel}</button></div>`; wrap.appendChild(card); document.body.appendChild(wrap); card.querySelector('#allow').onclick=()=>{document.body.removeChild(wrap); resolve(true);}; card.querySelector('#deny').onclick=()=>{document.body.removeChild(wrap); resolve(false);};});}
 };
 
 // ==== VOICE ====
-const Voice = { 
-  enabled:true, 
-  speak(text){ 
-    if(!this.enabled||!('speechSynthesis' in window)||!text)return; 
-    const u=new SpeechSynthesisUtterance(text); 
-    const vs=speechSynthesis.getVoices(); 
-    if(vs.length) u.voice=vs.find(v=>/en/i.test(v.lang))||vs[0]; 
-    speechSynthesis.speak(u); 
-  } 
-};
-
-// ==== SPEAK (merged: text + voice) ====
-function PercySpeak(msg){
-  UI.say(`🤖 Percy: ${msg}`);
-  Voice.speak(msg);
-}
+const Voice = { enabled:true, lastSpoken:0, speak(text){ try{ if(!this.enabled||!('speechSynthesis' in window)||!text)return; const now=Date.now(); if(now-this.lastSpoken<300)return; this.lastSpoken=now; const u=new SpeechSynthesisUtterance(text); const pick=v=>v.find(vv=>/en(-|_|$)/i.test(vv.lang))||v[0]; const ensureVoice=()=>{ const vs=speechSynthesis.getVoices(); if(vs?.length){ u.voice=pick(vs); speechSynthesis.speak(u);} else { speechSynthesis.onvoiceschanged=()=>{ const v2=speechSynthesis.getVoices(); u.voice=pick(v2); speechSynthesis.speak(u);}; }}; u.rate=1.0; u.pitch=1.0; u.volume=1.0; ensureVoice(); }catch{} } };
 
 // ==== LOGIC MAP ====
 const logicMap=document.getElementById('logic-map');
 const logicNodes=document.getElementById('logic-nodes');
+let zoomLevel=1,translateX=0,translateY=0;
 
 function createNodes(){
   logicNodes.innerHTML='';
-  const width=logicMap.clientWidth, height=logicMap.clientHeight;
+  const width=logicMap.clientWidth||800, height=logicMap.clientHeight||600;
   layoutRing(80,200,width,height,width/2.5,'cyan-bubble',60);
+  layoutRing(201,300,width,height,width/3.4,'blue-bubble',45);
+  layoutRing(301,400,width,height,width/4.8,'magenta-bubble',30);
+  layoutRing(401,500,width,height,width/6.6,'red-bubble',22);
+  layoutRing(501,600,width,height,width/8.5,'orange-bubble',18);
+  layoutRing(601,700,width,height,width/11,'yellow-bubble',14);
+  layoutRing(701,800,width,height,width/14,'green-bubble',12);
+  applyTransform();
 }
 
 function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
@@ -120,27 +118,106 @@ function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
   });
 }
 
-// ==== RESPOND ====
-function percyRespond(id,data){
-  if(!data)return;
-  PercySpeak(`Processing seed ${id}: ${data.message}`);
+function applyTransform(){
+  logicNodes.style.transform=`translate(-50%,-50%) translate(${translateX}px,${translateY}px) scale(${zoomLevel})`;
+  logicNodes.style.transformOrigin='center center';
+  document.querySelectorAll('.node').forEach(n=>n.style.transition='transform .15s ease');
 }
 
-// ==== INPUT ====
+// ==== PERCY RESPOND ====
+function percyRespond(id,data){
+  if(!data)return;
+  UI.say(`✨ Percy activated seed ${id}: ${data.message}`);
+  Voice.speak(`Processing seed ${id}`);
+}
+
+// ==== INTERFACE ====
 document.getElementById('interpreter-input').addEventListener('keydown',e=>{
   if(e.key==='Enter'){
     const q=e.target.value.trim(); if(!q)return; e.target.value='';
-    UI.say(`💬 You: ${q}`);
-    setTimeout(()=>{ PercySpeak("I am reflecting on your question."); PercyState.autonomousThought(); createNodes(); },400);
+    UI.say(`💬 You asked: ${q}`);
+    Voice.speak(`You asked: ${q}`);
+    // simulate response
+    setTimeout(()=>{ PercyState.autonomousThought(); createNodes(); },200);
   }
 });
 
-// ==== INIT ====
-createNodes();
-PercySpeak(`Percy TrueAI v${PERCY_VERSION} online`);
-setInterval(()=>{ PercyState.evaluateSelf(); createNodes(); },5000);
-
+document.getElementById('seed-search').addEventListener('input',e=>{
+  const val=e.target.value.toUpperCase(); document.querySelectorAll('.node').forEach(n=>{ n.style.display=n.textContent.includes(val)?'flex':'none'; });
 });
+
+createNodes();
+PercyState.evaluateSelf();
+
+// ==== TRUE AI LOOP ====
+let autoLoopInterval = null;
+
+function startPercyLoop(){
+  if(autoLoopInterval) clearInterval(autoLoopInterval);
+  autoLoopInterval = setInterval(()=>{
+    PercyState.evaluateSelf();
+    createNodes();
+    UI.setStatus(`🟢 Percy active, ${Object.keys(seeds).length} seeds loaded`);
+  }, 3000); // every 3 seconds
+}
+
+// ==== BUBBLE GLOW ANIMATION ====
+function animateBubbles(){
+  const nodes = document.querySelectorAll('.node');
+  nodes.forEach(n=>{
+    const glow = 4 + Math.random()*4;
+    n.style.boxShadow = `0 0 ${glow*2}px currentColor, 0 0 ${glow*4}px currentColor, inset 0 0 ${glow*3}px rgba(255,255,255,0.08)`;
+  });
+  requestAnimationFrame(animateBubbles);
+}
+
+// ==== ZOOM & PAN ====
+logicMap.addEventListener('wheel', e=>{
+  e.preventDefault();
+  const factor = 0.1;
+  zoomLevel *= e.deltaY < 0 ? 1+factor : 1-factor;
+  zoomLevel = Math.min(Math.max(0.2, zoomLevel), 6);
+  applyTransform();
+});
+
+let isDragging=false, lastX=0, lastY=0;
+logicMap.addEventListener('mousedown', e=>{ isDragging=true; lastX=e.clientX; lastY=e.clientY; });
+logicMap.addEventListener('mousemove', e=>{
+  if(isDragging){
+    const dx=e.clientX-lastX, dy=e.clientY-lastY;
+    translateX += dx; translateY += dy; lastX=e.clientX; lastY=e.clientY;
+    applyTransform();
+  }
+});
+logicMap.addEventListener('mouseup', e=>{ isDragging=false; });
+logicMap.addEventListener('mouseleave', e=>{ isDragging=false; });
+
+// ==== AUTO SELF-REWRITE ====
+function selfRewrite(){
+  try{
+    // randomly pick a seed to rewrite
+    const keys = Object.keys(PercyState.gnodes);
+    if(!keys.length) return;
+    const id = keys[Math.floor(Math.random()*keys.length)];
+    const seed = PercyState.gnodes[id];
+    if(seed && Math.random()<0.5){
+      const oldMsg = seed.message;
+      const newMsg = oldMsg + ' [auto-refined]';
+      PercyState.updateSeed(id,{message:newMsg});
+      UI.say(`🔄 Percy auto-refined seed ${id}`);
+      Voice.speak(`Auto refinement completed on seed ${id}`);
+    }
+  }catch(e){ console.error(e); }
+}
+
+// ==== PERIODIC SELF-REWRITE LOOP ====
+setInterval(()=>{ selfRewrite(); createNodes(); }, 5000);
+
+// ==== INITIALIZE ====
+startPercyLoop();
+animateBubbles();
+UI.say(`✅ Percy TrueAI v${PERCY_VERSION} initialized`);
+Voice.speak(`Percy TrueAI online`);
 </script>
 </body>
 </html>
