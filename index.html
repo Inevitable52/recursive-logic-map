@@ -44,15 +44,7 @@
     content:''; position:absolute; bottom:-8px; left:50%; transform:translateX(-50%);
     border-width:8px; border-style:solid; border-color: rgba(0,0,0,0.6) transparent transparent transparent;
   }
-
-  /* Voice Bars */
-  #voice-bars { display:flex; justify-content:center; align-items:flex-end; margin-top:6px; height:12px; }
-  #voice-bars .bar { width:4px; height:4px; margin:0 1px; background:#00eaff; animation:barAnim 0.5s infinite alternate paused; }
-  @keyframes barAnim {
-    0% { height:4px; opacity:0.3; }
-    50% { height:12px; opacity:1; }
-    100% { height:4px; opacity:0.3; }
-  }
+  #voice-canvas { display:block; margin-top:6px; width:100%; height:40px; }
 </style>
 </head>
 <body>
@@ -61,15 +53,11 @@
   <div id="logic-nodes"></div>
   <div id="percy-console" style="position:absolute;bottom:0;left:0;width:100%;max-height:200px;overflow-y:auto;background:rgba(0,0,0,0.4);padding:8px;"></div>
   <div id="percy-message" style="position:absolute;top:0;left:0;width:100%;padding:4px;font-size:14px;"></div>
+
+  <!-- Voice Bubble -->
   <div id="voice-box">
     <div id="voice-text"></div>
-    <div id="voice-bars">
-      <div class="bar"></div>
-      <div class="bar"></div>
-      <div class="bar"></div>
-      <div class="bar"></div>
-      <div class="bar"></div>
-    </div>
+    <canvas id="voice-canvas"></canvas>
   </div>
 </div>
 
@@ -113,41 +101,71 @@ const UI = {
   setStatus(txt){ const m=this.elMsg(); if(m)m.textContent=txt; }
 };
 
-// ==== VOICE SYSTEM ====
+// ==== VOICE SYSTEM WITH VISUALIZER ====
 const Voice = {
   enabled:true, lastSpoken:0,
+  audioCtx:null, analyser:null, dataArray:null, sourceNode:null, animId:null,
   speak(text){
     try{
       if(!this.enabled||!('speechSynthesis' in window)||!text) return;
       const now=Date.now(); if(now-this.lastSpoken<300) return; this.lastSpoken=now;
 
-      const box = document.getElementById('voice-box');
-      const textEl = document.getElementById('voice-text');
-      const bars = document.querySelectorAll('#voice-bars .bar');
+      const box=document.getElementById('voice-box');
+      const textEl=document.getElementById('voice-text');
+      const canvas=document.getElementById('voice-canvas');
+      const ctx=canvas.getContext('2d');
+      canvas.width=box.offsetWidth-20; canvas.height=40;
+
       if(box){
-        textEl.textContent = text;
+        textEl.textContent=text;
         box.style.opacity='1';
         box.style.transform='translateX(-50%) translateY(0)';
-        bars.forEach(bar=>bar.style.animationPlayState='running');
       }
 
-      const u = new SpeechSynthesisUtterance(text);
+      const u=new SpeechSynthesisUtterance(text);
       u.rate=1.0; u.pitch=1.0; u.volume=1.0;
 
-      const pickVoice = ()=>{
-        const vs = speechSynthesis.getVoices();
-        if(vs.length){ u.voice = vs.find(v=>/en(-|_|$)/i.test(v.lang)) || vs[0]; speechSynthesis.speak(u); }
+      const pickVoice=()=>{
+        const vs=speechSynthesis.getVoices();
+        if(vs.length){ u.voice=vs.find(v=>/en/i.test(v.lang))||vs[0]; speechSynthesis.speak(u); }
       };
-
       if(speechSynthesis.getVoices().length){ pickVoice(); }
-      else { speechSynthesis.onvoiceschanged = pickVoice; }
+      else{ speechSynthesis.onvoiceschanged=pickVoice; }
 
-      u.onend = ()=>{
+      // setup audio visualizer (fake oscillator because speechSynthesis not pipeable)
+      if(!this.audioCtx){
+        this.audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+        this.analyser=this.audioCtx.createAnalyser();
+        this.analyser.fftSize=256;
+        this.dataArray=new Uint8Array(this.analyser.frequencyBinCount);
+      }
+      const osc=this.audioCtx.createOscillator();
+      osc.type="sine"; osc.frequency.value=200+Math.random()*200;
+      osc.connect(this.analyser); this.analyser.connect(this.audioCtx.destination);
+      osc.start(); this.sourceNode=osc;
+
+      const draw=()=>{
+        this.animId=requestAnimationFrame(draw);
+        this.analyser.getByteFrequencyData(this.dataArray);
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle="#00eaff";
+        const barWidth=(canvas.width/this.dataArray.length)*2.5;
+        let x=0;
+        for(let i=0;i<this.dataArray.length;i++){
+          const barHeight=this.dataArray[i]/3;
+          ctx.fillRect(x,canvas.height-barHeight,barWidth,barHeight);
+          x+=barWidth+1;
+        }
+      };
+      draw();
+
+      u.onend=()=>{
         if(box){
           box.style.opacity='0';
           box.style.transform='translateX(-50%) translateY(-20px)';
-          bars.forEach(bar=>bar.style.animationPlayState='paused');
         }
+        cancelAnimationFrame(this.animId);
+        if(this.sourceNode) this.sourceNode.stop();
       };
     }catch(e){console.error(e);}
   }
@@ -178,7 +196,7 @@ function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
   const total=Math.max(1,ringSeeds.length);
   const centerX=width/2, centerY=height/2;
   ringSeeds.forEach(([id,data],index)=>{
-    let node = document.getElementById(id);
+    let node=document.getElementById(id);
     const angle=(index/total)*2*Math.PI;
     const x=centerX+radius*Math.cos(angle)-nodeSize/2;
     const y=centerY+radius*Math.sin(angle)-nodeSize/2;
@@ -222,27 +240,27 @@ document.getElementById('seed-search').addEventListener('input',e=>{
 });
 
 // ==== TRUE AI LOOP ====
-let autoLoopInterval = null;
+let autoLoopInterval=null;
 function startPercyLoop(){
   if(autoLoopInterval) clearInterval(autoLoopInterval);
-  autoLoopInterval = setInterval(()=>{ PercyState.evaluateSelf(); createNodes(); UI.setStatus(`🟢 Percy active, ${Object.keys(seeds).length} seeds loaded`); }, 3000);
+  autoLoopInterval=setInterval(()=>{ PercyState.evaluateSelf(); createNodes(); UI.setStatus(`🟢 Percy active, ${Object.keys(seeds).length} seeds loaded`); },3000);
 }
 
 // ==== AUTO SELF-REFINEMENT ====
 function selfRewrite(){
   try{
-    const keys = Object.keys(PercyState.gnodes);
+    const keys=Object.keys(PercyState.gnodes);
     if(!keys.length) return;
-    const id = keys[Math.floor(Math.random()*keys.length)];
-    const seed = PercyState.gnodes[id];
+    const id=keys[Math.floor(Math.random()*keys.length)];
+    const seed=PercyState.gnodes[id];
     if(seed && Math.random()<0.5){
-      const oldMsg = seed.message;
-      const newMsg = oldMsg + ' [auto-refined]';
+      const oldMsg=seed.message;
+      const newMsg=oldMsg+' [auto-refined]';
       PercyState.updateSeed(id,{message:newMsg});
       UI.say(`🔄 Percy auto-refined seed ${id}`);
       Voice.speak(`Auto refinement completed on seed ${id}`);
     }
-  }catch(e){ console.error(e); }
+  }catch(e){console.error(e);}
 }
 
 // ==== ZOOM & PAN ====
