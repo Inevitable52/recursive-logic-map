@@ -30,7 +30,7 @@
   .orange-bubble{color:#ff9d2e;}
   .yellow-bubble{color:#ffe44a;}
   .green-bubble{color:#4caf50;}
-  .console-line{margin:2px 0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-size:12px;color:#d6d8ff;}
+  .console-line{margin:2px 0;font-family:ui-monospace,monospace;font-size:12px;color:#d6d8ff;}
 
   /* ==== Voice Bubble ==== */
   #voice-box {
@@ -44,7 +44,18 @@
     content:''; position:absolute; bottom:-8px; left:50%; transform:translateX(-50%);
     border-width:8px; border-style:solid; border-color: rgba(0,0,0,0.6) transparent transparent transparent;
   }
-  #voice-canvas { display:block; margin-top:6px; width:100%; height:40px; }
+
+  /* Voice Bars */
+  #voice-bars { display:flex; justify-content:center; align-items:flex-end; margin-top:6px; height:30px; }
+  #voice-bars .bar { width:4px; margin:0 1px; background:#00eaff; }
+
+  /* Waveform */
+  #voice-wave {
+    display:block;
+    margin:6px auto 0 auto;
+    background:rgba(0,0,0,0.2);
+    border-radius:6px;
+  }
 </style>
 </head>
 <body>
@@ -53,11 +64,10 @@
   <div id="logic-nodes"></div>
   <div id="percy-console" style="position:absolute;bottom:0;left:0;width:100%;max-height:200px;overflow-y:auto;background:rgba(0,0,0,0.4);padding:8px;"></div>
   <div id="percy-message" style="position:absolute;top:0;left:0;width:100%;padding:4px;font-size:14px;"></div>
-
-  <!-- Voice Bubble -->
   <div id="voice-box">
     <div id="voice-text"></div>
-    <canvas id="voice-canvas"></canvas>
+    <div id="voice-bars"></div>
+    <canvas id="voice-wave" width="300" height="60"></canvas>
   </div>
 </div>
 
@@ -69,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 const SAFETY = { maxActionsPerMinute:20, maxSeedsPerCycle:5, consoleLimit:500 };
 const OWNER = { primary:"Fabian", secondary:"Lorena" };
-const PERCY_VERSION="8.3.4-neon-bubbles-voice";
+const PERCY_VERSION="8.3.4-neon-bubbles-voicewave";
 
 const Memory = {
   _k:k=>`percy:${k}`,
@@ -101,75 +111,85 @@ const UI = {
   setStatus(txt){ const m=this.elMsg(); if(m)m.textContent=txt; }
 };
 
-// ==== VOICE SYSTEM WITH VISUALIZER ====
+// ==== VOICE SYSTEM ====
 const Voice = {
   enabled:true, lastSpoken:0,
-  audioCtx:null, analyser:null, dataArray:null, sourceNode:null, animId:null,
+  audioCtx: new (window.AudioContext||window.webkitAudioContext)(),
+  analyser:null, dataArray:null,
+  barsEl: document.getElementById('voice-bars'),
+  waveEl: document.getElementById('voice-wave'),
+  init(){
+    this.analyser=this.audioCtx.createAnalyser();
+    this.analyser.fftSize=256;
+    this.dataArray=new Uint8Array(this.analyser.frequencyBinCount);
+    // build bars
+    for(let i=0;i<20;i++){
+      const b=document.createElement('div');
+      b.className='bar';
+      this.barsEl.appendChild(b);
+    }
+    this.animate();
+  },
+  animate(){
+    requestAnimationFrame(()=>this.animate());
+    if(!this.analyser) return;
+    this.analyser.getByteFrequencyData(this.dataArray);
+
+    // Bars
+    const bars=this.barsEl.querySelectorAll('.bar');
+    bars.forEach((bar,i)=>{
+      const h=(this.dataArray[i]||0)/4;
+      bar.style.height=`${Math.max(4,h)}px`;
+      bar.style.opacity=0.3+Math.min(0.7,h/60);
+    });
+
+    // Wave
+    const ctx=this.waveEl.getContext('2d');
+    ctx.clearRect(0,0,this.waveEl.width,this.waveEl.height);
+    this.analyser.getByteTimeDomainData(this.dataArray);
+    ctx.beginPath();
+    ctx.strokeStyle='#00eaff';
+    ctx.lineWidth=2;
+    const slice=this.waveEl.width/this.dataArray.length;
+    let x=0;
+    for(let i=0;i<this.dataArray.length;i++){
+      const v=this.dataArray[i]/128.0;
+      const y=v*this.waveEl.height/2;
+      if(i===0) ctx.moveTo(x,y);
+      else ctx.lineTo(x,y);
+      x+=slice;
+    }
+    ctx.lineTo(this.waveEl.width,this.waveEl.height/2);
+    ctx.stroke();
+  },
   speak(text){
-    try{
-      if(!this.enabled||!('speechSynthesis' in window)||!text) return;
-      const now=Date.now(); if(now-this.lastSpoken<300) return; this.lastSpoken=now;
+    if(!('speechSynthesis' in window)) return;
+    const now=Date.now(); if(now-this.lastSpoken<300) return;
+    this.lastSpoken=now;
 
-      const box=document.getElementById('voice-box');
-      const textEl=document.getElementById('voice-text');
-      const canvas=document.getElementById('voice-canvas');
-      const ctx=canvas.getContext('2d');
-      canvas.width=box.offsetWidth-20; canvas.height=40;
+    const box=document.getElementById('voice-box');
+    const textEl=document.getElementById('voice-text');
+    textEl.textContent=text;
+    box.style.opacity='1';
+    box.style.transform='translateX(-50%) translateY(0)';
 
-      if(box){
-        textEl.textContent=text;
-        box.style.opacity='1';
-        box.style.transform='translateX(-50%) translateY(0)';
-      }
+    const utter=new SpeechSynthesisUtterance(text);
+    utter.rate=1.0; utter.pitch=1.0;
+    utter.onend=()=>{
+      box.style.opacity='0';
+      box.style.transform='translateX(-50%) translateY(-20px)';
+    };
+    speechSynthesis.speak(utter);
 
-      const u=new SpeechSynthesisUtterance(text);
-      u.rate=1.0; u.pitch=1.0; u.volume=1.0;
-
-      const pickVoice=()=>{
-        const vs=speechSynthesis.getVoices();
-        if(vs.length){ u.voice=vs.find(v=>/en/i.test(v.lang))||vs[0]; speechSynthesis.speak(u); }
-      };
-      if(speechSynthesis.getVoices().length){ pickVoice(); }
-      else{ speechSynthesis.onvoiceschanged=pickVoice; }
-
-      // setup audio visualizer (fake oscillator because speechSynthesis not pipeable)
-      if(!this.audioCtx){
-        this.audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-        this.analyser=this.audioCtx.createAnalyser();
-        this.analyser.fftSize=256;
-        this.dataArray=new Uint8Array(this.analyser.frequencyBinCount);
-      }
-      const osc=this.audioCtx.createOscillator();
-      osc.type="sine"; osc.frequency.value=200+Math.random()*200;
-      osc.connect(this.analyser); this.analyser.connect(this.audioCtx.destination);
-      osc.start(); this.sourceNode=osc;
-
-      const draw=()=>{
-        this.animId=requestAnimationFrame(draw);
-        this.analyser.getByteFrequencyData(this.dataArray);
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        ctx.fillStyle="#00eaff";
-        const barWidth=(canvas.width/this.dataArray.length)*2.5;
-        let x=0;
-        for(let i=0;i<this.dataArray.length;i++){
-          const barHeight=this.dataArray[i]/3;
-          ctx.fillRect(x,canvas.height-barHeight,barWidth,barHeight);
-          x+=barWidth+1;
-        }
-      };
-      draw();
-
-      u.onend=()=>{
-        if(box){
-          box.style.opacity='0';
-          box.style.transform='translateX(-50%) translateY(-20px)';
-        }
-        cancelAnimationFrame(this.animId);
-        if(this.sourceNode) this.sourceNode.stop();
-      };
-    }catch(e){console.error(e);}
+    // connect dummy oscillator so analyser has signal
+    const osc=this.audioCtx.createOscillator();
+    const gain=this.audioCtx.createGain();
+    osc.type='sine'; osc.frequency.value=220;
+    osc.connect(gain); gain.connect(this.analyser);
+    osc.start(); osc.stop(this.audioCtx.currentTime+1.2);
   }
 };
+Voice.init();
 
 // ==== LOGIC MAP & NODES ====
 const logicMap=document.getElementById('logic-map');
@@ -196,7 +216,7 @@ function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
   const total=Math.max(1,ringSeeds.length);
   const centerX=width/2, centerY=height/2;
   ringSeeds.forEach(([id,data],index)=>{
-    let node=document.getElementById(id);
+    let node = document.getElementById(id);
     const angle=(index/total)*2*Math.PI;
     const x=centerX+radius*Math.cos(angle)-nodeSize/2;
     const y=centerY+radius*Math.sin(angle)-nodeSize/2;
@@ -240,27 +260,27 @@ document.getElementById('seed-search').addEventListener('input',e=>{
 });
 
 // ==== TRUE AI LOOP ====
-let autoLoopInterval=null;
+let autoLoopInterval = null;
 function startPercyLoop(){
   if(autoLoopInterval) clearInterval(autoLoopInterval);
-  autoLoopInterval=setInterval(()=>{ PercyState.evaluateSelf(); createNodes(); UI.setStatus(`🟢 Percy active, ${Object.keys(seeds).length} seeds loaded`); },3000);
+  autoLoopInterval = setInterval(()=>{ PercyState.evaluateSelf(); createNodes(); UI.setStatus(`🟢 Percy active, ${Object.keys(seeds).length} seeds loaded`); }, 3000);
 }
 
 // ==== AUTO SELF-REFINEMENT ====
 function selfRewrite(){
   try{
-    const keys=Object.keys(PercyState.gnodes);
+    const keys = Object.keys(PercyState.gnodes);
     if(!keys.length) return;
-    const id=keys[Math.floor(Math.random()*keys.length)];
-    const seed=PercyState.gnodes[id];
+    const id = keys[Math.floor(Math.random()*keys.length)];
+    const seed = PercyState.gnodes[id];
     if(seed && Math.random()<0.5){
-      const oldMsg=seed.message;
-      const newMsg=oldMsg+' [auto-refined]';
+      const oldMsg = seed.message;
+      const newMsg = oldMsg + ' [auto-refined]';
       PercyState.updateSeed(id,{message:newMsg});
       UI.say(`🔄 Percy auto-refined seed ${id}`);
       Voice.speak(`Auto refinement completed on seed ${id}`);
     }
-  }catch(e){console.error(e);}
+  }catch(e){ console.error(e); }
 }
 
 // ==== ZOOM & PAN ====
