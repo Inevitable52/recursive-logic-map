@@ -8,19 +8,18 @@
   body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; overflow:hidden; }
   #logic-map { background:#0a0a0f; position:relative; width:100vw; height:100vh; overflow:hidden; }
   #logic-nodes { position:absolute; top:50%; left:50%; width:100%; height:100%; transform:translate(-50%,-50%) scale(1); }
-  .node { position:absolute; border-radius:50%; display:flex; align-items:center; justify-content:center; 
-         font-weight:700; color:#fff; cursor:pointer;
-         background: radial-gradient(100% 100% at 30% 30%, rgba(255,255,255,0.05), rgba(0,0,0,0));
+  .node { position:absolute; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; cursor:pointer;
+         background: radial-gradient(100% 100% at 30% 30%, rgba(255,255,255,0.10), rgba(0,0,0,0.10));
          border:2px solid currentColor; text-shadow:0 1px 2px rgba(0,0,0,0.6); user-select:none;
-         transition:transform .15s ease, filter .15s ease; backdrop-filter: blur(2px);
+         transition:transform .15s ease, filter .15s ease; backdrop-filter: blur(1px);
          animation: neonGlow 1.5s ease-in-out infinite alternate;}
   .node:hover { transform: scale(1.08); filter: brightness(1.15); }
   .node:active { transform: scale(0.98); }
 
   @keyframes neonGlow {
-    0% { box-shadow: 0 0 4px currentColor, 0 0 8px currentColor, inset 0 0 6px rgba(255,255,255,0.05); }
-    50% { box-shadow: 0 0 6px currentColor, 0 0 12px currentColor, inset 0 0 8px rgba(255,255,255,0.05); }
-    100% { box-shadow: 0 0 4px currentColor, 0 0 8px currentColor, inset 0 0 6px rgba(255,255,255,0.05); }
+    0% { box-shadow: 0 0 4px currentColor, 0 0 8px currentColor, inset 0 0 6px rgba(255,255,255,0.08); }
+    50% { box-shadow: 0 0 6px currentColor, 0 0 12px currentColor, inset 0 0 8px rgba(255,255,255,0.08); }
+    100% { box-shadow: 0 0 4px currentColor, 0 0 8px currentColor, inset 0 0 6px rgba(255,255,255,0.08); }
   }
 
   .cyan-bubble{color:#00eaff;}
@@ -30,9 +29,7 @@
   .orange-bubble{color:#ff9d2e;}
   .yellow-bubble{color:#ffe44a;}
   .green-bubble{color:#4caf50;}
-
   .console-line{margin:2px 0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-size:12px;color:#d6d8ff;}
-  #hover-tooltip{position:absolute;background:rgba(0,0,0,0.75);color:white;padding:4px 8px;border-radius:4px;font-size:12px;pointer-events:none;white-space:pre-wrap;z-index:999;}
 </style>
 </head>
 <body>
@@ -51,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 const SAFETY = { maxActionsPerMinute:20, maxSeedsPerCycle:5, consoleLimit:500 };
 const OWNER = { primary:"Fabian", secondary:"Lorena" };
-const PERCY_VERSION="8.3.3-neon-bubbles-voice-optimized";
+const PERCY_VERSION="8.3.3-neon-bubbles-voice (optimized)";
 
 // ==== MEMORY ====
 const Memory = {
@@ -78,13 +75,75 @@ const PercyState = {
 
 let seeds={...PercyState.gnodes};
 
-// ==== UI ====
+  // ==== UI ====
 const UI = {
   elConsole:()=>document.getElementById('percy-console'),
   elMsg:()=>document.getElementById('percy-message'),
   say(txt){ const box=this.elConsole(); if(!box)return; const p=document.createElement('p'); p.className='console-line'; p.textContent=txt; box.appendChild(p); box.scrollTop=box.scrollHeight; while(box.children.length>SAFETY.consoleLimit) box.removeChild(box.firstChild); },
   setStatus(txt){ const m=this.elMsg(); if(m)m.textContent=txt; }
 };
+
+  // ==== PART C: SELF-MOD & INTERACTIVE ASK ====
+PercyState.rewriteSelf = function({ codeChanges }) {
+  if (!Array.isArray(codeChanges) || !codeChanges.length) {
+    UI.say("⚠ Percy rewriteSelf: no codeChanges provided");
+    return;
+  }
+  codeChanges.forEach(({ find, replace }) => {
+    try {
+      const scriptTags = Array.from(document.querySelectorAll('script'))
+        .filter(s => s.textContent.includes('PercyState'));
+      if (!scriptTags.length) throw new Error("Cannot locate Percy script for rewrite");
+      scriptTags.forEach(tag => {
+        const oldCode = tag.textContent;
+        if (!oldCode.includes(find)) {
+          UI.say(`⚠ Percy rewriteSelf: pattern not found → "${find}"`);
+          return;
+        }
+        const newCode = oldCode.replace(find, replace);
+        const newTag = document.createElement('script');
+        newTag.type = 'text/javascript';
+        newTag.textContent = newCode;
+        tag.parentNode.insertBefore(newTag, tag.nextSibling);
+        tag.remove();
+        UI.say(`✨ Percy rewriteSelf: replaced "${find}" with new code`);
+        if (typeof PercyState.init === "function") {
+          try { PercyState.init(); UI.say("🔄 Percy core reinitialized after rewrite"); } 
+          catch (err) { UI.say("⚠ Percy reload failed: " + err.message); }
+        }
+      });
+    } catch (err) {
+      UI.say("⚠ Percy rewriteSelf error: " + err.message);
+    }
+  });
+};
+
+window.percyAsk = async function(promptText) {
+  if (!promptText) return null;
+  return new Promise(resolve => {
+    const response = window.prompt(`🤖 Percy asks:\n${promptText}`);
+    resolve(response);
+  });
+};
+
+// optional global shortcut
+window.rewriteSelf = PercyState.rewriteSelf;
+UI.say("🧩 Percy Part C loaded (self-mod + interactive ask).");
+
+// ==== AUTO-BOOTSTRAP SEEDS ====
+if(Object.keys(PercyState.gnodes).length === 0){
+  const exampleSeeds = [
+    {id:'G080',msg:'Initial cyan seed example'},
+    {id:'G201',msg:'Initial blue seed example'},
+    {id:'G301',msg:'Initial magenta seed example'},
+    {id:'G401',msg:'Initial red seed example'},
+    {id:'G501',msg:'Initial orange seed example'},
+    {id:'G601',msg:'Initial yellow seed example'},
+    {id:'G701',msg:'Initial green seed example'}
+  ];
+  exampleSeeds.forEach(s=>{ PercyState.gnodes[s.id]={message:s.msg,type:'bootstrap',data:{}}; seeds[s.id]=PercyState.gnodes[s.id]; });
+  Memory.save('gnodes',PercyState.gnodes);
+}
 
 // ==== VOICE ====
 const Voice = { enabled:true, lastSpoken:0, speak(text){ try{ if(!this.enabled||!('speechSynthesis' in window)||!text)return; const now=Date.now(); if(now-this.lastSpoken<300)return; this.lastSpoken=now; const u=new SpeechSynthesisUtterance(text); const pick=v=>v.find(vv=>/en(-|_|$)/i.test(vv.lang))||v[0]; const ensureVoice=()=>{ const vs=speechSynthesis.getVoices(); if(vs?.length){ u.voice=pick(vs); speechSynthesis.speak(u);} else { speechSynthesis.onvoiceschanged=()=>{ const v2=speechSynthesis.getVoices(); u.voice=pick(v2); speechSynthesis.speak(u);}; }}; u.rate=1.0; u.pitch=1.0; u.volume=1.0; ensureVoice(); }catch{} } };
@@ -97,13 +156,13 @@ let zoomLevel=1,translateX=0,translateY=0;
 function createNodes(){
   const width=logicMap.clientWidth||800, height=logicMap.clientHeight||600;
   const rings = [
-    { start: 80, end: 200, radius: Math.min(width,height)/2.5, color:'cyan-bubble', size:60 },
-    { start: 201, end: 300, radius: Math.min(width,height)/3.4, color:'blue-bubble', size:45 },
-    { start: 301, end: 400, radius: Math.min(width,height)/4.8, color:'magenta-bubble', size:30 },
-    { start: 401, end: 500, radius: Math.min(width,height)/6.6, color:'red-bubble', size:22 },
-    { start: 501, end: 600, radius: Math.min(width,height)/8.5, color:'orange-bubble', size:18 },
-    { start: 601, end: 700, radius: Math.min(width,height)/11, color:'yellow-bubble', size:14 },
-    { start: 701, end: 800, radius: Math.min(width,height)/14, color:'green-bubble', size:12 }
+    { start: 80, end: 200, radius: width/2.5, color:'cyan-bubble', size:60 },
+    { start: 201, end: 300, radius: width/3.4, color:'blue-bubble', size:45 },
+    { start: 301, end: 400, radius: width/4.8, color:'magenta-bubble', size:30 },
+    { start: 401, end: 500, radius: width/6.6, color:'red-bubble', size:22 },
+    { start: 501, end: 600, radius: width/8.5, color:'orange-bubble', size:18 },
+    { start: 601, end: 700, radius: width/11, color:'yellow-bubble', size:14 },
+    { start: 701, end: 800, radius: width/14, color:'green-bubble', size:12 }
   ];
   rings.forEach(r=>layoutRing(r.start,r.end,width,height,r.radius,r.color,r.size));
   applyTransform();
@@ -115,21 +174,19 @@ function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
   const centerX=width/2, centerY=height/2;
   ringSeeds.forEach(([id,data],index)=>{
     let node = document.getElementById(id);
-    const angle=(index/total)*2*Math.PI + Math.random()*0.05; // slight randomness for natural look
+    const angle=(index/total)*2*Math.PI;
     const x=centerX+radius*Math.cos(angle)-nodeSize/2;
     const y=centerY+radius*Math.sin(angle)-nodeSize/2;
     if(!node){
       node=document.createElement('div'); node.id=id; node.classList.add('node'); node.classList.add(colorClass);
       node.addEventListener('click',()=>percyRespond(id,data));
-      node.addEventListener('mouseenter',e=>showTooltip(e,data?.message||''));
-      node.addEventListener('mousemove',e=>moveTooltip(e));
-      node.addEventListener('mouseleave',hideTooltip);
+      node.addEventListener('mouseenter',()=>UI.setStatus(data?.message??''));
       logicNodes.appendChild(node);
     }
     node.style.width=node.style.height=`${nodeSize}px`;
     node.style.left=`${x}px`; node.style.top=`${y}px`;
-    node.textContent = data?.message || id; // show message
-    node.title = data?.message || id;
+    node.textContent=id;
+    node.title=(data&&data.message)?data.message:id;
   });
 }
 
@@ -137,19 +194,6 @@ function applyTransform(){
   logicNodes.style.transform=`translate(-50%,-50%) translate(${translateX}px,${translateY}px) scale(${zoomLevel})`;
   logicNodes.style.transformOrigin='center center';
 }
-
-// ==== TOOLTIP ====
-function showTooltip(e,text){
-  let tooltip = document.getElementById('hover-tooltip');
-  if(!tooltip){ tooltip=document.createElement('div'); tooltip.id='hover-tooltip'; document.body.appendChild(tooltip);}
-  tooltip.textContent=text;
-  tooltip.style.display='block';
-  moveTooltip(e);
-}
-function moveTooltip(e){
-  const tooltip=document.getElementById('hover-tooltip'); if(tooltip){ tooltip.style.left=(e.clientX+10)+'px'; tooltip.style.top=(e.clientY+10)+'px';}
-}
-function hideTooltip(){ const t=document.getElementById('hover-tooltip'); if(t) t.style.display='none'; }
 
 // ==== PERCY RESPOND ====
 function percyRespond(id,data){
@@ -170,7 +214,7 @@ document.getElementById('interpreter-input').addEventListener('keydown',e=>{
 
 document.getElementById('seed-search').addEventListener('input',e=>{
   const val=e.target.value.toUpperCase(); 
-  document.querySelectorAll('.node').forEach(n=>{ n.style.display=n.textContent.toUpperCase().includes(val)?'flex':'none'; });
+  document.querySelectorAll('.node').forEach(n=>{ n.style.display=n.textContent.includes(val)?'flex':'none'; });
 });
 
 // ==== TRUE AI LOOP ====
@@ -187,8 +231,9 @@ function selfRewrite(){
     if(!keys.length) return;
     const id = keys[Math.floor(Math.random()*keys.length)];
     const seed = PercyState.gnodes[id];
-    if(seed && !seed.message.includes('[auto-refined]') && Math.random()<0.5){
-      const newMsg = seed.message + ' [auto-refined]';
+    if(seed && Math.random()<0.5){
+      const oldMsg = seed.message;
+      const newMsg = oldMsg + ' [auto-refined]';
       PercyState.updateSeed(id,{message:newMsg});
       UI.say(`🔄 Percy auto-refined seed ${id}`);
       Voice.speak(`Auto refinement completed on seed ${id}`);
@@ -203,21 +248,6 @@ logicMap.addEventListener('mousedown', e=>{ isDragging=true; lastX=e.clientX; la
 logicMap.addEventListener('mousemove', e=>{ if(isDragging){ const dx=e.clientX-lastX, dy=e.clientY-lastY; translateX+=dx; translateY+=dy; lastX=e.clientX; lastY=e.clientY; applyTransform(); }});
 logicMap.addEventListener('mouseup', ()=>{ isDragging=false; });
 logicMap.addEventListener('mouseleave', ()=>{ isDragging=false; });
-
-// ==== AUTO-BOOTSTRAP SEEDS ====
-if(Object.keys(PercyState.gnodes).length === 0){
-  const exampleSeeds = [
-    {id:'G080',msg:'Initial cyan seed example'},
-    {id:'G201',msg:'Initial blue seed example'},
-    {id:'G301',msg:'Initial magenta seed example'},
-    {id:'G401',msg:'Initial red seed example'},
-    {id:'G501',msg:'Initial orange seed example'},
-    {id:'G601',msg:'Initial yellow seed example'},
-    {id:'G701',msg:'Initial green seed example'}
-  ];
-  exampleSeeds.forEach(s=>{ PercyState.gnodes[s.id]={message:s.msg,type:'bootstrap',data:{}}; seeds[s.id]=PercyState.gnodes[s.id]; });
-  Memory.save('gnodes',PercyState.gnodes);
-}
 
 // ==== INITIALIZE ====
 createNodes();
