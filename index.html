@@ -128,7 +128,7 @@ setInterval(()=>{ selfRewrite(); createNodes(); },5000);
 UI.say(`✅ Percy TrueAI v${PERCY_VERSION} initialized`);
 Voice.speak(`Percy TrueAI online`);
 
-// ==== PART C: WAIT FOR PERCYSTATE & ADD INTERACTIVITY ====
+// ==== INITIALIZE & PART C: WAIT FOR PERCYSTATE & ADD INTERACTIVITY ====
 (function waitForPercyState(){
   if(typeof PercyState === 'undefined'){
     console.log("⏳ Waiting for PercyState...");
@@ -138,6 +138,14 @@ Voice.speak(`Percy TrueAI online`);
 
   console.log("✅ PercyState detected, loading Part C");
 
+  // Node creation & loop
+  createNodes();
+  startPercyLoop();
+  setInterval(()=>{ selfRewrite(); createNodes(); },5000);
+  UI.say(`✅ Percy TrueAI v${PERCY_VERSION} initialized`);
+  Voice.speak(`Percy TrueAI online`);
+
+  // Self-mod & interactive functions
   PercyState.rewriteSelf = function({ codeChanges }) {
     if (!Array.isArray(codeChanges) || !codeChanges.length) {
       UI.say("⚠ Percy rewriteSelf: no codeChanges provided");
@@ -148,13 +156,11 @@ Voice.speak(`Percy TrueAI online`);
         const scriptTags = Array.from(document.querySelectorAll('script'))
           .filter(s => s.textContent.includes('PercyState'));
         if (!scriptTags.length) throw new Error("Cannot locate Percy script for rewrite");
-
         scriptTags.forEach(tag => {
           const oldCode = tag.textContent;
           const newCode = oldCode.replace(find, replace);
           tag.textContent = newCode;
         });
-
         UI.say("✅ Percy rewriteSelf applied successfully");
       } catch (e) {
         UI.say(`❌ Percy rewriteSelf error: ${e.message}`);
@@ -172,7 +178,3 @@ Voice.speak(`Percy TrueAI online`);
 
   UI.say("🧩 Percy Part C (self-mod + interactive) loaded.");
 })();
-});
-</script>
-</body>
-</html>
