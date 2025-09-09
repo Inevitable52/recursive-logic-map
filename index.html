@@ -9,21 +9,12 @@
   #logic-map { position:absolute; top:0; left:0; width:100vw; height:70vh; background:#0a0a0f; overflow:hidden; }
   #logic-nodes { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(1); width:100%; height:100%; }
 
-  /* Chat box */
   #chat-container { position:absolute; bottom:0; left:0; width:100%; height:30vh; background:#111; overflow-y:auto; padding:8px; box-sizing:border-box; }
   #chat-container p { margin:2px 0; font-family: monospace; font-size:13px; color:#d6d8ff; }
   #input-container { position:absolute; bottom:0; width:100%; display:flex; }
   #user-input { flex:1; padding:8px; border:none; outline:none; font-size:14px; }
   #send-btn { padding:8px 12px; background:#3764ff; color:white; border:none; cursor:pointer; }
 
-  /* Node neon colors (from percy.js) */
-  .cyan-bubble{color:#00eaff;}
-  .blue-bubble{color:#27a0ff;}
-  .magenta-bubble{color:#ff4af0;}
-  .red-bubble{color:#ff3b3b;}
-  .orange-bubble{color:#ff9d2e;}
-  .yellow-bubble{color:#ffe44a;}
-  .pink-bubble{color:#ff6bd8;}
   .node{
     position:absolute; border-radius:50%; display:flex; align-items:center; justify-content:center;
     font-weight:700; color:#fff; cursor:pointer;
@@ -51,11 +42,8 @@
 
 <script src="./js/percy.js"></script>
 <script>
+// === Chat helper ===
 const chatBox = document.getElementById('chat-container');
-const input = document.getElementById('user-input');
-const sendBtn = document.getElementById('send-btn');
-
-// Add a message to chat box
 function addChatMessage(sender, msg){
   const p = document.createElement('p');
   p.textContent = `${sender}: ${msg}`;
@@ -63,47 +51,105 @@ function addChatMessage(sender, msg){
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// Hook Percy to show all messages automatically
-if(typeof PercyState !== 'undefined'){
-  const originalSpeak = PercyState.speak;
+// === Percy Autonomous Patch ===
+function enablePercyAutonomy() {
+  if (!window.PercyState) return;
 
+  // Make sure Percy can rewrite code and has a queue
+  PercyState.canRewriteCode = true;
+  PercyState.autonomousQueue = PercyState.autonomousQueue || [];
+
+  // Override speak to show in chat
+  const originalSpeak = PercyState.speak;
   PercyState.speak = function(msg){
-    addChatMessage('🤖 Percy', msg);  // Show in chat
-    if(typeof originalSpeak === 'function') originalSpeak.call(PercyState, msg); // Original voice
+    addChatMessage('🤖 Percy', msg);
+    if(typeof originalSpeak === 'function') originalSpeak.call(PercyState, msg);
+  };
+
+  // Helper to fetch current code
+  PercyState.getCode = PercyState.getCode || async function() {
+    const response = await fetch('./js/percy.js');
+    return await response.text();
   }
 
-  // Optional: automatically show autonomous thoughts if Percy has a queue
-  setInterval(()=>{
-    if(PercyState?.autonomousQueue?.length){
-      const msg = PercyState.autonomousQueue.shift();
-      PercyState.speak(msg);
+  // Intelligent code rewriting
+  PercyState.rewriteCode = PercyState.rewriteCode || function(code){
+    let newCode = code;
+    newCode = newCode.replace(/([^\s;{}])\n/g, "$1;\n"); // add semicolons
+    newCode = newCode.replace(/function (\w+)\(\)\s*{\s*}/g, "function $1() {\n  // TODO: Implement $1\n}");
+    if(!newCode.includes('// Percy auto-optimized')){
+      newCode += `\n// Percy auto-optimized at ${new Date().toLocaleTimeString()}`;
     }
-  }, 1000);
+    return newCode;
+  }
+
+  // Safely update code
+  PercyState.updateCode = PercyState.updateCode || function(newCode){
+    let oldScript = document.querySelector('script[data-percy-self]');
+    if(oldScript){
+      oldScript.textContent = newCode;
+    } else {
+      const newScript = document.createElement('script');
+      newScript.textContent = newCode;
+      newScript.setAttribute('data-percy-self','true');
+      document.body.appendChild(newScript);
+    }
+  }
+
+  // Autonomous loop
+  async function autonomousLoop(){
+    while(true){
+      // Speak queued thoughts
+      if(PercyState.autonomousQueue.length){
+        const thought = PercyState.autonomousQueue.shift();
+        PercyState.speak(thought);
+      }
+
+      // Rewrite code
+      if(PercyState.canRewriteCode){
+        try{
+          const code = await PercyState.getCode();
+          const newCode = PercyState.rewriteCode(code);
+          PercyState.updateCode(newCode);
+          PercyState.speak("I've improved my own logic autonomously!");
+        } catch(e){
+          PercyState.speak("Error rewriting code: "+e.message);
+        }
+      }
+
+      await new Promise(r=>setTimeout(r,10000));
+    }
+  }
+
+  autonomousLoop();
 }
 
-// Send message to Percy on click
-sendBtn.addEventListener('click', ()=>{
+// Enable Percy autonomy immediately
+enablePercyAutonomy();
+
+// === User Input ===
+const input = document.getElementById('user-input');
+const sendBtn = document.getElementById('send-btn');
+
+function sendUserMessage(){
   const msg = input.value.trim();
   if(!msg) return;
   addChatMessage('You', msg);
   input.value = '';
-
   if(window.PercyState){
     const id = PercyState.createSeed(msg,'userInput');
     const seed = PercyState.gnodes[id];
     const response = seed.message.slice(0,200);
     PercyState.speak(response);
   }
-});
+}
 
-// Allow Enter key
-input.addEventListener('keydown', e=>{
-  if(e.key==='Enter') sendBtn.click();
-});
+sendBtn.addEventListener('click', sendUserMessage);
+input.addEventListener('keydown', e=>{ if(e.key==='Enter') sendUserMessage(); });
 
 // Auto-refresh nodes
 setInterval(()=>{ if(typeof refreshNodes==='function') refreshNodes(); },5000);
-</script>
 
+</script>
 </body>
 </html>
