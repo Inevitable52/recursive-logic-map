@@ -2,155 +2,79 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Percy Recursive Logic Map</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Percy Chat Interface</title>
 <style>
-  /* Console & message bar */
-  #percy-console {
-    position: fixed; bottom: 0; width: 100%; height: 200px;
-    overflow-y: auto; background: #111; color: #fff; padding: 4px; font-family: monospace;
-  }
-  #percy-message {
-    position: fixed; bottom: 210px; width: 100%; height: 24px; color: #0f0;
-    font-family: monospace;
-  }
-
-  /* Logic map container */
-  #logic-map {
-    position: relative; width: 100vw; height: 90vh; background: #0a0a0f; overflow: hidden;
-  }
-  #logic-nodes {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
-  }
-
-  /* Node styles */
-  .node {
-    position: absolute; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    font-weight: 700; color: #fff; cursor: pointer;
-    background: radial-gradient(100% 100% at 30% 30%, rgba(255,255,255,0.10), rgba(0,0,0,0.10));
-    border: 2px solid currentColor;
-    box-shadow: 0 0 6px currentColor, 0 0 14px currentColor, inset 0 0 12px rgba(255,255,255,0.08);
-    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
-    user-select: none;
-    transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
-    backdrop-filter: blur(1px);
-  }
-  .node:hover { transform: scale(1.08); filter: brightness(1.15); }
-  .node:active { transform: scale(0.98); }
-
-  /* Bubble colors */
-  .cyan-bubble{ color:#00eaff; }
-  .blue-bubble{ color:#27a0ff; }
-  .magenta-bubble{ color:#ff4af0; }
-  .red-bubble{ color:#ff3b3b; }
-  .orange-bubble{ color:#ff9d2e; }
-  .yellow-bubble{ color:#ffe44a; }
-  .pink-bubble{ color:#ff6bd8; }
+  body { margin:0; font-family: Arial, sans-serif; background:#111; color:white; display:flex; flex-direction:column; height:100vh; }
+  #chat-container { flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:6px; }
+  .message { padding:6px 10px; border-radius:8px; max-width:70%; word-wrap:break-word; }
+  .user { align-self:flex-end; background:#3764ff; color:white; }
+  .percy { align-self:flex-start; background:#27a0ff; color:white; }
+  #input-container { display:flex; padding:10px; background:#0b0b12; }
+  #user-input { flex:1; padding:8px; border-radius:8px; border:none; font-size:14px; }
+  #send-btn { margin-left:6px; padding:8px 12px; border:none; border-radius:8px; background:#3764ff; color:white; cursor:pointer; }
 </style>
 </head>
 <body>
 
-<div id="percy-console"></div>
-<div id="percy-message"></div>
-<div id="logic-map">
-  <div id="logic-nodes"></div>
+<div id="chat-container"></div>
+
+<div id="input-container">
+  <input type="text" id="user-input" placeholder="Type your message here..." />
+  <button id="send-btn">Send</button>
 </div>
 
+<script src="percy.js"></script> <!-- make sure this path is correct -->
+
 <script>
-document.addEventListener("DOMContentLoaded", () => {
+const chatContainer = document.getElementById('chat-container');
+const userInput = document.getElementById('user-input');
+const sendBtn = document.getElementById('send-btn');
 
-  // ====== UI ======
-  window.UI = {
-    elConsole: () => document.getElementById('percy-console'),
-    elMsg: () => document.getElementById('percy-message'),
-    say(txt) {
-      const box = this.elConsole(); if(!box) return;
-      const p = document.createElement('p'); p.textContent = txt;
-      box.appendChild(p); box.scrollTop = box.scrollHeight;
-    },
-    setStatus(txt){ const m = this.elMsg(); if(m) m.textContent = txt; },
-    confirmModal({title,body,allowLabel="Allow",denyLabel="Deny"}){
-      return new Promise(resolve=>{
-        const wrap=document.createElement('div');
-        wrap.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:99999";
-        const card=document.createElement('div');
-        card.style.cssText="background:#0b0b12;color:#eee;max-width:520px;width:92%;border:1px solid #444;border-radius:16px;padding:16px 18px;box-shadow:0 6px 32px rgba(0,0,0,.5)";
-        card.innerHTML=`<h3 style="margin:0 0 8px 0;font-size:18px;">${title}</h3>
-          <div style="font-size:14px;opacity:.9;margin-bottom:12px;white-space:pre-wrap">${body}</div>
-          <div style="display:flex;gap:8px;justify-content:flex-end">
-            <button id="deny" style="padding:8px 12px;border-radius:10px;background:#252535;border:1px solid #3a3a50;color:#ddd">${denyLabel}</button>
-            <button id="allow" style="padding:8px 12px;border-radius:10px;background:#3764ff;border:1px solid #2a4de0;color:white">${allowLabel}</button>
-          </div>`;
-        wrap.appendChild(card); document.body.appendChild(wrap);
-        card.querySelector('#allow').onclick=()=>{ document.body.removeChild(wrap); resolve(true); };
-        card.querySelector('#deny').onclick=()=>{ document.body.removeChild(wrap); resolve(false); };
-      });
-    }
-  };
+// Function to append messages
+function appendMessage(text, sender) {
+  const msg = document.createElement('div');
+  msg.className = 'message ' + sender;
+  msg.textContent = text;
+  chatContainer.appendChild(msg);
+  chatContainer.scrollTop = chatContainer.scrollHeight;
+}
 
-  // ====== Voice ======
-  window.Voice = {
-    enabled:true, lastSpoken:0,
-    speak(text){
-      if(!this.enabled || !('speechSynthesis' in window) || !text) return;
-      const now = Date.now(); if(now - this.lastSpoken < 300) return;
-      this.lastSpoken = now;
-      const u = new SpeechSynthesisUtterance(text);
-      const pick = (voices)=>voices.find(v=>/en(-|_|$)/i.test(v.lang))||voices[0];
-      const ensureVoice = ()=>{
-        const vs = speechSynthesis.getVoices();
-        if(vs?.length){ u.voice = pick(vs); speechSynthesis.speak(u); }
-        else { speechSynthesis.onvoiceschanged = ()=>{ const v2 = speechSynthesis.getVoices(); u.voice = pick(v2); speechSynthesis.speak(u); }; }
-      };
-      u.rate=1; u.pitch=1; u.volume=1; ensureVoice();
-    }
-  };
+// Function to simulate Percy responding
+function percyReply(userText) {
+  if (!PercyState) return;
 
-  // ====== PercyState & Seeds ======
-  window.PercyState = {
-    gnodes: {}, 
-    createSeed(msg){ UI.say("✨ Percy created seed: "+msg); },
-    rewriteSelf({codeChanges}) {
-      if(!Array.isArray(codeChanges)) return UI.say("⚠ No codeChanges provided");
-      codeChanges.forEach(({find,replace})=>{
-        try{
-          const scriptTags = Array.from(document.querySelectorAll('script')).filter(s=>s.textContent.includes('PercyState'));
-          scriptTags.forEach(tag=>{
-            tag.textContent = tag.textContent.replace(find, replace);
-          });
-          UI.say("✅ Percy rewriteSelf applied");
-        } catch(e){ UI.say("❌ Percy rewriteSelf error: "+e.message); }
-      });
-    }
-  };
+  // Store user message as a seed
+  PercyState.createSeed(userText, 'userMessage');
 
-  // ====== Ask Bar ======
-  window.percyAsk = async function(promptText){
-    if(!promptText) return null;
-    return new Promise(resolve=>{
-      const resp = window.prompt(`🤖 Percy asks:\n${promptText}`);
-      resolve(resp);
-    });
-  };
+  // Generate autonomous thought (Percy-style response)
+  PercyState.autonomousThought();
 
-  // ====== Logic Map Example ======
-  const nodesContainer = document.getElementById('logic-nodes');
-  function addNode(name, color="cyan-bubble", x=0, y=0){
-    const node = document.createElement('div');
-    node.className = `node ${color}`;
-    node.style.width = "80px"; node.style.height="80px";
-    node.style.left = x+"px"; node.style.top = y+"px";
-    node.textContent = name;
-    nodesContainer.appendChild(node);
-  }
-  // Demo nodes
-  addNode("G1", "cyan-bubble", -100, -50);
-  addNode("G2", "blue-bubble", 120, -80);
-  addNode("G3", "magenta-bubble", -40, 130);
+  // Pick the latest thought seed
+  const keys = Object.keys(PercyState.gnodes);
+  const latestId = keys[keys.length-1];
+  const latestSeed = PercyState.gnodes[latestId];
+  const reply = latestSeed?.message || "🤖 Percy is thinking...";
 
-  UI.say("✅ Full Percy system initialized: UI, Voice, Self-Rewrite, Ask Bar, and Logic Map.");
-  Voice.speak("Percy system is online.");
+  appendMessage(reply, 'percy');
+  if (Voice?.speak) Voice.speak(reply);
+}
 
-});
+// Handle send
+function sendMessage() {
+  const text = userInput.value.trim();
+  if (!text) return;
+  appendMessage(text, 'user');
+  userInput.value = '';
+  percyReply(text);
+}
+
+// Events
+sendBtn.addEventListener('click', sendMessage);
+userInput.addEventListener('keypress', e => { if(e.key==='Enter') sendMessage(); });
+
+// Optional: welcome message
+appendMessage("🤖 Percy online. Say something!", 'percy');
 </script>
 
 </body>
