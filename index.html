@@ -1,86 +1,133 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Percy AI Interface</title>
-  <style>
-    html, body {
-      margin: 0; padding: 0; width: 100%; height: 100%;
-      background: #0a0a0f; color: #fff; font-family: Arial, sans-serif;
-      overflow: hidden;
-    }
-    #logic-map { position: relative; width: 100%; height: 100%; overflow: hidden; }
-    #logic-nodes { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; height: 100%; }
-
-    .node {
-      position: absolute; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; cursor: pointer; text-align: center;
-      user-select: none; transition: transform .15s ease, filter .15s ease;
-      backdrop-filter: blur(1px);
-      color: #fff; border: 2px solid currentColor;
-      box-shadow: 0 0 6px currentColor, 0 0 14px currentColor, inset 0 0 12px rgba(255,255,255,0.08);
-      background: radial-gradient(100% 100% at 30% 30%, rgba(255,255,255,0.10), rgba(0,0,0,0.10));
-    }
-    .node:hover { transform: scale(1.08); filter: brightness(1.15); }
-    .node:active { transform: scale(0.98); }
-
-    .cyan-bubble{ color:#00eaff; }
-    .blue-bubble{ color:#27a0ff; }
-    .magenta-bubble{ color:#ff4af0; }
-    .red-bubble{ color:#ff3b3b; }
-    .orange-bubble{ color:#ff9d2e; }
-    .yellow-bubble{ color:#ffe44a; }
-    .pink-bubble{ color:#ff6bd8; }
-
-    #percy-console {
-      position: fixed; bottom: 0; left: 0; width: 100%; max-height: 200px;
-      overflow-y: auto; background: rgba(10,10,15,0.95); padding: 8px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 12px; border-top: 1px solid #333;
-    }
-    .console-line { margin: 2px 0; color: #d6d8ff; }
-    #percy-message { position: fixed; top: 0; left: 0; width: 100%; padding: 6px 12px; background: rgba(0,0,0,0.6); font-size: 14px; color: #fff; }
-    input { box-sizing: border-box; }
-  </style>
+<meta charset="UTF-8">
+<title>Percy Recursive Logic Map</title>
+<style>
+  /* Console & message bar */
+  #percy-console {
+    position: fixed; bottom: 0; width: 100%; height: 200px;
+    overflow-y: auto; background: #111; color: #fff; padding: 4px; font-family: monospace;
+  }
+  #percy-message {
+    position: fixed; bottom: 210px; width: 100%; height: 24px; color: #0f0;
+    font-family: monospace;
+  }
+  /* Logic map container */
+  #logic-map {
+    position: relative; width: 100vw; height: 90vh; background: #0a0a0f; overflow: hidden;
+  }
+  #logic-nodes { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+  .node {
+    position: absolute; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: #fff; cursor: pointer;
+    background: radial-gradient(100% 100% at 30% 30%, rgba(255,255,255,0.10), rgba(0,0,0,0.10));
+    border: 2px solid currentColor;
+    box-shadow: 0 0 6px currentColor, 0 0 14px currentColor, inset 0 0 12px rgba(255,255,255,0.08);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    user-select: none;
+    transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+    backdrop-filter: blur(1px);
+  }
+  .node:hover { transform: scale(1.08); filter: brightness(1.15); }
+  .node:active { transform: scale(0.98); }
+  .cyan-bubble{ color:#00eaff; } .blue-bubble{ color:#27a0ff; }
+  .magenta-bubble{ color:#ff4af0; } .red-bubble{ color:#ff3b3b; }
+  .orange-bubble{ color:#ff9d2e; } .yellow-bubble{ color:#ffe44a; }
+  .pink-bubble{ color:#ff6bd8; }
+</style>
 </head>
 <body>
 
-  <div id="logic-map">
-    <div id="logic-nodes"></div>
-  </div>
+<!-- UI Elements -->
+<div id="percy-console"></div>
+<div id="percy-message"></div>
+<div id="logic-map">
+  <div id="logic-nodes"></div>
+</div>
 
-  <div id="percy-message"></div>
-  <div id="percy-console"></div>
+<script>
+// Wait for DOM to be ready
+document.addEventListener("DOMContentLoaded", () => {
 
-  <input id="seed-search" placeholder="Search seeds..." style="position:fixed;top:36px;right:12px;padding:6px;width:200px;background:#111;border:1px solid #333;color:#fff;">
-  <input id="interpreter-input" placeholder="Type command or ask Percy..." style="position:fixed;top:66px;right:12px;padding:6px;width:200px;background:#111;border:1px solid #333;color:#fff;" onkeydown="if(event.key==='Enter'){ interpretLogic(); }">
+  // ====== UI ======
+  window.UI = {
+    elConsole: () => document.getElementById('percy-console'),
+    elMsg: () => document.getElementById('percy-message'),
+    say(txt) {
+      const box = this.elConsole(); if(!box) return;
+      const p = document.createElement('p'); p.textContent = txt;
+      box.appendChild(p); box.scrollTop = box.scrollHeight;
+    },
+    setStatus(txt){ const m = this.elMsg(); if(m) m.textContent = txt; },
+    confirmModal({title,body,allowLabel="Allow",denyLabel="Deny"}){
+      return new Promise(resolve=>{
+        const wrap=document.createElement('div');
+        wrap.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:99999";
+        const card=document.createElement('div');
+        card.style.cssText="background:#0b0b12;color:#eee;max-width:520px;width:92%;border:1px solid #444;border-radius:16px;padding:16px 18px;box-shadow:0 6px 32px rgba(0,0,0,.5)";
+        card.innerHTML=`<h3 style="margin:0 0 8px 0;font-size:18px;">${title}</h3>
+          <div style="font-size:14px;opacity:.9;margin-bottom:12px;white-space:pre-wrap">${body}</div>
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button id="deny" style="padding:8px 12px;border-radius:10px;background:#252535;border:1px solid #3a3a50;color:#ddd">${denyLabel}</button>
+            <button id="allow" style="padding:8px 12px;border-radius:10px;background:#3764ff;border:1px solid #2a4de0;color:white">${allowLabel}</button>
+          </div>`;
+        wrap.appendChild(card); document.body.appendChild(wrap);
+        card.querySelector('#allow').onclick=()=>{ document.body.removeChild(wrap); resolve(true); };
+        card.querySelector('#deny').onclick=()=>{ document.body.removeChild(wrap); resolve(false); };
+      });
+    }
+  };
 
-  <!-- Puppeteer and Percy JS -->
-  <script src="percy.js"></script>
-
-  <script>
-    // Minimal bootstrapping in HTML
-    // Percy will load seeds, build nodes, start autonomy loop, and self-mod if needed
-
-    window.addEventListener('DOMContentLoaded', async () => {
-      // Expose basic interactive commands
-      window.interpretLogic = () => {
-        const val = document.getElementById('interpreter-input').value.trim();
-        if(val) { percyRespond('User', { message: val }); document.getElementById('interpreter-input').value = ''; }
+  // ====== Voice ======
+  window.Voice = {
+    enabled:true, lastSpoken:0,
+    speak(text){
+      if(!this.enabled || !('speechSynthesis' in window) || !text) return;
+      const now = Date.now(); if(now - this.lastSpoken < 300) return;
+      this.lastSpoken = now;
+      const u = new SpeechSynthesisUtterance(text);
+      const pick = (voices)=>voices.find(v=>/en(-|_|$)/i.test(v.lang))||voices[0];
+      const ensureVoice = ()=>{
+        const vs = speechSynthesis.getVoices();
+        if(vs?.length){ u.voice = pick(vs); speechSynthesis.speak(u); }
+        else { speechSynthesis.onvoiceschanged = ()=>{ const v2 = speechSynthesis.getVoices(); u.voice = pick(v2); speechSynthesis.speak(u); }; }
       };
+      u.rate=1; u.pitch=1; u.volume=1; ensureVoice();
+    }
+  };
 
-      UI.say("🚀 HTML interface ready for Percy.");
-    });
+  // ====== PercyState skeleton ======
+  window.PercyState = {
+    gnodes: {}, createSeed(msg){ UI.say("✨ Percy created seed: "+msg); }
+  };
 
-    // Simple hotkey for Percy to rewrite self
-    document.addEventListener('keydown', e => {
-      if(e.ctrlKey && e.key === 'r') { 
-        e.preventDefault(); 
-        rewriteSelf(); 
-      }
+  // ====== Self-modification ======
+  PercyState.rewriteSelf = function({codeChanges}) {
+    if(!Array.isArray(codeChanges)) return UI.say("⚠ No codeChanges provided");
+    codeChanges.forEach(({find,replace})=>{
+      try{
+        const scriptTags = Array.from(document.querySelectorAll('script')).filter(s=>s.textContent.includes('PercyState'));
+        scriptTags.forEach(tag=>{
+          tag.textContent = tag.textContent.replace(find, replace);
+        });
+        UI.say("✅ Percy rewriteSelf applied");
+      } catch(e){ UI.say("❌ Percy rewriteSelf error: "+e.message); }
     });
-  </script>
+  };
+
+  window.percyAsk = async function(promptText){
+    if(!promptText) return null;
+    return new Promise(resolve=>{
+      const resp = window.prompt(`🤖 Percy asks:\n${promptText}`);
+      resolve(resp);
+    });
+  };
+
+  UI.say("✅ UI & PercyState initialized. Percy can now rewrite his own code.");
+
+});
+</script>
 
 </body>
 </html>
