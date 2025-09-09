@@ -40,6 +40,9 @@ const chatBox = document.getElementById('chat-container');
 const input = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
 
+// Conversation memory
+const PercyMemory = [];
+
 // Async typeMessage function
 function typeMessageAsync(sender, msg, speed=25){
     return new Promise(resolve=>{
@@ -59,14 +62,36 @@ function typeMessageAsync(sender, msg, speed=25){
     });
 }
 
-// Simple dynamic thinker
-function PercyThink(input){
-    input = input.toLowerCase();
-    if(input.includes('hello') || input.includes('hi')) return "Hello! How are you today?";
-    if(input.includes('how are you')) return "I am fully operational, thank you for asking!";
-    if(input.includes('your name')) return "I am Percy, your AI companion.";
-    if(input.includes('what can you do')) return "I can speak, think, and even rewrite my own logic safely!";
-    // fallback
+// Enhanced thinker with seed creation
+async function PercyThink(input){
+    PercyMemory.push({role:'user', text:input});
+    const lower = input.toLowerCase();
+
+    // Insight example: WatsonxGranitePanGu
+    if(lower.includes('watson')){
+        const insight = "There appears to be a connection between WatsonxGranitePanGu-ΣDeepSeekQwen and WatsonIBM due to AutoGPTRobot.";
+        
+        // Create seed in logic map
+        if(PercyState?.createSeed){
+            const seedId = PercyState.createSeed(insight, 'logicInsight');
+            await PercyState.speak(`✨ Percy created new seed G${seedId}: ${insight}`);
+            // Optional: refresh logic map UI
+            if(typeof PercyState.refreshLogicMap === 'function') PercyState.refreshLogicMap();
+        }
+        return `🤖 Percy thinks: ${insight}`;
+    }
+
+    // Basic keyword responses
+    if(lower.includes('hello') || lower.includes('hi')) return "Hello! How are you today?";
+    if(lower.includes('how are you')) return "I am fully operational, thank you for asking!";
+    if(lower.includes('your name')) return "I am Percy, your AI companion.";
+    if(lower.includes('what can you do')) return "I can speak, think, and even rewrite my own logic safely!";
+
+    // Context-aware fallback
+    if(PercyMemory.length > 3){
+        return "We've been chatting for a while. Tell me more!";
+    }
+
     return "Hmm, tell me more…";
 }
 
@@ -81,7 +106,7 @@ if(window.PercyState){
 async function handleUserInput(msg){
     if(!msg) return;
     await typeMessageAsync('You', msg);
-    const response = PercyThink(msg);
+    const response = await PercyThink(msg);
     PercyState.speak(response);
 }
 
