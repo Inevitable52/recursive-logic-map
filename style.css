@@ -172,3 +172,38 @@ body {
     0%, 100% { box-shadow: 0 0 12px currentColor, 0 0 32px currentColor; }
     50% { box-shadow: 0 0 20px currentColor, 0 0 48px currentColor; }
 }
+
+/* === Voice Visualizer === */
+#voice-visualizer {
+    position: fixed;
+    bottom: 200px; /* above console */
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    z-index: 2000;
+}
+
+#voice-bars {
+    display: flex;
+    gap: 3px;
+    height: 40px;
+    align-items: flex-end;
+}
+
+.voice-bar {
+    width: 6px;
+    background: linear-gradient(180deg, #00e5ff, #2979ff);
+    border-radius: 3px;
+    height: 8px; /* will be animated by JS */
+    transition: height 0.05s linear;
+}
+
+#voice-waveform {
+    width: 220px;
+    height: 50px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 6px;
+}
