@@ -7,7 +7,7 @@
 <style>
   body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; overflow:hidden; }
   #logic-map { background:#0a0a0f; position:relative; width:100vw; height:100vh; overflow:hidden; }
-  #logic-nodes { position:absolute; top:50%; left:50%; width:100%; height:100%; transform:translate(-50%,-50%) scale(1); }
+  #logic-nodes { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(1); }
 
   .node { position:absolute; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; cursor:pointer;
          background: radial-gradient(100% 100% at 30% 30%, rgba(255,255,255,0.10), rgba(0,0,0,0.10));
@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 const SAFETY = { maxActionsPerMinute:20, maxSeedsPerCycle:5, consoleLimit:500 };
 const OWNER = { primary:"Fabian", secondary:"Lorena" };
-const PERCY_VERSION="8.3.4-neon-bubbles-voicewave";
+const PERCY_VERSION="8.3.5-neon-bubbles-fixed";
 
 const Memory = {
   _k:k=>`percy:${k}`,
@@ -111,86 +111,6 @@ const UI = {
   setStatus(txt){ const m=this.elMsg(); if(m)m.textContent=txt; }
 };
 
-// ==== VOICE SYSTEM ====
-const Voice = {
-  enabled:true, lastSpoken:0,
-  audioCtx: new (window.AudioContext||window.webkitAudioContext)(),
-  analyser:null, dataArray:null,
-  barsEl: document.getElementById('voice-bars'),
-  waveEl: document.getElementById('voice-wave'),
-  init(){
-    this.analyser=this.audioCtx.createAnalyser();
-    this.analyser.fftSize=256;
-    this.dataArray=new Uint8Array(this.analyser.frequencyBinCount);
-    // build bars
-    for(let i=0;i<20;i++){
-      const b=document.createElement('div');
-      b.className='bar';
-      this.barsEl.appendChild(b);
-    }
-    this.animate();
-  },
-  animate(){
-    requestAnimationFrame(()=>this.animate());
-    if(!this.analyser) return;
-    this.analyser.getByteFrequencyData(this.dataArray);
-
-    // Bars
-    const bars=this.barsEl.querySelectorAll('.bar');
-    bars.forEach((bar,i)=>{
-      const h=(this.dataArray[i]||0)/4;
-      bar.style.height=`${Math.max(4,h)}px`;
-      bar.style.opacity=0.3+Math.min(0.7,h/60);
-    });
-
-    // Wave
-    const ctx=this.waveEl.getContext('2d');
-    ctx.clearRect(0,0,this.waveEl.width,this.waveEl.height);
-    this.analyser.getByteTimeDomainData(this.dataArray);
-    ctx.beginPath();
-    ctx.strokeStyle='#00eaff';
-    ctx.lineWidth=2;
-    const slice=this.waveEl.width/this.dataArray.length;
-    let x=0;
-    for(let i=0;i<this.dataArray.length;i++){
-      const v=this.dataArray[i]/128.0;
-      const y=v*this.waveEl.height/2;
-      if(i===0) ctx.moveTo(x,y);
-      else ctx.lineTo(x,y);
-      x+=slice;
-    }
-    ctx.lineTo(this.waveEl.width,this.waveEl.height/2);
-    ctx.stroke();
-  },
-  speak(text){
-    if(!('speechSynthesis' in window)) return;
-    const now=Date.now(); if(now-this.lastSpoken<300) return;
-    this.lastSpoken=now;
-
-    const box=document.getElementById('voice-box');
-    const textEl=document.getElementById('voice-text');
-    textEl.textContent=text;
-    box.style.opacity='1';
-    box.style.transform='translateX(-50%) translateY(0)';
-
-    const utter=new SpeechSynthesisUtterance(text);
-    utter.rate=1.0; utter.pitch=1.0;
-    utter.onend=()=>{
-      box.style.opacity='0';
-      box.style.transform='translateX(-50%) translateY(-20px)';
-    };
-    speechSynthesis.speak(utter);
-
-    // connect dummy oscillator so analyser has signal
-    const osc=this.audioCtx.createOscillator();
-    const gain=this.audioCtx.createGain();
-    osc.type='sine'; osc.frequency.value=220;
-    osc.connect(gain); gain.connect(this.analyser);
-    osc.start(); osc.stop(this.audioCtx.currentTime+1.2);
-  }
-};
-Voice.init();
-
 // ==== LOGIC MAP & NODES ====
 const logicMap=document.getElementById('logic-map');
 const logicNodes=document.getElementById('logic-nodes');
@@ -199,13 +119,13 @@ let zoomLevel=1,translateX=0,translateY=0;
 function createNodes(){
   const width=logicMap.clientWidth||800, height=logicMap.clientHeight||600;
   const rings = [
-    { start: 80, end: 200, radius: width/2.5, color:'cyan-bubble', size:60 },
-    { start: 201, end: 300, radius: width/3.4, color:'blue-bubble', size:45 },
-    { start: 301, end: 400, radius: width/4.8, color:'magenta-bubble', size:30 },
-    { start: 401, end: 500, radius: width/6.6, color:'red-bubble', size:22 },
-    { start: 501, end: 600, radius: width/8.5, color:'orange-bubble', size:18 },
-    { start: 601, end: 700, radius: width/11, color:'yellow-bubble', size:14 },
-    { start: 701, end: 800, radius: width/14, color:'green-bubble', size:12 }
+    { start: 80, end: 200, radius: width/2.2, color:'cyan-bubble', size:60 },
+    { start: 201, end: 300, radius: width/3.0, color:'blue-bubble', size:45 },
+    { start: 301, end: 400, radius: width/4.0, color:'magenta-bubble', size:30 },
+    { start: 401, end: 500, radius: width/5.5, color:'red-bubble', size:22 },
+    { start: 501, end: 600, radius: width/7.0, color:'orange-bubble', size:18 },
+    { start: 601, end: 700, radius: width/9.0, color:'yellow-bubble', size:14 },
+    { start: 701, end: 800, radius: width/12, color:'green-bubble', size:12 }
   ];
   rings.forEach(r=>layoutRing(r.start,r.end,width,height,r.radius,r.color,r.size));
   applyTransform();
@@ -228,6 +148,9 @@ function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
     }
     node.style.width=node.style.height=`${nodeSize}px`;
     node.style.left=`${x}px`; node.style.top=`${y}px`;
+    // Slight scale for inner vs outer rings
+    const scaleFactor=1 - ((endId-startId)/800)*0.2;
+    node.style.transform=`scale(${scaleFactor})`;
     node.textContent=id;
     node.title=(data&&data.message)?data.message:id;
   });
