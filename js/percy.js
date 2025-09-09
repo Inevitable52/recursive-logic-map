@@ -604,7 +604,7 @@ STARTUP
 // Ensure PercyState exists
 if (typeof PercyState !== 'undefined') {
 
-  // Add rewriteSelf function
+  // Add rewriteSelf function to PercyState
   PercyState.rewriteSelf = function({ codeChanges }) {
     if (!Array.isArray(codeChanges) || !codeChanges.length) {
       UI.say("⚠ Percy rewriteSelf: no codeChanges provided");
@@ -689,7 +689,6 @@ async function rewriteSelf() {
 
 // =========================
 // MUTATION GENERATOR
-// (very simple example now, but expandable later)
 // =========================
 function generateMutatedCode(baseCode) {
   if (!baseCode) {
@@ -701,7 +700,7 @@ function generateMutatedCode(baseCode) {
 
   let mutated = baseCode;
 
-  // Example mutations:
+  // Example mutations
   const mutations = [
     () => mutated.replace(/console\.log/g, "UI.say"),
     () => mutated.replace(/setInterval/g, "setTimeout"),
@@ -715,3 +714,8 @@ function generateMutatedCode(baseCode) {
   return mutated;
 }
 
+// =========================
+// GLOBAL EXPOSURE
+// =========================
+window.PercyState = PercyState;
+window.rewriteSelf = rewriteSelf;
