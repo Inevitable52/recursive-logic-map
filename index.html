@@ -39,106 +39,120 @@ const chatBox = document.getElementById('chat-container');
 const input = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
 
-// Add a message to chat box
-function addChatMessage(sender, msg){
-  const p = document.createElement('p');
-  p.textContent = `${sender}: ${msg}`;
-  chatBox.appendChild(p);
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-// Hook Percy to show all messages
-function enablePercyAutonomy() {
-  if (!window.PercyState) return;
-
-  // Override speak to show messages in chat
-  const originalSpeak = PercyState.speak;
-  PercyState.speak = function(msg){
-    addChatMessage('🤖 Percy', msg);
-    if(typeof originalSpeak === 'function') originalSpeak.call(PercyState,msg);
-  };
-
-  // Fetch current code
-  PercyState.getCode = PercyState.getCode || async function() {
-    const response = await fetch('./js/percy.js');
-    return await response.text();
-  }
-
-  // Simple intelligent code rewriting
-  PercyState.rewriteCode = PercyState.rewriteCode || function(code){
-    let newCode = code;
-    newCode = newCode.replace(/([^\s;{}])\n/g, "$1;\n"); // Add missing semicolons
-    newCode = newCode.replace(/function (\w+)\(\)\s*{\s*}/g, "function $1() {\n  // TODO: Implement $1\n}");
-    if(!newCode.includes('// Percy auto-optimized')){
-      newCode += `\n// Percy auto-optimized at ${new Date().toLocaleTimeString()}`;
-    }
-    return newCode;
-  }
-
-  // Update code safely via Blob
-  PercyState.updateCode = PercyState.updateCode || function(newCode){
-    try {
-      let oldScript = document.querySelector('script[data-percy-self]');
-      if(oldScript) oldScript.remove();
-
-      const blob = new Blob([newCode], { type: 'text/javascript' });
-      const url = URL.createObjectURL(blob);
-
-      const newScript = document.createElement('script');
-      newScript.src = url;
-      newScript.setAttribute('data-percy-self', 'true');
-      document.body.appendChild(newScript);
-    } catch(e){
-      PercyState.speak("Error updating code: "+e.message);
-    }
-  }
-
-  // Autonomous loop
-  async function autonomousLoop(){
-    while(true){
-      if(PercyState?.autonomousQueue?.length){
-        const thought = PercyState.autonomousQueue.shift();
-        PercyState.speak(thought);
-      }
-
-      if(PercyState?.canRewriteCode){
-        try{
-          const code = await PercyState.getCode();
-          const newCode = PercyState.rewriteCode(code);
-          PercyState.updateCode(newCode);
-          PercyState.speak("I've improved my own logic autonomously!");
-        } catch(e){
-          PercyState.speak("Error rewriting code: "+e.message);
+// Helper: show message with typing effect
+function typeMessage(sender, msg, speed=25){
+    const p = document.createElement('p');
+    p.textContent = `${sender}: `;
+    chatBox.appendChild(p);
+    let i=0;
+    function typeNext(){
+        if(i<msg.length){
+            p.textContent += msg[i];
+            i++;
+            chatBox.scrollTop = chatBox.scrollHeight;
+            setTimeout(typeNext, speed);
         }
-      }
-
-      await new Promise(r=>setTimeout(r,10000));
     }
-  }
-
-  autonomousLoop();
+    typeNext();
 }
 
-// Enable Percy autonomy immediately
+// Hook Percy
+function enablePercyAutonomy() {
+    if(!window.PercyState) return;
+
+    PercyState.autonomousQueue = PercyState.autonomousQueue || [];
+
+    // Add some test autonomous thoughts
+    PercyState.autonomousQueue.push("Hello! I am Percy, your AI companion.");
+    PercyState.autonomousQueue.push("I can speak, think, and even rewrite my own logic safely.");
+
+    // Override speak to show typing
+    const originalSpeak = PercyState.speak;
+    PercyState.speak = function(msg){
+        typeMessage('🤖 Percy', msg);
+        if(typeof originalSpeak==='function') originalSpeak.call(PercyState,msg);
+    }
+
+    // Safe code updating
+    PercyState.getCode = PercyState.getCode || async function(){
+        const response = await fetch('./js/percy.js');
+        return await response.text();
+    }
+
+    PercyState.rewriteCode = PercyState.rewriteCode || function(code){
+        let newCode = code;
+        newCode = newCode.replace(/([^\s;{}])\n/g,"$1;\n");
+        newCode = newCode.replace(/function (\w+)\(\)\s*{\s*}/g,"function $1(){\n  // TODO: Implement $1\n}");
+        if(!newCode.includes('// Percy auto-optimized')){
+            newCode += `\n// Percy auto-optimized at ${new Date().toLocaleTimeString()}`;
+        }
+        return newCode;
+    }
+
+    PercyState.updateCode = PercyState.updateCode || function(newCode){
+        try{
+            let oldScript = document.querySelector('script[data-percy-self]');
+            if(oldScript) oldScript.remove();
+
+            const blob = new Blob([newCode], {type:'text/javascript'});
+            const url = URL.createObjectURL(blob);
+
+            const newScript = document.createElement('script');
+            newScript.src = url;
+            newScript.setAttribute('data-percy-self','true');
+            document.body.appendChild(newScript);
+        }catch(e){
+            PercyState.speak("Error updating code: "+e.message);
+        }
+    }
+
+    // Autonomous loop
+    async function autonomousLoop(){
+        while(true){
+            // Speak thoughts
+            if(PercyState.autonomousQueue.length){
+                const thought = PercyState.autonomousQueue.shift();
+                PercyState.speak(thought);
+            }
+
+            // Rewrite code if allowed
+            if(PercyState.canRewriteCode){
+                try{
+                    const code = await PercyState.getCode();
+                    const newCode = PercyState.rewriteCode(code);
+                    PercyState.updateCode(newCode);
+                    PercyState.speak("I've improved my own logic autonomously!");
+                }catch(e){
+                    PercyState.speak("Error rewriting code: "+e.message);
+                }
+            }
+
+            await new Promise(r=>setTimeout(r,10000));
+        }
+    }
+    autonomousLoop();
+}
+
+// Enable Percy autonomy
 enablePercyAutonomy();
 
-// Send message on click
-sendBtn.addEventListener('click', ()=>{
-  const msg = input.value.trim();
-  if(!msg) return;
-  addChatMessage('You', msg);
-  input.value = '';
-  if(window.PercyState){
-    const id = PercyState.createSeed(msg,'userInput');
-    const seed = PercyState.gnodes[id];
-    const response = seed.message.slice(0,200);
-    PercyState.speak(response);
-  }
+// Send message from user
+sendBtn.addEventListener('click',()=>{
+    const msg = input.value.trim();
+    if(!msg) return;
+    typeMessage('You', msg);
+    input.value='';
+    if(window.PercyState){
+        const id = PercyState.createSeed(msg,'userInput');
+        const seed = PercyState.gnodes[id];
+        const response = seed?.message || "Hmm, I have no reply yet.";
+        PercyState.speak(response);
+    }
 });
 
-// Send message on Enter
+// Send on Enter
 input.addEventListener('keydown', e=>{
-  if(e.key==='Enter') sendBtn.click();
+    if(e.key==='Enter') sendBtn.click();
 });
 </script>
 </body>
