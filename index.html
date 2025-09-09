@@ -37,7 +37,7 @@
     position:absolute; top:100px; left:50%; transform:translateX(-50%) translateY(-20px);
     background: rgba(0,0,0,0.6); color:#00eaff; padding:8px 12px; border-radius:12px;
     font-family: Arial, sans-serif; font-size:14px; max-width:60%; text-align:center;
-    pointer-events:none; opacity:0; transition: opacity 0.4s ease, transform 0.4s ease;
+    pointer-events:none; opacity:0; transition: opacity 0.3s ease, transform 0.3s ease;
     z-index:999;
   }
   #voice-box::after {
@@ -47,15 +47,10 @@
 
   /* Voice Bars */
   #voice-bars { display:flex; justify-content:center; align-items:flex-end; margin-top:6px; height:30px; }
-  #voice-bars .bar { width:4px; margin:0 1px; background:#00eaff; }
+  #voice-bars .bar { width:4px; margin:0 1px; background:#00eaff; transition: height 0.05s ease, opacity 0.05s ease; }
 
   /* Waveform */
-  #voice-wave {
-    display:block;
-    margin:6px auto 0 auto;
-    background:rgba(0,0,0,0.2);
-    border-radius:6px;
-  }
+  #voice-wave { display:block; margin:6px auto 0 auto; background:rgba(0,0,0,0.2); border-radius:6px; }
 </style>
 </head>
 <body>
@@ -79,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 const SAFETY = { maxActionsPerMinute:20, maxSeedsPerCycle:5, consoleLimit:500 };
 const OWNER = { primary:"Fabian", secondary:"Lorena" };
-const PERCY_VERSION="8.3.4-neon-bubbles-voicewave";
+const PERCY_VERSION="8.4.0-neon-bubbles-voicewave";
 
 const Memory = {
   _k:k=>`percy:${k}`,
@@ -111,22 +106,32 @@ const UI = {
   setStatus(txt){ const m=this.elMsg(); if(m)m.textContent=txt; }
 };
 
-// ==== VOICE SYSTEM ====
+// ==== VOICE SYSTEM WITH CONTINUOUS OSCILLATOR & SMOOTH BARS ====
 const Voice = {
   enabled:true, lastSpoken:0,
   audioCtx: new (window.AudioContext||window.webkitAudioContext)(),
-  analyser:null, dataArray:null,
+  analyser:null, dataArray:null, oscillator:null, gain:null,
   barsEl: document.getElementById('voice-bars'),
   waveEl: document.getElementById('voice-wave'),
   init(){
     this.analyser=this.audioCtx.createAnalyser();
     this.analyser.fftSize=256;
     this.dataArray=new Uint8Array(this.analyser.frequencyBinCount);
-    // build bars
+
+    // persistent oscillator
+    this.oscillator=this.audioCtx.createOscillator();
+    this.gain=this.audioCtx.createGain();
+    this.oscillator.type='sine';
+    this.oscillator.frequency.value=220;
+    this.gain.gain.value=0.0; // silent until speech
+    this.oscillator.connect(this.gain);
+    this.gain.connect(this.analyser);
+    this.analyser.connect(this.audioCtx.destination);
+    this.oscillator.start();
+
+    // create bars
     for(let i=0;i<20;i++){
-      const b=document.createElement('div');
-      b.className='bar';
-      this.barsEl.appendChild(b);
+      const b=document.createElement('div'); b.className='bar'; this.barsEl.appendChild(b);
     }
     this.animate();
   },
@@ -173,20 +178,19 @@ const Voice = {
     box.style.opacity='1';
     box.style.transform='translateX(-50%) translateY(0)';
 
+    // ramp gain up to activate visualizer
+    this.gain.gain.cancelScheduledValues(this.audioCtx.currentTime);
+    this.gain.gain.setTargetAtTime(0.2,this.audioCtx.currentTime,0.05);
+
     const utter=new SpeechSynthesisUtterance(text);
     utter.rate=1.0; utter.pitch=1.0;
     utter.onend=()=>{
+      // fade out visualizer
+      this.gain.gain.setTargetAtTime(0.0,this.audioCtx.currentTime,0.1);
       box.style.opacity='0';
       box.style.transform='translateX(-50%) translateY(-20px)';
     };
     speechSynthesis.speak(utter);
-
-    // connect dummy oscillator so analyser has signal
-    const osc=this.audioCtx.createOscillator();
-    const gain=this.audioCtx.createGain();
-    osc.type='sine'; osc.frequency.value=220;
-    osc.connect(gain); gain.connect(this.analyser);
-    osc.start(); osc.stop(this.audioCtx.currentTime+1.2);
   }
 };
 Voice.init();
@@ -238,7 +242,6 @@ function applyTransform(){
   logicNodes.style.transformOrigin='center center';
 }
 
-// ==== PERCY RESPOND ====
 function percyRespond(id,data){
   if(!data)return;
   UI.say(`✨ Percy activated seed ${id}: ${data.message}`);
