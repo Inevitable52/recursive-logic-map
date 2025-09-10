@@ -1,116 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Percy Recursive Logic Map</title>
-
-<link rel="stylesheet" href="style.css?v=6.4" />
+<title>P. E. R. C. Y - AI (Visualizer Upgrade + AutoAgent)</title>
+<link rel="stylesheet" href="css/percy.css" /> <!-- optional if CSS is external -->
 </head>
 <body>
 
-<header style="text-align:center; padding:10px;">
-  <h1>Percy Recursive Logic Map</h1>
-  <p>Visualizing Logic Seeds G080–G800</p>
-</header>
+<div id="logic-map">
+  <div id="logic-nodes"></div>
 
-<main>
-  <!-- Search Input -->
-  <input type="text" id="seed-search" placeholder="Search G-seed..." autocomplete="off"/>
+  <div id="percy-console"></div>
+  <div id="percy-message"></div>
 
-  <!-- Zoom Controls -->
-  <div class="zoom-controls">
-    <button onclick="zoomLevel *= 1.2; applyTransform();">Zoom In</button>
-    <button onclick="zoomLevel *= 0.8; applyTransform();">Zoom Out</button>
+  <div id="voice-box" aria-live="polite">
+    <div id="voice-text"></div>
+    <div id="voice-bars"></div>
+    <canvas id="voice-wave" width="380" height="80"></canvas>
   </div>
-
-  <!-- Logic Map -->
-  <div id="logic-map">
-    <svg width="100%" height="100%"></svg>
-    <div id="logic-nodes"></div>
-  </div>
-
-  <!-- Voice Visualizer -->
-  <div id="voice-box">
-    <div id="voice-bars">
-      <div class="bar"></div>
-      <div class="bar"></div>
-      <div class="bar"></div>
-      <div class="bar"></div>
-      <div class="bar"></div>
-    </div>
-    <div id="voice-wave"></div>
-  </div>
-
-  <!-- Message & Console -->
-  <div id="percy-message">Click a logic node to hear Percy’s thoughts...</div>
-  <div id="percy-console">
-    <p class="console-line">Percy initialized. Click a node.</p>
-  </div>
-</main>
-
-<!-- Ask Percy Input -->
-<div id="percy-ask" style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:1000; display:flex; gap:4px;">
-  <input type="text" id="ask-input" placeholder="Ask Percy..." autocomplete="off" />
-  <button id="ask-btn">Ask</button>
 </div>
 
-<footer style="text-align:center;padding:8px;margin-top:10px;">
-  <p>© 2025 Fabian V Omega — Percy Recursive Logic System</p>
-</footer>
+<input id="seed-search" placeholder="Search seeds..." />
+<input id="interpreter-input" placeholder="Ask Percy..." />
 
-<!-- Percy Script -->
+<div id="auto-controls">
+  <button id="auto-toggle" title="Enable/disable auto-learn">Auto-Learn: On</button>
+  <div id="auto-status">processing</div>
+</div>
+
 <script src="js/percy.js?v=6.4"></script>
-<script>
-  // Only expose percyRespond if it exists
-  if (typeof percyRespond === 'function') {
-    window.Percy = { percyRespond };
-  } else {
-    console.warn("⚠ percyRespond not defined yet");
-  }
-</script>
-
-  // Seed Search
-  const searchInput = document.getElementById('seed-search');
-  searchInput.addEventListener('input', () => {
-    const val = searchInput.value.trim().toUpperCase();
-    document.querySelectorAll('.node').forEach(n=>{
-      n.style.display = (!val || n.textContent.toUpperCase().includes(val)) ? 'flex' : 'none';
-    });
-  });
-
-  // Ask Percy
-  const askInput = document.getElementById('ask-input');
-  const askBtn = document.getElementById('ask-btn');
-  askBtn.addEventListener('click', () => {
-    if(askInput.value.trim()) {
-      Percy.percyRespond('User', {message: askInput.value});
-      askInput.value='';
-    }
-  });
-  askInput.addEventListener('keydown', e => { if(e.key==='Enter') askBtn.click(); });
-</script>
-
-<!-- Percy Self-Mod (Memory-Based) -->
-<script>
-(function PercyPartC(){
-  if(!window.PercyState) return console.warn("❌ PercyState not loaded yet.");
-  PercyState.memoryRewrite = function(changeFn){
-    try {
-      changeFn(this);
-      Memory.save("gnodes", this.gnodes);
-      if(typeof refreshNodes==='function') refreshNodes();
-      if(typeof UI!=='undefined' && UI.say) UI.say("✅ Percy memory-based self-mod applied");
-    } catch(e){
-      console.error("❌ Percy memoryRewrite error:", e);
-      if(typeof UI!=='undefined' && UI.say) UI.say(`❌ Percy memoryRewrite error: ${e.message}`);
-    }
-  };
-  PercyState.memoryRewrite(ps => { ps.createSeed("🧩 Test self-mod applied: Percy now can memory-mod itself!", "thought"); });
-  window.PercyMemoryMod = (codeStr) => { try { PercyState.memoryRewrite(ps => eval(codeStr)); } catch(e){ if(typeof UI!=='undefined' && UI.say) UI.say(`❌ Interactive memory mod error: ${e.message}`); } };
-  if(typeof UI!=='undefined' && UI.say) UI.say("🧩 Percy Part C (self-mod + interactive) loaded.");
-})();
-</script>
 
 </body>
 </html>
