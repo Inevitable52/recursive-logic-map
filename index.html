@@ -1,26 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>P. E. R. C. Y - AI</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>P. E. R. C. Y - AI (Visualizer Upgrade)</title>
 <style>
-  body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; overflow:hidden; }
-  #logic-map { background:#0a0a0f; position:relative; width:100vw; height:100vh; overflow:hidden; }
+  body { margin:0; font-family:Arial,Helvetica,sans-serif; background:#08080b; color:white; overflow:hidden; }
+  #logic-map { background:#07080a; position:relative; width:100vw; height:100vh; overflow:hidden; }
   #logic-nodes { position:absolute; top:50%; left:50%; width:100%; height:100%; transform:translate(-50%,-50%) scale(1); }
 
   .node { position:absolute; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; cursor:pointer;
-         background: radial-gradient(100% 100% at 30% 30%, rgba(255,255,255,0.10), rgba(0,0,0,0.10));
+         background: radial-gradient(100% 100% at 30% 30%, rgba(255,255,255,0.06), rgba(0,0,0,0.06));
          border:2px solid currentColor; text-shadow:0 1px 2px rgba(0,0,0,0.6); user-select:none;
-         transition:transform .15s ease, filter .15s ease; backdrop-filter: blur(1px);
+         transition:transform .12s ease, filter .12s ease; backdrop-filter: blur(1px);
          animation: neonGlow 1.5s ease-in-out infinite alternate;}
-  .node:hover { transform: scale(1.08); filter: brightness(1.15); }
+  .node:hover { transform: scale(1.06); filter: brightness(1.15); }
   .node:active { transform: scale(0.98); }
 
   @keyframes neonGlow {
-    0% { box-shadow: 0 0 4px currentColor, 0 0 8px currentColor, inset 0 0 6px rgba(255,255,255,0.08); }
-    50% { box-shadow: 0 0 6px currentColor, 0 0 12px currentColor, inset 0 0 8px rgba(255,255,255,0.08); }
-    100% { box-shadow: 0 0 4px currentColor, 0 0 8px currentColor, inset 0 0 6px rgba(255,255,255,0.08); }
+    0% { box-shadow: 0 0 3px currentColor, 0 0 8px currentColor, inset 0 0 4px rgba(255,255,255,0.06); }
+    50% { box-shadow: 0 0 6px currentColor, 0 0 14px currentColor, inset 0 0 8px rgba(255,255,255,0.06); }
+    100% { box-shadow: 0 0 3px currentColor, 0 0 8px currentColor, inset 0 0 4px rgba(255,255,255,0.06); }
   }
 
   .cyan-bubble{color:#00eaff;}
@@ -32,296 +32,432 @@
   .green-bubble{color:#4caf50;}
   .console-line{margin:2px 0;font-family:ui-monospace,monospace;font-size:12px;color:#d6d8ff;}
 
-  /* ==== Voice Bubble ==== */
+  /* Voice Bubble - always visible faintly; gets brighter when speaking */
   #voice-box {
-    position:absolute; top:100px; left:50%; transform:translateX(-50%) translateY(-20px);
-    background: rgba(0,0,0,0.6); color:#00eaff; padding:8px 12px; border-radius:12px;
-    font-family: Arial, sans-serif; font-size:14px; max-width:60%; text-align:center;
-    pointer-events:none; opacity:0; transition: opacity 0.3s ease, transform 0.3s ease;
+    position:absolute;
+    top:82px;
+    left:50%;
+    transform:translateX(-50%) translateY(-10px);
+    background: rgba(5,7,10,0.65);
+    color:#00eaff;
+    padding:10px 16px;
+    border-radius:10px;
+    font-size:14px;
+    max-width:58%;
+    text-align:center;
+    pointer-events:none;
+    opacity:0.65;
+    transition: opacity 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
     z-index:999;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px) saturate(1.2);
   }
-  #voice-box::after {
-    content:''; position:absolute; bottom:-8px; left:50%; transform:translateX(-50%);
-    border-width:8px; border-style:solid; border-color: rgba(0,0,0,0.6) transparent transparent transparent;
-  }
+  #voice-text { font-weight:700; font-size:14px; margin-bottom:6px; color:#dff9ff; text-overflow:ellipsis; white-space:nowrap; overflow:hidden; text-align:center; }
+  #voice-box.speaking { opacity:1; transform:translateX(-50%) translateY(0); box-shadow: 0 12px 36px rgba(0,190,255,0.12); }
 
   /* Voice Bars */
-  #voice-bars { display:flex; justify-content:center; align-items:flex-end; margin-top:6px; height:30px; }
-  #voice-bars .bar { width:4px; margin:0 1px; background:#00eaff; transition: height 0.05s ease, opacity 0.05s ease; }
+  #voice-bars { display:flex; justify-content:center; align-items:flex-end; gap:6px; margin-top:4px; height:46px; }
+  #voice-bars .bar { width:6px; background:#00eaff; border-radius:2px; opacity:0.45; transition:height 0.035s linear, opacity 0.06s linear; box-shadow: 0 0 8px rgba(0,234,255,0.08); }
 
   /* Waveform */
-  #voice-wave { display:block; margin:6px auto 0 auto; background:rgba(0,0,0,0.2); border-radius:6px; }
+  #voice-wave { display:block; margin:8px auto 0 auto; background:transparent; border-radius:6px; width:380px; height:80px; }
+
+  /* search inputs */
+  #seed-search, #interpreter-input {
+    position:absolute; left:10px; width:240px; padding:6px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.06); background:rgba(0,0,0,0.5); color:#eaf6ff;
+  }
+  #seed-search { top:12px; }
+  #interpreter-input { top:46px; }
+
+  /* small responsive tweak */
+  @media (max-width:900px){ #voice-wave { width:280px; height:60px; } #voice-bars{height:36px} #voice-box{max-width:85%} }
 </style>
 </head>
 <body>
 
 <div id="logic-map">
   <div id="logic-nodes"></div>
-  <div id="percy-console" style="position:absolute;bottom:0;left:0;width:100%;max-height:200px;overflow-y:auto;background:rgba(0,0,0,0.4);padding:8px;"></div>
-  <div id="percy-message" style="position:absolute;top:0;left:0;width:100%;padding:4px;font-size:14px;"></div>
-  <div id="voice-box">
+
+  <div id="percy-console" style="position:absolute;bottom:0;left:0;width:100%;max-height:220px;overflow-y:auto;background:linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.45));padding:8px;"></div>
+  <div id="percy-message" style="position:absolute;top:0;left:0;width:100%;padding:6px;font-size:14px;"></div>
+
+  <div id="voice-box" aria-live="polite">
     <div id="voice-text"></div>
     <div id="voice-bars"></div>
-    <canvas id="voice-wave" width="300" height="60"></canvas>
+    <canvas id="voice-wave" width="380" height="80"></canvas>
   </div>
 </div>
 
-<input id="seed-search" placeholder="Search seeds..." style="position:absolute;top:36px;left:10px;width:200px;padding:4px;">
-<input id="interpreter-input" placeholder="Ask Percy..." style="position:absolute;top:60px;left:10px;width:200px;padding:4px;">
+<input id="seed-search" placeholder="Search seeds..." />
+<input id="interpreter-input" placeholder="Ask Percy..." />
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
-const SAFETY = { maxActionsPerMinute:20, maxSeedsPerCycle:5, consoleLimit:500 };
-const OWNER = { primary:"Fabian", secondary:"Lorena" };
-const PERCY_VERSION="8.4.0-neon-bubbles-voicewave";
+  /* ---------------- safety & state ---------------- */
+  const SAFETY = { maxActionsPerMinute:20, maxSeedsPerCycle:5, consoleLimit:500 };
+  const OWNER = { primary:"Fabian", secondary:"Lorena" };
+  const PERCY_VERSION = "8.4.1-neon-audio-v2";
 
-const Memory = {
-  _k:k=>`percy:${k}`,
-  load(k,fallback){ try{ const raw=localStorage.getItem(this._k(k)); return raw?JSON.parse(raw):(fallback??null);}catch{return fallback;}},
-  save(k,v){try{localStorage.setItem(this._k(k),JSON.stringify(v));}catch{}},
-  push(k,v,max=1000){const arr=this.load(k,[])||[]; arr.push(v); if(arr.length>max) arr.shift(); this.save(k,arr);}
-};
+  const Memory = {
+    _k: k => `percy:${k}`,
+    load(k,fallback){ try{ const raw = localStorage.getItem(this._k(k)); return raw ? JSON.parse(raw) : (fallback ?? null);}catch{ return fallback; }},
+    save(k,v){ try{ localStorage.setItem(this._k(k), JSON.stringify(v)); }catch{}},
+    push(k,v,max=1000){ const arr = this.load(k,[])||[]; arr.push(v); if(arr.length>max) arr.shift(); this.save(k,arr); }
+  };
 
-const PercyState = {
-  gnodes: Memory.load("gnodes",{})||{},
-  getNextId(){ let next=801; while(this.gnodes[`G${String(next).padStart(3,'0')}`]) next++; return `G${String(next).padStart(3,'0')}`; },
-  createSeed(msg,type='emergent',data={}){ if(!OWNER.primary){ console.warn("ULT required"); return null;} const id=this.getNextId(); this.gnodes[id]={message:msg,type,data}; Memory.save("gnodes",this.gnodes); seeds[id]=this.gnodes[id]; return id; },
-  updateSeed(id,upd){ if(!this.gnodes[id]) return; Object.assign(this.gnodes[id],upd); Memory.save("gnodes",this.gnodes); seeds[id]=this.gnodes[id]; },
-  autonomousThought(){ const keys=Object.keys(this.gnodes); if(!keys.length)return; const selectedSeeds=keys.sort(()=>0.5-Math.random()).slice(0,Math.ceil(Math.random()*3)).map(k=>this.gnodes[k]); const words=selectedSeeds.map(s=>(s.message||"").split(/\s+/).filter(w=>w.length>3)).flat().sort(()=>0.5-Math.random()).slice(0,8); if(words.length<3)return; const templates=[
-    `I notice that ${words[0]} may relate to ${words[1]} because ${words[2]}.`,
-    `It seems ${words[0]} influences ${words[1]}, which could explain ${words[2]}.`,
-    `Considering ${words[0]} and ${words[1]}, I deduce ${words[2]}.`,
-    `There appears to be a connection between ${words[0]} and ${words[1]} due to ${words[2]}.`
-  ]; const sentence=templates[Math.floor(Math.random()*templates.length)]; UI.say(`🤖 Percy thinks: ${sentence}`); Voice.speak(sentence); this.createSeed(sentence,"thought",{source:"autonomousThought"}); },
-  evaluateSelf(){ let created=0; const updatedIds=new Set(); Object.entries(this.gnodes).forEach(([id,seed])=>{ if(created>=SAFETY.maxSeedsPerCycle) return; if(/TODO|missing|empty/.test(seed.message) && !updatedIds.has(id)){ this.updateSeed(id,{message:seed.message.replace(/TODO|missing|empty/,"auto-resolved by Percy")}); updatedIds.add(id); created++; }}); while(created<SAFETY.maxSeedsPerCycle && Math.random()<0.6){ this.autonomousThought(); created++; }}
-};
+  const PercyState = {
+    gnodes: Memory.load("gnodes",{}) || {},
+    getNextId(){ let n=801; while(this.gnodes[`G${String(n).padStart(3,'0')}`]) n++; return `G${String(n).padStart(3,'0')}`; },
+    createSeed(msg,type='emergent',data={}){ if(!OWNER.primary) return null; const id=this.getNextId(); this.gnodes[id]={message:msg,type,data}; Memory.save('gnodes',this.gnodes); seeds[id]=this.gnodes[id]; return id; },
+    updateSeed(id,upd){ if(!this.gnodes[id]) return; Object.assign(this.gnodes[id],upd); Memory.save('gnodes',this.gnodes); seeds[id]=this.gnodes[id]; },
+    autonomousThought(){ const keys=Object.keys(this.gnodes); if(!keys.length) return; const selected=keys.sort(()=>0.5-Math.random()).slice(0,Math.ceil(Math.random()*3)).map(k=>this.gnodes[k]); const words=selected.map(s=>(s.message||"").split(/\s+/).filter(w=>w.length>3)).flat().sort(()=>0.5-Math.random()).slice(0,8); if(words.length<3) return; const tpl=[
+      `I notice that ${words[0]} may relate to ${words[1]} because ${words[2]}.`,
+      `It seems ${words[0]} influences ${words[1]}, which could explain ${words[2]}.`,
+      `Considering ${words[0]} and ${words[1]}, I deduce ${words[2]}.`,
+      `There appears to be a connection between ${words[0]} and ${words[1]} due to ${words[2]}.`
+    ]; const sentence = tpl[Math.floor(Math.random()*tpl.length)]; UI.say(`🤖 Percy thinks: ${sentence}`); Voice.speak(sentence); this.createSeed(sentence,'thought',{source:'autonomousThought'}); },
+    evaluateSelf(){ let created=0; const updated=new Set(); Object.entries(this.gnodes).forEach(([id,seed])=>{ if(created>=SAFETY.maxSeedsPerCycle) return; if(/TODO|missing|empty/.test(seed.message) && !updated.has(id)){ this.updateSeed(id,{message: seed.message.replace(/TODO|missing|empty/,'auto-resolved by Percy')}); updated.add(id); created++; }}); while(created<SAFETY.maxSeedsPerCycle && Math.random()<0.6){ this.autonomousThought(); created++; } }
+  };
 
-let seeds={...PercyState.gnodes};
+  let seeds = {...PercyState.gnodes};
 
-const UI = {
-  elConsole:()=>document.getElementById('percy-console'),
-  elMsg:()=>document.getElementById('percy-message'),
-  say(txt){ const box=this.elConsole(); if(!box)return; const p=document.createElement('p'); p.className='console-line'; p.textContent=txt; box.appendChild(p); box.scrollTop=box.scrollHeight; while(box.children.length>SAFETY.consoleLimit) box.removeChild(box.firstChild); },
-  setStatus(txt){ const m=this.elMsg(); if(m)m.textContent=txt; }
-};
+  const UI = {
+    elConsole: () => document.getElementById('percy-console'),
+    elMsg: () => document.getElementById('percy-message'),
+    say(txt){ const box=this.elConsole(); if(!box) return; const p=document.createElement('div'); p.className='console-line'; p.textContent=txt; box.appendChild(p); box.scrollTop=box.scrollHeight; while(box.children.length>SAFETY.consoleLimit) box.removeChild(box.firstChild); },
+    setStatus(txt){ const m=this.elMsg(); if(m) m.textContent = txt; }
+  };
 
-// ==== VOICE SYSTEM ====
-const Voice = {
-  enabled:true, lastSpoken:0,
-  audioCtx: new (window.AudioContext||window.webkitAudioContext)(),
-  analyser:null, dataArray:null, oscillator:null, gain:null,
-  barsEl: document.getElementById('voice-bars'),
-  waveEl: document.getElementById('voice-wave'),
-  initialized:false,
-  init(){
-    if(this.initialized) return;
-    this.analyser=this.audioCtx.createAnalyser();
-    this.analyser.fftSize=256;
-    this.dataArray=new Uint8Array(this.analyser.frequencyBinCount);
+  /* ---------------- improved voice visualizer ----------------
+     Goals:
+     - AudioContext init after user gesture (resume)
+     - continuous baseline visualizer (no hard pop)
+     - faster response (lower smoothingTimeConstant, larger fftSize)
+     - dramatic "speaking" behavior by ramping & modulating a noise source's gain
+     - stronger peak-to-peak waveform drawing
+  --------------------------------------------------------------*/
+  const Voice = {
+    enabled: true,
+    initialized: false,
+    speaking: false,
+    lastSpoken: 0,
+    audioCtx: null,
+    analyser: null,
+    freqData: null,
+    timeData: null,
+    noiseSource: null,
+    noiseGain: null,
+    modInterval: null,
+    barsEl: document.getElementById('voice-bars'),
+    waveEl: document.getElementById('voice-wave'),
+    init(){
+      if(this.initialized) return;
+      try {
+        this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      } catch(e){ console.warn('Audio not supported', e); return; }
 
-    this.oscillator=this.audioCtx.createOscillator();
-    this.gain=this.audioCtx.createGain();
-    this.oscillator.type='sine';
-    this.oscillator.frequency.value=220;
-    this.gain.gain.value=0.2; // small audible gain
-    this.oscillator.connect(this.gain);
-    this.gain.connect(this.analyser);
-    this.analyser.connect(this.audioCtx.destination);
-    this.oscillator.start();
+      // analyser settings for responsiveness
+      this.analyser = this.audioCtx.createAnalyser();
+      this.analyser.fftSize = 1024; // more samples for waveform & fast freq bins
+      this.analyser.smoothingTimeConstant = 0.18; // low smoothing for snappy response
+      this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
+      this.timeData = new Uint8Array(this.analyser.fftSize);
 
-    // create bars
-    this.barsEl.innerHTML='';
-    for(let i=0;i<20;i++){
-      const b=document.createElement('div'); b.className='bar'; this.barsEl.appendChild(b);
+      // create a looped noise buffer source (gives rich spectrum similar to voice)
+      const bufferSize = this.audioCtx.sampleRate * 2.0; // 2 seconds
+      const noiseBuffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
+      const data = noiseBuffer.getChannelData(0);
+      // fill with filtered-ish noise
+      for (let i = 0; i < data.length; i++){
+        // pink-ish noise by combining random values and smoothing
+        data[i] = (Math.random()*2 - 1) * (0.6 + 0.4*Math.sin(i/50));
+      }
+      this.noiseSource = this.audioCtx.createBufferSource();
+      this.noiseSource.buffer = noiseBuffer;
+      this.noiseSource.loop = true;
+
+      // two-stage gain: baseGain (keeps baseline visible), modGain (we modulate during speaking)
+      this.noiseGain = this.audioCtx.createGain();
+      this.noiseGain.gain.value = 0.035; // baseline so bars never vanish
+
+      // connect: noise -> noiseGain -> analyser (don't connect to destination so it's silent)
+      this.noiseSource.connect(this.noiseGain);
+      this.noiseGain.connect(this.analyser);
+      // DON'T connect analyser to destination - visual only
+
+      // start
+      this.noiseSource.start();
+
+      // create bars visually
+      this.barsEl.innerHTML = '';
+      const BAR_COUNT = 40;
+      for(let i=0;i<BAR_COUNT;i++){
+        const b = document.createElement('div');
+        b.className = 'bar';
+        b.style.height = '6px';
+        this.barsEl.appendChild(b);
+      }
+
+      this.initialized = true;
+      this._animate(); // start visual loop
+    },
+
+    // animation loop - draws bars and peak-to-peak waveform
+    _animate(){
+      if(!this.initialized) return;
+      requestAnimationFrame(()=>this._animate());
+
+      // read analyser data
+      this.analyser.getByteFrequencyData(this.freqData);
+      this.analyser.getByteTimeDomainData(this.timeData);
+
+      // update bars quickly
+      const bars = this.barsEl.querySelectorAll('.bar');
+      const len = Math.min(bars.length, this.freqData.length);
+      // choose a band scaling so lower-mid frequencies dominate like voice
+      for(let i=0;i<bars.length;i++){
+        // sample across the freqData in a non-linear way to emphasize lower bands
+        const idx = Math.floor(Math.pow(i / bars.length, 1.4) * (this.freqData.length-1));
+        const v = this.freqData[idx] || 0;
+        // scale with a stronger multiplier when speaking
+        const mult = this.speaking ? 1.8 : 0.95;
+        const h = Math.max(6, (v / 255) * (this.waveEl.height) * mult);
+        bars[i].style.height = `${h}px`;
+        bars[i].style.opacity = `${0.25 + Math.min(0.85, v/200)}`;
+      }
+
+      // draw waveform (peak-to-peak aesthetic)
+      const ctx = this.waveEl.getContext('2d');
+      const W = this.waveEl.width;
+      const H = this.waveEl.height;
+      ctx.clearRect(0,0,W,H);
+
+      // background glow
+      ctx.fillStyle = 'rgba(0,10,12,0.0)';
+      ctx.fillRect(0,0,W,H);
+
+      // center line
+      const midY = H/2;
+      // waveform stroke
+      ctx.beginPath();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#00eaff';
+
+      const step = Math.max(1, Math.floor(this.timeData.length / W));
+      let x = 0;
+      for(let i=0;i<this.timeData.length;i+=step){
+        const t = this.timeData[i];
+        // t is 0..255, convert to -1..1
+        const v = (t - 128) / 128;
+        // amplify when speaking for large peaks
+        const peakMult = this.speaking ? 1.9 : 0.85;
+        const y = midY + v * (H/2 - 4) * peakMult;
+        if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        x += 1;
+      }
+      ctx.stroke();
+
+      // small filled waveform for stronger "peak" feel
+      ctx.globalAlpha = 0.06;
+      ctx.fillStyle = '#00eaff';
+      ctx.beginPath();
+      x=0;
+      for(let i=0;i<this.timeData.length;i+=step){
+        const t = this.timeData[i];
+        const v = (t - 128) / 128;
+        const y = midY + v * (H/2 - 4) * (this.speaking ? 1.6 : 0.6);
+        if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        x+=1;
+      }
+      ctx.lineTo(W, H);
+      ctx.lineTo(0,H);
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1.0;
+    },
+
+    // speak: ramps and modulates the noise gain to create voice-like dynamics
+    speak(text){
+      // guard
+      if(!this.initialized) {
+        // show text but don't crash; visualizer will activate once user clicks
+        const box = document.getElementById('voice-box');
+        const textEl = document.getElementById('voice-text');
+        textEl.textContent = text;
+        box.classList.add('speaking');
+        setTimeout(()=>box.classList.remove('speaking'), 900);
+        return;
+      }
+      if(!('speechSynthesis' in window)) return;
+      const now = Date.now();
+      if(now - this.lastSpoken < 220) return; // debounce short bursts
+      this.lastSpoken = now;
+
+      // show text & highlight UI
+      const box = document.getElementById('voice-box');
+      const textEl = document.getElementById('voice-text');
+      textEl.textContent = text;
+      box.classList.add('speaking');
+
+      // ramp up baseline quickly
+      const current = this.audioCtx.currentTime;
+      this.noiseGain.gain.cancelScheduledValues(current);
+      this.noiseGain.gain.setValueAtTime(this.noiseGain.gain.value, current);
+      this.noiseGain.gain.linearRampToValueAtTime(0.65, current + 0.035);
+
+      this.speaking = true;
+
+      // modulate gain randomly to simulate syllables/voice peaks
+      if(this.modInterval) clearInterval(this.modInterval);
+      this.modInterval = setInterval(() => {
+        // pick a random micro-peak value and ramp to it quickly then back a bit
+        const peak = 0.35 + Math.random()*1.2; // 0.35 .. 1.55
+        const t0 = this.audioCtx.currentTime;
+        this.noiseGain.gain.cancelScheduledValues(t0);
+        this.noiseGain.gain.setValueAtTime(this.noiseGain.gain.value, t0);
+        this.noiseGain.gain.linearRampToValueAtTime(peak, t0 + 0.03);
+        this.noiseGain.gain.exponentialRampToValueAtTime(Math.max(0.12, peak*0.32), t0 + 0.12);
+      }, 60); // fast micro-syllable rate
+
+      // speak using Web Speech API and fade down on end
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.rate = 1.0; utter.pitch = 1.0;
+      utter.onend = () => {
+        // drop speaking flag and fade redisplay to baseline
+        this.speaking = false;
+        if(this.modInterval) { clearInterval(this.modInterval); this.modInterval = null; }
+        const t1 = this.audioCtx.currentTime;
+        this.noiseGain.gain.cancelScheduledValues(t1);
+        this.noiseGain.gain.setTargetAtTime(0.035, t1, 0.25); // fade back to small baseline
+        box.classList.remove('speaking');
+      };
+      speechSynthesis.speak(utter);
     }
+  };
 
-    this.initialized=true;
-    this.animate();
-  },
-  animate(){
-    if(!this.initialized) return;
-    requestAnimationFrame(()=>this.animate());
-    if(!this.analyser) return;
+  /* -------------- audio user gesture: resume & init -------------- */
+  function ensureAudioOnGesture() {
+    function onGesture() {
+      // init audio ctx & visualizer
+      Voice.init();
+      // start Percy loop AFTER audio init for synchronous feeling
+      if(!window.__percyLoopStarted) { startPercyLoop(); window.__percyLoopStarted = true; }
+      // remove handlers
+      window.removeEventListener('click', onGesture);
+      window.removeEventListener('keydown', onGesture);
+      window.removeEventListener('touchstart', onGesture);
+    }
+    window.addEventListener('click', onGesture, {once:true});
+    window.addEventListener('keydown', onGesture, {once:true});
+    window.addEventListener('touchstart', onGesture, {once:true});
+  }
+  ensureAudioOnGesture();
 
-    // small frequency wobble for bars movement
-    this.oscillator.frequency.value = 220 + Math.sin(Date.now()/100)*10;
+  /* ---------------- logic map (unchanged core, slight ordering) ---------------- */
+  const logicMap = document.getElementById('logic-map');
+  const logicNodes = document.getElementById('logic-nodes');
+  let zoomLevel = 1, translateX = 0, translateY = 0;
 
-    this.analyser.getByteFrequencyData(this.dataArray);
-    const bars=this.barsEl.querySelectorAll('.bar');
-    bars.forEach((bar,i)=>{
-      const h=(this.dataArray[i]||0)/4;
-      bar.style.height=`${Math.max(4,h)}px`;
-      bar.style.opacity=0.3+Math.min(0.7,h/60);
+  function createNodes(){
+    const width = logicMap.clientWidth || 1200, height = logicMap.clientHeight || 800;
+    const rings = [
+      { start: 80, end: 200, radius: width/2.5, color:'cyan-bubble', size:60 },
+      { start: 201, end: 300, radius: width/3.4, color:'blue-bubble', size:45 },
+      { start: 301, end: 400, radius: width/4.8, color:'magenta-bubble', size:30 },
+      { start: 401, end: 500, radius: width/6.6, color:'red-bubble', size:22 },
+      { start: 501, end: 600, radius: width/8.5, color:'orange-bubble', size:18 },
+      { start: 601, end: 700, radius: width/11, color:'yellow-bubble', size:14 },
+      { start: 701, end: 800, radius: width/14, color:'green-bubble', size:12 }
+    ];
+    rings.forEach(r => layoutRing(r.start, r.end, width, height, r.radius, r.color, r.size));
+    applyTransform();
+  }
+
+  function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
+    const ringSeeds = Object.entries(seeds).filter(([id])=>{ const num = parseInt(id.replace('G',''))||0; return num>=startId && num<=endId; });
+    const total = Math.max(1, ringSeeds.length);
+    const centerX = width/2, centerY = height/2;
+    ringSeeds.forEach(([id,data], index) => {
+      let node = document.getElementById(id);
+      const angle = (index/total) * 2*Math.PI;
+      const x = centerX + radius * Math.cos(angle) - nodeSize/2;
+      const y = centerY + radius * Math.sin(angle) - nodeSize/2;
+      if(!node){
+        node = document.createElement('div'); node.id=id; node.classList.add('node'); node.classList.add(colorClass);
+        node.addEventListener('click', ()=>percyRespond(id, data));
+        node.addEventListener('mouseenter', ()=>UI.setStatus(data?.message ?? ''));
+        logicNodes.appendChild(node);
+      }
+      node.style.width = node.style.height = `${nodeSize}px`;
+      node.style.left = `${x}px`; node.style.top = `${y}px`;
+      node.textContent = id;
+      node.title = (data && data.message) ? data.message : id;
     });
-
-    const ctx=this.waveEl.getContext('2d');
-    ctx.clearRect(0,0,this.waveEl.width,this.waveEl.height);
-    this.analyser.getByteTimeDomainData(this.dataArray);
-    ctx.beginPath();
-    ctx.strokeStyle='#00eaff';
-    ctx.lineWidth=2;
-    const slice=this.waveEl.width/this.dataArray.length;
-    let x=0;
-    for(let i=0;i<this.dataArray.length;i++){
-      const v=this.dataArray[i]/128.0;
-      const y=v*this.waveEl.height/2;
-      if(i===0) ctx.moveTo(x,y);
-      else ctx.lineTo(x,y);
-      x+=slice;
-    }
-    ctx.lineTo(this.waveEl.width,this.waveEl.height/2);
-    ctx.stroke();
-  },
-  speak(text){
-    if(!('speechSynthesis' in window) || !this.gain) return;
-    const now=Date.now(); if(now-this.lastSpoken<300) return;
-    this.lastSpoken=now;
-
-    const box=document.getElementById('voice-box');
-    const textEl=document.getElementById('voice-text');
-    textEl.textContent=text;
-    box.style.opacity='1';
-    box.style.transform='translateX(-50%) translateY(0)';
-
-    this.gain.gain.cancelScheduledValues(this.audioCtx.currentTime);
-    this.gain.gain.setTargetAtTime(0.2,this.audioCtx.currentTime,0.05);
-
-    const utter=new SpeechSynthesisUtterance(text);
-    utter.rate=1.0; utter.pitch=1.0;
-    utter.onend=()=>{
-      if(this.gain) this.gain.gain.setTargetAtTime(0.0,this.audioCtx.currentTime,0.1);
-      box.style.opacity='0';
-      box.style.transform='translateX(-50%) translateY(-20px)';
-    };
-    speechSynthesis.speak(utter);
   }
-};
 
-// ==== USER GESTURE HANDLER ====
-function enableVoiceOnUserGesture() {
-  function gestureHandler() {
-    if (Voice.audioCtx.state === 'suspended') {
-      Voice.audioCtx.resume().then(()=> Voice.init());
-    } else Voice.init();
-    window.removeEventListener('click', gestureHandler);
-    window.removeEventListener('keydown', gestureHandler);
-    window.removeEventListener('touchstart', gestureHandler);
+  function applyTransform(){
+    logicNodes.style.transform = `translate(-50%,-50%) translate(${translateX}px,${translateY}px) scale(${zoomLevel})`;
+    logicNodes.style.transformOrigin = 'center center';
   }
-  window.addEventListener('click', gestureHandler);
-  window.addEventListener('keydown', gestureHandler);
-  window.addEventListener('touchstart', gestureHandler);
-}
-enableVoiceOnUserGesture();
 
-// ==== REST OF LOGIC MAP CODE (createNodes, layoutRing, etc.) ====
-/* Keep everything else unchanged — your createNodes, percyRespond, search, zoom/pan, auto-loop, etc. */
+  function percyRespond(id,data){
+    if(!data) return;
+    UI.say(`✨ Percy activated seed ${id}: ${data.message}`);
+    // speak only if Audio is initialized; if not, it's queued gracefully
+    Voice.speak(`Processing seed ${id}`);
+  }
 
-// ==== LOGIC MAP & NODES ====
-const logicMap=document.getElementById('logic-map');
-const logicNodes=document.getElementById('logic-nodes');
-let zoomLevel=1,translateX=0,translateY=0;
-
-function createNodes(){
-  const width=logicMap.clientWidth||800, height=logicMap.clientHeight||600;
-  const rings = [
-    { start: 80, end: 200, radius: width/2.5, color:'cyan-bubble', size:60 },
-    { start: 201, end: 300, radius: width/3.4, color:'blue-bubble', size:45 },
-    { start: 301, end: 400, radius: width/4.8, color:'magenta-bubble', size:30 },
-    { start: 401, end: 500, radius: width/6.6, color:'red-bubble', size:22 },
-    { start: 501, end: 600, radius: width/8.5, color:'orange-bubble', size:18 },
-    { start: 601, end: 700, radius: width/11, color:'yellow-bubble', size:14 },
-    { start: 701, end: 800, radius: width/14, color:'green-bubble', size:12 }
-  ];
-  rings.forEach(r=>layoutRing(r.start,r.end,width,height,r.radius,r.color,r.size));
-  applyTransform();
-}
-
-function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
-  const ringSeeds=Object.entries(seeds).filter(([id])=>{const num=parseInt(id.replace("G","")); return num>=startId&&num<=endId;});
-  const total=Math.max(1,ringSeeds.length);
-  const centerX=width/2, centerY=height/2;
-  ringSeeds.forEach(([id,data],index)=>{
-    let node = document.getElementById(id);
-    const angle=(index/total)*2*Math.PI;
-    const x=centerX+radius*Math.cos(angle)-nodeSize/2;
-    const y=centerY+radius*Math.sin(angle)-nodeSize/2;
-    if(!node){
-      node=document.createElement('div'); node.id=id; node.classList.add('node'); node.classList.add(colorClass);
-      node.addEventListener('click',()=>percyRespond(id,data));
-      node.addEventListener('mouseenter',()=>UI.setStatus(data?.message??''));
-      logicNodes.appendChild(node);
+  // search / ask
+  document.getElementById('interpreter-input').addEventListener('keydown', e=>{
+    if(e.key === 'Enter'){
+      const q = e.target.value.trim(); if(!q) return; e.target.value = '';
+      UI.say(`💬 You asked: ${q}`);
+      Voice.speak(`You asked: ${q}`);
+      setTimeout(()=>{ PercyState.autonomousThought(); createNodes(); }, 160);
     }
-    node.style.width=node.style.height=`${nodeSize}px`;
-    node.style.left=`${x}px`; node.style.top=`${y}px`;
-    node.textContent=id;
-    node.title=(data&&data.message)?data.message:id;
   });
-}
+  document.getElementById('seed-search').addEventListener('input', e=>{
+    const val = e.target.value.toUpperCase();
+    document.querySelectorAll('.node').forEach(n => { n.style.display = n.textContent.includes(val) ? 'flex' : 'none'; });
+  });
 
-function applyTransform(){
-  logicNodes.style.transform=`translate(-50%,-50%) translate(${translateX}px,${translateY}px) scale(${zoomLevel})`;
-  logicNodes.style.transformOrigin='center center';
-}
-
-function percyRespond(id,data){
-  if(!data)return;
-  UI.say(`✨ Percy activated seed ${id}: ${data.message}`);
-  Voice.speak(`Processing seed ${id}`);
-}
-
-// ==== SEARCH & ASK ====
-document.getElementById('interpreter-input').addEventListener('keydown',e=>{
-  if(e.key==='Enter'){
-    const q=e.target.value.trim(); if(!q)return; e.target.value='';
-    UI.say(`💬 You asked: ${q}`);
-    Voice.speak(`You asked: ${q}`);
-    setTimeout(()=>{ PercyState.autonomousThought(); createNodes(); },200);
+  // AI loops (startPercyLoop will be started once audio is ready)
+  let autoLoopInterval = null;
+  function startPercyLoop(){
+    if(autoLoopInterval) clearInterval(autoLoopInterval);
+    autoLoopInterval = setInterval(()=>{ PercyState.evaluateSelf(); createNodes(); UI.setStatus(`🟢 Percy active, ${Object.keys(seeds).length} seeds loaded`); }, 3000);
   }
-});
-document.getElementById('seed-search').addEventListener('input',e=>{
-  const val=e.target.value.toUpperCase(); 
-  document.querySelectorAll('.node').forEach(n=>{ n.style.display=n.textContent.includes(val)?'flex':'none'; });
-});
 
-// ==== TRUE AI LOOP ====
-let autoLoopInterval = null;
-function startPercyLoop(){
-  if(autoLoopInterval) clearInterval(autoLoopInterval);
-  autoLoopInterval = setInterval(()=>{ PercyState.evaluateSelf(); createNodes(); UI.setStatus(`🟢 Percy active, ${Object.keys(seeds).length} seeds loaded`); }, 3000);
-}
+  function selfRewrite(){
+    try{
+      const keys = Object.keys(PercyState.gnodes);
+      if(!keys.length) return;
+      const id = keys[Math.floor(Math.random()*keys.length)];
+      const seed = PercyState.gnodes[id];
+      if(seed && Math.random()<0.5){
+        const old = seed.message;
+        const next = old + ' [auto-refined]';
+        PercyState.updateSeed(id,{message: next});
+        UI.say(`🔄 Percy auto-refined seed ${id}`);
+        Voice.speak(`Auto refinement completed on seed ${id}`);
+      }
+    }catch(e){ console.error(e); }
+  }
 
-// ==== AUTO SELF-REFINEMENT ====
-function selfRewrite(){
-  try{
-    const keys = Object.keys(PercyState.gnodes);
-    if(!keys.length) return;
-    const id = keys[Math.floor(Math.random()*keys.length)];
-    const seed = PercyState.gnodes[id];
-    if(seed && Math.random()<0.5){
-      const oldMsg = seed.message;
-      const newMsg = oldMsg + ' [auto-refined]';
-      PercyState.updateSeed(id,{message:newMsg});
-      UI.say(`🔄 Percy auto-refined seed ${id}`);
-      Voice.speak(`Auto refinement completed on seed ${id}`);
-    }
-  }catch(e){ console.error(e); }
-}
+  // zoom & pan
+  logicMap.addEventListener('wheel', e=>{ e.preventDefault(); const factor=0.12; zoomLevel *= e.deltaY<0 ? 1+factor : 1-factor; zoomLevel = Math.min(Math.max(0.25, zoomLevel), 6); applyTransform(); });
+  let isDragging=false, lastX=0, lastY=0;
+  logicMap.addEventListener('mousedown', e=>{ isDragging=true; lastX=e.clientX; lastY=e.clientY; });
+  logicMap.addEventListener('mousemove', e=>{ if(isDragging){ const dx=e.clientX-lastX, dy=e.clientY-lastY; translateX += dx; translateY += dy; lastX=e.clientX; lastY=e.clientY; applyTransform(); }});
+  window.addEventListener('mouseup', ()=>{ isDragging=false; });
 
-// ==== ZOOM & PAN ====
-logicMap.addEventListener('wheel', e=>{ e.preventDefault(); const factor=0.1; zoomLevel *= e.deltaY<0?1+factor:1-factor; zoomLevel=Math.min(Math.max(0.2,zoomLevel),6); applyTransform(); });
-let isDragging=false,lastX=0,lastY=0;
-logicMap.addEventListener('mousedown', e=>{ isDragging=true; lastX=e.clientX; lastY=e.clientY; });
-logicMap.addEventListener('mousemove', e=>{ if(isDragging){ const dx=e.clientX-lastX, dy=e.clientY-lastY; translateX+=dx; translateY+=dy; lastX=e.clientX; lastY=e.clientY; applyTransform(); }});
-logicMap.addEventListener('mouseup', ()=>{ isDragging=false; });
-logicMap.addEventListener('mouseleave', ()=>{ isDragging=false; });
-
-// ==== INITIALIZE ====
-createNodes();
-startPercyLoop();
-setInterval(()=>{ selfRewrite(); createNodes(); },5000);
-UI.say(`✅ Percy TrueAI v${PERCY_VERSION} initialized`);
-Voice.speak(`Percy TrueAI online`);
+  // initialize map immediately (visual layout prints even before audio)
+  createNodes();
+  // start a lightweight loop; allow actual startPercyLoop to be triggered on audio init
+  setInterval(()=>{ selfRewrite(); createNodes(); }, 5000);
+  UI.say(`✅ Percy TrueAI v${PERCY_VERSION} initialized`);
+  // don't call Voice.speak here so we don't hit audio before gesture
 
 });
 </script>
