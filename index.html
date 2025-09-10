@@ -62,7 +62,13 @@
 <!-- Percy Script -->
 <script src="js/percy.js?v=6.4"></script>
 <script>
-  window.Percy = { percyRespond };
+  // Only expose percyRespond if it exists
+  if (typeof percyRespond === 'function') {
+    window.Percy = { percyRespond };
+  } else {
+    console.warn("⚠ percyRespond not defined yet");
+  }
+</script>
 
   // Seed Search
   const searchInput = document.getElementById('seed-search');
