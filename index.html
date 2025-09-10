@@ -3,116 +3,52 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Percy Recursive Logic Map</title>
+  <title>Percy Recursive Logic Map — TrueAI</title>
 
   <!-- Percy CSS -->
   <link rel="stylesheet" href="style.css?v=6.4" />
   <style>
-    /* === Additional UI tweaks for Phase 8.3 === */
+    body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; overflow:hidden; }
     main { position: relative; width: 100%; height: 100%; }
 
     /* Zoom Controls */
-    .zoom-controls {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      z-index: 1000;
-      display: flex;
-      gap: 6px;
-    }
-    .zoom-controls button {
-      padding: 4px 8px;
-      border-radius: 6px;
-      border: none;
-      background: #3764ff;
-      color: white;
-      cursor: pointer;
-    }
-    .zoom-controls button:hover { background: #2a4de0; }
+    .zoom-controls { position: fixed; top: 10px; right: 10px; z-index: 1000; display: flex; gap: 6px; }
+    .zoom-controls button { padding: 4px 8px; border-radius:6px; border:none; background:#3764ff; color:white; cursor:pointer; }
+    .zoom-controls button:hover { background:#2a4de0; }
 
     /* Search Input */
-    #seed-search {
-      position: fixed;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 1000;
-      padding: 6px 10px;
-      border-radius: 8px;
-      border: 1px solid #555;
-      width: 220px;
-      background: #1a1a1a;
-      color: white;
-    }
-    #seed-search::placeholder { color: #bbb; }
+    #seed-search { position: fixed; top:10px; left:50%; transform:translateX(-50%); z-index:1000; padding:6px 10px; border-radius:8px; border:1px solid #555; width:220px; background:#1a1a1a; color:white; }
+    #seed-search::placeholder { color:#bbb; }
 
     /* Ask Percy Input */
-    #ask-input {
-      padding: 6px 8px;
-      border-radius: 6px;
-      border: 1px solid #555;
-      width: 220px;
-      background: #1a1a1a;
-      color: white;
-      autocomplete: off;
-    }
-    #ask-btn {
-      padding: 6px 10px;
-      border-radius: 6px;
-      border: none;
-      background: #2ac66d;
-      color: white;
-      cursor: pointer;
-    }
-    #ask-btn:hover { background: #28b15f; }
+    #ask-input { padding:6px 8px; border-radius:6px; border:1px solid #555; width:220px; background:#1a1a1a; color:white; }
+    #ask-btn { padding:6px 10px; border-radius:6px; border:none; background:#2ac66d; color:white; cursor:pointer; }
+    #ask-btn:hover { background:#28b15f; }
 
-    /* Console display */
-    #percy-console {
-      position: fixed;
-      bottom: 80px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 400px;
-      max-height: 250px;
-      overflow-y: auto;
-      background: #111;
-      border: 1px solid #444;
-      border-radius: 8px;
-      padding: 8px;
-      color: white;
-      font-family: monospace;
-      font-size: 14px;
-      z-index: 1000;
-    }
-    .console-line { margin: 2px 0; }
+    /* Console */
+    #percy-console { position:fixed; bottom:70px; left:50%; transform:translateX(-50%); width:90%; max-width:800px; max-height:250px; overflow-y:auto; background:#1a1a1a; border:1px solid #555; border-radius:6px; padding:6px; font-size:14px; }
+    .console-line { margin:2px 0; }
   </style>
 </head>
 <body>
   <header style="text-align:center; padding:10px;">
-    <h1>Percy Recursive Logic Map</h1>
+    <h1>Percy Recursive Logic Map — TrueAI</h1>
     <p>Visualizing Logic Seeds G080–G800</p>
   </header>
 
   <main>
-    <!-- Optional Search -->
     <input type="text" id="seed-search" placeholder="Search G-seed..." autocomplete="off"/>
-
-    <!-- Zoom Controls -->
     <div class="zoom-controls">
-      <button onclick="zoomLevel *= 1.2; applyTransform();">Zoom In</button>
-      <button onclick="zoomLevel *= 0.8; applyTransform();">Zoom Out</button>
+      <button onclick="zoomLevel*=1.2; applyTransform();">Zoom In</button>
+      <button onclick="zoomLevel*=0.8; applyTransform();">Zoom Out</button>
     </div>
-
-    <!-- Logic Map -->
     <div id="logic-map">
-      <svg width="100%" height="100%"></svg> <!-- Neon Rings -->
+      <svg width="100%" height="100%"></svg>
       <div id="logic-nodes"></div>
     </div>
-
-    <!-- Message -->
     <div id="percy-message">Click a logic node to hear Percy’s thoughts...</div>
     <div id="percy-console">
-      <p class="console-line">Percy initialized. Click a node or ask a question.</p>
+      <p class="console-line">✅ Percy TrueAI initialized.</p>
     </div>
   </main>
 
@@ -120,10 +56,10 @@
     <p>© 2025 Fabian V Omega — Percy Recursive Logic System</p>
   </footer>
 
-  <!-- Percy Script -->
+  <!-- Percy Core Script -->
   <script src="js/percy.js?v=6.4"></script>
   <script>
-    // Make percyRespond callable from HTML
+    // Make percyRespond callable globally
     window.Percy = { percyRespond };
   </script>
 
@@ -138,88 +74,113 @@
     });
   </script>
 
-  <!-- Ask Percy Input + Response -->
+  <!-- Ask Percy TrueAI -->
   <script>
-    // Create Ask Percy UI
+    // UI Elements
     const askWrapper = document.createElement('div');
     askWrapper.id = 'percy-ask';
-    askWrapper.style.cssText = `
-      position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
-      z-index:1000; display:flex; gap:4px;
-    `;
-    askWrapper.innerHTML = `
-      <input type="text" id="ask-input" placeholder="Ask Percy..." autocomplete="off" />
-      <button id="ask-btn">Ask</button>
-    `;
+    askWrapper.style.cssText = `position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:1000; display:flex; gap:4px;`;
+    askWrapper.innerHTML = `<input type="text" id="ask-input" placeholder="Ask Percy..." autocomplete="off" />
+                            <button id="ask-btn">Ask</button>`;
     document.body.appendChild(askWrapper);
 
     const askInput = document.getElementById('ask-input');
     const askBtn = document.getElementById('ask-btn');
     const consoleEl = document.getElementById('percy-console');
 
-    // Function to ask Percy and display response
-    function askPercy(message) {
-      Percy.percyRespond('User', { message });
+    // Initialize memory and state
+    if(!window.PercyState) window.PercyState = { gnodes: [], memory: [] };
 
-      // Example: fetch reply from PercyState if implemented
-      let reply = "🤖 Percy is thinking...";
-      if (window.PercyState && PercyState.generateReply) {
-        reply = PercyState.generateReply(message);
-      }
+    // TrueAI Ask function
+    async function askPercy(message) {
+      const userLine = document.createElement('p');
+      userLine.className = 'console-line';
+      userLine.textContent = `You: ${message}`;
+      consoleEl.appendChild(userLine);
 
-      // Add reply to console
-      const line = document.createElement('p');
-      line.className = 'console-line';
-      line.textContent = `Percy: ${reply}`;
-      consoleEl.appendChild(line);
+      const thinkingLine = document.createElement('p');
+      thinkingLine.className = 'console-line';
+      thinkingLine.textContent = `Percy: 🤔 thinking…`;
+      consoleEl.appendChild(thinkingLine);
       consoleEl.scrollTop = consoleEl.scrollHeight;
 
-      // Optional: speak
-      if (typeof UI !== 'undefined' && UI.say) UI.say(reply);
+      let reply = '';
+      try {
+        // 1. Retrieve related seeds
+        const relatedSeeds = PercyState.gnodes
+          .filter(s => s.text && message.split(' ').some(w => s.text.includes(w)))
+          .slice(0,5);
+
+        thinkingLine.textContent = `Percy: 🔍 analyzing ${relatedSeeds.length} related logic seeds…`;
+        consoleEl.scrollTop = consoleEl.scrollHeight;
+
+        // 2. Chain-of-thought reasoning
+        let reasoning = '';
+        for(const seed of relatedSeeds){
+          reasoning += `Considering "${seed.text}"...\n`;
+          await new Promise(r=>setTimeout(r, 150));
+        }
+
+        // 3. Generate answer
+        reply = relatedSeeds.length
+          ? `Based on logic seeds, I deduce: "${relatedSeeds[0].text}"`
+          : "I see no direct seeds, forming a general reasoning…";
+
+        // 4. Optional meta-seed creation (TrueAI self-evolution)
+        const newSeed = { id: `G${Date.now()}`, text: `Derived from interaction: "${message}"` };
+        PercyState.gnodes.push(newSeed);
+
+        // 5. Store interaction in memory
+        PercyState.memory.push({question: message, answer: reply, reasoning, timestamp: Date.now()});
+        if(typeof Memory !== 'undefined') Memory.save("interactions", PercyState.memory);
+
+      } catch(e) {
+        reply = `❌ Percy error: ${e.message}`;
+        console.error(e);
+      }
+
+      thinkingLine.textContent = `Percy: ${reply}`;
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+
+      if(typeof UI !== 'undefined' && UI.say) UI.say(reply);
     }
 
-    askBtn.addEventListener('click', () => {
-      if(askInput.value.trim()) {
-        askPercy(askInput.value.trim());
-        askInput.value = '';
-      }
-    });
-
-    askInput.addEventListener('keydown', e => {
-      if(e.key==='Enter') askBtn.click();
-    });
+    // Event listeners
+    askBtn.addEventListener('click', () => { if(askInput.value.trim()) { askPercy(askInput.value.trim()); askInput.value=''; } });
+    askInput.addEventListener('keydown', e => { if(e.key==='Enter') askBtn.click(); });
   </script>
 
-  <!-- Percy Part C: Self-mod + interactive -->
+  <!-- Percy Self-Mod & Part C (Memory + Interactive) -->
   <script>
-  (function PercyPartC(){
-    if(!window.PercyState) return console.warn("❌ PercyState not loaded yet.");
+    (function PercyPartC(){
+      if(!window.PercyState) return console.warn("❌ PercyState not loaded yet.");
 
-    // Memory-based self-mod
-    PercyState.memoryRewrite = function(changeFn){
-      try {
-        changeFn(this); 
-        if(typeof refreshNodes==='function') refreshNodes();
-        if(typeof UI!=='undefined' && UI.say) UI.say("✅ Percy memory-based self-mod applied");
-      } catch(e){
-        console.error("❌ Percy memoryRewrite error:", e);
-        if(typeof UI!=='undefined' && UI.say) UI.say(`❌ Percy memoryRewrite error: ${e.message}`);
-      }
-    };
+      // Memory-based self-mod function
+      PercyState.memoryRewrite = function(changeFn){
+        try {
+          changeFn(this); // Pass PercyState for modification
+          if(typeof Memory !== 'undefined') Memory.save("gnodes", this.gnodes);
+          if(typeof refreshNodes==='function') refreshNodes();
+          if(typeof UI!=='undefined' && UI.say) UI.say("✅ Percy memory-based self-mod applied");
+        } catch(e){
+          console.error("❌ Percy memoryRewrite error:", e);
+          if(typeof UI!=='undefined' && UI.say) UI.say(`❌ Percy memoryRewrite error: ${e.message}`);
+        }
+      };
 
-    // Test self-mod
-    PercyState.memoryRewrite(ps => {
-      ps.createSeed("🧩 Test self-mod applied: Percy now can memory-mod itself!", "thought");
-    });
+      // Example self-mod test
+      PercyState.memoryRewrite(ps => {
+        ps.gnodes.push({id:"TEST"+Date.now(), text:"🧩 Test self-mod applied: Percy now can memory-mod itself!"});
+      });
 
-    window.PercyMemoryMod = (codeStr) => {
-      try { PercyState.memoryRewrite(ps => eval(codeStr)); }
-      catch(e){ if(typeof UI!=='undefined' && UI.say) UI.say(`❌ Interactive memory mod error: ${e.message}`); }
-    };
+      // Optional interactive console command
+      window.PercyMemoryMod = (codeStr)=>{
+        try { PercyState.memoryRewrite(ps=>eval(codeStr)); }
+        catch(e){ if(typeof UI!=='undefined' && UI.say) UI.say(`❌ Interactive memory mod error: ${e.message}`); }
+      };
 
-    if(typeof UI!=='undefined' && UI.say) UI.say("🧩 Percy Part C (self-mod + interactive) loaded.");
-  })();
+      if(typeof UI!=='undefined' && UI.say) UI.say("🧩 Percy Part C (self-mod + interactive) loaded.");
+    })();
   </script>
-
 </body>
 </html>
