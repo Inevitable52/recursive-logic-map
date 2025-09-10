@@ -118,18 +118,16 @@ const Voice = {
     this.analyser.fftSize=256;
     this.dataArray=new Uint8Array(this.analyser.frequencyBinCount);
 
-    // persistent oscillator
     this.oscillator=this.audioCtx.createOscillator();
     this.gain=this.audioCtx.createGain();
     this.oscillator.type='sine';
     this.oscillator.frequency.value=220;
-    this.gain.gain.value=0.0; // silent until speech
+    this.gain.gain.value=0.0;
     this.oscillator.connect(this.gain);
     this.gain.connect(this.analyser);
     this.analyser.connect(this.audioCtx.destination);
     this.oscillator.start();
 
-    // create bars
     for(let i=0;i<20;i++){
       const b=document.createElement('div'); b.className='bar'; this.barsEl.appendChild(b);
     }
@@ -140,7 +138,6 @@ const Voice = {
     if(!this.analyser) return;
     this.analyser.getByteFrequencyData(this.dataArray);
 
-    // Bars
     const bars=this.barsEl.querySelectorAll('.bar');
     bars.forEach((bar,i)=>{
       const h=(this.dataArray[i]||0)/4;
@@ -148,7 +145,6 @@ const Voice = {
       bar.style.opacity=0.3+Math.min(0.7,h/60);
     });
 
-    // Wave
     const ctx=this.waveEl.getContext('2d');
     ctx.clearRect(0,0,this.waveEl.width,this.waveEl.height);
     this.analyser.getByteTimeDomainData(this.dataArray);
@@ -178,14 +174,12 @@ const Voice = {
     box.style.opacity='1';
     box.style.transform='translateX(-50%) translateY(0)';
 
-    // ramp gain up to activate visualizer
     this.gain.gain.cancelScheduledValues(this.audioCtx.currentTime);
     this.gain.gain.setTargetAtTime(0.2,this.audioCtx.currentTime,0.05);
 
     const utter=new SpeechSynthesisUtterance(text);
     utter.rate=1.0; utter.pitch=1.0;
     utter.onend=()=>{
-      // fade out visualizer
       this.gain.gain.setTargetAtTime(0.0,this.audioCtx.currentTime,0.1);
       box.style.opacity='0';
       box.style.transform='translateX(-50%) translateY(-20px)';
@@ -193,7 +187,25 @@ const Voice = {
     speechSynthesis.speak(utter);
   }
 };
-Voice.init();
+
+// ==== AUDIO CONTEXT USER GESTURE HANDLER ====
+function enableVoiceOnUserGesture() {
+  function gestureHandler() {
+    if (Voice.audioCtx.state === 'suspended') {
+      Voice.audioCtx.resume().then(()=> Voice.init());
+    } else Voice.init();
+    window.removeEventListener('click', gestureHandler);
+    window.removeEventListener('keydown', gestureHandler);
+    window.removeEventListener('touchstart', gestureHandler);
+  }
+  window.addEventListener('click', gestureHandler);
+  window.addEventListener('keydown', gestureHandler);
+  window.addEventListener('touchstart', gestureHandler);
+}
+enableVoiceOnUserGesture();
+
+// ==== REST OF LOGIC MAP CODE (createNodes, layoutRing, etc.) ====
+/* Keep everything else unchanged — your createNodes, percyRespond, search, zoom/pan, auto-loop, etc. */
 
 // ==== LOGIC MAP & NODES ====
 const logicMap=document.getElementById('logic-map');
