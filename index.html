@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>P. E. R. C. Y - AI (Visualizer Upgrade)</title>
+<title>P. E. R. C. Y - AI (Visualizer Upgrade + AutoAgent)</title>
 <style>
   body { margin:0; font-family:Arial,Helvetica,sans-serif; background:#08080b; color:white; overflow:hidden; }
   #logic-map { background:#07080a; position:relative; width:100vw; height:100vh; overflow:hidden; }
@@ -69,8 +69,13 @@
   #seed-search { top:12px; }
   #interpreter-input { top:46px; }
 
+  /* auto agent control (top-right) */
+  #auto-controls { position:absolute; right:12px; top:12px; display:flex; gap:8px; align-items:center; z-index:999; }
+  #auto-toggle { padding:6px 10px; border-radius:6px; background:rgba(0,0,0,0.5); color:#bfefff; border:1px solid rgba(255,255,255,0.06); cursor:pointer; }
+  #auto-status { font-size:12px; color:#bfefff; opacity:0.8; }
+
   /* small responsive tweak */
-  @media (max-width:900px){ #voice-wave { width:280px; height:60px; } #voice-bars{height:36px} #voice-box{max-width:85%} }
+  @media (max-width:900px){ #voice-wave { width:280px; height:60px; } #voice-bars{height:36px} #voice-box{max-width:85%} #auto-controls { right:8px; top:8px; } }
 </style>
 </head>
 <body>
@@ -91,13 +96,19 @@
 <input id="seed-search" placeholder="Search seeds..." />
 <input id="interpreter-input" placeholder="Ask Percy..." />
 
+<!-- AutoAgent control -->
+<div id="auto-controls">
+  <button id="auto-toggle" title="Enable/disable auto-learn">Auto-Learn: Off</button>
+  <div id="auto-status">idle</div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
   /* ---------------- safety & state ---------------- */
   const SAFETY = { maxActionsPerMinute:20, maxSeedsPerCycle:5, consoleLimit:500 };
   const OWNER = { primary:"Fabian", secondary:"Lorena" };
-  const PERCY_VERSION = "8.4.1-neon-audio-v2";
+  const PERCY_VERSION = "8.4.1-neon-audio-v2+auto";
 
   const Memory = {
     _k: k => `percy:${k}`,
@@ -129,13 +140,120 @@ document.addEventListener('DOMContentLoaded', () => {
     setStatus(txt){ const m=this.elMsg(); if(m) m.textContent = txt; }
   };
 
+  /* ---------------- AutoAgent (safe, opt-in) ----------------
+     - default disabled
+     - throttle (callsPerMinute)
+     - uses Tasks.register.autoLearn / autoBrowse if present
+     - persists pending actions/errors to Memory
+  ------------------------------------------------------------*/
+  const AutoAgent = (function(){
+    let enabled = false;
+    const CALLS_PER_MIN = 3;
+    const queueKey = 'autoagent:queue';
+    const errorsKey = 'autoagent:errors';
+    let callsThisMinute = 0;
+    let minuteTimer = null;
+    let processing = false;
+
+    function loadQueue(){ return Memory.load(queueKey,[]) || []; }
+    function saveQueue(q){ Memory.save(queueKey, q); }
+    function pushQueue(item){
+      const q = loadQueue();
+      q.push(item);
+      saveQueue(q);
+    }
+    function popQueue(){ const q = loadQueue(); const item = q.shift(); saveQueue(q); return item; }
+    function recordError(errObj){ Memory.push(errorsKey, errObj, 200); }
+
+    function initThrottle(){
+      if(minuteTimer) return;
+      minuteTimer = setInterval(()=>{ callsThisMinute = 0; }, 60_000);
+    }
+
+    function canCall(){
+      initThrottle();
+      return callsThisMinute < CALLS_PER_MIN;
+    }
+
+    function enqueue(action){
+      if(!action) return;
+      pushQueue(Object.assign({ts:Date.now()}, action));
+      UI.say(`🔁 AutoAgent queued action${action.url?(' '+action.url):''}`);
+      // if enabled, try process immediately
+      if(enabled) processQueue();
+    }
+
+    async function processQueue(){
+      if(processing) return;
+      processing = true;
+      initThrottle();
+      while(enabled){
+        const q = loadQueue();
+        if(!q.length) break;
+        if(!canCall()){
+          // wait a bit then continue
+          await new Promise(r=>setTimeout(r, 1200));
+          continue;
+        }
+        const action = popQueue();
+        if(!action) break;
+        try{
+          if(window.Tasks && Tasks.register && typeof Tasks.register.autoLearn === 'function'){
+            // call autoLearn
+            Tasks.register.autoLearn(action);
+            callsThisMinute++;
+            UI.say(`🔎 AutoAgent: autoLearn called for ${action.url||'unknown'}`);
+            PercyState.createSeed(`AutoLearn: ${action.url||'action'}`, 'auto', {source:'AutoAgent'});
+          } else if(window.Tasks && Tasks.register && typeof Tasks.register.autoBrowse === 'function'){
+            Tasks.register.autoBrowse(action);
+            callsThisMinute++;
+            UI.say(`🔎 AutoAgent: autoBrowse called for ${action.url||'unknown'}`);
+            PercyState.createSeed(`AutoBrowse: ${action.url||'action'}`, 'auto', {source:'AutoAgent'});
+          } else {
+            // no Tasks API — keep it stored and log
+            Memory.push('autoagent:pending', action, 500);
+            UI.say(`⚠️ AutoAgent: Tasks API not present; action queued locally.`);
+            recordError({message:'Tasks API missing', action, ts:Date.now()});
+            // avoid burning CPU if API missing
+            break;
+          }
+        } catch(err){
+          console.error('AutoAgent process error', err);
+          recordError({err: String(err), action, ts:Date.now()});
+        }
+        // small delay to avoid bursts
+        await new Promise(r=>setTimeout(r, 600));
+      }
+      processing = false;
+    }
+
+    function setEnabled(v){
+      enabled = !!v;
+      document.getElementById('auto-toggle').textContent = `Auto-Learn: ${enabled ? 'On' : 'Off'}`;
+      document.getElementById('auto-status').textContent = enabled ? 'processing' : 'idle';
+      if(enabled) processQueue();
+    }
+
+    function learnUrl(url, opts = {}){
+      if(!url) return;
+      enqueue(Object.assign({url}, opts));
+    }
+
+    function flushQueueToConsole(){ const q = loadQueue(); q.forEach((a,i)=> UI.say(`Queued[${i}]: ${a.url||JSON.stringify(a)}`)); }
+
+    // expose API
+    return { enqueue, learnUrl, setEnabled, isEnabled:()=>enabled, flushQueueToConsole };
+  })();
+
+  // Wire up the toggle button (user must enable)
+  const autoToggleBtn = document.getElementById('auto-toggle');
+  autoToggleBtn.addEventListener('click', ()=> {
+    const newState = !AutoAgent.isEnabled();
+    AutoAgent.setEnabled(newState);
+  });
+
   /* ---------------- improved voice visualizer ----------------
-     Goals:
-     - AudioContext init after user gesture (resume)
-     - continuous baseline visualizer (no hard pop)
-     - faster response (lower smoothingTimeConstant, larger fftSize)
-     - dramatic "speaking" behavior by ramping & modulating a noise source's gain
-     - stronger peak-to-peak waveform drawing
+     (unchanged from previous implementation)
   --------------------------------------------------------------*/
   const Voice = {
     enabled: true,
@@ -157,39 +275,30 @@ document.addEventListener('DOMContentLoaded', () => {
         this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       } catch(e){ console.warn('Audio not supported', e); return; }
 
-      // analyser settings for responsiveness
       this.analyser = this.audioCtx.createAnalyser();
-      this.analyser.fftSize = 1024; // more samples for waveform & fast freq bins
-      this.analyser.smoothingTimeConstant = 0.18; // low smoothing for snappy response
+      this.analyser.fftSize = 1024;
+      this.analyser.smoothingTimeConstant = 0.18;
       this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
       this.timeData = new Uint8Array(this.analyser.fftSize);
 
-      // create a looped noise buffer source (gives rich spectrum similar to voice)
-      const bufferSize = this.audioCtx.sampleRate * 2.0; // 2 seconds
+      const bufferSize = this.audioCtx.sampleRate * 2.0;
       const noiseBuffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
       const data = noiseBuffer.getChannelData(0);
-      // fill with filtered-ish noise
       for (let i = 0; i < data.length; i++){
-        // pink-ish noise by combining random values and smoothing
         data[i] = (Math.random()*2 - 1) * (0.6 + 0.4*Math.sin(i/50));
       }
       this.noiseSource = this.audioCtx.createBufferSource();
       this.noiseSource.buffer = noiseBuffer;
       this.noiseSource.loop = true;
 
-      // two-stage gain: baseGain (keeps baseline visible), modGain (we modulate during speaking)
       this.noiseGain = this.audioCtx.createGain();
-      this.noiseGain.gain.value = 0.035; // baseline so bars never vanish
+      this.noiseGain.gain.value = 0.035;
 
-      // connect: noise -> noiseGain -> analyser (don't connect to destination so it's silent)
       this.noiseSource.connect(this.noiseGain);
       this.noiseGain.connect(this.analyser);
-      // DON'T connect analyser to destination - visual only
 
-      // start
       this.noiseSource.start();
 
-      // create bars visually
       this.barsEl.innerHTML = '';
       const BAR_COUNT = 40;
       for(let i=0;i<BAR_COUNT;i++){
@@ -200,46 +309,31 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       this.initialized = true;
-      this._animate(); // start visual loop
+      this._animate();
     },
 
-    // animation loop - draws bars and peak-to-peak waveform
     _animate(){
       if(!this.initialized) return;
       requestAnimationFrame(()=>this._animate());
-
-      // read analyser data
       this.analyser.getByteFrequencyData(this.freqData);
       this.analyser.getByteTimeDomainData(this.timeData);
 
-      // update bars quickly
       const bars = this.barsEl.querySelectorAll('.bar');
-      const len = Math.min(bars.length, this.freqData.length);
-      // choose a band scaling so lower-mid frequencies dominate like voice
       for(let i=0;i<bars.length;i++){
-        // sample across the freqData in a non-linear way to emphasize lower bands
         const idx = Math.floor(Math.pow(i / bars.length, 1.4) * (this.freqData.length-1));
         const v = this.freqData[idx] || 0;
-        // scale with a stronger multiplier when speaking
         const mult = this.speaking ? 1.8 : 0.95;
         const h = Math.max(6, (v / 255) * (this.waveEl.height) * mult);
         bars[i].style.height = `${h}px`;
         bars[i].style.opacity = `${0.25 + Math.min(0.85, v/200)}`;
       }
 
-      // draw waveform (peak-to-peak aesthetic)
       const ctx = this.waveEl.getContext('2d');
       const W = this.waveEl.width;
       const H = this.waveEl.height;
       ctx.clearRect(0,0,W,H);
 
-      // background glow
-      ctx.fillStyle = 'rgba(0,10,12,0.0)';
-      ctx.fillRect(0,0,W,H);
-
-      // center line
       const midY = H/2;
-      // waveform stroke
       ctx.beginPath();
       ctx.lineWidth = 2;
       ctx.strokeStyle = '#00eaff';
@@ -248,9 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
       let x = 0;
       for(let i=0;i<this.timeData.length;i+=step){
         const t = this.timeData[i];
-        // t is 0..255, convert to -1..1
         const v = (t - 128) / 128;
-        // amplify when speaking for large peaks
         const peakMult = this.speaking ? 1.9 : 0.85;
         const y = midY + v * (H/2 - 4) * peakMult;
         if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
@@ -258,7 +350,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       ctx.stroke();
 
-      // small filled waveform for stronger "peak" feel
       ctx.globalAlpha = 0.06;
       ctx.fillStyle = '#00eaff';
       ctx.beginPath();
@@ -277,11 +368,8 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.globalAlpha = 1.0;
     },
 
-    // speak: ramps and modulates the noise gain to create voice-like dynamics
     speak(text){
-      // guard
       if(!this.initialized) {
-        // show text but don't crash; visualizer will activate once user clicks
         const box = document.getElementById('voice-box');
         const textEl = document.getElementById('voice-text');
         textEl.textContent = text;
@@ -291,16 +379,14 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if(!('speechSynthesis' in window)) return;
       const now = Date.now();
-      if(now - this.lastSpoken < 220) return; // debounce short bursts
+      if(now - this.lastSpoken < 220) return;
       this.lastSpoken = now;
 
-      // show text & highlight UI
       const box = document.getElementById('voice-box');
       const textEl = document.getElementById('voice-text');
       textEl.textContent = text;
       box.classList.add('speaking');
 
-      // ramp up baseline quickly
       const current = this.audioCtx.currentTime;
       this.noiseGain.gain.cancelScheduledValues(current);
       this.noiseGain.gain.setValueAtTime(this.noiseGain.gain.value, current);
@@ -308,28 +394,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
       this.speaking = true;
 
-      // modulate gain randomly to simulate syllables/voice peaks
       if(this.modInterval) clearInterval(this.modInterval);
       this.modInterval = setInterval(() => {
-        // pick a random micro-peak value and ramp to it quickly then back a bit
-        const peak = 0.35 + Math.random()*1.2; // 0.35 .. 1.55
+        const peak = 0.35 + Math.random()*1.2;
         const t0 = this.audioCtx.currentTime;
         this.noiseGain.gain.cancelScheduledValues(t0);
         this.noiseGain.gain.setValueAtTime(this.noiseGain.gain.value, t0);
         this.noiseGain.gain.linearRampToValueAtTime(peak, t0 + 0.03);
         this.noiseGain.gain.exponentialRampToValueAtTime(Math.max(0.12, peak*0.32), t0 + 0.12);
-      }, 60); // fast micro-syllable rate
+      }, 60);
 
-      // speak using Web Speech API and fade down on end
       const utter = new SpeechSynthesisUtterance(text);
       utter.rate = 1.0; utter.pitch = 1.0;
       utter.onend = () => {
-        // drop speaking flag and fade redisplay to baseline
         this.speaking = false;
         if(this.modInterval) { clearInterval(this.modInterval); this.modInterval = null; }
         const t1 = this.audioCtx.currentTime;
         this.noiseGain.gain.cancelScheduledValues(t1);
-        this.noiseGain.gain.setTargetAtTime(0.035, t1, 0.25); // fade back to small baseline
+        this.noiseGain.gain.setTargetAtTime(0.035, t1, 0.25);
         box.classList.remove('speaking');
       };
       speechSynthesis.speak(utter);
@@ -339,11 +421,13 @@ document.addEventListener('DOMContentLoaded', () => {
   /* -------------- audio user gesture: resume & init -------------- */
   function ensureAudioOnGesture() {
     function onGesture() {
-      // init audio ctx & visualizer
       Voice.init();
-      // start Percy loop AFTER audio init for synchronous feeling
       if(!window.__percyLoopStarted) { startPercyLoop(); window.__percyLoopStarted = true; }
-      // remove handlers
+      // if user had enabled auto before the gesture, start AutoAgent processing now
+      if(AutoAgent && AutoAgent.isEnabled && AutoAgent.isEnabled()) {
+        // process queue (AutoAgent handles missing Tasks API gracefully)
+        // AutoAgent processing happens automatically when enabled
+      }
       window.removeEventListener('click', onGesture);
       window.removeEventListener('keydown', onGesture);
       window.removeEventListener('touchstart', onGesture);
@@ -354,7 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   ensureAudioOnGesture();
 
-  /* ---------------- logic map (unchanged core, slight ordering) ---------------- */
+  /* ---------------- logic map & nodes ---------------- */
   const logicMap = document.getElementById('logic-map');
   const logicNodes = document.getElementById('logic-nodes');
   let zoomLevel = 1, translateX = 0, translateY = 0;
@@ -404,7 +488,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function percyRespond(id,data){
     if(!data) return;
     UI.say(`✨ Percy activated seed ${id}: ${data.message}`);
-    // speak only if Audio is initialized; if not, it's queued gracefully
     Voice.speak(`Processing seed ${id}`);
   }
 
@@ -454,10 +537,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // initialize map immediately (visual layout prints even before audio)
   createNodes();
-  // start a lightweight loop; allow actual startPercyLoop to be triggered on audio init
+  // start a lightweight rewrite loop (map updates)
   setInterval(()=>{ selfRewrite(); createNodes(); }, 5000);
   UI.say(`✅ Percy TrueAI v${PERCY_VERSION} initialized`);
-  // don't call Voice.speak here so we don't hit audio before gesture
+
+  // Expose AutoAgent to console for manual enqueueing/testing
+  window.AutoAgent = AutoAgent;
 
 });
 </script>
