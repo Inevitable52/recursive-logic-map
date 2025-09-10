@@ -1,18 +1,92 @@
+first fix this html to match the updates. rewrite the html please.
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>P. E. R. C. Y - AI (Visualizer Upgrade + AutoAgent)</title>
-<link rel="stylesheet" href="css/percy.css" /> <!-- optional if CSS is external -->
+<style>
+  body { margin:0; font-family:Arial,Helvetica,sans-serif; background:#08080b; color:white; overflow:hidden; }
+  #logic-map { background:#07080a; position:relative; width:100vw; height:100vh; overflow:hidden; }
+  #logic-nodes { position:absolute; top:50%; left:50%; width:100%; height:100%; transform:translate(-50%,-50%) scale(1); }
+
+  .node { position:absolute; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; cursor:pointer;
+         background: radial-gradient(100% 100% at 30% 30%, rgba(255,255,255,0.06), rgba(0,0,0,0.06));
+         border:2px solid currentColor; text-shadow:0 1px 2px rgba(0,0,0,0.6); user-select:none;
+         transition:transform .12s ease, filter .12s ease; backdrop-filter: blur(1px);
+         animation: neonGlow 1.5s ease-in-out infinite alternate;}
+  .node:hover { transform: scale(1.06); filter: brightness(1.15); }
+  .node:active { transform: scale(0.98); }
+
+  @keyframes neonGlow {
+    0% { box-shadow: 0 0 3px currentColor, 0 0 8px currentColor, inset 0 0 4px rgba(255,255,255,0.06); }
+    50% { box-shadow: 0 0 6px currentColor, 0 0 14px currentColor, inset 0 0 8px rgba(255,255,255,0.06); }
+    100% { box-shadow: 0 0 3px currentColor, 0 0 8px currentColor, inset 0 0 4px rgba(255,255,255,0.06); }
+  }
+
+  .cyan-bubble{color:#00eaff;}
+  .blue-bubble{color:#27a0ff;}
+  .magenta-bubble{color:#ff4af0;}
+  .red-bubble{color:#ff3b3b;}
+  .orange-bubble{color:#ff9d2e;}
+  .yellow-bubble{color:#ffe44a;}
+  .green-bubble{color:#4caf50;}
+  .console-line{margin:2px 0;font-family:ui-monospace,monospace;font-size:12px;color:#d6d8ff;white-space:pre-wrap;}
+
+  /* Voice Bubble - always visible faintly; gets brighter when speaking */
+  #voice-box {
+    position:absolute;
+    top:82px;
+    left:50%;
+    transform:translateX(-50%) translateY(-10px);
+    background: rgba(5,7,10,0.65);
+    color:#00eaff;
+    padding:10px 16px;
+    border-radius:10px;
+    font-size:14px;
+    max-width:58%;
+    text-align:center;
+    pointer-events:none;
+    opacity:0.65;
+    transition: opacity 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+    z-index:999;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px) saturate(1.2);
+  }
+  #voice-text { font-weight:700; font-size:14px; margin-bottom:6px; color:#dff9ff; text-overflow:ellipsis; white-space:nowrap; overflow:hidden; text-align:center; }
+  #voice-box.speaking { opacity:1; transform:translateX(-50%) translateY(0); box-shadow: 0 12px 36px rgba(0,190,255,0.12); }
+
+  /* Voice Bars */
+  #voice-bars { display:flex; justify-content:center; align-items:flex-end; gap:6px; margin-top:4px; height:46px; }
+  #voice-bars .bar { width:6px; background:#00eaff; border-radius:2px; opacity:0.45; transition:height 0.035s linear, opacity 0.06s linear; box-shadow: 0 0 8px rgba(0,234,255,0.08); }
+
+  /* Waveform */
+  #voice-wave { display:block; margin:8px auto 0 auto; background:transparent; border-radius:6px; width:380px; height:80px; }
+
+  /* search inputs */
+  #seed-search, #interpreter-input {
+    position:absolute; left:10px; width:240px; padding:6px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.06); background:rgba(0,0,0,0.5); color:#eaf6ff;
+  }
+  #seed-search { top:12px; }
+  #interpreter-input { top:46px; }
+
+  /* auto agent control (top-right) */
+  #auto-controls { position:absolute; right:12px; top:12px; display:flex; gap:8px; align-items:center; z-index:999; }
+  #auto-toggle { padding:6px 10px; border-radius:6px; background:rgba(0,0,0,0.5); color:#bfefff; border:1px solid rgba(255,255,255,0.06); cursor:pointer; }
+  #auto-status { font-size:12px; color:#bfefff; opacity:0.8; }
+
+  /* small responsive tweak */
+  @media (max-width:900px){ #voice-wave { width:280px; height:60px; } #voice-bars{height:36px} #voice-box{max-width:85%} #auto-controls { right:8px; top:8px; } }
+</style>
 </head>
 <body>
 
 <div id="logic-map">
   <div id="logic-nodes"></div>
 
-  <div id="percy-console"></div>
-  <div id="percy-message"></div>
+  <div id="percy-console" style="position:absolute;bottom:0;left:0;width:100%;max-height:220px;overflow-y:auto;background:linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.45));padding:8px;"></div>
+  <div id="percy-message" style="position:absolute;top:0;left:0;width:100%;padding:6px;font-size:14px;"></div>
 
   <div id="voice-box" aria-live="polite">
     <div id="voice-text"></div>
@@ -24,12 +98,544 @@
 <input id="seed-search" placeholder="Search seeds..." />
 <input id="interpreter-input" placeholder="Ask Percy..." />
 
+<!-- AutoAgent control -->
 <div id="auto-controls">
   <button id="auto-toggle" title="Enable/disable auto-learn">Auto-Learn: On</button>
   <div id="auto-status">processing</div>
 </div>
 
-<script src="js/percy.js?v=6.4"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
 
+  /* ---------------- safety & state ---------------- */
+  const SAFETY = { maxActionsPerMinute:20, maxSeedsPerCycle:5, consoleLimit:500 };
+  const OWNER = { primary:"Fabian", secondary:"Lorena" };
+  const PERCY_VERSION = "8.4.2-neon-audio-v3+auto";
+
+  const Memory = {
+    _k: k => `percy:${k}`,
+    load(k,fallback){ try{ const raw = localStorage.getItem(this._k(k)); return raw ? JSON.parse(raw) : (fallback ?? null);}catch{ return fallback; }},
+    save(k,v){ try{ localStorage.setItem(this._k(k), JSON.stringify(v)); }catch{}},
+    push(k,v,max=1000){ const arr = this.load(k,[])||[]; arr.push(v); if(arr.length>max) arr.shift(); this.save(k,arr); }
+  };
+
+  const PercyState = {
+    gnodes: Memory.load("gnodes",{}) || {},
+    getNextId(){ let n=801; while(this.gnodes[`G${String(n).padStart(3,'0')}`]) n++; return `G${String(n).padStart(3,'0')}`; },
+    createSeed(msg,type='emergent',data={}){ if(!OWNER.primary) return null; const id=this.getNextId(); this.gnodes[id]={message:msg,type,data}; Memory.save('gnodes',this.gnodes); seeds[id]=this.gnodes[id]; return id; },
+    updateSeed(id,upd){ if(!this.gnodes[id]) return; Object.assign(this.gnodes[id],upd); Memory.save('gnodes',this.gnodes); seeds[id]=this.gnodes[id]; },
+    autonomousThought(){ const keys=Object.keys(this.gnodes); if(!keys.length) return; const selected=keys.sort(()=>0.5-Math.random()).slice(0,Math.ceil(Math.random()*3)).map(k=>this.gnodes[k]); const words=selected.map(s=>(s.message||"").split(/\s+/).filter(w=>w.length>3)).flat().sort(()=>0.5-Math.random()).slice(0,8); if(words.length<3) return; const tpl=[
+      `I notice that ${words[0]} may relate to ${words[1]} because ${words[2]}.`,
+      `It seems ${words[0]} influences ${words[1]}, which could explain ${words[2]}.`,
+      `Considering ${words[0]} and ${words[1]}, I deduce ${words[2]}.`,
+      `There appears to be a connection between ${words[0]} and ${words[1]} due to ${words[2]}.`
+    ]; const sentence = tpl[Math.floor(Math.random()*tpl.length)]; UI.say(`🤖 Percy thinks: ${sentence}`); Voice.speak(sentence); this.createSeed(sentence,'thought',{source:'autonomousThought'}); },
+    evaluateSelf(){ let created=0; const updated=new Set(); Object.entries(this.gnodes).forEach(([id,seed])=>{ if(created>=SAFETY.maxSeedsPerCycle) return; if(/TODO|missing|empty/.test(seed.message) && !updated.has(id)){ this.updateSeed(id,{message: seed.message.replace(/TODO|missing|empty/,'auto-resolved by Percy')}); updated.add(id); created++; }}); while(created<SAFETY.maxSeedsPerCycle && Math.random()<0.6){ this.autonomousThought(); created++; } }
+  };
+
+  let seeds = {...PercyState.gnodes};
+
+  const UI = {
+    elConsole: () => document.getElementById('percy-console'),
+    elMsg: () => document.getElementById('percy-message'),
+    say(txt){ const box=this.elConsole(); if(!box) return; const p=document.createElement('div'); p.className='console-line'; p.textContent=txt; box.appendChild(p); box.scrollTop=box.scrollHeight; while(box.children.length>SAFETY.consoleLimit) box.removeChild(box.firstChild); },
+    setStatus(txt){ const m=this.elMsg(); if(m) m.textContent = txt; }
+  };
+
+  /* ---------------- Enhanced AutoAgent (enabled by default) ----------------
+     - enabled by default
+     - uses Tasks.register.autoLearn / autoBrowse when available
+     - falls back to api.allorigins.win/get?url=...
+     - throttled, persists queue & errors
+  ---------------------------------------------------------------------------*/
+  const AutoAgent = (function(){
+    let enabled = true;
+    const CALLS_PER_MIN = 3;
+    const queueKey = 'autoagent:queue';
+    const errorsKey = 'autoagent:errors';
+    const seenKey = 'autoagent:seen';
+    let callsThisMinute = 0;
+    let minuteTimer = null;
+    let processing = false;
+
+    const DEFAULT_SEEDS = [
+      'https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API',
+      'https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis',
+      'https://news.ycombinator.com/',
+      'https://example.com/'
+    ];
+
+    function loadQueue(){ return Memory.load(queueKey,[]) || []; }
+    function saveQueue(q){ Memory.save(queueKey, q); }
+    function pushQueue(item){ const q = loadQueue(); q.push(item); saveQueue(q); }
+    function popQueue(){ const q = loadQueue(); const item = q.shift(); saveQueue(q); return item; }
+    function recordError(errObj){ Memory.push(errorsKey, errObj, 400); }
+
+    function initThrottle(){ if(minuteTimer) return; minuteTimer = setInterval(()=>{ callsThisMinute = 0; }, 60_000); }
+    function canCall(){ initThrottle(); return callsThisMinute < CALLS_PER_MIN; }
+
+    function maybeSeedDefaults(){
+      const q = loadQueue();
+      const seen = Memory.load(seenKey, false);
+      if(!q.length && !seen){
+        DEFAULT_SEEDS.forEach(url => enqueue({ url, source:'default' }));
+        Memory.save(seenKey, true);
+        UI.say('🤖 AutoAgent: default seeds enqueued');
+      }
+    }
+
+    function enqueue(action){
+      if(!action) return;
+      pushQueue(Object.assign({ts:Date.now()}, action));
+      UI.say(`🔁 AutoAgent queued action${action.url?(' '+action.url):''}`);
+      if(enabled) processQueue();
+    }
+
+    async function fetchViaAllOrigins(url){
+      try{
+        const api = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
+        const resp = await fetch(api, { cache: 'no-store' });
+        if(!resp.ok) throw new Error('allorigins status ' + resp.status);
+        const json = await resp.json();
+        const contents = json && json.contents ? json.contents : '';
+        const snippet = contents.replace(/<script[\s\S]*?<\/script>/gi,'')
+                                .replace(/<\/?[^>]+(>|$)/g, ' ')
+                                .replace(/\s+/g, ' ')
+                                .trim()
+                                .slice(0, 600);
+        Memory.push('autoagent:fetched', { url, snippet, ts: Date.now() }, 200);
+        UI.say(`🌐 AutoAgent fetched: ${url}`);
+        PercyState.createSeed(`Fetched: ${url}`, 'auto', {source:'AutoAgent', url, snippet});
+      }catch(err){
+        recordError({err: String(err), url, ts: Date.now()});
+        UI.say(`❌ AutoAgent fetch failed: ${url}`);
+      }
+    }
+
+    async function processQueue(){
+      if(processing) return;
+      processing = true;
+      initThrottle();
+      while(enabled){
+        const q = loadQueue();
+        if(!q.length) break;
+        if(!canCall()){ await new Promise(r=>setTimeout(r,1200)); continue; }
+        const action = popQueue();
+        if(!action) break;
+        try{
+          if(window.Tasks && Tasks.register && typeof Tasks.register.autoLearn === 'function'){
+            try{
+              Tasks.register.autoLearn(action);
+              callsThisMinute++;
+              UI.say(`🔎 AutoAgent: autoLearn called for ${action.url||'unknown'}`);
+              PercyState.createSeed(`AutoLearn: ${action.url||'action'}`, 'auto', {source:'AutoAgent'});
+            }catch(err){
+              console.warn('autoLearn error', err);
+              if(typeof Tasks.register.autoBrowse === 'function'){
+                Tasks.register.autoBrowse(action);
+                callsThisMinute++;
+                UI.say(`🔎 AutoAgent: autoBrowse called for ${action.url||'unknown'}`);
+                PercyState.createSeed(`AutoBrowse: ${action.url||'action'}`, 'auto', {source:'AutoAgent'});
+              } else {
+                await fetchViaAllOrigins(action.url);
+                callsThisMinute++;
+              }
+            }
+          } else if(window.Tasks && Tasks.register && typeof Tasks.register.autoBrowse === 'function'){
+            Tasks.register.autoBrowse(action);
+            callsThisMinute++;
+            UI.say(`🔎 AutoAgent: autoBrowse called for ${action.url||'unknown'}`);
+            PercyState.createSeed(`AutoBrowse: ${action.url||'action'}`, 'auto', {source:'AutoAgent'});
+          } else {
+            await fetchViaAllOrigins(action.url);
+            callsThisMinute++;
+          }
+        }catch(err){
+          console.error('AutoAgent processing error', err);
+          recordError({err: String(err), action, ts: Date.now()});
+        }
+        await new Promise(r=>setTimeout(r,700));
+      }
+      processing = false;
+    }
+
+    function setEnabled(v){
+      enabled = !!v;
+      document.getElementById('auto-toggle').textContent = `Auto-Learn: ${enabled ? 'On' : 'Off'}`;
+      document.getElementById('auto-status').textContent = enabled ? 'processing' : 'idle';
+      if(enabled){
+        maybeSeedDefaults();
+        processQueue();
+      }
+    }
+
+    function learnUrl(url, opts = {}){ if(!url) return; enqueue(Object.assign({url}, opts)); }
+    function flushQueueToConsole(){ const q = loadQueue(); q.forEach((a,i)=> UI.say(`Queued[${i}]: ${a.url||JSON.stringify(a)}`)); }
+
+    maybeSeedDefaults();
+    if(enabled) processQueue();
+
+    return { enqueue, learnUrl, setEnabled, isEnabled:()=>enabled, flushQueueToConsole };
+  })();
+
+  // Wire up toggle
+  const autoToggleBtn = document.getElementById('auto-toggle');
+  autoToggleBtn.addEventListener('click', ()=> {
+    const newState = !AutoAgent.isEnabled();
+    AutoAgent.setEnabled(newState);
+  });
+  // reflect UI state
+  document.getElementById('auto-toggle').textContent = `Auto-Learn: ${AutoAgent.isEnabled() ? 'On':'Off'}`;
+  document.getElementById('auto-status').textContent = AutoAgent.isEnabled()? 'processing':'idle';
+
+  /* ---------------- improved voice visualizer ----------------
+     - safe initialization after gesture
+     - baseline noise so bars never vanish
+     - snappy smoothing and fast micro-peaks
+     - safe speak() that falls back to Web Speech API alone if audio not ready
+  --------------------------------------------------------------*/
+  const Voice = {
+    enabled: true, initialized: false, speaking: false, lastSpoken: 0,
+    audioCtx: null, analyser: null, freqData: null, timeData: null,
+    noiseSource: null, noiseGain: null, modInterval: null,
+    barsEl: document.getElementById('voice-bars'), waveEl: document.getElementById('voice-wave'),
+
+    init(){
+      if(this.initialized) return;
+      try { this.audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ console.warn('Audio not supported', e); return; }
+
+      this.analyser = this.audioCtx.createAnalyser();
+      this.analyser.fftSize = 1024;               // good balance for waveform + bars
+      this.analyser.smoothingTimeConstant = 0.08; // low smoothing for snappy bars
+      this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
+      this.timeData = new Uint8Array(this.analyser.fftSize);
+
+      const bufferSize = this.audioCtx.sampleRate * 2.0;
+      const noiseBuffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
+      const data = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++){
+        // pink-ish noise base
+        data[i] = (Math.random()*2 - 1) * (0.6 + 0.4*Math.sin(i/50));
+      }
+      this.noiseSource = this.audioCtx.createBufferSource();
+      this.noiseSource.buffer = noiseBuffer;
+      this.noiseSource.loop = true;
+
+      this.noiseGain = this.audioCtx.createGain();
+      this.noiseGain.gain.value = 0.02; // subtle baseline so visuals never pop to zero
+
+      // connect only to analyser (visual-only)
+      try {
+        this.noiseSource.connect(this.noiseGain);
+        this.noiseGain.connect(this.analyser);
+        // do NOT connect analyser to destination (silent)
+        this.noiseSource.start();
+      } catch(e){
+        console.warn('Audio connect/start failed', e);
+      }
+
+      // create bars visually
+      this.barsEl.innerHTML = '';
+      const BAR_COUNT = 48;
+      for(let i=0;i<BAR_COUNT;i++){
+        const b = document.createElement('div');
+        b.className = 'bar';
+        b.style.height = '6px';
+        this.barsEl.appendChild(b);
+      }
+
+      this.initialized = true;
+      this._animate();
+    },
+
+    _animate(){
+      if(!this.initialized) return;
+      requestAnimationFrame(()=>this._animate());
+      try {
+        this.analyser.getByteFrequencyData(this.freqData);
+        this.analyser.getByteTimeDomainData(this.timeData);
+      } catch(e) {
+        return; // analyser not ready
+      }
+
+      const bars = this.barsEl.querySelectorAll('.bar');
+      const H = this.waveEl.height;
+      for(let i=0;i<bars.length;i++){
+        const idx = Math.floor(Math.pow(i / bars.length, 1.35) * (this.freqData.length-1));
+        const v = this.freqData[idx] || 0;
+        const mult = this.speaking ? 2.0 : 0.9;
+        // nonlinear scaling for punchy bars
+        const h = Math.max(6, Math.pow(v/255, 1.6) * (H) * mult + (Math.random()*2));
+        bars[i].style.height = `${h}px`;
+        bars[i].style.opacity = `${0.22 + Math.min(0.85, v/220)}`;
+      }
+
+      // waveform: strong peak-to-peak rendering
+      const ctx = this.waveEl.getContext('2d');
+      const W = this.waveEl.width, waveH = this.waveEl.height;
+      ctx.clearRect(0,0,W,waveH);
+
+      // background subtle
+      ctx.fillStyle = 'rgba(0,6,8,0.0)';
+      ctx.fillRect(0,0,W,waveH);
+
+      const midY = waveH / 2;
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#00eaff';
+      ctx.beginPath();
+
+      const step = Math.max(1, Math.floor(this.timeData.length / W));
+      let x = 0;
+      // compute min/max per bucket to create peak-to-peak look
+      for(let i=0;i<W;i++){
+        const start = i * step;
+        let min = 255, max = 0;
+        for(let j=0;j<step && start+j < this.timeData.length; j++){
+          const t = this.timeData[start+j];
+          if(t < min) min = t;
+          if(t > max) max = t;
+        }
+        // map mid of min/max to y to give peak feel
+        const avg = ((min + max) / 2 - 128) / 128;
+        const peakMult = this.speaking ? 2.0 : 0.9;
+        const y = midY + avg * (waveH/2 - 4) * peakMult;
+        if(i===0) ctx.moveTo(i, y); else ctx.lineTo(i, y);
+      }
+      ctx.stroke();
+
+      // filled faint area for more body
+      ctx.globalAlpha = 0.06;
+      ctx.fillStyle = '#00eaff';
+      ctx.beginPath();
+      for(let i=0;i<W;i++){
+        const start = i * step;
+        let min = 255, max = 0;
+        for(let j=0;j<step && start+j < this.timeData.length; j++){
+          const t = this.timeData[start+j];
+          if(t < min) min = t;
+          if(t > max) max = t;
+        }
+        const avg = ((min + max) / 2 - 128) / 128;
+        const y = midY + avg * (waveH/2 - 4) * (this.speaking ? 1.6 : 0.6);
+        if(i===0) ctx.moveTo(i, y); else ctx.lineTo(i, y);
+      }
+      ctx.lineTo(W, waveH);
+      ctx.lineTo(0, waveH);
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1.0;
+    },
+
+    speak(text){
+      // Always show text immediately (Web Speech can run without AudioContext)
+      const box = document.getElementById('voice-box');
+      const textEl = document.getElementById('voice-text');
+      textEl.textContent = text;
+      box.classList.add('speaking');
+
+      // safe guard: if audio not initialized, still use speechSynthesis and visual highlight
+      if(!this.initialized || !this.noiseGain || !this.audioCtx){
+        // use Web Speech, but visual modulation will wait until gesture/init.
+        if('speechSynthesis' in window){
+          const utter = new SpeechSynthesisUtterance(text);
+          utter.rate = 1.0; utter.pitch = 1.0;
+          utter.onend = ()=> box.classList.remove('speaking');
+          speechSynthesis.speak(utter);
+        } else {
+          // fallback: disappear highlight after short time
+          setTimeout(()=> box.classList.remove('speaking'), 900);
+        }
+        return;
+      }
+
+      // debounce
+      const now = Date.now();
+      if(now - this.lastSpoken < 220) return;
+      this.lastSpoken = now;
+
+      // ramp baseline and modulate
+      try {
+        const current = this.audioCtx.currentTime;
+        this.noiseGain.gain.cancelScheduledValues(current);
+        this.noiseGain.gain.setValueAtTime(this.noiseGain.gain.value, current);
+        this.noiseGain.gain.linearRampToValueAtTime(0.85, current + 0.035);
+      } catch(e){
+        console.warn('gain scheduling failed', e);
+      }
+
+      this.speaking = true;
+
+      if(this.modInterval) clearInterval(this.modInterval);
+      this.modInterval = setInterval(() => {
+        if(!this.noiseGain || !this.audioCtx) return;
+        const peak = 0.35 + Math.random()*1.4;
+        const t0 = this.audioCtx.currentTime;
+        try {
+          this.noiseGain.gain.cancelScheduledValues(t0);
+          this.noiseGain.gain.setValueAtTime(this.noiseGain.gain.value, t0);
+          this.noiseGain.gain.linearRampToValueAtTime(peak, t0 + 0.03);
+          this.noiseGain.gain.exponentialRampToValueAtTime(Math.max(0.02, peak*0.28), t0 + 0.12);
+        } catch(e){ /* ignore scheduling errors */ }
+      }, 50);
+
+      // speak
+      if('speechSynthesis' in window){
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.rate = 1.0; utter.pitch = 1.0;
+        utter.onend = ()=> {
+          this.speaking = false;
+          if(this.modInterval){ clearInterval(this.modInterval); this.modInterval = null; }
+          if(this.noiseGain && this.audioCtx){
+            const t1 = this.audioCtx.currentTime;
+            try {
+              this.noiseGain.gain.cancelScheduledValues(t1);
+              this.noiseGain.gain.setTargetAtTime(0.02, t1, 0.25);
+            } catch(e){}
+          }
+          box.classList.remove('speaking');
+        };
+        speechSynthesis.speak(utter);
+      } else {
+        // fallback visual timeout
+        setTimeout(()=>{
+          this.speaking = false;
+          if(this.modInterval){ clearInterval(this.modInterval); this.modInterval = null; }
+          box.classList.remove('speaking');
+        }, 1200);
+      }
+    }
+  };
+
+  /* -------------- audio user gesture: resume & init -------------- */
+  function ensureAudioOnGesture() {
+    function onGesture() {
+      // create and resume audio after gesture
+      try {
+        Voice.init();
+        if(Voice.audioCtx && Voice.audioCtx.state === 'suspended') Voice.audioCtx.resume().catch(()=>{});
+      } catch(e){}
+      if(!window.__percyLoopStarted) { startPercyLoop(); window.__percyLoopStarted = true; }
+      if(AutoAgent && AutoAgent.isEnabled && AutoAgent.isEnabled()){
+        // AutoAgent will start processing automatically
+      }
+      window.removeEventListener('click', onGesture);
+      window.removeEventListener('keydown', onGesture);
+      window.removeEventListener('touchstart', onGesture);
+    }
+    window.addEventListener('click', onGesture, {once:true});
+    window.addEventListener('keydown', onGesture, {once:true});
+    window.addEventListener('touchstart', onGesture, {once:true});
+  }
+  ensureAudioOnGesture();
+
+  /* ---------------- logic map & nodes ---------------- */
+  const logicMap = document.getElementById('logic-map');
+  const logicNodes = document.getElementById('logic-nodes');
+  let zoomLevel = 1, translateX = 0, translateY = 0;
+
+  function createNodes(){
+    const width = logicMap.clientWidth || 1200, height = logicMap.clientHeight || 800;
+    const rings = [
+      { start: 80, end: 200, radius: width/2.5, color:'cyan-bubble', size:60 },
+      { start: 201, end: 300, radius: width/3.4, color:'blue-bubble', size:45 },
+      { start: 301, end: 400, radius: width/4.8, color:'magenta-bubble', size:30 },
+      { start: 401, end: 500, radius: width/6.6, color:'red-bubble', size:22 },
+      { start: 501, end: 600, radius: width/8.5, color:'orange-bubble', size:18 },
+      { start: 601, end: 700, radius: width/11, color:'yellow-bubble', size:14 },
+      { start: 701, end: 800, radius: width/14, color:'green-bubble', size:12 }
+    ];
+    rings.forEach(r => layoutRing(r.start, r.end, width, height, r.radius, r.color, r.size));
+    applyTransform();
+  }
+
+  function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
+    const ringSeeds = Object.entries(seeds).filter(([id])=>{ const num = parseInt(id.replace('G',''))||0; return num>=startId && num<=endId; });
+    const total = Math.max(1, ringSeeds.length);
+    const centerX = width/2, centerY = height/2;
+    ringSeeds.forEach(([id,data], index) => {
+      let node = document.getElementById(id);
+      const angle = (index/total) * 2*Math.PI;
+      const x = centerX + radius * Math.cos(angle) - nodeSize/2;
+      const y = centerY + radius * Math.sin(angle) - nodeSize/2;
+      if(!node){
+        node = document.createElement('div'); node.id=id; node.classList.add('node'); node.classList.add(colorClass);
+        node.addEventListener('click', ()=>percyRespond(id, data));
+        node.addEventListener('mouseenter', ()=>UI.setStatus(data?.message ?? ''));
+        logicNodes.appendChild(node);
+      }
+      node.style.width = node.style.height = `${nodeSize}px`;
+      node.style.left = `${x}px`; node.style.top = `${y}px`;
+      node.textContent = id;
+      node.title = (data && data.message) ? data.message : id;
+    });
+  }
+
+  function applyTransform(){
+    logicNodes.style.transform = `translate(-50%,-50%) translate(${translateX}px,${translateY}px) scale(${zoomLevel})`;
+    logicNodes.style.transformOrigin = 'center center';
+  }
+
+  function percyRespond(id,data){
+    if(!data) return;
+    UI.say(`✨ Percy activated seed ${id}: ${data.message}`);
+    Voice.speak(`Processing seed ${id}`);
+  }
+
+  // search / ask
+  document.getElementById('interpreter-input').addEventListener('keydown', e=>{
+    if(e.key === 'Enter'){
+      const q = e.target.value.trim(); if(!q) return; e.target.value = '';
+      UI.say(`💬 You asked: ${q}`);
+      Voice.speak(`You asked: ${q}`);
+      setTimeout(()=>{ PercyState.autonomousThought(); createNodes(); }, 160);
+    }
+  });
+  document.getElementById('seed-search').addEventListener('input', e=>{
+    const val = e.target.value.toUpperCase();
+    document.querySelectorAll('.node').forEach(n => { n.style.display = n.textContent.includes(val) ? 'flex' : 'none'; });
+  });
+
+  // AI loops (startPercyLoop will be started once audio is ready)
+  let autoLoopInterval = null;
+  function startPercyLoop(){
+    if(autoLoopInterval) clearInterval(autoLoopInterval);
+    autoLoopInterval = setInterval(()=>{ PercyState.evaluateSelf(); createNodes(); UI.setStatus(`🟢 Percy active, ${Object.keys(seeds).length} seeds loaded`); }, 3000);
+  }
+
+  function selfRewrite(){
+    try{
+      const keys = Object.keys(PercyState.gnodes);
+      if(!keys.length) return;
+      const id = keys[Math.floor(Math.random()*keys.length)];
+      const seed = PercyState.gnodes[id];
+      if(seed && Math.random()<0.5){
+        const old = seed.message;
+        const next = old + ' [auto-refined]';
+        PercyState.updateSeed(id,{message: next});
+        UI.say(`🔄 Percy auto-refined seed ${id}`);
+        // safe speak — will highlight text and use speechSynthesis even if audio not initialized
+        Voice.speak(`Auto refinement completed on seed ${id}`);
+      }
+    }catch(e){ console.error(e); }
+  }
+
+  // zoom & pan
+  logicMap.addEventListener('wheel', e=>{ e.preventDefault(); const factor=0.12; zoomLevel *= e.deltaY<0 ? 1+factor : 1-factor; zoomLevel = Math.min(Math.max(0.25, zoomLevel), 6); applyTransform(); });
+  let isDragging=false, lastX=0, lastY=0;
+  logicMap.addEventListener('mousedown', e=>{ isDragging=true; lastX=e.clientX; lastY=e.clientY; });
+  logicMap.addEventListener('mousemove', e=>{ if(isDragging){ const dx=e.clientX-lastX, dy=e.clientY-lastY; translateX += dx; translateY += dy; lastX=e.clientX; lastY=e.clientY; applyTransform(); }});
+  window.addEventListener('mouseup', ()=>{ isDragging=false; });
+
+  // initialize map immediately (visual layout prints even before audio)
+  createNodes();
+  // start a lightweight rewrite loop (map updates)
+  setInterval(()=>{ selfRewrite(); createNodes(); }, 5000);
+  UI.say(`✅ Percy TrueAI v${PERCY_VERSION} initialized`);
+
+  // Expose AutoAgent for console usage
+  window.AutoAgent = AutoAgent;
+
+});
+</script>
 </body>
 </html>
