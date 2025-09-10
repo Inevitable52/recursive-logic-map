@@ -142,5 +142,42 @@
     });
     askInput.addEventListener('keydown', e => { if(e.key==='Enter') askBtn.click(); });
   </script>
+
+  <!-- Percy Part C: Memory-Based Self-Mod + Interactive -->
+  <script>
+  (function PercyPartC(){
+    if(!window.PercyState) return console.warn("❌ PercyState not loaded yet.");
+
+    // Memory-based self-mod function
+    PercyState.memoryRewrite = function(changeFn){
+      try {
+        changeFn(this); // Pass PercyState for modification
+        Memory.save("gnodes", this.gnodes); // Persist changes
+        if(typeof refreshNodes === 'function') refreshNodes(); // Update UI
+        if(typeof UI !== 'undefined' && UI.say) UI.say("✅ Percy memory-based self-mod applied");
+      } catch(e) {
+        console.error("❌ Percy memoryRewrite error:", e);
+        if(typeof UI !== 'undefined' && UI.say) UI.say(`❌ Percy memoryRewrite error: ${e.message}`);
+      }
+    };
+
+    // Example self-mod test
+    PercyState.memoryRewrite(ps => {
+      ps.createSeed("🧩 Test self-mod applied: Percy now can memory-mod itself!", "thought");
+    });
+
+    // Optional: Interactive console command
+    window.PercyMemoryMod = (codeStr) => {
+      try {
+        PercyState.memoryRewrite(ps => eval(codeStr));
+      } catch(e) {
+        if(typeof UI !== 'undefined' && UI.say) UI.say(`❌ Interactive memory mod error: ${e.message}`);
+      }
+    };
+
+    if(typeof UI !== 'undefined' && UI.say) UI.say("🧩 Percy Part C (self-mod + interactive) loaded.");
+  })();
+  </script>
+
 </body>
 </html>
