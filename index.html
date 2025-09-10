@@ -1,14 +1,3 @@
-add this:
-
-(function waitForPercyState(){
-  if(typeof PercyState === 'undefined'){
-    console.log("⏳ Waiting for PercyState...");
-    setTimeout(waitForPercyState, 200);
-    return;
-  }
-
-to this:
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
