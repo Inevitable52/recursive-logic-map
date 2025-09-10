@@ -85,7 +85,7 @@ body {
     opacity: 0.5;
 }
 
-/* === Neon Bubble Colors (matching your HTML) === */
+/* === Neon Bubble Colors === */
 .cyan-bubble      { color: #00eaff; }
 .blue-bubble      { color: #27a0ff; }
 .magenta-bubble   { color: #ff4af0; }
@@ -196,7 +196,6 @@ body {
     border-style: solid;
     border-color: rgba(0,0,0,0.6) transparent transparent transparent;
 }
-
 #voice-bars {
     display: flex;
     justify-content: center;
@@ -210,7 +209,6 @@ body {
     background: #00eaff;
     border-radius: 2px;
 }
-
 #voice-wave {
     display: block;
     margin: 6px auto 0 auto;
