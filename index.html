@@ -106,14 +106,16 @@ const UI = {
   setStatus(txt){ const m=this.elMsg(); if(m)m.textContent=txt; }
 };
 
-// ==== VOICE SYSTEM WITH CONTINUOUS OSCILLATOR & SMOOTH BARS ====
+// ==== VOICE SYSTEM ====
 const Voice = {
   enabled:true, lastSpoken:0,
   audioCtx: new (window.AudioContext||window.webkitAudioContext)(),
   analyser:null, dataArray:null, oscillator:null, gain:null,
   barsEl: document.getElementById('voice-bars'),
   waveEl: document.getElementById('voice-wave'),
+  initialized:false,
   init(){
+    if(this.initialized) return;
     this.analyser=this.audioCtx.createAnalyser();
     this.analyser.fftSize=256;
     this.dataArray=new Uint8Array(this.analyser.frequencyBinCount);
@@ -122,22 +124,30 @@ const Voice = {
     this.gain=this.audioCtx.createGain();
     this.oscillator.type='sine';
     this.oscillator.frequency.value=220;
-    this.gain.gain.value=0.0;
+    this.gain.gain.value=0.2; // small audible gain
     this.oscillator.connect(this.gain);
     this.gain.connect(this.analyser);
     this.analyser.connect(this.audioCtx.destination);
     this.oscillator.start();
 
+    // create bars
+    this.barsEl.innerHTML='';
     for(let i=0;i<20;i++){
       const b=document.createElement('div'); b.className='bar'; this.barsEl.appendChild(b);
     }
+
+    this.initialized=true;
     this.animate();
   },
   animate(){
+    if(!this.initialized) return;
     requestAnimationFrame(()=>this.animate());
     if(!this.analyser) return;
-    this.analyser.getByteFrequencyData(this.dataArray);
 
+    // small frequency wobble for bars movement
+    this.oscillator.frequency.value = 220 + Math.sin(Date.now()/100)*10;
+
+    this.analyser.getByteFrequencyData(this.dataArray);
     const bars=this.barsEl.querySelectorAll('.bar');
     bars.forEach((bar,i)=>{
       const h=(this.dataArray[i]||0)/4;
@@ -164,7 +174,7 @@ const Voice = {
     ctx.stroke();
   },
   speak(text){
-    if(!('speechSynthesis' in window)) return;
+    if(!('speechSynthesis' in window) || !this.gain) return;
     const now=Date.now(); if(now-this.lastSpoken<300) return;
     this.lastSpoken=now;
 
@@ -180,7 +190,7 @@ const Voice = {
     const utter=new SpeechSynthesisUtterance(text);
     utter.rate=1.0; utter.pitch=1.0;
     utter.onend=()=>{
-      this.gain.gain.setTargetAtTime(0.0,this.audioCtx.currentTime,0.1);
+      if(this.gain) this.gain.gain.setTargetAtTime(0.0,this.audioCtx.currentTime,0.1);
       box.style.opacity='0';
       box.style.transform='translateX(-50%) translateY(-20px)';
     };
@@ -188,7 +198,7 @@ const Voice = {
   }
 };
 
-// ==== AUDIO CONTEXT USER GESTURE HANDLER ====
+// ==== USER GESTURE HANDLER ====
 function enableVoiceOnUserGesture() {
   function gestureHandler() {
     if (Voice.audioCtx.state === 'suspended') {
