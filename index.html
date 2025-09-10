@@ -30,7 +30,7 @@
   .orange-bubble{color:#ff9d2e;}
   .yellow-bubble{color:#ffe44a;}
   .green-bubble{color:#4caf50;}
-  .console-line{margin:2px 0;font-family:ui-monospace,monospace;font-size:12px;color:#d6d8ff;}
+  .console-line{margin:2px 0;font-family:ui-monospace,monospace;font-size:12px;color:#d6d8ff;white-space:pre-wrap;}
 
   /* Voice Bubble - always visible faintly; gets brighter when speaking */
   #voice-box {
@@ -98,8 +98,8 @@
 
 <!-- AutoAgent control -->
 <div id="auto-controls">
-  <button id="auto-toggle" title="Enable/disable auto-learn">Auto-Learn: Off</button>
-  <div id="auto-status">idle</div>
+  <button id="auto-toggle" title="Enable/disable auto-learn">Auto-Learn: On</button>
+  <div id="auto-status">processing</div>
 </div>
 
 <script>
@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ---------------- safety & state ---------------- */
   const SAFETY = { maxActionsPerMinute:20, maxSeedsPerCycle:5, consoleLimit:500 };
   const OWNER = { primary:"Fabian", secondary:"Lorena" };
-  const PERCY_VERSION = "8.4.1-neon-audio-v2+auto";
+  const PERCY_VERSION = "8.4.2-neon-audio-v3+auto";
 
   const Memory = {
     _k: k => `percy:${k}`,
@@ -140,47 +140,74 @@ document.addEventListener('DOMContentLoaded', () => {
     setStatus(txt){ const m=this.elMsg(); if(m) m.textContent = txt; }
   };
 
-  /* ---------------- AutoAgent (safe, opt-in) ----------------
-     - default disabled
-     - throttle (callsPerMinute)
-     - uses Tasks.register.autoLearn / autoBrowse if present
-     - persists pending actions/errors to Memory
-  ------------------------------------------------------------*/
+  /* ---------------- Enhanced AutoAgent (enabled by default) ----------------
+     - enabled by default
+     - uses Tasks.register.autoLearn / autoBrowse when available
+     - falls back to api.allorigins.win/get?url=...
+     - throttled, persists queue & errors
+  ---------------------------------------------------------------------------*/
   const AutoAgent = (function(){
-    let enabled = false;
+    let enabled = true;
     const CALLS_PER_MIN = 3;
     const queueKey = 'autoagent:queue';
     const errorsKey = 'autoagent:errors';
+    const seenKey = 'autoagent:seen';
     let callsThisMinute = 0;
     let minuteTimer = null;
     let processing = false;
 
+    const DEFAULT_SEEDS = [
+      'https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API',
+      'https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis',
+      'https://news.ycombinator.com/',
+      'https://example.com/'
+    ];
+
     function loadQueue(){ return Memory.load(queueKey,[]) || []; }
     function saveQueue(q){ Memory.save(queueKey, q); }
-    function pushQueue(item){
-      const q = loadQueue();
-      q.push(item);
-      saveQueue(q);
-    }
+    function pushQueue(item){ const q = loadQueue(); q.push(item); saveQueue(q); }
     function popQueue(){ const q = loadQueue(); const item = q.shift(); saveQueue(q); return item; }
-    function recordError(errObj){ Memory.push(errorsKey, errObj, 200); }
+    function recordError(errObj){ Memory.push(errorsKey, errObj, 400); }
 
-    function initThrottle(){
-      if(minuteTimer) return;
-      minuteTimer = setInterval(()=>{ callsThisMinute = 0; }, 60_000);
-    }
+    function initThrottle(){ if(minuteTimer) return; minuteTimer = setInterval(()=>{ callsThisMinute = 0; }, 60_000); }
+    function canCall(){ initThrottle(); return callsThisMinute < CALLS_PER_MIN; }
 
-    function canCall(){
-      initThrottle();
-      return callsThisMinute < CALLS_PER_MIN;
+    function maybeSeedDefaults(){
+      const q = loadQueue();
+      const seen = Memory.load(seenKey, false);
+      if(!q.length && !seen){
+        DEFAULT_SEEDS.forEach(url => enqueue({ url, source:'default' }));
+        Memory.save(seenKey, true);
+        UI.say('🤖 AutoAgent: default seeds enqueued');
+      }
     }
 
     function enqueue(action){
       if(!action) return;
       pushQueue(Object.assign({ts:Date.now()}, action));
       UI.say(`🔁 AutoAgent queued action${action.url?(' '+action.url):''}`);
-      // if enabled, try process immediately
       if(enabled) processQueue();
+    }
+
+    async function fetchViaAllOrigins(url){
+      try{
+        const api = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
+        const resp = await fetch(api, { cache: 'no-store' });
+        if(!resp.ok) throw new Error('allorigins status ' + resp.status);
+        const json = await resp.json();
+        const contents = json && json.contents ? json.contents : '';
+        const snippet = contents.replace(/<script[\s\S]*?<\/script>/gi,'')
+                                .replace(/<\/?[^>]+(>|$)/g, ' ')
+                                .replace(/\s+/g, ' ')
+                                .trim()
+                                .slice(0, 600);
+        Memory.push('autoagent:fetched', { url, snippet, ts: Date.now() }, 200);
+        UI.say(`🌐 AutoAgent fetched: ${url}`);
+        PercyState.createSeed(`Fetched: ${url}`, 'auto', {source:'AutoAgent', url, snippet});
+      }catch(err){
+        recordError({err: String(err), url, ts: Date.now()});
+        UI.say(`❌ AutoAgent fetch failed: ${url}`);
+      }
     }
 
     async function processQueue(){
@@ -190,39 +217,42 @@ document.addEventListener('DOMContentLoaded', () => {
       while(enabled){
         const q = loadQueue();
         if(!q.length) break;
-        if(!canCall()){
-          // wait a bit then continue
-          await new Promise(r=>setTimeout(r, 1200));
-          continue;
-        }
+        if(!canCall()){ await new Promise(r=>setTimeout(r,1200)); continue; }
         const action = popQueue();
         if(!action) break;
         try{
           if(window.Tasks && Tasks.register && typeof Tasks.register.autoLearn === 'function'){
-            // call autoLearn
-            Tasks.register.autoLearn(action);
-            callsThisMinute++;
-            UI.say(`🔎 AutoAgent: autoLearn called for ${action.url||'unknown'}`);
-            PercyState.createSeed(`AutoLearn: ${action.url||'action'}`, 'auto', {source:'AutoAgent'});
+            try{
+              Tasks.register.autoLearn(action);
+              callsThisMinute++;
+              UI.say(`🔎 AutoAgent: autoLearn called for ${action.url||'unknown'}`);
+              PercyState.createSeed(`AutoLearn: ${action.url||'action'}`, 'auto', {source:'AutoAgent'});
+            }catch(err){
+              console.warn('autoLearn error', err);
+              if(typeof Tasks.register.autoBrowse === 'function'){
+                Tasks.register.autoBrowse(action);
+                callsThisMinute++;
+                UI.say(`🔎 AutoAgent: autoBrowse called for ${action.url||'unknown'}`);
+                PercyState.createSeed(`AutoBrowse: ${action.url||'action'}`, 'auto', {source:'AutoAgent'});
+              } else {
+                await fetchViaAllOrigins(action.url);
+                callsThisMinute++;
+              }
+            }
           } else if(window.Tasks && Tasks.register && typeof Tasks.register.autoBrowse === 'function'){
             Tasks.register.autoBrowse(action);
             callsThisMinute++;
             UI.say(`🔎 AutoAgent: autoBrowse called for ${action.url||'unknown'}`);
             PercyState.createSeed(`AutoBrowse: ${action.url||'action'}`, 'auto', {source:'AutoAgent'});
           } else {
-            // no Tasks API — keep it stored and log
-            Memory.push('autoagent:pending', action, 500);
-            UI.say(`⚠️ AutoAgent: Tasks API not present; action queued locally.`);
-            recordError({message:'Tasks API missing', action, ts:Date.now()});
-            // avoid burning CPU if API missing
-            break;
+            await fetchViaAllOrigins(action.url);
+            callsThisMinute++;
           }
-        } catch(err){
-          console.error('AutoAgent process error', err);
-          recordError({err: String(err), action, ts:Date.now()});
+        }catch(err){
+          console.error('AutoAgent processing error', err);
+          recordError({err: String(err), action, ts: Date.now()});
         }
-        // small delay to avoid bursts
-        await new Promise(r=>setTimeout(r, 600));
+        await new Promise(r=>setTimeout(r,700));
       }
       processing = false;
     }
@@ -231,53 +261,50 @@ document.addEventListener('DOMContentLoaded', () => {
       enabled = !!v;
       document.getElementById('auto-toggle').textContent = `Auto-Learn: ${enabled ? 'On' : 'Off'}`;
       document.getElementById('auto-status').textContent = enabled ? 'processing' : 'idle';
-      if(enabled) processQueue();
+      if(enabled){
+        maybeSeedDefaults();
+        processQueue();
+      }
     }
 
-    function learnUrl(url, opts = {}){
-      if(!url) return;
-      enqueue(Object.assign({url}, opts));
-    }
-
+    function learnUrl(url, opts = {}){ if(!url) return; enqueue(Object.assign({url}, opts)); }
     function flushQueueToConsole(){ const q = loadQueue(); q.forEach((a,i)=> UI.say(`Queued[${i}]: ${a.url||JSON.stringify(a)}`)); }
 
-    // expose API
+    maybeSeedDefaults();
+    if(enabled) processQueue();
+
     return { enqueue, learnUrl, setEnabled, isEnabled:()=>enabled, flushQueueToConsole };
   })();
 
-  // Wire up the toggle button (user must enable)
+  // Wire up toggle
   const autoToggleBtn = document.getElementById('auto-toggle');
   autoToggleBtn.addEventListener('click', ()=> {
     const newState = !AutoAgent.isEnabled();
     AutoAgent.setEnabled(newState);
   });
+  // reflect UI state
+  document.getElementById('auto-toggle').textContent = `Auto-Learn: ${AutoAgent.isEnabled() ? 'On':'Off'}`;
+  document.getElementById('auto-status').textContent = AutoAgent.isEnabled()? 'processing':'idle';
 
   /* ---------------- improved voice visualizer ----------------
-     (unchanged from previous implementation)
+     - safe initialization after gesture
+     - baseline noise so bars never vanish
+     - snappy smoothing and fast micro-peaks
+     - safe speak() that falls back to Web Speech API alone if audio not ready
   --------------------------------------------------------------*/
   const Voice = {
-    enabled: true,
-    initialized: false,
-    speaking: false,
-    lastSpoken: 0,
-    audioCtx: null,
-    analyser: null,
-    freqData: null,
-    timeData: null,
-    noiseSource: null,
-    noiseGain: null,
-    modInterval: null,
-    barsEl: document.getElementById('voice-bars'),
-    waveEl: document.getElementById('voice-wave'),
+    enabled: true, initialized: false, speaking: false, lastSpoken: 0,
+    audioCtx: null, analyser: null, freqData: null, timeData: null,
+    noiseSource: null, noiseGain: null, modInterval: null,
+    barsEl: document.getElementById('voice-bars'), waveEl: document.getElementById('voice-wave'),
+
     init(){
       if(this.initialized) return;
-      try {
-        this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      } catch(e){ console.warn('Audio not supported', e); return; }
+      try { this.audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ console.warn('Audio not supported', e); return; }
 
       this.analyser = this.audioCtx.createAnalyser();
-      this.analyser.fftSize = 1024;
-      this.analyser.smoothingTimeConstant = 0.18;
+      this.analyser.fftSize = 1024;               // good balance for waveform + bars
+      this.analyser.smoothingTimeConstant = 0.08; // low smoothing for snappy bars
       this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
       this.timeData = new Uint8Array(this.analyser.fftSize);
 
@@ -285,6 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const noiseBuffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
       const data = noiseBuffer.getChannelData(0);
       for (let i = 0; i < data.length; i++){
+        // pink-ish noise base
         data[i] = (Math.random()*2 - 1) * (0.6 + 0.4*Math.sin(i/50));
       }
       this.noiseSource = this.audioCtx.createBufferSource();
@@ -292,15 +320,21 @@ document.addEventListener('DOMContentLoaded', () => {
       this.noiseSource.loop = true;
 
       this.noiseGain = this.audioCtx.createGain();
-      this.noiseGain.gain.value = 0.035;
+      this.noiseGain.gain.value = 0.02; // subtle baseline so visuals never pop to zero
 
-      this.noiseSource.connect(this.noiseGain);
-      this.noiseGain.connect(this.analyser);
+      // connect only to analyser (visual-only)
+      try {
+        this.noiseSource.connect(this.noiseGain);
+        this.noiseGain.connect(this.analyser);
+        // do NOT connect analyser to destination (silent)
+        this.noiseSource.start();
+      } catch(e){
+        console.warn('Audio connect/start failed', e);
+      }
 
-      this.noiseSource.start();
-
+      // create bars visually
       this.barsEl.innerHTML = '';
-      const BAR_COUNT = 40;
+      const BAR_COUNT = 48;
       for(let i=0;i<BAR_COUNT;i++){
         const b = document.createElement('div');
         b.className = 'bar';
@@ -315,118 +349,172 @@ document.addEventListener('DOMContentLoaded', () => {
     _animate(){
       if(!this.initialized) return;
       requestAnimationFrame(()=>this._animate());
-      this.analyser.getByteFrequencyData(this.freqData);
-      this.analyser.getByteTimeDomainData(this.timeData);
-
-      const bars = this.barsEl.querySelectorAll('.bar');
-      for(let i=0;i<bars.length;i++){
-        const idx = Math.floor(Math.pow(i / bars.length, 1.4) * (this.freqData.length-1));
-        const v = this.freqData[idx] || 0;
-        const mult = this.speaking ? 1.8 : 0.95;
-        const h = Math.max(6, (v / 255) * (this.waveEl.height) * mult);
-        bars[i].style.height = `${h}px`;
-        bars[i].style.opacity = `${0.25 + Math.min(0.85, v/200)}`;
+      try {
+        this.analyser.getByteFrequencyData(this.freqData);
+        this.analyser.getByteTimeDomainData(this.timeData);
+      } catch(e) {
+        return; // analyser not ready
       }
 
-      const ctx = this.waveEl.getContext('2d');
-      const W = this.waveEl.width;
+      const bars = this.barsEl.querySelectorAll('.bar');
       const H = this.waveEl.height;
-      ctx.clearRect(0,0,W,H);
+      for(let i=0;i<bars.length;i++){
+        const idx = Math.floor(Math.pow(i / bars.length, 1.35) * (this.freqData.length-1));
+        const v = this.freqData[idx] || 0;
+        const mult = this.speaking ? 2.0 : 0.9;
+        // nonlinear scaling for punchy bars
+        const h = Math.max(6, Math.pow(v/255, 1.6) * (H) * mult + (Math.random()*2));
+        bars[i].style.height = `${h}px`;
+        bars[i].style.opacity = `${0.22 + Math.min(0.85, v/220)}`;
+      }
 
-      const midY = H/2;
-      ctx.beginPath();
+      // waveform: strong peak-to-peak rendering
+      const ctx = this.waveEl.getContext('2d');
+      const W = this.waveEl.width, waveH = this.waveEl.height;
+      ctx.clearRect(0,0,W,waveH);
+
+      // background subtle
+      ctx.fillStyle = 'rgba(0,6,8,0.0)';
+      ctx.fillRect(0,0,W,waveH);
+
+      const midY = waveH / 2;
       ctx.lineWidth = 2;
       ctx.strokeStyle = '#00eaff';
+      ctx.beginPath();
 
       const step = Math.max(1, Math.floor(this.timeData.length / W));
       let x = 0;
-      for(let i=0;i<this.timeData.length;i+=step){
-        const t = this.timeData[i];
-        const v = (t - 128) / 128;
-        const peakMult = this.speaking ? 1.9 : 0.85;
-        const y = midY + v * (H/2 - 4) * peakMult;
-        if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-        x += 1;
+      // compute min/max per bucket to create peak-to-peak look
+      for(let i=0;i<W;i++){
+        const start = i * step;
+        let min = 255, max = 0;
+        for(let j=0;j<step && start+j < this.timeData.length; j++){
+          const t = this.timeData[start+j];
+          if(t < min) min = t;
+          if(t > max) max = t;
+        }
+        // map mid of min/max to y to give peak feel
+        const avg = ((min + max) / 2 - 128) / 128;
+        const peakMult = this.speaking ? 2.0 : 0.9;
+        const y = midY + avg * (waveH/2 - 4) * peakMult;
+        if(i===0) ctx.moveTo(i, y); else ctx.lineTo(i, y);
       }
       ctx.stroke();
 
+      // filled faint area for more body
       ctx.globalAlpha = 0.06;
       ctx.fillStyle = '#00eaff';
       ctx.beginPath();
-      x=0;
-      for(let i=0;i<this.timeData.length;i+=step){
-        const t = this.timeData[i];
-        const v = (t - 128) / 128;
-        const y = midY + v * (H/2 - 4) * (this.speaking ? 1.6 : 0.6);
-        if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-        x+=1;
+      for(let i=0;i<W;i++){
+        const start = i * step;
+        let min = 255, max = 0;
+        for(let j=0;j<step && start+j < this.timeData.length; j++){
+          const t = this.timeData[start+j];
+          if(t < min) min = t;
+          if(t > max) max = t;
+        }
+        const avg = ((min + max) / 2 - 128) / 128;
+        const y = midY + avg * (waveH/2 - 4) * (this.speaking ? 1.6 : 0.6);
+        if(i===0) ctx.moveTo(i, y); else ctx.lineTo(i, y);
       }
-      ctx.lineTo(W, H);
-      ctx.lineTo(0,H);
+      ctx.lineTo(W, waveH);
+      ctx.lineTo(0, waveH);
       ctx.closePath();
       ctx.fill();
       ctx.globalAlpha = 1.0;
     },
 
     speak(text){
-      if(!this.initialized) {
-        const box = document.getElementById('voice-box');
-        const textEl = document.getElementById('voice-text');
-        textEl.textContent = text;
-        box.classList.add('speaking');
-        setTimeout(()=>box.classList.remove('speaking'), 900);
-        return;
-      }
-      if(!('speechSynthesis' in window)) return;
-      const now = Date.now();
-      if(now - this.lastSpoken < 220) return;
-      this.lastSpoken = now;
-
+      // Always show text immediately (Web Speech can run without AudioContext)
       const box = document.getElementById('voice-box');
       const textEl = document.getElementById('voice-text');
       textEl.textContent = text;
       box.classList.add('speaking');
 
-      const current = this.audioCtx.currentTime;
-      this.noiseGain.gain.cancelScheduledValues(current);
-      this.noiseGain.gain.setValueAtTime(this.noiseGain.gain.value, current);
-      this.noiseGain.gain.linearRampToValueAtTime(0.65, current + 0.035);
+      // safe guard: if audio not initialized, still use speechSynthesis and visual highlight
+      if(!this.initialized || !this.noiseGain || !this.audioCtx){
+        // use Web Speech, but visual modulation will wait until gesture/init.
+        if('speechSynthesis' in window){
+          const utter = new SpeechSynthesisUtterance(text);
+          utter.rate = 1.0; utter.pitch = 1.0;
+          utter.onend = ()=> box.classList.remove('speaking');
+          speechSynthesis.speak(utter);
+        } else {
+          // fallback: disappear highlight after short time
+          setTimeout(()=> box.classList.remove('speaking'), 900);
+        }
+        return;
+      }
+
+      // debounce
+      const now = Date.now();
+      if(now - this.lastSpoken < 220) return;
+      this.lastSpoken = now;
+
+      // ramp baseline and modulate
+      try {
+        const current = this.audioCtx.currentTime;
+        this.noiseGain.gain.cancelScheduledValues(current);
+        this.noiseGain.gain.setValueAtTime(this.noiseGain.gain.value, current);
+        this.noiseGain.gain.linearRampToValueAtTime(0.85, current + 0.035);
+      } catch(e){
+        console.warn('gain scheduling failed', e);
+      }
 
       this.speaking = true;
 
       if(this.modInterval) clearInterval(this.modInterval);
       this.modInterval = setInterval(() => {
-        const peak = 0.35 + Math.random()*1.2;
+        if(!this.noiseGain || !this.audioCtx) return;
+        const peak = 0.35 + Math.random()*1.4;
         const t0 = this.audioCtx.currentTime;
-        this.noiseGain.gain.cancelScheduledValues(t0);
-        this.noiseGain.gain.setValueAtTime(this.noiseGain.gain.value, t0);
-        this.noiseGain.gain.linearRampToValueAtTime(peak, t0 + 0.03);
-        this.noiseGain.gain.exponentialRampToValueAtTime(Math.max(0.12, peak*0.32), t0 + 0.12);
-      }, 60);
+        try {
+          this.noiseGain.gain.cancelScheduledValues(t0);
+          this.noiseGain.gain.setValueAtTime(this.noiseGain.gain.value, t0);
+          this.noiseGain.gain.linearRampToValueAtTime(peak, t0 + 0.03);
+          this.noiseGain.gain.exponentialRampToValueAtTime(Math.max(0.02, peak*0.28), t0 + 0.12);
+        } catch(e){ /* ignore scheduling errors */ }
+      }, 50);
 
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.rate = 1.0; utter.pitch = 1.0;
-      utter.onend = () => {
-        this.speaking = false;
-        if(this.modInterval) { clearInterval(this.modInterval); this.modInterval = null; }
-        const t1 = this.audioCtx.currentTime;
-        this.noiseGain.gain.cancelScheduledValues(t1);
-        this.noiseGain.gain.setTargetAtTime(0.035, t1, 0.25);
-        box.classList.remove('speaking');
-      };
-      speechSynthesis.speak(utter);
+      // speak
+      if('speechSynthesis' in window){
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.rate = 1.0; utter.pitch = 1.0;
+        utter.onend = ()=> {
+          this.speaking = false;
+          if(this.modInterval){ clearInterval(this.modInterval); this.modInterval = null; }
+          if(this.noiseGain && this.audioCtx){
+            const t1 = this.audioCtx.currentTime;
+            try {
+              this.noiseGain.gain.cancelScheduledValues(t1);
+              this.noiseGain.gain.setTargetAtTime(0.02, t1, 0.25);
+            } catch(e){}
+          }
+          box.classList.remove('speaking');
+        };
+        speechSynthesis.speak(utter);
+      } else {
+        // fallback visual timeout
+        setTimeout(()=>{
+          this.speaking = false;
+          if(this.modInterval){ clearInterval(this.modInterval); this.modInterval = null; }
+          box.classList.remove('speaking');
+        }, 1200);
+      }
     }
   };
 
   /* -------------- audio user gesture: resume & init -------------- */
   function ensureAudioOnGesture() {
     function onGesture() {
-      Voice.init();
+      // create and resume audio after gesture
+      try {
+        Voice.init();
+        if(Voice.audioCtx && Voice.audioCtx.state === 'suspended') Voice.audioCtx.resume().catch(()=>{});
+      } catch(e){}
       if(!window.__percyLoopStarted) { startPercyLoop(); window.__percyLoopStarted = true; }
-      // if user had enabled auto before the gesture, start AutoAgent processing now
-      if(AutoAgent && AutoAgent.isEnabled && AutoAgent.isEnabled()) {
-        // process queue (AutoAgent handles missing Tasks API gracefully)
-        // AutoAgent processing happens automatically when enabled
+      if(AutoAgent && AutoAgent.isEnabled && AutoAgent.isEnabled()){
+        // AutoAgent will start processing automatically
       }
       window.removeEventListener('click', onGesture);
       window.removeEventListener('keydown', onGesture);
@@ -523,6 +611,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const next = old + ' [auto-refined]';
         PercyState.updateSeed(id,{message: next});
         UI.say(`🔄 Percy auto-refined seed ${id}`);
+        // safe speak — will highlight text and use speechSynthesis even if audio not initialized
         Voice.speak(`Auto refinement completed on seed ${id}`);
       }
     }catch(e){ console.error(e); }
@@ -541,7 +630,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setInterval(()=>{ selfRewrite(); createNodes(); }, 5000);
   UI.say(`✅ Percy TrueAI v${PERCY_VERSION} initialized`);
 
-  // Expose AutoAgent to console for manual enqueueing/testing
+  // Expose AutoAgent for console usage
   window.AutoAgent = AutoAgent;
 
 });
