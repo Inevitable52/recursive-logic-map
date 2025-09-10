@@ -1,189 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>P. E. R. C. Y - AI (Visualizer Upgrade + AutoAgent)</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>P. E. R. C. Y - AI Visualizer</title>
 <style>
-  /* === Base Styles === */
-  body {
-    margin: 0;
-    font-family: Arial, Helvetica, sans-serif;
-    background: #08080b;
-    color: white;
-    overflow: hidden;
-  }
-
-  #logic-map {
-    position: relative;
-    width: 100vw;
-    height: 100vh;
-    background: #07080a;
-    overflow: hidden;
-  }
-
-  #logic-nodes {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 100%;
-    height: 100%;
-    transform: translate(-50%, -50%) scale(1);
-    transform-origin: center center;
-  }
-
-  /* === Nodes === */
-  .node {
-    position: absolute;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    color: #fff;
-    cursor: pointer;
-    background: radial-gradient(100% 100% at 30% 30%, rgba(255,255,255,0.06), rgba(0,0,0,0.06));
-    border: 2px solid currentColor;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
-    user-select: none;
-    transition: transform .12s ease, filter .12s ease;
-    backdrop-filter: blur(1px);
-    animation: neonGlow 1.5s ease-in-out infinite alternate;
-  }
+  body { margin:0; font-family:Arial,Helvetica,sans-serif; background:#08080b; color:white; overflow:hidden; }
+  #logic-map { position:relative; width:100vw; height:100vh; background:#07080a; overflow:hidden; }
+  #logic-nodes { position:absolute; top:50%; left:50%; width:100%; height:100%; transform:translate(-50%,-50%) scale(1); }
+  .node { position:absolute; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; cursor:pointer;
+         background: radial-gradient(100% 100% at 30% 30%, rgba(255,255,255,0.06), rgba(0,0,0,0.06));
+         border:2px solid currentColor; text-shadow:0 1px 2px rgba(0,0,0,0.6); user-select:none;
+         transition:transform .12s ease, filter .12s ease; backdrop-filter: blur(1px); }
   .node:hover { transform: scale(1.06); filter: brightness(1.15); }
   .node:active { transform: scale(0.98); }
-
-  @keyframes neonGlow {
-    0%,100% { box-shadow: 0 0 3px currentColor, 0 0 8px currentColor, inset 0 0 4px rgba(255,255,255,0.06); }
-    50% { box-shadow: 0 0 6px currentColor, 0 0 14px currentColor, inset 0 0 8px rgba(255,255,255,0.06); }
-  }
-
-  /* === Color Bubbles === */
-  .cyan-bubble { color: #00eaff; }
-  .blue-bubble { color: #27a0ff; }
-  .magenta-bubble { color: #ff4af0; }
-  .red-bubble { color: #ff3b3b; }
-  .orange-bubble { color: #ff9d2e; }
-  .yellow-bubble { color: #ffe44a; }
-  .green-bubble { color: #4caf50; }
-
-  /* === Console & Messages === */
-  .console-line {
-    margin: 2px 0;
-    font-family: ui-monospace, monospace;
-    font-size: 12px;
-    color: #d6d8ff;
-    white-space: pre-wrap;
-  }
-
-  #percy-console {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    max-height: 220px;
-    overflow-y: auto;
-    background: linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.45));
-    padding: 8px;
-  }
-
-  #percy-message {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    padding: 6px;
-    font-size: 14px;
-  }
-
-  /* === Voice Box & Bars === */
-  #voice-box {
-    position: absolute;
-    top: 82px;
-    left: 50%;
-    transform: translateX(-50%) translateY(-10px);
-    background: rgba(5,7,10,0.65);
-    color: #00eaff;
-    padding: 10px 16px;
-    border-radius: 10px;
-    font-size: 14px;
-    max-width: 58%;
-    text-align: center;
-    pointer-events: none;
-    opacity: 0.65;
-    transition: opacity 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
-    z-index: 999;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.6);
-    backdrop-filter: blur(4px) saturate(1.2);
-  }
-  #voice-box.speaking { opacity: 1; transform: translateX(-50%) translateY(0); box-shadow: 0 12px 36px rgba(0,190,255,0.12); }
-  #voice-text { font-weight: 700; font-size: 14px; margin-bottom: 6px; color: #dff9ff; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; text-align: center; }
-
-  #voice-bars {
-    display: flex;
-    justify-content: center;
-    align-items: flex-end;
-    gap: 6px;
-    margin-top: 4px;
-    height: 46px;
-  }
-  #voice-bars .bar {
-    width: 6px;
-    background: #00eaff;
-    border-radius: 2px;
-    opacity: 0.45;
-    transition: height 0.035s linear, opacity 0.06s linear;
-    box-shadow: 0 0 8px rgba(0,234,255,0.08);
-  }
-
-  #voice-wave {
-    display: block;
-    margin: 8px auto 0 auto;
-    background: transparent;
-    border-radius: 6px;
-    width: 380px;
-    height: 80px;
-  }
-
-  /* === Inputs & Controls === */
-  #seed-search, #interpreter-input {
-    position: absolute;
-    left: 10px;
-    width: 240px;
-    padding: 6px 8px;
-    border-radius: 6px;
-    border: 1px solid rgba(255,255,255,0.06);
-    background: rgba(0,0,0,0.5);
-    color: #eaf6ff;
-  }
-  #seed-search { top: 12px; }
-  #interpreter-input { top: 46px; }
-
-  #auto-controls {
-    position: absolute;
-    right: 12px;
-    top: 12px;
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    z-index: 999;
-  }
-  #auto-toggle {
-    padding: 6px 10px;
-    border-radius: 6px;
-    background: rgba(0,0,0,0.5);
-    color: #bfefff;
-    border: 1px solid rgba(255,255,255,0.06);
-    cursor: pointer;
-  }
-  #auto-status { font-size: 12px; color: #bfefff; opacity: 0.8; }
-
-  @media (max-width: 900px) {
-    #voice-wave { width: 280px; height: 60px; }
-    #voice-bars { height: 36px; }
-    #voice-box { max-width: 85%; }
-    #auto-controls { right: 8px; top: 8px; }
-  }
+  .cyan-bubble{color:#00eaff;} .blue-bubble{color:#27a0ff;} .magenta-bubble{color:#ff4af0;}
+  .red-bubble{color:#ff3b3b;} .orange-bubble{color:#ff9d2e;} .yellow-bubble{color:#ffe44a;} .green-bubble{color:#4caf50;}
+  #percy-console{position:absolute;bottom:0;left:0;width:100%;max-height:220px;overflow-y:auto;background:linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.45));padding:8px;font-family:monospace;font-size:12px;}
+  #voice-box{position:absolute;top:82px;left:50%;transform:translateX(-50%) translateY(-10px);background: rgba(5,7,10,0.65);color:#00eaff;padding:10px 16px;border-radius:10px;font-size:14px;max-width:58%;text-align:center;pointer-events:none;opacity:0.65;transition: opacity 0.18s, transform 0.18s, box-shadow 0.18s;z-index:999;backdrop-filter: blur(4px) saturate(1.2);box-shadow:0 6px 18px rgba(0,0,0,0.6);}
+  #voice-text{font-weight:700;color:#dff9ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px;}
+  #voice-box.speaking{opacity:1;transform:translateX(-50%) translateY(0);box-shadow:0 12px 36px rgba(0,190,255,0.12);}
+  #voice-bars{display:flex;justify-content:center;align-items:flex-end;gap:6px;margin-top:4px;height:46px;}
+  #voice-bars .bar{width:6px;background:#00eaff;border-radius:2px;opacity:0.45;transition:height 0.035s linear, opacity 0.06s linear;box-shadow:0 0 8px rgba(0,234,255,0.08);}
+  #voice-wave{display:block;margin:8px auto 0 auto;width:380px;height:80px;background:transparent;border-radius:6px;}
+  #seed-search, #interpreter-input{position:absolute;left:10px;width:240px;padding:6px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.5);color:#eaf6ff;}
+  #seed-search{top:12px;} #interpreter-input{top:46px;}
+  #auto-controls{position:absolute;right:12px;top:12px;display:flex;gap:8px;align-items:center;z-index:999;}
+  #auto-toggle{padding:6px 10px;border-radius:6px;background:rgba(0,0,0,0.5);color:#bfefff;border:1px solid rgba(255,255,255,0.06);cursor:pointer;}
+  #auto-status{font-size:12px;color:#bfefff;opacity:0.8;}
+  @media (max-width:900px){ #voice-wave{width:280px;height:60px} #voice-bars{height:36px} #voice-box{max-width:85%} #auto-controls{right:8px;top:8px} }
 </style>
 </head>
 <body>
@@ -191,8 +36,6 @@
 <div id="logic-map">
   <div id="logic-nodes"></div>
   <div id="percy-console"></div>
-  <div id="percy-message"></div>
-
   <div id="voice-box" aria-live="polite">
     <div id="voice-text"></div>
     <div id="voice-bars"></div>
@@ -200,15 +43,14 @@
   </div>
 </div>
 
-<input id="seed-search" placeholder="Search seeds...">
-<input id="interpreter-input" placeholder="Ask Percy...">
+<input id="seed-search" placeholder="Search seeds..." />
+<input id="interpreter-input" placeholder="Ask Percy..." />
 
 <div id="auto-controls">
   <button id="auto-toggle" title="Enable/disable auto-learn">Auto-Learn: On</button>
   <div id="auto-status">processing</div>
 </div>
 
-<script src="percy-core.js"></script>
-
+<script src="percy.js"></script>
 </body>
 </html>
