@@ -151,11 +151,12 @@ document.getElementById('interpreter-input').addEventListener('keydown',async e=
 UI.say(`✅ Percy TrueAI v${PERCY_VERSION} fully loaded.`);
 createNodes();
 
-/* ---------- Voice Visualizer ---------- */
+/* ---------- Voice Visualizer (Futuristic) ---------- */
+const visContainer = document.getElementById('voice-visualizer');
 const canvas = document.createElement('canvas');
-canvas.width = document.getElementById('voice-visualizer').clientWidth;
-canvas.height = document.getElementById('voice-visualizer').clientHeight;
-document.getElementById('voice-visualizer').appendChild(canvas);
+canvas.width = visContainer.clientWidth;
+canvas.height = visContainer.clientHeight;
+visContainer.appendChild(canvas);
 const ctx = canvas.getContext('2d');
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -163,35 +164,39 @@ const analyser = audioCtx.createAnalyser();
 analyser.fftSize = 512;
 const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-// Hook Percy speak to dummy sinewave for visualization
+// Create continuous sine oscillator (futuristic base tone)
+const osc = audioCtx.createOscillator();
+const gain = audioCtx.createGain();
+osc.type = 'sine';
+osc.frequency.value = 220;
+gain.gain.value = 0.05; // low volume for subtle effect
+osc.connect(gain);
+gain.connect(analyser);
+analyser.connect(audioCtx.destination);
+osc.start();
+
+// Hook Percy speak (optional: add a little spike)
 const originalSpeak = Voice.speak.bind(Voice);
 Voice.speak = (text) => {
   originalSpeak(text);
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.onstart = () => {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = 220;
-    osc.connect(gain);
-    gain.connect(analyser);
-    analyser.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.1);
-  };
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  gain.gain.setTargetAtTime(0.15, audioCtx.currentTime, 0.05);
+  setTimeout(() => gain.gain.setTargetAtTime(0.05, audioCtx.currentTime, 0.05), 150);
 };
 
+// Draw futuristic bars
 function draw() {
   requestAnimationFrame(draw);
   analyser.getByteFrequencyData(dataArray);
-  ctx.fillStyle = '#111';
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+
   const barWidth = canvas.width / dataArray.length;
-  for(let i=0;i<dataArray.length;i++){
-    const barHeight = dataArray[i]/2;
-    ctx.fillStyle = `rgb(${barHeight+100},50,255)`;
-    ctx.fillRect(i*barWidth, canvas.height-barHeight, barWidth, barHeight);
+  for (let i = 0; i < dataArray.length; i++) {
+    const barHeight = dataArray[i] / 1.5;
+    const hue = 200 + barHeight; // blue/purple glow
+    ctx.fillStyle = `hsl(${hue}, 80%, 55%)`;
+    ctx.fillRect(i * barWidth, canvas.height - barHeight, barWidth, barHeight);
   }
 }
 draw();
