@@ -169,23 +169,14 @@ const waveData = new Uint8Array(analyser.fftSize);
 const osc = audioCtx.createOscillator();
 const gain = audioCtx.createGain();
 osc.type = 'sine';
-osc.frequency.value = 220;
-gain.gain.value = 0.03;
+osc.frequency.value = 440; // higher pitch now
+gain.gain.value = 0.03;    // still subtle audio
 osc.connect(gain);
 gain.connect(analyser);
 analyser.connect(audioCtx.destination);
 osc.start();
 
-// Hook Percy speak
-const originalSpeak = Voice.speak.bind(Voice);
-Voice.speak = (text) => {
-  originalSpeak(text);
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  gain.gain.setTargetAtTime(0.15, audioCtx.currentTime, 0.02);
-  setTimeout(() => gain.gain.setTargetAtTime(0.03, audioCtx.currentTime, 0.05), 150);
-};
-
-// Draw bars + sinewave
+// Draw bars + sinewave (more pronounced)
 function draw() {
   requestAnimationFrame(draw);
   analyser.getByteFrequencyData(freqData);
@@ -204,12 +195,13 @@ function draw() {
     ctx.fillRect(i * barWidth, canvas.height - barHeight, barWidth, barHeight);
   }
 
-  // Draw sinewave
+  // Draw sinewave (amplified)
   ctx.beginPath();
   ctx.lineWidth = 2;
-  ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+  ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+  const waveScale = 1.5; // bigger peak-to-peak
   for (let i = 0; i < waveData.length; i++) {
-    const y = (waveData[i] / 255) * canvas.height;
+    const y = ((waveData[i] / 255 - 0.5) * canvas.height * waveScale) + canvas.height / 2;
     const x = (i / waveData.length) * canvas.width;
     if (i === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
