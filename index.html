@@ -30,7 +30,7 @@ body {
     height: 100%;
     transform: translate(-50%, -50%) scale(1);
     transform-origin: center center;
-    transition: none; /* disables staggered pop-in */
+    transition: none; /* disable initial transition to make nodes appear instantly */
 }
 
 /* === Node Styles (Neon Glow Bubbles) === */
@@ -51,25 +51,26 @@ body {
     max-width: 80px;
     max-height: 80px;
     z-index: 1;
-    font-size: unset; /* controlled by JS */
+    font-size: unset; /* dynamically controlled by JS */
     user-select: none;
 
     color: white;
     background: rgba(0,0,0,0.15);
     border: 2px solid currentColor;
     box-shadow: 0 0 12px currentColor, 0 0 24px currentColor, inset 0 0 12px rgba(255,255,255,0.08);
-    opacity: 1;
+    opacity: 1; /* ensures nodes are visible immediately */
     will-change: transform, box-shadow, opacity;
     transition: transform 0.2s ease, box-shadow 0.2s ease, z-index 0.2s ease;
 }
 
+/* Node Hover Effects */
 .node:hover {
     transform: scale(1.35);
     box-shadow: 0 0 24px currentColor, 0 0 48px currentColor, inset 0 0 16px rgba(255,255,255,0.12);
     z-index: 100;
 }
 
-/* Ring Colors */
+/* === Ring Colors (text + glow) === */
 .cyan-bubble      { color: #00eaff; }
 .blue-bubble      { color: #27a0ff; }
 .magenta-bubble   { color: #ff4af0; }
@@ -78,7 +79,7 @@ body {
 .yellow-bubble    { color: #ffe44a; }
 .green-bubble     { color: #4caf50; }
 
-/* Tooltip */
+/* === Tooltip via title attribute === */
 .node::after {
     content: attr(title);
     position: absolute;
@@ -100,7 +101,7 @@ body {
 
 .node:hover::after { opacity: 1; }
 
-/* Console */
+/* === Console Styling === */
 #percy-console {
     position: fixed;
     bottom: 0;
@@ -116,7 +117,7 @@ body {
 
 .console-line { margin: 2px 0; }
 
-/* Status Message */
+/* === Status Message === */
 #percy-message {
     position: fixed;
     top: 10px;
@@ -129,29 +130,29 @@ body {
     z-index: 1000;
 }
 
-/* Locked Node Highlight */
+/* === Locked / ULT Node Highlight === */
 .node.locked {
     border: 2px solid #FFD700;
     box-shadow: 0 0 24px #FFD700, 0 0 48px #FFD700;
 }
 
-/* Zoom Helpers */
+/* === Zoom-Scaling Helpers === */
 #logic-nodes.zoomed .node {
     transition: transform 0.15s ease, font-size 0.15s ease;
 }
 
-/* Responsive */
+/* === Responsive Adjustments === */
 @media (max-width: 768px) {
     .node { font-size: 10px; min-width: 10px; min-height: 10px; }
     .node::after { font-size: 0.65rem; max-width: 150px; }
 }
 
-/* Extra Helpers for Smooth Ring Layout */
+/* === Extra Helpers for Smooth Ring Layout === */
 .node[data-ring] {
     transition: left 0.25s ease, top 0.25s ease;
 }
 
-/* Voice Visualizer */
+/* === Voice Visualizer Canvas === */
 #voice-visualizer {
     position: absolute;
     bottom: 0;
@@ -170,52 +171,7 @@ body {
     <div id="percy-console"></div>
     <div id="percy-message"></div>
 </div>
-
 <canvas id="voice-visualizer"></canvas>
-
-<script>
-// === Voice Visualizer Setup ===
-const canvas = document.getElementById('voice-visualizer');
-const ctx = canvas.getContext('2d');
-function resizeCanvas(){ canvas.width = window.innerWidth; canvas.height = 120; }
-window.addEventListener('resize', resizeCanvas); resizeCanvas();
-
-const visualizer = { amplitude: 0, decay: 0.93, setActive(val){ this.amplitude=Math.max(this.amplitude,val); } };
-
-function drawVisualizer(){
-    requestAnimationFrame(drawVisualizer);
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    const amp = visualizer.amplitude;
-    visualizer.amplitude *= visualizer.decay;
-    const t = Date.now() * 0.005;
-
-    // SINEWAVE
-    ctx.beginPath();
-    ctx.moveTo(0,canvas.height/2);
-    for(let x=0;x<canvas.width;x++){
-        const y = canvas.height/2 + Math.sin(x/15 + t) * 10 + amp/2;
-        ctx.lineTo(x,y);
-    }
-    ctx.strokeStyle = `hsl(${(t*50)%360},100%,70%)`;
-    ctx.lineWidth = 2;
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = `hsl(${(t*50)%360},100%,70%)`;
-    ctx.stroke();
-
-    // Vertical Bars
-    const barCount = 40, barWidth = canvas.width/barCount;
-    for(let i=0;i<barCount;i++){
-        const barHeight=(amp/3) * Math.abs(Math.sin(i/3 + t)) + 10;
-        const hue=(t*50+i*6)%360;
-        ctx.fillStyle=`hsla(${hue},100%,70%,0.5)`;
-        ctx.shadowBlur=15;
-        ctx.shadowColor=`hsla(${hue},100%,70%,0.7)`;
-        ctx.fillRect(i*barWidth, canvas.height-barHeight, barWidth-2, barHeight);
-    }
-}
-drawVisualizer();
-</script>
 
 </body>
 </html>
