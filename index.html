@@ -24,18 +24,20 @@
   .console-line { margin:2px 0; font-family:ui-monospace,Monaco,Consolas, monospace; font-size:12px; color:#d6d8ff; }
   #percy-console { position:fixed; bottom:0; left:0; width:35%; max-height:40%; overflow:auto; background:rgba(0,0,0,0.65); padding:6px; border-top-right-radius:12px; border:1px solid #444; }
   #percy-message { position:fixed; bottom:0; left:35%; width:65%; padding:6px; background:rgba(0,0,0,0.65); border-top-left-radius:12px; border:1px solid #444; }
+  #voice-visualizer { position:fixed; bottom:0; right:0; width:35%; height:150px; background:rgba(0,0,0,0.6); border:1px solid #444; border-top-left-radius:12px; z-index:999; }
 </style>
 </head>
 <body>
 <div id="logic-map"><div id="logic-nodes"></div></div>
 <div id="percy-console"></div>
 <div id="percy-message"></div>
+<div id="voice-visualizer"></div>
 <input id="seed-search" placeholder="Search seeds" style="position:fixed;top:12px;left:12px;padding:6px;width:200px;z-index:9999;">
 <input id="interpreter-input" placeholder="Ask Percy" style="position:fixed;top:12px;left:220px;padding:6px;width:300px;z-index:9999;">
 
 <script type="module">
 /* =========================
-Percy TrueAI - All JS
+Percy TrueAI JS
 ========================= */
 const PERCY_ID="Percy-ULT", PERCY_VERSION="8.3.3-neon-bubbles-voice (merged)";
 const OWNER={primary:"Fabian",secondary:"Lorena"};
@@ -109,12 +111,7 @@ function applyTransform(){logicNodes.style.transform=`translate(-50%,-50%) trans
 function percyRespond(id,data){const msg=typeof data==='string'?data:(data?.message??'');UI.say(`↳ ${msg}`);UI.setStatus(msg);Voice.speak(msg);}
 function refreshNodes(){createNodes();UI.say(`🔄 Logic map refreshed with ${Object.keys(seeds).length} seeds`);}
 
-/* ---------- Part C: Nodes, Rings, Autonomy, Ask ---------- */
-PercyState.rewriteSelf=function({codeChanges}){if(!Array.isArray(codeChanges)||!codeChanges.length){UI.say("⚠ Percy rewriteSelf: no codeChanges provided");return;}codeChanges.forEach(({find,replace})=>{try{const scripts=Array.from(document.querySelectorAll('script')).filter(s=>s.textContent.includes('PercyState'));if(!scripts.length)throw new Error("Cannot locate Percy script for rewrite");scripts.forEach(tag=>{tag.textContent=tag.textContent.replace(find,replace);});UI.say("✅ Percy rewriteSelf applied successfully");}catch(e){UI.say(`❌ Percy rewriteSelf error: ${e.message}`);}});};
-window.percyAsk=async function(promptText){if(!promptText)return null;return new Promise(resolve=>{const r=window.prompt(`🤖 Percy asks:\n${promptText}`);resolve(r);});};
-
-UI.say("🧩 Percy Part C (self-mod + interactive) loaded.");
-
+/* ---------- Nodes, Rings, Autonomy ---------- */
 function createNodes(){
   logicNodes.innerHTML='';
   const width=logicMap.clientWidth||800, height=logicMap.clientHeight||600;
@@ -127,7 +124,6 @@ function createNodes(){
   layoutRing(701,800,width,height,width/14,'green-bubble',12);
   applyTransform();
 }
-
 function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
   const ringSeeds=Object.entries(seeds).filter(([id])=>{const n=parseInt(id.slice(1));return n>=startId&&n<=endId;});
   const total=ringSeeds.length||(endId-startId+1);
@@ -145,26 +141,61 @@ function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
     logicNodes.appendChild(node);
   }
 }
-
-async function startAutonomyLoop(){
-  while(true){
-    PercyState.evaluateSelf();
-    await new Promise(r=>setTimeout(r,Math.floor(2000+Math.random()*4000)));
-  }
-}
+async function startAutonomyLoop(){while(true){PercyState.evaluateSelf();await new Promise(r=>setTimeout(r,Math.floor(2000+Math.random()*4000)));}}
 startAutonomyLoop();
 
-/* ---------- Hook Inputs ---------- */
-document.getElementById('seed-search').addEventListener('input',e=>{
-  const q=e.target.value.toUpperCase();
-  Array.from(logicNodes.children).forEach(n=>{n.style.display=n.textContent.includes(q)?'flex':'none';});
-});
-document.getElementById('interpreter-input').addEventListener('keydown',async e=>{
-  if(e.key==='Enter'){const r=await window.percyAsk(e.target.value);if(r)UI.say(`↳ ${r}`);e.target.value='';}
-});
+/* ---------- Inputs ---------- */
+document.getElementById('seed-search').addEventListener('input',e=>{const q=e.target.value.toUpperCase();Array.from(logicNodes.children).forEach(n=>{n.style.display=n.textContent.includes(q)?'flex':'none';});});
+document.getElementById('interpreter-input').addEventListener('keydown',async e=>{if(e.key==='Enter'){const r=await window.percyAsk(e.target.value);if(r)UI.say(`↳ ${r}`);e.target.value='';}});
 
 UI.say(`✅ Percy TrueAI v${PERCY_VERSION} fully loaded.`);
 createNodes();
+
+/* ---------- Voice Visualizer ---------- */
+const canvas = document.createElement('canvas');
+canvas.width = document.getElementById('voice-visualizer').clientWidth;
+canvas.height = document.getElementById('voice-visualizer').clientHeight;
+document.getElementById('voice-visualizer').appendChild(canvas);
+const ctx = canvas.getContext('2d');
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const analyser = audioCtx.createAnalyser();
+analyser.fftSize = 512;
+const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+// Hook Percy speak to dummy sinewave for visualization
+const originalSpeak = Voice.speak.bind(Voice);
+Voice.speak = (text) => {
+  originalSpeak(text);
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.onstart = () => {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 220;
+    osc.connect(gain);
+    gain.connect(analyser);
+    analyser.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.1);
+  };
+};
+
+function draw() {
+  requestAnimationFrame(draw);
+  analyser.getByteFrequencyData(dataArray);
+  ctx.fillStyle = '#111';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const barWidth = canvas.width / dataArray.length;
+  for(let i=0;i<dataArray.length;i++){
+    const barHeight = dataArray[i]/2;
+    ctx.fillStyle = `rgb(${barHeight+100},50,255)`;
+    ctx.fillRect(i*barWidth, canvas.height-barHeight, barWidth, barHeight);
+  }
+}
+draw();
+
 </script>
 </body>
 </html>
