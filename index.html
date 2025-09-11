@@ -94,25 +94,43 @@ const UI = {
   setStatus(txt){ const m=this.elMsg(); if(m)m.textContent=txt; }
 };
 
-// ==== VOICE ====
-const Voice = { enabled:true, lastSpoken:0, speak(text){ try{ if(!this.enabled||!('speechSynthesis' in window)||!text)return; const now=Date.now(); if(now-this.lastSpoken<300)return; this.lastSpoken=now; const u=new SpeechSynthesisUtterance(text); const pick=v=>v.find(vv=>/en(-|_|$)/i.test(vv.lang))||v[0]; const ensureVoice=()=>{ const vs=speechSynthesis.getVoices(); if(vs?.length){ u.voice=pick(vs); speechSynthesis.speak(u);} else { speechSynthesis.onvoiceschanged=()=>{ const v2=speechSynthesis.getVoices(); u.voice=pick(v2); speechSynthesis.speak(u);}; }}; u.rate=1.0; u.pitch=1.0; u.volume=1.0; ensureVoice(); }catch{} } };
+// ==== VOICE + VISUALIZER ====
+const Voice = {
+  enabled:true,
+  lastSpoken:0,
+  speakQueue:[],
+  isSpeaking:false,
+  speak(text){
+    if(!this.enabled||!('speechSynthesis' in window)||!text) return;
+    this.speakQueue.push(text);
+    if(this.isSpeaking) return;
+    this.processQueue();
+  },
+  processQueue(){
+    if(!this.speakQueue.length){ this.isSpeaking=false; return; }
+    this.isSpeaking=true;
+    const text = this.speakQueue.shift();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0;
+    const pick=v=>v.find(vv=>/en(-|_|$)/i.test(vv.lang))||v[0];
+    const voices = speechSynthesis.getVoices();
+    if(voices.length) u.voice = pick(voices);
+    u.onend = ()=>this.processQueue();
+    speechSynthesis.speak(u);
 
-// ==== LOGIC MAP ====
+    // Visualizer reaction
+    visualizer.setActive(100); // simple fixed amplitude
+  }
+};
+
+// ==== LOGIC MAP & NODES ====
 const logicMap=document.getElementById('logic-map');
 const logicNodes=document.getElementById('logic-nodes');
 let zoomLevel=1,translateX=0,translateY=0;
-
-// ---- Transform function must be defined BEFORE createNodes ----
-function applyTransform(){
-  logicNodes.style.transform = `translate(-50%,-50%) translate(${translateX}px,${translateY}px) scale(${zoomLevel})`;
-  logicNodes.style.transformOrigin = 'center center';
-  document.querySelectorAll('.node').forEach(n => n.style.transition = 'transform .15s ease');
-}
-
-// ---- Node layout ----
+function applyTransform(){ logicNodes.style.transform = `translate(-50%,-50%) translate(${translateX}px,${translateY}px) scale(${zoomLevel})`; logicNodes.style.transformOrigin='center center'; }
 function createNodes(){
   logicNodes.innerHTML='';
-  const width=logicMap.clientWidth||800, height=logicMap.clientHeight||600;
+  const width=logicMap.clientWidth||800,height=logicMap.clientHeight||600;
   layoutRing(80,200,width,height,width/2.5,'cyan-bubble',60);
   layoutRing(201,300,width,height,width/3.4,'blue-bubble',45);
   layoutRing(301,400,width,height,width/4.8,'magenta-bubble',30);
@@ -122,7 +140,6 @@ function createNodes(){
   layoutRing(701,800,width,height,width/14,'green-bubble',12);
   applyTransform();
 }
-
 function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
   const ringSeeds=Object.entries(seeds).filter(([id])=>{const num=parseInt(id.replace("G","")); return num>=startId&&num<=endId;});
   const total=Math.max(1,ringSeeds.length);
@@ -132,12 +149,10 @@ function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
     const x=centerX+radius*Math.cos(angle)-nodeSize/2;
     const y=centerY+radius*Math.sin(angle)-nodeSize/2;
     const node=document.createElement('div');
-    node.classList.add('node'); 
-    if(colorClass) node.classList.add(colorClass);
+    node.classList.add('node'); if(colorClass) node.classList.add(colorClass);
     node.style.width=node.style.height=`${nodeSize}px`;
     node.style.left=`${x}px`; node.style.top=`${y}px`;
-    node.textContent=id;
-    node.title=(data&&data.message)?data.message:id;
+    node.textContent=id; node.title=(data&&data.message)?data.message:id;
     node.addEventListener('click',()=>percyRespond(id,data));
     node.addEventListener('mouseenter',()=>UI.setStatus(data?.message??''));
     logicNodes.appendChild(node);
@@ -146,8 +161,7 @@ function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
 
 // ==== BUBBLE GLOW ANIMATION ====
 function animateBubbles(){
-  const nodes = document.querySelectorAll('.node');
-  nodes.forEach(n=>{
+  document.querySelectorAll('.node').forEach(n=>{
     const glow = 4 + Math.random()*6;
     n.style.boxShadow = `0 0 ${glow*2}px ${n.style.color}, 0 0 ${glow*4}px ${n.style.color}, inset 0 0 ${glow*3}px rgba(255,255,255,0.08)`;
   });
@@ -156,7 +170,7 @@ function animateBubbles(){
 
 // ==== PERCY RESPOND ====
 function percyRespond(id,data){
-  if(!data)return;
+  if(!data) return;
   UI.say(`✨ Percy activated seed ${id}: ${data.message}`);
   Voice.speak(`Processing seed ${id}`);
 }
@@ -180,49 +194,48 @@ document.getElementById('seed-search').addEventListener('input',e=>{
 // ==== ZOOM & PAN ====
 logicMap.addEventListener('wheel', e=>{
   e.preventDefault();
-  const factor = 0.1;
-  zoomLevel *= e.deltaY < 0 ? 1+factor : 1-factor;
-  zoomLevel = Math.min(Math.max(0.2, zoomLevel), 6);
+  const factor=0.1;
+  zoomLevel *= e.deltaY<0?1+factor:1-factor;
+  zoomLevel = Math.min(Math.max(0.2, zoomLevel),6);
   applyTransform();
 });
-let isDragging=false, lastX=0, lastY=0;
-logicMap.addEventListener('mousedown', e=>{ isDragging=true; lastX=e.clientX; lastY=e.clientY; });
-logicMap.addEventListener('mousemove', e=>{
-  if(isDragging){
-    const dx=e.clientX-lastX, dy=e.clientY-lastY;
-    translateX += dx; translateY += dy; lastX=e.clientX; lastY=e.clientY;
-    applyTransform();
-  }
+let isDragging=false,lastX=0,lastY=0;
+logicMap.addEventListener('mousedown',e=>{isDragging=true; lastX=e.clientX; lastY=e.clientY;});
+logicMap.addEventListener('mousemove',e=>{
+  if(isDragging){ const dx=e.clientX-lastX, dy=e.clientY-lastY; translateX+=dx; translateY+=dy; lastX=e.clientX; lastY=e.clientY; applyTransform(); }
 });
-logicMap.addEventListener('mouseup', ()=>{ isDragging=false; });
-logicMap.addEventListener('mouseleave', ()=>{ isDragging=false; });
+logicMap.addEventListener('mouseup',()=>{isDragging=false;});
+logicMap.addEventListener('mouseleave',()=>{isDragging=false;});
 
 // ==== AUTO-LOOP & SELF-REWRITE ====
-function selfRewrite(){
-  try{
-    const keys = Object.keys(PercyState.gnodes);
-    if(!keys.length) return;
-    const id = keys[Math.floor(Math.random()*keys.length)];
-    const seed = PercyState.gnodes[id];
-    if(seed && Math.random()<0.5){
-      const oldMsg = seed.message;
-      const newMsg = oldMsg + ' [auto-refined]';
-      PercyState.updateSeed(id,{message:newMsg});
-      UI.say(`🔄 Percy auto-refined seed ${id}`);
-      Voice.speak(`Auto refinement completed on seed ${id}`);
-    }
-  }catch(e){ console.error(e); }
-}
+function selfRewrite(){ try{ const keys=Object.keys(PercyState.gnodes); if(!keys.length) return; const id=keys[Math.floor(Math.random()*keys.length)]; const seed=PercyState.gnodes[id]; if(seed && Math.random()<0.5){ const oldMsg=seed.message; const newMsg=oldMsg+' [auto-refined]'; PercyState.updateSeed(id,{message:newMsg}); UI.say(`🔄 Percy auto-refined seed ${id}`); Voice.speak(`Auto refinement completed on seed ${id}`); }}catch(e){console.error(e);} }
+let autoLoopInterval=null;
+function startPercyLoop(){ if(autoLoopInterval) clearInterval(autoLoopInterval); autoLoopInterval=setInterval(()=>{ PercyState.evaluateSelf(); createNodes(); selfRewrite(); },5000); }
 
-let autoLoopInterval = null;
-function startPercyLoop(){
-  if(autoLoopInterval) clearInterval(autoLoopInterval);
-  autoLoopInterval = setInterval(()=>{
-    PercyState.evaluateSelf();
-    createNodes();
-    selfRewrite();
-  }, 5000);
+// ==== VOICE VISUALIZER ====
+const canvas = document.getElementById('voice-visualizer');
+const ctx = canvas.getContext('2d');
+function resizeCanvas(){ canvas.width=window.innerWidth; canvas.height=120; }
+window.addEventListener('resize',resizeCanvas); resizeCanvas();
+
+const visualizer = { amplitude:0, decay:0.95, setActive(val){ this.amplitude=Math.max(this.amplitude,val); } };
+function drawVisualizer(){
+  requestAnimationFrame(drawVisualizer);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const amp = visualizer.amplitude;
+  visualizer.amplitude *= visualizer.decay;
+
+  ctx.beginPath();
+  ctx.moveTo(0,canvas.height/2);
+  for(let x=0;x<canvas.width;x++){
+    const y = canvas.height/2 + Math.sin((x/20)) * 10 + amp/2;
+    ctx.lineTo(x,y);
+  }
+  ctx.strokeStyle='rgba(0,255,255,0.6)';
+  ctx.lineWidth=2;
+  ctx.stroke();
 }
+drawVisualizer();
 
 // ==== INIT ====
 createNodes();
@@ -233,5 +246,6 @@ Voice.speak(`Percy TrueAI online`);
 
 });
 </script>
+
 </body>
 </html>
