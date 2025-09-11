@@ -166,17 +166,40 @@ const freqData = new Uint8Array(analyser.frequencyBinCount);
 const waveData = new Uint8Array(analyser.fftSize);
 
 // Continuous subtle oscillator
+const visContainer = document.getElementById('voice-visualizer');
+const canvas = document.createElement('canvas');
+canvas.width = visContainer.clientWidth;
+canvas.height = visContainer.clientHeight;
+visContainer.appendChild(canvas);
+const ctx = canvas.getContext('2d');
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const analyser = audioCtx.createAnalyser();
+analyser.fftSize = 512;
+const freqData = new Uint8Array(analyser.frequencyBinCount);
+const waveData = new Uint8Array(analyser.fftSize);
+
+// Continuous subtle oscillator
 const osc = audioCtx.createOscillator();
 const gain = audioCtx.createGain();
 osc.type = 'sine';
-osc.frequency.value = 440; // higher pitch now
-gain.gain.value = 0.03;    // still subtle audio
+osc.frequency.value = 220;
+gain.gain.value = 0.03;
 osc.connect(gain);
 gain.connect(analyser);
 analyser.connect(audioCtx.destination);
 osc.start();
 
-// Draw bars + sinewave (more pronounced)
+// Hook Percy speak
+const originalSpeak = Voice.speak.bind(Voice);
+Voice.speak = (text) => {
+  originalSpeak(text);
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  gain.gain.setTargetAtTime(0.15, audioCtx.currentTime, 0.02);
+  setTimeout(() => gain.gain.setTargetAtTime(0.03, audioCtx.currentTime, 0.05), 150);
+};
+
+// Draw bars + sinewave
 function draw() {
   requestAnimationFrame(draw);
   analyser.getByteFrequencyData(freqData);
@@ -195,13 +218,12 @@ function draw() {
     ctx.fillRect(i * barWidth, canvas.height - barHeight, barWidth, barHeight);
   }
 
-  // Draw sinewave (amplified)
+  // Draw sinewave
   ctx.beginPath();
   ctx.lineWidth = 2;
-  ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-  const waveScale = 1.5; // bigger peak-to-peak
+  ctx.strokeStyle = 'rgba(255,255,255,0.7)';
   for (let i = 0; i < waveData.length; i++) {
-    const y = ((waveData[i] / 255 - 0.5) * canvas.height * waveScale) + canvas.height / 2;
+    const y = (waveData[i] / 255) * canvas.height;
     const x = (i / waveData.length) * canvas.width;
     if (i === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
