@@ -185,12 +185,14 @@ Voice.speak = (text) => {
   setTimeout(() => gain.gain.setTargetAtTime(0.03, audioCtx.currentTime, 0.05), 150);
 };
 
-// Draw bars + sinewave
+let phase = 0; // global variable
+
 function draw() {
   requestAnimationFrame(draw);
   analyser.getByteFrequencyData(freqData);
   analyser.getByteTimeDomainData(waveData);
 
+  // Clear canvas
   ctx.fillStyle = 'rgba(0,0,0,0.2)';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -204,20 +206,24 @@ function draw() {
     ctx.fillRect(i * barWidth, canvas.height - barHeight, barWidth, barHeight);
   }
 
-  // Draw sinewave
+  // Draw sinewave (amplified, moving)
   ctx.beginPath();
   ctx.lineWidth = 2;
-  ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+  ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+  const waveScale = 3.0; // bigger visual amplitude
+  const speed = 0.25; // adjust for horizontal motion speed
   for (let i = 0; i < waveData.length; i++) {
-    const y = (waveData[i] / 255) * canvas.height;
-    const x = (i / waveData.length) * canvas.width;
+    const y = ((waveData[i] / 255 - 0.5) * canvas.height * waveScale) + canvas.height / 2;
+    const x = ((i / waveData.length + phase) % 1) * canvas.width;
     if (i === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   }
   ctx.stroke();
+
+  phase += speed / waveData.length; // increment phase each frame
 }
 
-draw();
+  draw();
 
 </script>
 </body>
