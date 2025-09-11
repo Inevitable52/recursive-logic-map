@@ -5,26 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Percy TrueAI</title>
 <style>
-  body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; overflow:hidden; }
-  #logic-map { background:#0a0a0f; position:relative; width:100vw; height:100vh; overflow:hidden; }
-  #logic-nodes { position:absolute; top:50%; left:50%; width:100%; height:100%; transform:translate(-50%,-50%) scale(1); }
-  .node { position:absolute; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; cursor:pointer;
-         background: radial-gradient(100% 100% at 30% 30%, rgba(255,255,255,0.10), rgba(0,0,0,0.10));
-         border:2px solid currentColor;
-         box-shadow:0 0 6px currentColor, 0 0 14px currentColor, inset 0 0 12px rgba(255,255,255,0.08);
-         text-shadow:0 1px 2px rgba(0,0,0,0.6);
-         user-select:none; transition:transform .15s ease, box-shadow .15s ease, filter .15s ease; backdrop-filter: blur(1px);}
-  .node:hover { transform: scale(1.08); filter: brightness(1.15); }
-  .node:active { transform: scale(0.98); }
-  .cyan-bubble{color:#00eaff;}
-  .blue-bubble{color:#27a0ff;}
-  .magenta-bubble{color:#ff4af0;}
-  .red-bubble{color:#ff3b3b;}
-  .orange-bubble{color:#ff9d2e;}
-  .yellow-bubble{color:#ffe44a;}
-  .green-bubble{color:#4caf50;}
-  .console-line{margin:2px 0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-size:12px;color:#d6d8ff;}
-  #voice-visualizer { position:absolute; bottom:0; left:0; width:100%; height:120px; background:rgba(0,0,0,0.6); }
+body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; overflow:hidden; }
+#logic-map { background:#0a0a0f; position:relative; width:100vw; height:100vh; overflow:hidden; }
+#logic-nodes { position:absolute; top:50%; left:50%; width:100%; height:100%; transform:translate(-50%,-50%) scale(1); }
+.node { position:absolute; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; cursor:pointer;
+       background: radial-gradient(100% 100% at 30% 30%, rgba(255,255,255,0.10), rgba(0,0,0,0.10));
+       border:2px solid currentColor;
+       box-shadow:0 0 6px currentColor, 0 0 14px currentColor, inset 0 0 12px rgba(255,255,255,0.08);
+       text-shadow:0 1px 2px rgba(0,0,0,0.6);
+       user-select:none; transition:transform .15s ease, box-shadow .15s ease, filter .15s ease; backdrop-filter: blur(1px);}
+.node:hover { transform: scale(1.08); filter: brightness(1.15); }
+.node:active { transform: scale(0.98); }
+.cyan-bubble{color:#00eaff;}
+.blue-bubble{color:#27a0ff;}
+.magenta-bubble{color:#ff4af0;}
+.red-bubble{color:#ff3b3b;}
+.orange-bubble{color:#ff9d2e;}
+.yellow-bubble{color:#ffe44a;}
+.green-bubble{color:#4caf50;}
+.console-line{margin:2px 0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-size:12px;color:#d6d8ff;}
+#voice-visualizer { position:absolute; bottom:0; left:0; width:100%; height:120px; background:rgba(0,0,0,0.6); }
+input { z-index: 10; }
 </style>
 </head>
 <body>
@@ -101,6 +102,14 @@ const logicMap=document.getElementById('logic-map');
 const logicNodes=document.getElementById('logic-nodes');
 let zoomLevel=1,translateX=0,translateY=0;
 
+// ---- Transform function must be defined BEFORE createNodes ----
+function applyTransform(){
+  logicNodes.style.transform = `translate(-50%,-50%) translate(${translateX}px,${translateY}px) scale(${zoomLevel})`;
+  logicNodes.style.transformOrigin = 'center center';
+  document.querySelectorAll('.node').forEach(n => n.style.transition = 'transform .15s ease');
+}
+
+// ---- Node layout ----
 function createNodes(){
   logicNodes.innerHTML='';
   const width=logicMap.clientWidth||800, height=logicMap.clientHeight||600;
@@ -135,7 +144,7 @@ function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
   });
 }
 
-// ==== BUBBLE GLOW ANIMATION FIXED ====
+// ==== BUBBLE GLOW ANIMATION ====
 function animateBubbles(){
   const nodes = document.querySelectorAll('.node');
   nodes.forEach(n=>{
@@ -145,8 +154,30 @@ function animateBubbles(){
   requestAnimationFrame(animateBubbles);
 }
 
-// ==== ZOOM, PAN, INTERFACE & PERCY LOGIC ====
-// [Keep all existing logic from your script exactly as-is]
+// ==== PERCY RESPOND ====
+function percyRespond(id,data){
+  if(!data)return;
+  UI.say(`✨ Percy activated seed ${id}: ${data.message}`);
+  Voice.speak(`Processing seed ${id}`);
+}
+
+// ==== INTERFACE ====
+document.getElementById('interpreter-input').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    const q=e.target.value.trim(); if(!q)return; e.target.value='';
+    UI.say(`💬 You asked: ${q}`);
+    Voice.speak(`You asked: ${q}`);
+    setTimeout(()=>{ PercyState.autonomousThought(); createNodes(); },200);
+  }
+});
+document.getElementById('seed-search').addEventListener('input',e=>{
+  const val=e.target.value.toUpperCase(); 
+  document.querySelectorAll('.node').forEach(n=>{
+    n.style.display=n.textContent.includes(val)?'flex':'none';
+  });
+});
+
+// ==== ZOOM & PAN ====
 logicMap.addEventListener('wheel', e=>{
   e.preventDefault();
   const factor = 0.1;
@@ -154,7 +185,6 @@ logicMap.addEventListener('wheel', e=>{
   zoomLevel = Math.min(Math.max(0.2, zoomLevel), 6);
   applyTransform();
 });
-
 let isDragging=false, lastX=0, lastY=0;
 logicMap.addEventListener('mousedown', e=>{ isDragging=true; lastX=e.clientX; lastY=e.clientY; });
 logicMap.addEventListener('mousemove', e=>{
@@ -167,26 +197,37 @@ logicMap.addEventListener('mousemove', e=>{
 logicMap.addEventListener('mouseup', ()=>{ isDragging=false; });
 logicMap.addEventListener('mouseleave', ()=>{ isDragging=false; });
 
-document.getElementById('interpreter-input').addEventListener('keydown',e=>{
-  if(e.key==='Enter'){
-    const q=e.target.value.trim(); if(!q)return; e.target.value='';
-    UI.say(`💬 You asked: ${q}`);
-    Voice.speak(`You asked: ${q}`);
-    setTimeout(()=>{ PercyState.autonomousThought(); createNodes(); },200);
-  }
-});
+// ==== AUTO-LOOP & SELF-REWRITE ====
+function selfRewrite(){
+  try{
+    const keys = Object.keys(PercyState.gnodes);
+    if(!keys.length) return;
+    const id = keys[Math.floor(Math.random()*keys.length)];
+    const seed = PercyState.gnodes[id];
+    if(seed && Math.random()<0.5){
+      const oldMsg = seed.message;
+      const newMsg = oldMsg + ' [auto-refined]';
+      PercyState.updateSeed(id,{message:newMsg});
+      UI.say(`🔄 Percy auto-refined seed ${id}`);
+      Voice.speak(`Auto refinement completed on seed ${id}`);
+    }
+  }catch(e){ console.error(e); }
+}
 
-document.getElementById('seed-search').addEventListener('input',e=>{
-  const val=e.target.value.toUpperCase(); 
-  document.querySelectorAll('.node').forEach(n=>{
-    n.style.display=n.textContent.includes(val)?'flex':'none';
-  });
-});
+let autoLoopInterval = null;
+function startPercyLoop(){
+  if(autoLoopInterval) clearInterval(autoLoopInterval);
+  autoLoopInterval = setInterval(()=>{
+    PercyState.evaluateSelf();
+    createNodes();
+    selfRewrite();
+  }, 5000);
+}
 
+// ==== INIT ====
 createNodes();
-PercyState.evaluateSelf();
 animateBubbles();
-
+startPercyLoop();
 UI.say(`✅ Percy TrueAI v${PERCY_VERSION} initialized`);
 Voice.speak(`Percy TrueAI online`);
 
