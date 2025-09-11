@@ -1,4 +1,4 @@
-/* === Percy Phase 8.3.2 CSS (Neon Glow Bubbles Edition) === */
+/* === Percy Phase 8.3.4 CSS (Neon Glow Bubbles + Voice Visualizer) === */
 
 body {
     margin: 0;
@@ -26,7 +26,6 @@ body {
     transform-origin: center center;
     transition: transform 0.2s ease-out;
     will-change: transform;
-    display: block;
 }
 
 /* === Node Styles (Neon Glow Bubbles) === */
@@ -48,30 +47,30 @@ body {
     max-width: 80px;
     max-height: 80px;
     z-index: 1;
-    font-size: unset; /* controlled dynamically by JS */
+    font-size: unset; /* dynamically controlled by JS */
     user-select: none;
 
-    color: white; /* fallback text */
-    background: rgba(0,0,0,0.15); /* translucent bubble center */
-    border: 2px solid currentColor; /* neon edge */
-    box-shadow: 0 0 12px currentColor, 0 0 24px currentColor; /* glowing aura */
+    color: white;
+    background: rgba(0,0,0,0.15);
+    border: 2px solid currentColor;
+    box-shadow: 0 0 12px currentColor, 0 0 24px currentColor, inset 0 0 12px rgba(255,255,255,0.08);
 }
 
 /* Node Hover Effects */
 .node:hover {
     transform: scale(1.35);
-    box-shadow: 0 0 24px currentColor, 0 0 48px currentColor;
+    box-shadow: 0 0 24px currentColor, 0 0 48px currentColor, inset 0 0 16px rgba(255,255,255,0.12);
     z-index: 100;
 }
 
-/* === Neon Ring Colors (use as text + glow color) === */
-.blue-ring      { color: #4A90E2; }
-.purple-ring    { color: #CDA4FF; }
-.red-ring       { color: #FF6B6B; }
-.crimson-ring   { color: #DC143C; }
-.gold-ring      { color: #FFD700; }
-.neon-pink-ring { color: #FF6EC7; }
-.teal-ring      { color: #1DE9B6; }
+/* === Ring Colors (text + glow) === */
+.cyan-bubble      { color: #00eaff; }
+.blue-bubble      { color: #27a0ff; }
+.magenta-bubble   { color: #ff4af0; }
+.red-bubble       { color: #ff3b3b; }
+.orange-bubble    { color: #ff9d2e; }
+.yellow-bubble    { color: #ffe44a; }
+.green-bubble     { color: #4caf50; }
 
 /* === Tooltip via title attribute === */
 .node::after {
@@ -144,4 +143,15 @@ body {
 /* === Extra Helpers for Smooth Ring Layout === */
 .node[data-ring] {
     transition: left 0.25s ease, top 0.25s ease;
+}
+
+/* === Voice Visualizer Canvas === */
+#voice-visualizer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 120px;
+    background: rgba(0,0,0,0.6);
+    z-index: 500;
 }
