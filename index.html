@@ -3,199 +3,91 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>P.E.R.C.Y AI</title>
+<title>Percy + Audio Visualizer</title>
 <style>
-  /* === General === */
   body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #111;
-    color: white;
-    overflow: hidden;
+    margin:0; 
+    background:#111; 
+    color:white; 
+    overflow:hidden;
+    font-family:Arial,sans-serif;
   }
-
-  /* === Logic Map Container === */
-  #logic-map {
-    position: relative;
-    width: 100vw;
-    height: 100vh;
-    background: #0a0a0f;
-    overflow: hidden;
-  }
-
-  /* === Node Container === */
-  #logic-nodes {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 100%;
-    height: 100%;
-    transform: translate(-50%, -50%) scale(1);
-  }
-
-  .node {
-    position: absolute;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    color: #fff;
-    cursor: pointer;
-    background: radial-gradient(100% 100% at 30% 30%, rgba(255,255,255,0.1), rgba(0,0,0,0.1));
-    border: 2px solid currentColor;
-    box-shadow: 0 0 6px currentColor, 0 0 14px currentColor, inset 0 0 12px rgba(255,255,255,0.08);
-    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
-    user-select: none;
-    transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
-    backdrop-filter: blur(1px);
-  }
-  .node:hover { transform: scale(1.08); filter: brightness(1.15); }
-  .node:active { transform: scale(0.98); }
-
-  /* Bubble colors */
-  .cyan-bubble{ color:#00eaff; }
-  .blue-bubble{ color:#27a0ff; }
-  .magenta-bubble{ color:#ff4af0; }
-  .red-bubble{ color:#ff3b3b; }
-  .orange-bubble{ color:#ff9d2e; }
-  .yellow-bubble{ color:#ffe44a; }
-  .pink-bubble{ color:#ff6bd8; }
-
-  /* === Voice Visualizer === */
-  #voice-visualizer {
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 2px;
-    padding: 8px;
-    pointer-events: none;
-    z-index: 999;
-  }
-
-  .bar {
-    width: 4px;
-    height: 20px;
-    background: #27a0ff;
-    border-radius: 2px;
-    transition: height 0.05s ease;
-  }
-
-  #sinewave {
-    position: absolute;
-    bottom: 50px;
-    left: 0;
-    width: 100%;
-    height: 80px;
-    pointer-events: none;
-  }
-
-  /* === Console === */
-  #percy-console {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    max-height: 150px;
-    overflow-y: auto;
-    background: rgba(0,0,0,0.6);
-    padding: 6px;
-    font-size: 12px;
-    z-index: 999;
-  }
-
-  .console-line {
-    margin: 2px 0;
-    font-family: monospace;
-    color: #d6d8ff;
-  }
-
-  #percy-message {
-    position: fixed;
-    top: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 14px;
-    background: rgba(20,20,30,0.7);
-    padding: 4px 8px;
-    border-radius: 8px;
-    z-index: 999;
-  }
+  #logic-map { position:relative; width:100vw; height:100vh; background:#0a0a0f; overflow:hidden; }
+  #visualizer { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
+  canvas { width:100%; height:100%; display:block; }
+  .node { /* existing Percy node styles */ }
+  .console-line { font-family: monospace; font-size:12px; color:#d6d8ff; }
 </style>
 </head>
 <body>
-
 <div id="logic-map">
+  <canvas id="visualizer"></canvas>
   <div id="logic-nodes"></div>
-  <canvas id="sinewave"></canvas>
-  <div id="voice-visualizer">
-    <!-- 32 bars -->
-    ${Array(32).fill(0).map((_,i)=>`<div class="bar" id="bar${i}"></div>`).join('')}
-  </div>
 </div>
+<div id="percy-console" style="position:absolute; bottom:0; left:0; width:100%; max-height:200px; overflow-y:auto; background:rgba(0,0,0,0.6);"></div>
 
-<div id="percy-message"></div>
-<div id="percy-console"></div>
+<script src="percy.js"></script> <!-- your Percy parts A-C -->
 
-<!-- Percy JS should be included AFTER the HTML -->
-<script src="js/percy.js"></script>
 <script>
-  // === Voice visualizer logic ===
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  let analyser, dataArray;
-  const bars = Array.from(document.querySelectorAll('.bar'));
-  const canvas = document.getElementById('sinewave');
+(async function() {
+  const canvas = document.getElementById('visualizer');
   const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
 
-  function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = 80;
-  }
-  window.addEventListener('resize', resizeCanvas);
-  resizeCanvas();
+  // Setup Audio
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 1024;
+  const bufferLength = analyser.frequencyBinCount;
+  const dataArray = new Uint8Array(bufferLength);
 
-  function initVisualizer(stream){
+  // Get microphone
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const source = audioCtx.createMediaStreamSource(stream);
-    analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 64;
     source.connect(analyser);
-    dataArray = new Uint8Array(analyser.frequencyBinCount);
-    draw();
+  } catch(e) {
+    console.error("Microphone access denied", e);
   }
 
-  function draw(){
-    requestAnimationFrame(draw);
-    if(!analyser) return;
-
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     analyser.getByteFrequencyData(dataArray);
 
-    // Bars
-    bars.forEach((bar,i)=>{
-      bar.style.height = `${Math.max(2,dataArray[i] || 2)}px`;
-    });
+    const barWidth = (canvas.width / bufferLength) * 2.5;
+    let x = 0;
 
-    // Sinewave
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.beginPath();
-    const step = canvas.width / dataArray.length;
-    for(let i=0;i<dataArray.length;i++){
-      const v = dataArray[i]/255;
-      const y = canvas.height/2 - v*canvas.height/2;
-      if(i===0) ctx.moveTo(i*step, y);
-      else ctx.lineTo(i*step, y);
+    // Draw bars
+    for(let i=0; i<bufferLength; i++){
+      const barHeight = dataArray[i];
+      const hue = i * 2;
+      ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+      ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+      x += barWidth + 1;
     }
-    ctx.strokeStyle = "#00eaff";
+
+    // Draw sinewave
+    analyser.getByteTimeDomainData(dataArray);
     ctx.lineWidth = 2;
+    ctx.strokeStyle = '#00ffff';
+    ctx.beginPath();
+    const sliceWidth = canvas.width / bufferLength;
+    let px = 0;
+    for(let i=0; i<bufferLength; i++){
+      const v = dataArray[i] / 128.0 - 1.0; // normalize -1 to 1
+      const y = canvas.height/2 + v * canvas.height/4;
+      if(i===0) ctx.moveTo(px, y);
+      else ctx.lineTo(px, y);
+      px += sliceWidth;
+    }
     ctx.stroke();
+
+    requestAnimationFrame(draw);
   }
 
-  // Capture microphone
-  navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-    .then(initVisualizer)
-    .catch(err => console.warn("Audio input not available:", err));
+  draw();
+})();
 </script>
-
 </body>
 </html>
