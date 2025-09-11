@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 const SAFETY = { maxActionsPerMinute:20, maxSeedsPerCycle:5, consoleLimit:500 };
 const OWNER = { primary:"Fabian", secondary:"Lorena" };
-const PERCY_VERSION="8.3.3-neon-bubbles-voice (merged)";
+const PERCY_VERSION="8.3.4-neon-bubbles-voice-bars";
 
 // ==== MEMORY ====
 const Memory = {
@@ -79,10 +79,7 @@ if(Object.keys(PercyState.gnodes).length === 0){
     {id:'G601',msg:'Initial yellow seed example'},
     {id:'G701',msg:'Initial green seed example'}
   ];
-  exampleSeeds.forEach(s=>{
-    PercyState.gnodes[s.id]={message:s.msg,type:'bootstrap',data:{}};
-    seeds[s.id]=PercyState.gnodes[s.id];
-  });
+  exampleSeeds.forEach(s=>{ PercyState.gnodes[s.id]={message:s.msg,type:'bootstrap',data:{}}; seeds[s.id]=PercyState.gnodes[s.id]; });
   Memory.save('gnodes',PercyState.gnodes);
 }
 
@@ -96,10 +93,7 @@ const UI = {
 
 // ==== VOICE + VISUALIZER ====
 const Voice = {
-  enabled:true,
-  lastSpoken:0,
-  speakQueue:[],
-  isSpeaking:false,
+  enabled:true, lastSpoken:0, speakQueue:[], isSpeaking:false,
   speak(text){
     if(!this.enabled||!('speechSynthesis' in window)||!text) return;
     this.speakQueue.push(text);
@@ -117,9 +111,7 @@ const Voice = {
     if(voices.length) u.voice = pick(voices);
     u.onend = ()=>this.processQueue();
     speechSynthesis.speak(u);
-
-    // Visualizer reaction
-    visualizer.setActive(100); // simple fixed amplitude
+    visualizer.setActive(120);
   }
 };
 
@@ -127,7 +119,7 @@ const Voice = {
 const logicMap=document.getElementById('logic-map');
 const logicNodes=document.getElementById('logic-nodes');
 let zoomLevel=1,translateX=0,translateY=0;
-function applyTransform(){ logicNodes.style.transform = `translate(-50%,-50%) translate(${translateX}px,${translateY}px) scale(${zoomLevel})`; logicNodes.style.transformOrigin='center center'; }
+function applyTransform(){ logicNodes.style.transform = `translate(-50%,-50%) translate(${translateX}px,${translateY}px) scale(${zoomLevel})`; }
 function createNodes(){
   logicNodes.innerHTML='';
   const width=logicMap.clientWidth||800,height=logicMap.clientHeight||600;
@@ -186,24 +178,14 @@ document.getElementById('interpreter-input').addEventListener('keydown',e=>{
 });
 document.getElementById('seed-search').addEventListener('input',e=>{
   const val=e.target.value.toUpperCase(); 
-  document.querySelectorAll('.node').forEach(n=>{
-    n.style.display=n.textContent.includes(val)?'flex':'none';
-  });
+  document.querySelectorAll('.node').forEach(n=>{ n.style.display=n.textContent.includes(val)?'flex':'none'; });
 });
 
 // ==== ZOOM & PAN ====
-logicMap.addEventListener('wheel', e=>{
-  e.preventDefault();
-  const factor=0.1;
-  zoomLevel *= e.deltaY<0?1+factor:1-factor;
-  zoomLevel = Math.min(Math.max(0.2, zoomLevel),6);
-  applyTransform();
-});
+logicMap.addEventListener('wheel', e=>{ e.preventDefault(); const factor=0.1; zoomLevel *= e.deltaY<0?1+factor:1-factor; zoomLevel = Math.min(Math.max(0.2, zoomLevel),6); applyTransform(); });
 let isDragging=false,lastX=0,lastY=0;
 logicMap.addEventListener('mousedown',e=>{isDragging=true; lastX=e.clientX; lastY=e.clientY;});
-logicMap.addEventListener('mousemove',e=>{
-  if(isDragging){ const dx=e.clientX-lastX, dy=e.clientY-lastY; translateX+=dx; translateY+=dy; lastX=e.clientX; lastY=e.clientY; applyTransform(); }
-});
+logicMap.addEventListener('mousemove',e=>{ if(isDragging){ const dx=e.clientX-lastX, dy=e.clientY-lastY; translateX+=dx; translateY+=dy; lastX=e.clientX; lastY=e.clientY; applyTransform(); }});
 logicMap.addEventListener('mouseup',()=>{isDragging=false;});
 logicMap.addEventListener('mouseleave',()=>{isDragging=false;});
 
@@ -212,28 +194,42 @@ function selfRewrite(){ try{ const keys=Object.keys(PercyState.gnodes); if(!keys
 let autoLoopInterval=null;
 function startPercyLoop(){ if(autoLoopInterval) clearInterval(autoLoopInterval); autoLoopInterval=setInterval(()=>{ PercyState.evaluateSelf(); createNodes(); selfRewrite(); },5000); }
 
-// ==== VOICE VISUALIZER ====
+// ==== VOICE VISUALIZER (SINEWAVE + GLOWING BARS + COLOR CYCLE) ====
 const canvas = document.getElementById('voice-visualizer');
 const ctx = canvas.getContext('2d');
 function resizeCanvas(){ canvas.width=window.innerWidth; canvas.height=120; }
 window.addEventListener('resize',resizeCanvas); resizeCanvas();
-
-const visualizer = { amplitude:0, decay:0.95, setActive(val){ this.amplitude=Math.max(this.amplitude,val); } };
+const visualizer = { amplitude:0, decay:0.93, setActive(val){ this.amplitude=Math.max(this.amplitude,val); } };
 function drawVisualizer(){
   requestAnimationFrame(drawVisualizer);
   ctx.clearRect(0,0,canvas.width,canvas.height);
   const amp = visualizer.amplitude;
   visualizer.amplitude *= visualizer.decay;
+  const t = Date.now()*0.005;
 
+  // ---- SINEWAVE ----
   ctx.beginPath();
   ctx.moveTo(0,canvas.height/2);
   for(let x=0;x<canvas.width;x++){
-    const y = canvas.height/2 + Math.sin((x/20)) * 10 + amp/2;
+    const y = canvas.height/2 + Math.sin(x/15 + t) * 10 + amp/2;
     ctx.lineTo(x,y);
   }
-  ctx.strokeStyle='rgba(0,255,255,0.6)';
+  ctx.strokeStyle=`hsl(${(t*50)%360},100%,70%)`;
   ctx.lineWidth=2;
+  ctx.shadowBlur=10;
+  ctx.shadowColor=`hsl(${(t*50)%360},100%,70%)`;
   ctx.stroke();
+
+  // ---- GLOWING VERTICAL BARS ----
+  const barCount=40,barWidth=canvas.width/barCount;
+  for(let i=0;i<barCount;i++){
+    const barHeight=(amp/3) * Math.abs(Math.sin(i/3 + t)) + 10;
+    const hue=(t*50+i*6)%360;
+    ctx.fillStyle=`hsla(${hue},100%,70%,0.5)`;
+    ctx.shadowBlur=15;
+    ctx.shadowColor=`hsla(${hue},100%,70%,0.7)`;
+    ctx.fillRect(i*barWidth,canvas.height-barHeight,barWidth-2,barHeight);
+  }
 }
 drawVisualizer();
 
