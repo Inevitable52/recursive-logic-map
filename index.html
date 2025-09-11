@@ -162,43 +162,61 @@ const ctx = canvas.getContext('2d');
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const analyser = audioCtx.createAnalyser();
 analyser.fftSize = 512;
-const dataArray = new Uint8Array(analyser.frequencyBinCount);
+const freqData = new Uint8Array(analyser.frequencyBinCount);
+const waveData = new Uint8Array(analyser.fftSize);
 
-// Create continuous sine oscillator (futuristic base tone)
+// Continuous subtle oscillator
 const osc = audioCtx.createOscillator();
 const gain = audioCtx.createGain();
 osc.type = 'sine';
 osc.frequency.value = 220;
-gain.gain.value = 0.05; // low volume for subtle effect
+gain.gain.value = 0.03;
 osc.connect(gain);
 gain.connect(analyser);
 analyser.connect(audioCtx.destination);
 osc.start();
 
-// Hook Percy speak (optional: add a little spike)
+// Hook Percy speak
 const originalSpeak = Voice.speak.bind(Voice);
 Voice.speak = (text) => {
   originalSpeak(text);
   if (audioCtx.state === 'suspended') audioCtx.resume();
-  gain.gain.setTargetAtTime(0.15, audioCtx.currentTime, 0.05);
-  setTimeout(() => gain.gain.setTargetAtTime(0.05, audioCtx.currentTime, 0.05), 150);
+  gain.gain.setTargetAtTime(0.15, audioCtx.currentTime, 0.02);
+  setTimeout(() => gain.gain.setTargetAtTime(0.03, audioCtx.currentTime, 0.05), 150);
 };
 
-// Draw futuristic bars
+// Draw bars + sinewave
 function draw() {
   requestAnimationFrame(draw);
-  analyser.getByteFrequencyData(dataArray);
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  analyser.getByteFrequencyData(freqData);
+  analyser.getByteTimeDomainData(waveData);
+
+  ctx.fillStyle = 'rgba(0,0,0,0.2)';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  const barWidth = canvas.width / dataArray.length;
-  for (let i = 0; i < dataArray.length; i++) {
-    const barHeight = dataArray[i] / 1.5;
-    const hue = 200 + barHeight; // blue/purple glow
+  const barWidth = canvas.width / freqData.length;
+
+  // Draw bars
+  for (let i = 0; i < freqData.length; i++) {
+    const barHeight = freqData[i] / 1.5;
+    const hue = 200 + barHeight;
     ctx.fillStyle = `hsl(${hue}, 80%, 55%)`;
     ctx.fillRect(i * barWidth, canvas.height - barHeight, barWidth, barHeight);
   }
+
+  // Draw sinewave
+  ctx.beginPath();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+  for (let i = 0; i < waveData.length; i++) {
+    const y = (waveData[i] / 255) * canvas.height;
+    const x = (i / waveData.length) * canvas.width;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
 }
+
 draw();
 
 </script>
