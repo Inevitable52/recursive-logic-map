@@ -89,218 +89,75 @@
     </div>
   </div>
 
-  <script>
-  (function(){
-    // safe local scope
-    const canvas = document.getElementById('voice-canvas');
-    const bars = Array.from(document.querySelectorAll('#voice-bars .vbar'));
-    const container = document.getElementById('voice-visualizer');
-    const ctx = canvas.getContext('2d');
+<script>
+const canvas = document.getElementById("voice-canvas"); // ✅ correct element
+const ctx = canvas.getContext("2d");
+canvas.width = canvas.offsetWidth;
+canvas.height = canvas.offsetHeight;
 
-    // Setup AudioContext & analyser (single analyser shared)
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    const audioCtx = new AudioContext();
-    const analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 1024;
-    const freqBinCount = analyser.frequencyBinCount;
-    const freqData = new Uint8Array(freqBinCount);
-    const timeData = new Uint8Array(freqBinCount);
+let isSpeaking = false;
+let speakEndTime = 0;
+let animationId;
 
-    // masterGain kept extremely low so synth is effectively inaudible,
-    // but still flows through the analyser for visualization.
-    const masterGain = audioCtx.createGain();
-    masterGain.gain.value = 0.01; // near-silent; increase slightly if visuals too weak
-    analyser.connect(masterGain);
-    masterGain.connect(audioCtx.destination);
+const bars = document.querySelectorAll(".vbar");
 
-    // helper: resize canvas (HiDPI aware)
-    function resize(){
-      const ratio = window.devicePixelRatio || 1;
-      const w = container.clientWidth - 80; // fit within container
-      const h = container.clientHeight - 16;
-      canvas.width = Math.max(1, Math.floor(w * ratio));
-      canvas.height = Math.max(1, Math.floor(h * ratio));
-      // scale drawing so 1 unit = 1 css pixel
-      ctx.setTransform(ratio,0,0,ratio,0,0);
+// Trigger animation when Percy "speaks"
+function speakAnimation(textLength) {
+  const duration = Math.max(1500, textLength * 60); // length-based duration
+  isSpeaking = true;
+  speakEndTime = Date.now() + duration;
+  animateVisualizer();
+}
+
+// Draw sinewave + bars
+function animateVisualizer() {
+  cancelAnimationFrame(animationId);
+  
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // === Neon sinewave ===
+    ctx.beginPath();
+    let amplitude = isSpeaking ? 40 : 5;
+    let freq = 0.02;
+    for (let x = 0; x < canvas.width; x++) {
+      let y = canvas.height/2 + Math.sin(x * freq + Date.now()/120) * amplitude;
+      ctx.lineTo(x, y);
     }
-    window.addEventListener('resize', resize);
-    resize();
+    ctx.strokeStyle = "cyan";
+    ctx.lineWidth = 2;
+    ctx.shadowColor = "aqua";
+    ctx.shadowBlur = 20;
+    ctx.stroke();
 
-    // Ensure we resume audioCtx on first user gesture (autoplay policy)
-    let audioResumed = false;
-    function resumeAudioOnce() {
-      if(audioResumed) return;
-      audioCtx.resume().then(()=>{ audioResumed = true; }).catch(()=>{ /* ignore */ });
-      window.removeEventListener('pointerdown', resumeAudioOnce);
-    }
-    window.addEventListener('pointerdown', resumeAudioOnce, { once:true });
-
-    // Play a short 'visual' voice (synth) to drive the analyser when Percy speaks.
-    // This is low-volume and primarily for visuals (we can't capture real speechSynthesis output).
-    function playVisualVoice(text){
-      try {
-        // estimate duration from text length to roughly match speech speed
-        const duration = Math.min(Math.max(text?.length / 15 || 0.2, 0.2), 12);
-
-        // nodes: carrier + modulator + filter + gain -> analyser
-        const now = audioCtx.currentTime;
-        const carrier = audioCtx.createOscillator();
-        carrier.type = 'sawtooth';
-        carrier.frequency.setValueAtTime(120, now);
-
-        const mod = audioCtx.createOscillator();
-        mod.type = 'sine';
-        mod.frequency.setValueAtTime(4 + Math.random()*6, now); // tremor
-
-        const modGain = audioCtx.createGain();
-        modGain.gain.value = 20 + Math.random()*40;
-
-        // filter to shape timbre
-        const filter = audioCtx.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(600 + Math.random()*800, now);
-        filter.Q.setValueAtTime(0.8 + Math.random()*2.2, now);
-
-        // amplitude envelope
-        const amp = audioCtx.createGain();
-        amp.gain.setValueAtTime(0.00001, now);
-        amp.gain.linearRampToValueAtTime(0.12, now + 0.02);
-        amp.gain.exponentialRampToValueAtTime(0.03, now + duration * 0.7);
-        amp.gain.linearRampToValueAtTime(0.00001, now + duration + 0.03);
-
-        // connect graph: mod -> modGain -> carrier.frequency
-        mod.connect(modGain);
-        modGain.connect(carrier.frequency);
-
-        // carrier -> filter -> amp -> analyser
-        carrier.connect(filter);
-        filter.connect(amp);
-        amp.connect(analyser);
-
-        // start/stop
-        carrier.start(now);
-        mod.start(now);
-        carrier.stop(now + duration + 0.04);
-        mod.stop(now + duration + 0.04);
-
-        // cleanup after stopping
-        const cleanup = () => {
-          try{
-            carrier.disconnect();
-            mod.disconnect();
-            modGain.disconnect();
-            filter.disconnect();
-            amp.disconnect();
-          }catch(e){}
-        };
-        setTimeout(cleanup, (duration + 0.12) * 1000);
-      } catch (e) {
-        // fail quietly
-        console.warn("visual voice error", e);
-      }
-    }
-
-    // Wrap / hook Percy Voice.speak when available
-    function hookVoice(){
-      if(!window.Voice || typeof Voice.speak !== 'function') return false;
-      const original = Voice.speak.bind(Voice);
-      Voice.speak = function(text){
-        // resume audio if needed (safe)
-        if(!audioResumed){
-          audioCtx.resume().then(()=>{ audioResumed = true; }).catch(()=>{});
-        }
-        // call original TTS so Percy still speaks
-        try { original(text); } catch(e){ /* ignore */ }
-        // create the visual 'voice' to drive analyser (low-volume)
-        playVisualVoice(String(text || ''));
-      };
-      return true;
-    }
-
-    // If Voice is not yet ready, poll for it for a short time
-    if(!hookVoice()){
-      const to = setInterval(()=>{
-        if(hookVoice()){ clearInterval(to); }
-      }, 250);
-      // stop polling eventually
-      setTimeout(()=>clearInterval(to), 15000);
-    }
-
-    // Visual update loop
-    function draw(){
-      requestAnimationFrame(draw);
-
-      // get data
-      analyser.getByteFrequencyData(freqData);
-      analyser.getByteTimeDomainData(timeData);
-
-      // draw sine-wave on canvas
-      const w = canvas.clientWidth;
-      const h = canvas.clientHeight;
-      // clear with slight overlay for trailing glow feel
-      ctx.fillStyle = 'rgba(2,8,12,0.12)';
-      ctx.fillRect(0,0,w,h);
-
-      ctx.lineWidth = 2.2;
-      ctx.strokeStyle = 'rgba(46, 235, 255, 0.95)';
-      ctx.shadowBlur = 12;
-      ctx.shadowColor = 'rgba(46,235,255,0.9)';
-
-      ctx.beginPath();
-      const slice = Math.floor(timeData.length / w) || 1;
-      for(let i=0, x=0; x < w && i < timeData.length; i += slice, x++){
-        const v = (timeData[i] - 128) / 128; // -1..1
-        const y = (h/2) + v * (h/2) * 0.75;
-        if(x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-
-      // Draw faint secondary glow (fades)
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = 'rgba(40,120,255,0.25)';
-      ctx.shadowBlur = 6;
-      ctx.beginPath();
-      for(let i=0, x=0; x < w && i < timeData.length; i += slice, x++){
-        const v = (timeData[i] - 128) / 128;
-        const y = (h/2) + v * (h/2) * 0.6;
-        if(x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-
-      // Bars — update DOM bars (7 of them)
-      // We'll aggregate freqData into 7 bands for stable visuals
-      const bandCount = bars.length;
-      const binsPerBand = Math.floor(freqData.length / bandCount);
-      for(let b=0;b<bandCount;b++){
-        let sum = 0;
-        const offset = b * binsPerBand;
-        for(let k=0;k<binsPerBand;k++){
-          sum += freqData[offset + k] || 0;
-        }
-        const avg = sum / Math.max(1, binsPerBand);
-        // Map avg (0..255) to height (6..full)
-        const maxBar = container.clientHeight - 24;
-        const hval = Math.max(6, Math.round((avg/255) * maxBar));
-        const barEl = bars[b];
-        barEl.style.height = hval + 'px';
-        // color shift
-        const hue = 180 + (avg/255) * 120; // cyan -> blueish -> purple
-        barEl.style.background = `linear-gradient(to top, hsl(${hue},100%,55%), hsl(${hue+40},95%,75%))`;
-        barEl.style.boxShadow = `0 0 ${8 + (avg/32)}px hsla(${hue},100%,60%,0.8)`;
-      }
-    }
-
-    // kick the loop + ensure audio resumed if user already interacted
-    draw();
-
-    // Make sure audio is resumed if site already got a gesture
-    document.addEventListener('visibilitychange', ()=> {
-      if(!audioResumed && !document.hidden){
-        audioCtx.resume().then(()=> audioResumed = true).catch(()=>{});
-      }
+    // === Animate CSS bars ===
+    bars.forEach(bar => {
+      let h = isSpeaking ? Math.random() * canvas.height * 0.8 : 6;
+      bar.style.height = `${h}px`;
     });
 
-  })();
-  </script>
-</body>
-</html>
+    // Stop animating if done
+    if (Date.now() > speakEndTime) {
+      isSpeaking = false;
+    }
+
+    animationId = requestAnimationFrame(draw);
+  }
+
+  draw();
+}
+
+// Hook into Percy’s speech
+const Voice = {
+  speak(text) {
+    console.log("Percy says:", text);
+    speakAnimation(text.length);
+    // keep your real TTS call here if desired
+  }
+};
+
+// Example: auto test after 2s
+setTimeout(() => {
+  Voice.speak("Hello my good sir, I am Percy and my visualizer is now alive!");
+}, 2000);
+</script>
