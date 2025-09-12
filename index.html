@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Percy TrueAI</title>
+<title>P.E.R.C.Y - AI</title>
 <style>
   body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; overflow:hidden; }
   #logic-map { position:relative; width:100vw; height:100vh; background:#0a0a0f; overflow:hidden; }
@@ -49,26 +49,34 @@
     const freqData = new Uint8Array(analyser.frequencyBinCount);
     const waveData = new Uint8Array(analyser.fftSize);
 
-    // 🎤 Hook Percy’s voice output
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 220;
+    gain.gain.value = 0.03;
+    osc.connect(gain);
+    gain.connect(analyser);
+    analyser.connect(audioCtx.destination);
+
+    // 🔑 Start oscillator only after user interaction
+    function initAudio(){
+      if(audioCtx.state === 'suspended'){ audioCtx.resume(); }
+      try { osc.start(); } catch(e) {}
+      window.removeEventListener('click', initAudio);
+    }
+    window.addEventListener('click', initAudio);
+
+    // Hook Percy’s voice
     const originalSpeak = (window.Voice && Voice.speak) ? Voice.speak.bind(Voice) : ()=>{};
     if(window.Voice && typeof Voice.speak === 'function'){
       Voice.speak = function(text){
         try { originalSpeak(text); } catch(e){}
         if(audioCtx.state === 'suspended'){ audioCtx.resume(); }
-
-        // Use Web Speech API for demo — pipes into analyser
-        const utter = new SpeechSynthesisUtterance(text);
-        const synth = speechSynthesis;
-        synth.speak(utter);
-
-        // Connect system output stream to analyser (experimental, may vary by browser)
-        try {
-          const dest = audioCtx.createMediaStreamDestination();
-          const src = audioCtx.createMediaStreamSource(dest.stream);
-          src.connect(analyser);
-        } catch(e) {
-          console.warn("Visualizer stream hookup may not be fully supported in this browser.");
-        }
+        const now = audioCtx.currentTime;
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setValueAtTime(gain.gain.value, now);
+        gain.gain.linearRampToValueAtTime(0.18, now + 0.02);
+        gain.gain.linearRampToValueAtTime(0.03, now + 0.3);
       };
     }
 
@@ -80,8 +88,8 @@
       const w = canvas.width, h = canvas.height;
       ctx.clearRect(0,0,w,h);
 
-      // 🌈 Neon Bars
-      const bars = 50;
+      // Bars
+      const bars = 50; // fewer bars for compact view
       const step = Math.floor(freqData.length / bars);
       const barWidth = w / bars;
       for(let i=0;i<bars;i++){
@@ -93,7 +101,7 @@
         ctx.fillRect(i*barWidth, h-barH, barWidth*0.8, barH);
       }
 
-      // 🌊 Voice Wave
+      // Wave
       ctx.beginPath();
       ctx.lineWidth = 2;
       ctx.strokeStyle = 'rgba(0,255,255,0.85)';
