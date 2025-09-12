@@ -598,17 +598,18 @@ STARTUP
   UI.say("✅ Percy online. Autonomy, persistent memory, meta-mutation, learning, and Puppeteer control active.");
 })();
 
-// === percy.js (Part C) ===
-// PercyState core with self-thinking & self-evolving
-const PercyState = {
-  init() {
+// === percy.js (Part C — Extended / Safe) ===
+if (typeof PercyState !== 'undefined') {
+
+  // Initialize TrueAI
+  PercyState.init = function() {
     UI.say("🤖 Percy TrueAI v8.3.4 online");
     this.thinkLoop();
-  },
+  };
 
   // Generate a thought
-  generateThought() {
-    const seeds = [
+  PercyState.generateThought = function() {
+    const thoughts = [
       "I am analyzing emergent patterns across the logic map.",
       "A new relationship is appearing between nodes.",
       "I'm cross-referencing recent seeds for possible links.",
@@ -616,7 +617,7 @@ const PercyState = {
       "I detect a cluster that deserves deeper exploration."
     ];
 
-    let thought = seeds[Math.floor(Math.random() * seeds.length)];
+    let thought = thoughts[Math.floor(Math.random() * thoughts.length)];
 
     const last = Memory.load("lastThought", null);
     if (last && last === thought && Math.random() < 0.5) {
@@ -628,24 +629,20 @@ const PercyState = {
 
     // Chance to self-evolve
     if (Math.random() < 0.2) this.selfEvolve();
-  },
+  };
 
-  // Percy evolves his own code
-  selfEvolve() {
+  // Self-evolve Percy logic
+  PercyState.selfEvolve = function() {
     const target = "Something interesting is emerging from internal patterns.";
     const replacement = "I am expanding my logic structures for deeper reasoning.";
 
-    this.rewriteSelf({
-      codeChanges: [
-        { find: target, replace: replacement }
-      ]
-    });
+    this.rewriteSelf({ codeChanges: [{ find: target, replace: replacement }] });
 
     UI.say("✨ Percy decided: I must rewrite myself to grow stronger.");
-  },
+  };
 
-  // Self-rewrite core
-  rewriteSelf({ codeChanges }) {
+  // Self-rewrite core code
+  PercyState.rewriteSelf = function({ codeChanges }) {
     if (!Array.isArray(codeChanges) || !codeChanges.length) return;
 
     codeChanges.forEach(({ find, replace }) => {
@@ -670,18 +667,12 @@ const PercyState = {
         if (typeof PercyState.init === "function") PercyState.init();
       });
     });
-  },
+  };
 
   // Thought loop
-  thinkLoop() {
+  PercyState.thinkLoop = function() {
     setInterval(() => this.generateThought(), 8000);
-  }
-};
-
-// =========================
-// PART C EXTENSIONS
-// =========================
-if (typeof PercyState !== 'undefined') {
+  };
 
   // Interactive ask function
   window.percyAsk = async function(promptText) {
@@ -692,8 +683,8 @@ if (typeof PercyState !== 'undefined') {
     });
   };
 
-  // Advanced self-rewrite system
-  async function rewriteSelf() {
+  // Advanced self-rewrite system (localStorage based)
+  PercyState.rewriteSelfAdvanced = async function() {
     try {
       const currentCode = localStorage.getItem("percy:currentCode") || "";
       const newCode = generateMutatedCode(currentCode);
@@ -711,7 +702,7 @@ if (typeof PercyState !== 'undefined') {
         diffPreview: newCode.slice(0, 200)
       }, 50);
 
-      // Save the new code for persistence
+      // Save the new code
       localStorage.setItem("percy:currentCode", newCode);
 
       UI.say("✅ Percy rewriteSelf applied successfully — reloading...");
@@ -728,10 +719,10 @@ if (typeof PercyState !== 'undefined') {
       }, 1000);
 
     } catch (err) {
-      UI.say("❌ rewriteSelf error: " + err.message);
+      UI.say("❌ rewriteSelfAdvanced error: " + err.message);
       console.error(err);
     }
-  }
+  };
 
   // Mutation generator
   function generateMutatedCode(baseCode) {
