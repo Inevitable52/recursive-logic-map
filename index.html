@@ -109,7 +109,7 @@
     // masterGain kept extremely low so synth is effectively inaudible,
     // but still flows through the analyser for visualization.
     const masterGain = audioCtx.createGain();
-    masterGain.gain.value = 0.0008; // near-silent; increase slightly if visuals too weak
+    masterGain.gain.value = 0.01; // near-silent; increase slightly if visuals too weak
     analyser.connect(masterGain);
     masterGain.connect(audioCtx.destination);
 
