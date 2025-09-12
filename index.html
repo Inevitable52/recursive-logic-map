@@ -108,7 +108,7 @@ const bars = document.querySelectorAll(".vbar");
 
 // Trigger animation when Percy "speaks"
 function speakAnimation(textLength) {
-  const duration = Math.max(1500, textLength * 60); // length-based duration
+  const duration = Math.max(1500, textLength * 60); 
   isSpeaking = true;
   speakEndTime = Date.now() + duration;
   animateVisualizer();
@@ -142,7 +142,6 @@ function animateVisualizer() {
       bar.style.height = `${h}px`;
     });
 
-    // Stop animating if done
     if (Date.now() > speakEndTime) {
       isSpeaking = false;
     }
@@ -153,16 +152,23 @@ function animateVisualizer() {
   draw();
 }
 
-// Hook into Percy’s speech
-const Voice = {
-  speak(text) {
-    console.log("Percy says:", text);
+// ✅ Hook into existing Voice (don’t redeclare it)
+if (window.Voice) {
+  const originalSpeak = Voice.speak.bind(Voice);
+  Voice.speak = function(text) {
     speakAnimation(text.length);
-  }
-};
+    return originalSpeak(text);
+  };
+} else {
+  console.warn("⚠️ Voice not found. Visualizer will not sync.");
+}
 
 // Example: auto test after 2s
 setTimeout(() => {
-  Voice.speak("Hello my good sir, I am Percy and my visualizer is now alive!");
+  if (window.Voice) {
+    Voice.speak("Hello my good sir, I am Percy and my visualizer is now alive!");
+  }
 }, 2000);
 </script>
+</body>
+</html>
