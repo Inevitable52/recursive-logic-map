@@ -10,8 +10,8 @@
   .console-line { margin:2px 0; font-family:ui-monospace,Monaco,Consolas, monospace; font-size:12px; color:#d6d8ff; }
   #percy-console { position:fixed; bottom:0; left:0; width:35%; max-height:40%; overflow:auto; background:rgba(0,0,0,0.65); padding:6px; border-top-right-radius:12px; border:1px solid #444; }
   #percy-message { position:fixed; bottom:0; left:35%; width:65%; padding:6px; background:rgba(0,0,0,0.65); border-top-left-radius:12px; border:1px solid #444; }
-  /* visualizer canvas will cover screen */
-  #voice-visualizer canvas { width:100%; height:100%; display:block; }
+  #voice-visualizer { position:fixed; top:12px; right:12px; width:260px; height:120px; pointer-events:none; z-index:9999; }
+  #voice-visualizer canvas { width:100%; height:100%; display:block; border-radius:10px; background:rgba(0,0,0,0.25); box-shadow:0 0 12px rgba(0,255,255,0.4); }
 </style>
 </head>
 <body>
@@ -24,26 +24,20 @@
   <!-- ✅ Load working Percy core -->
   <script src="js/percy.js?v=6.4"></script>
 
-  <!-- ✅ Add just the visualizer -->
+  <!-- ✅ Voice Visualizer -->
+  <div id="voice-visualizer"><canvas></canvas></div>
   <script>
   (function(){
-    const visContainer = document.createElement('div');
-    visContainer.id = 'voice-visualizer';
-    visContainer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:60;';
-    document.body.appendChild(visContainer);
-
-    const canvas = document.createElement('canvas');
-    visContainer.appendChild(canvas);
+    const container = document.getElementById('voice-visualizer');
+    const canvas = container.querySelector('canvas');
     const ctx = canvas.getContext('2d');
 
     function resizeCanvas(){
-      const w = visContainer.clientWidth;
-      const h = visContainer.clientHeight;
+      const w = container.clientWidth;
+      const h = container.clientHeight;
       const ratio = window.devicePixelRatio || 1;
       canvas.width = Math.max(1, Math.floor(w * ratio));
       canvas.height = Math.max(1, Math.floor(h * ratio));
-      canvas.style.width = w + 'px';
-      canvas.style.height = h + 'px';
       ctx.setTransform(ratio,0,0,ratio,0,0);
     }
     window.addEventListener('resize', resizeCanvas);
@@ -88,22 +82,27 @@
       ctx.clearRect(0,0,w,h);
 
       // Bars
-      const bars = freqData.length;
+      const bars = 50; // fewer bars for compact view
+      const step = Math.floor(freqData.length / bars);
       const barWidth = w / bars;
       for(let i=0;i<bars;i++){
-        const v = freqData[i]/255;
-        const barH = v * (h*0.6);
-        ctx.fillStyle = `hsl(${200+v*120},80%,55%)`;
-        ctx.fillRect(i*barWidth, h-barH, barWidth*0.9, barH);
+        const v = freqData[i*step]/255;
+        const barH = v * (h*0.7);
+        ctx.fillStyle = `hsla(${180+v*120},100%,60%,0.9)`;
+        ctx.shadowColor = `hsla(${180+v*120},100%,60%,0.7)`;
+        ctx.shadowBlur = 12;
+        ctx.fillRect(i*barWidth, h-barH, barWidth*0.8, barH);
       }
 
       // Wave
       ctx.beginPath();
       ctx.lineWidth = 2;
-      ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+      ctx.strokeStyle = 'rgba(0,255,255,0.85)';
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = 'rgba(0,255,255,0.8)';
       for(let i=0;i<waveData.length;i++){
         const x = (i/waveData.length)*w;
-        const y = ((waveData[i]/255 - 0.5) * h * 1.8) + h/2;
+        const y = ((waveData[i]/255 - 0.5) * h * 1.5) + h/2;
         if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
       }
       ctx.stroke();
