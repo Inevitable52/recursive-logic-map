@@ -1,9 +1,9 @@
-/* === Percy Phase 8.3.2 CSS (Neon Glow Bubbles Edition) === */
+/* === Percy Phase 8.3.3 CSS (Futuristic Neon Glow Edition) === */
 
 body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background: #111;
+    background: #0a0a0f;
     color: white;
     overflow: hidden;
 }
@@ -13,7 +13,7 @@ body {
     position: relative;
     width: 100vw;
     height: 100vh;
-    overflow: hidden;
+    overflow: visible; /* allows bubbles to float outside nodes */
 }
 
 #logic-nodes {
@@ -51,20 +51,20 @@ body {
     font-size: unset; /* controlled dynamically by JS */
     user-select: none;
 
-    color: white; /* fallback text */
-    background: rgba(0,0,0,0.15); /* translucent bubble center */
-    border: 2px solid currentColor; /* neon edge */
-    box-shadow: 0 0 12px currentColor, 0 0 24px currentColor; /* glowing aura */
+    color: white;
+    background: rgba(0,0,0,0.15);
+    border: 2px solid currentColor;
+    box-shadow: 0 0 12px currentColor, 0 0 24px currentColor, 0 0 36px currentColor;
 }
 
 /* Node Hover Effects */
 .node:hover {
     transform: scale(1.35);
-    box-shadow: 0 0 24px currentColor, 0 0 48px currentColor;
+    box-shadow: 0 0 24px currentColor, 0 0 48px currentColor, 0 0 72px currentColor;
     z-index: 100;
 }
 
-/* === Neon Ring Colors (use as text + glow color) === */
+/* Neon Ring Colors */
 .blue-ring      { color: #4A90E2; }
 .purple-ring    { color: #CDA4FF; }
 .red-ring       { color: #FF6B6B; }
@@ -73,7 +73,7 @@ body {
 .neon-pink-ring { color: #FF6EC7; }
 .teal-ring      { color: #1DE9B6; }
 
-/* === Tooltip via title attribute === */
+/* Tooltip via title attribute */
 .node::after {
     content: attr(title);
     position: absolute;
@@ -95,6 +95,17 @@ body {
 
 .node:hover::after { opacity: 1; }
 
+/* Locked / ULT Node Highlight */
+.node.locked {
+    border: 2px solid #FFD700;
+    box-shadow: 0 0 24px #FFD700, 0 0 48px #FFD700, 0 0 72px #FFD700;
+}
+
+/* Zoom-Scaling Helpers */
+#logic-nodes.zoomed .node {
+    transition: transform 0.15s ease, font-size 0.15s ease;
+}
+
 /* === Console Styling === */
 #percy-console {
     position: fixed;
@@ -111,7 +122,7 @@ body {
 
 .console-line { margin: 2px 0; }
 
-/* === Status Message === */
+/* Status Message */
 #percy-message {
     position: fixed;
     top: 10px;
@@ -124,24 +135,49 @@ body {
     z-index: 1000;
 }
 
-/* === Locked / ULT Node Highlight === */
-.node.locked {
-    border: 2px solid #FFD700;
-    box-shadow: 0 0 24px #FFD700, 0 0 48px #FFD700;
+/* === Floating Bubbles === */
+.bubble {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 2;
+    background: radial-gradient(circle at 30% 30%, #27a0ff, transparent);
+    mix-blend-mode: screen;
 }
 
-/* === Zoom-Scaling Helpers === */
-#logic-nodes.zoomed .node {
-    transition: transform 0.15s ease, font-size 0.15s ease;
+/* === Voice Visualizer Bars === */
+#voice-visualizer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    padding: 6px;
+    background: rgba(13,13,21,0.9);
+    border-top: 1px solid #333;
+    z-index: 950;
 }
 
-/* === Responsive Adjustments === */
+.bar {
+    width: 6px;
+    border-radius: 2px;
+    background: linear-gradient(to top, #27a0ff, #00ffff);
+    filter: drop-shadow(0 0 6px #27a0ff) drop-shadow(0 0 12px #00ffff);
+}
+
+/* Sinewave Canvas */
+#voice-visualizer canvas {
+    flex: 1;
+    height: 80px;
+    display: block;
+}
+
+/* Responsive Adjustments */
 @media (max-width: 768px) {
     .node { font-size: 10px; min-width: 10px; min-height: 10px; }
     .node::after { font-size: 0.65rem; max-width: 150px; }
 }
 
-/* === Extra Helpers for Smooth Ring Layout === */
-.node[data-ring] {
-    transition: left 0.25s ease, top 0.25s ease;
-}
