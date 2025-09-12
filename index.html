@@ -8,36 +8,49 @@
 <!-- Percy CSS -->
 <link rel="stylesheet" href="style.css?v=6.4" />
 <style>
-  body { margin:0; font-family:Arial,sans-serif; background:#0a0a0f; color:white; overflow:hidden; }
-  main { position:relative; width:100%; height:100%; }
+  /* === Additional UI tweaks === */
+  body { margin: 0; font-family: Arial,sans-serif; background: #0a0a0f; color: white; overflow: hidden; }
+  main { position: relative; width: 100%; height: 100%; }
 
   /* Zoom Controls */
-  .zoom-controls { position:fixed; top:10px; right:10px; z-index:1000; display:flex; gap:6px; }
-  .zoom-controls button { padding:4px 8px; border-radius:6px; border:none; background:#3764ff; color:white; cursor:pointer; }
-  .zoom-controls button:hover { background:#2a4de0; }
+  .zoom-controls { position: fixed; top: 10px; right: 10px; z-index: 1000; display: flex; gap: 6px; }
+  .zoom-controls button { padding: 4px 8px; border-radius: 6px; border: none; background: #3764ff; color: white; cursor: pointer; }
+  .zoom-controls button:hover { background: #2a4de0; }
 
   /* Search Input */
-  #seed-search { position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:1000; padding:6px 10px; border-radius:8px; border:1px solid #555; width:220px; background:#1a1a1a; color:white; }
-  #seed-search::placeholder { color:#bbb; }
+  #seed-search { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; padding: 6px 10px; border-radius: 8px; border: 1px solid #555; width: 220px; background: #1a1a1a; color: white; }
+  #seed-search::placeholder { color: #bbb; }
 
   /* Ask Percy Input */
-  #ask-input { padding:6px 8px; border-radius:6px; border:1px solid #555; width:220px; background:#1a1a1a; color:white; autocomplete:off; }
-  #ask-btn { padding:6px 10px; border-radius:6px; border:none; background:#2ac66d; color:white; cursor:pointer; }
-  #ask-btn:hover { background:#28b15f; }
+  #ask-input { padding: 6px 8px; border-radius: 6px; border: 1px solid #555; width: 220px; background: #1a1a1a; color: white; autocomplete: off; }
+  #ask-btn { padding: 6px 10px; border-radius: 6px; border: none; background: #2ac66d; color: white; cursor: pointer; }
+  #ask-btn:hover { background: #28b15f; }
 
   /* Logic Map */
-  #logic-map { position:absolute; top:0; left:0; width:100%; height:100%; overflow:hidden; z-index:1; }
-  #logic-map svg { width:100%; height:100%; }
+  #logic-map { position: absolute; top:0; left:0; width:100%; height:100%; overflow: hidden; }
+  #logic-map svg { width: 100%; height: 100%; }
   #logic-nodes { position:absolute; top:0; left:0; width:100%; height:100%; }
 
   /* Console & Message */
-  #percy-console { position:fixed; bottom:100px; left:0; width:100%; max-height:100px; overflow-y:auto; background:#111; border-top:1px solid #333; padding:6px; font-size:12px; z-index:1000; }
-  #percy-message { position:fixed; bottom:200px; left:0; width:100%; padding:6px; background:#0d0d15; font-size:13px; border-top:1px solid #333; z-index:1000; }
+  #percy-console { position: fixed; bottom: 100px; left:0; width:100%; max-height:100px; overflow-y:auto; background:#111; border-top:1px solid #333; padding:6px; font-size:12px; z-index:900; }
+  #percy-message { position: fixed; bottom: 200px; left:0; width:100%; padding:6px; background:#0d0d15; font-size:13px; border-top:1px solid #333; z-index:900; }
 
   /* === Voice Visualizer === */
-  #voice-visualizer { position:fixed; bottom:0; left:0; width:100%; display:flex; align-items:flex-end; gap:6px; padding:6px; background:#0d0d15; border-top:1px solid #333; z-index:2000; }
-  #voice-visualizer canvas { flex:1; height:60px; }
-  .bar { width:6px; height:20px; background:#27a0ff; border-radius:2px; animation:bounce 1s infinite ease-in-out; }
+  #voice-visualizer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    padding: 6px;
+    background: #0d0d15;
+    border-top: 1px solid #333;
+    z-index:950;
+  }
+  #voice-visualizer canvas { flex: 1; height: 60px; }
+  .bar { width: 6px; height: 20px; background:#27a0ff; border-radius:2px; animation: bounce 1s infinite ease-in-out; }
   .bar:nth-child(2){animation-delay:-0.2s;}
   .bar:nth-child(3){animation-delay:-0.4s;}
   .bar:nth-child(4){animation-delay:-0.6s;}
@@ -53,24 +66,37 @@
 </header>
 
 <main>
+  <!-- Search -->
   <input type="text" id="seed-search" placeholder="Search G-seed..." autocomplete="off"/>
+
+  <!-- Zoom Controls -->
   <div class="zoom-controls">
-    <button onclick="zoomLevel*=1.2; applyTransform();">Zoom In</button>
-    <button onclick="zoomLevel*=0.8; applyTransform();">Zoom Out</button>
+    <button onclick="zoomLevel *= 1.2; applyTransform();">Zoom In</button>
+    <button onclick="zoomLevel *= 0.8; applyTransform();">Zoom Out</button>
   </div>
+
+  <!-- Logic Map -->
   <div id="logic-map">
-    <svg></svg>
+    <svg></svg> <!-- Neon rings -->
     <div id="logic-nodes"></div>
   </div>
+
+  <!-- Console & Message -->
   <div id="percy-message">Click a logic node to hear Percy’s thoughts...</div>
   <div id="percy-console"><p class="console-line">Percy initialized. Click a node.</p></div>
 </main>
 
+<!-- Voice Visualizer -->
 <div id="voice-visualizer">
   <canvas id="sinewave"></canvas>
-  <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+  <div class="bar"></div>
+  <div class="bar"></div>
+  <div class="bar"></div>
+  <div class="bar"></div>
+  <div class="bar"></div>
 </div>
 
+<!-- Ask Percy Input -->
 <div id="percy-ask" style="position:fixed; bottom:90px; left:50%; transform:translateX(-50%); display:flex; gap:4px; z-index:1000;">
   <input type="text" id="ask-input" placeholder="Ask Percy..." autocomplete="off"/>
   <button id="ask-btn">Ask</button>
@@ -80,46 +106,58 @@
   <p>© 2025 Fabian V Omega — Percy Recursive Logic System</p>
 </footer>
 
+<!-- Percy Script -->
 <script src="js/percy.js?v=6.4"></script>
 <script>
 window.addEventListener('DOMContentLoaded', ()=>{
-  if(typeof percyRespond!=='undefined'){ window.Percy={ percyRespond }; }
+
+  // Make percyRespond safe without redeclaring
+  if(typeof percyRespond !== 'undefined'){
+    window.Percy = { percyRespond };
+  } else {
+    console.warn("percyRespond not found yet.");
+  }
 
   // Seed Search
   const searchInput = document.getElementById('seed-search');
   searchInput.addEventListener('input', ()=> {
     const val = searchInput.value.trim().toUpperCase();
     document.querySelectorAll('.node').forEach(n=>{
-      n.style.display = (!val||n.textContent.toUpperCase().includes(val))?'flex':'none';
+      n.style.display = (!val || n.textContent.toUpperCase().includes(val)) ? 'flex' : 'none';
     });
   });
 
   // Ask Percy
-  const askInput=document.getElementById('ask-input');
-  const askBtn=document.getElementById('ask-btn');
-  askBtn.addEventListener('click',()=>{
-    if(askInput.value.trim()){ Percy.percyRespond('User',{message:askInput.value}); askInput.value=''; }
+  const askInput = document.getElementById('ask-input');
+  const askBtn = document.getElementById('ask-btn');
+  askBtn.addEventListener('click', () => {
+    if(askInput.value.trim() && window.Percy?.percyRespond){
+      window.Percy.percyRespond('User', {message: askInput.value});
+      askInput.value='';
+    }
   });
-  askInput.addEventListener('keydown', e=>{ if(e.key==='Enter') askBtn.click(); });
+  askInput.addEventListener('keydown', e => { if(e.key==='Enter') askBtn.click(); });
 
-  // Voice Visualizer
-  const audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-  const analyser=audioCtx.createAnalyser();
-  analyser.fftSize=64;
-  const bufferLength=analyser.frequencyBinCount;
-  const dataArray=new Uint8Array(bufferLength);
+  // === Voice Visualizer ===
+  const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  const analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 64;
+  const bufferLength = analyser.frequencyBinCount;
+  const dataArray = new Uint8Array(bufferLength);
 
-  const bars=document.querySelectorAll('.bar');
+  const bars = document.querySelectorAll('.bar');
   function animateBars(){
     analyser.getByteFrequencyData(dataArray);
-    bars.forEach((bar,i)=>{ bar.style.height=(dataArray[i%bufferLength]/255*60+20)+'px'; });
+    bars.forEach((bar,i)=>{
+      bar.style.height = (dataArray[i % bufferLength]/255*60 + 20) + 'px';
+    });
     requestAnimationFrame(animateBars);
   }
 
-  const canvas=document.getElementById('sinewave');
-  const ctx=canvas.getContext('2d');
+  const canvas = document.getElementById('sinewave');
+  const ctx = canvas.getContext('2d');
   function resizeCanvas(){ canvas.width=canvas.offsetWidth; canvas.height=canvas.offsetHeight; }
-  window.addEventListener('resize',resizeCanvas);
+  window.addEventListener('resize', resizeCanvas);
   resizeCanvas();
 
   function animateSinewave(){
@@ -128,21 +166,22 @@ window.addEventListener('DOMContentLoaded', ()=>{
     analyser.getByteFrequencyData(dataArray);
     ctx.beginPath();
     for(let i=0;i<canvas.width;i++){
-      const v=dataArray[i%bufferLength]/255;
-      const y=canvas.height/2+Math.sin(i*0.05+Date.now()*0.003)*v*30;
+      const v = dataArray[i % bufferLength]/255;
+      const y = canvas.height/2 + Math.sin(i*0.05+Date.now()*0.003)*v*30;
       ctx.lineTo(i,y);
     }
-    ctx.strokeStyle='#27a0ff';
-    ctx.lineWidth=2;
+    ctx.strokeStyle = '#27a0ff';
+    ctx.lineWidth = 2;
     ctx.stroke();
   }
 
-  navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
-    const source=audioCtx.createMediaStreamSource(stream);
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream=>{
+    const source = audioCtx.createMediaStreamSource(stream);
     source.connect(analyser);
     animateBars();
     animateSinewave();
   }).catch(()=>console.warn("Microphone access denied"));
+
 });
 </script>
 </body>
