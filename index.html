@@ -10,8 +10,59 @@
   .console-line { margin:2px 0; font-family:ui-monospace,Monaco,Consolas, monospace; font-size:12px; color:#d6d8ff; }
   #percy-console { position:fixed; bottom:0; left:0; width:35%; max-height:40%; overflow:auto; background:rgba(0,0,0,0.65); padding:6px; border-top-right-radius:12px; border:1px solid #444; }
   #percy-message { position:fixed; bottom:0; left:35%; width:65%; padding:6px; background:rgba(0,0,0,0.65); border-top-left-radius:12px; border:1px solid #444; }
-  #voice-visualizer { position:fixed; top:12px; right:12px; width:260px; height:120px; pointer-events:none; z-index:9999; }
-  #voice-visualizer canvas { width:100%; height:100%; display:block; border-radius:10px; background:rgba(0,0,0,0.25); box-shadow:0 0 12px rgba(0,255,255,0.4); }
+
+  /* visualizer (top-right, compact) */
+  #voice-visualizer {
+    position:fixed;
+    top:12px;
+    right:12px;
+    width:320px;
+    height:120px;
+    pointer-events:none;
+    z-index:9999;
+    display:flex;
+    gap:10px;
+    align-items:center;
+    padding:8px;
+    box-sizing:border-box;
+    border-radius:12px;
+    background: linear-gradient(180deg, rgba(7,7,12,0.6), rgba(7,7,12,0.35));
+    box-shadow: 0 6px 24px rgba(0,255,255,0.06), inset 0 1px 0 rgba(255,255,255,0.02);
+    border:1px solid rgba(0,255,255,0.06);
+  }
+  #voice-visualizer canvas {
+    flex:1;
+    height:100%;
+    width: calc(100% - 76px);
+    display:block;
+    border-radius:8px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.12), rgba(0,0,0,0.06));
+  }
+  /* bars column */
+  #voice-bars {
+    width:60px;
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+    gap:6px;
+    align-items:center;
+  }
+  .vbar {
+    width:10px;
+    height:12px;
+    border-radius:6px;
+    background: linear-gradient(to top, #27a0ff, #7efcff);
+    box-shadow: 0 0 10px rgba(39,160,255,0.65), 0 0 20px rgba(39,160,255,0.25);
+    transition: height 0.06s linear, background 0.06s linear;
+    will-change: height;
+  }
+
+  @media (max-width:420px){
+    #voice-visualizer { right:6px; top:6px; width:260px; height:90px; }
+    #voice-bars { width:48px; gap:4px; }
+    .vbar { width:8px; }
+  }
 </style>
 </head>
 <body>
@@ -21,100 +72,234 @@
   <input id="seed-search" placeholder="Search seeds" style="position:fixed;top:12px;left:12px;padding:6px;width:200px;z-index:9999;">
   <input id="interpreter-input" placeholder="Ask Percy" style="position:fixed;top:12px;left:220px;padding:6px;width:300px;z-index:9999;">
 
-  <!-- ✅ Load working Percy core -->
+  <!-- existing Percy core (unchanged) -->
   <script src="js/percy.js?v=6.4"></script>
 
-  <!-- ✅ Voice Visualizer -->
-  <div id="voice-visualizer"><canvas></canvas></div>
+  <!-- visualizer (sinewave + neon bars) -->
+  <div id="voice-visualizer" aria-hidden="true">
+    <canvas id="voice-canvas" ></canvas>
+    <div id="voice-bars" aria-hidden="true">
+      <div class="vbar"></div>
+      <div class="vbar"></div>
+      <div class="vbar"></div>
+      <div class="vbar"></div>
+      <div class="vbar"></div>
+      <div class="vbar"></div>
+      <div class="vbar"></div>
+    </div>
+  </div>
+
   <script>
   (function(){
+    // safe local scope
+    const canvas = document.getElementById('voice-canvas');
+    const bars = Array.from(document.querySelectorAll('#voice-bars .vbar'));
     const container = document.getElementById('voice-visualizer');
-    const canvas = container.querySelector('canvas');
     const ctx = canvas.getContext('2d');
 
-    function resizeCanvas(){
-      const w = container.clientWidth;
-      const h = container.clientHeight;
+    // Setup AudioContext & analyser (single analyser shared)
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new AudioContext();
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 1024;
+    const freqBinCount = analyser.frequencyBinCount;
+    const freqData = new Uint8Array(freqBinCount);
+    const timeData = new Uint8Array(freqBinCount);
+
+    // masterGain kept extremely low so synth is effectively inaudible,
+    // but still flows through the analyser for visualization.
+    const masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0.0008; // near-silent; increase slightly if visuals too weak
+    analyser.connect(masterGain);
+    masterGain.connect(audioCtx.destination);
+
+    // helper: resize canvas (HiDPI aware)
+    function resize(){
       const ratio = window.devicePixelRatio || 1;
+      const w = container.clientWidth - 80; // fit within container
+      const h = container.clientHeight - 16;
       canvas.width = Math.max(1, Math.floor(w * ratio));
       canvas.height = Math.max(1, Math.floor(h * ratio));
+      // scale drawing so 1 unit = 1 css pixel
       ctx.setTransform(ratio,0,0,ratio,0,0);
     }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
+    window.addEventListener('resize', resize);
+    resize();
 
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 512;
-    const freqData = new Uint8Array(analyser.frequencyBinCount);
-    const waveData = new Uint8Array(analyser.fftSize);
-
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = 220;
-    gain.gain.value = 0.03;
-    osc.connect(gain);
-    gain.connect(analyser);
-    analyser.connect(audioCtx.destination);
-
-    // 🔑 Start oscillator only after user interaction
-    function initAudio(){
-      if(audioCtx.state === 'suspended'){ audioCtx.resume(); }
-      try { osc.start(); } catch(e) {}
-      window.removeEventListener('click', initAudio);
+    // Ensure we resume audioCtx on first user gesture (autoplay policy)
+    let audioResumed = false;
+    function resumeAudioOnce() {
+      if(audioResumed) return;
+      audioCtx.resume().then(()=>{ audioResumed = true; }).catch(()=>{ /* ignore */ });
+      window.removeEventListener('pointerdown', resumeAudioOnce);
     }
-    window.addEventListener('click', initAudio);
+    window.addEventListener('pointerdown', resumeAudioOnce, { once:true });
 
-    // Hook Percy’s voice
-    const originalSpeak = (window.Voice && Voice.speak) ? Voice.speak.bind(Voice) : ()=>{};
-    if(window.Voice && typeof Voice.speak === 'function'){
-      Voice.speak = function(text){
-        try { originalSpeak(text); } catch(e){}
-        if(audioCtx.state === 'suspended'){ audioCtx.resume(); }
+    // Play a short 'visual' voice (synth) to drive the analyser when Percy speaks.
+    // This is low-volume and primarily for visuals (we can't capture real speechSynthesis output).
+    function playVisualVoice(text){
+      try {
+        // estimate duration from text length to roughly match speech speed
+        const duration = Math.min(Math.max(text?.length / 15 || 0.2, 0.2), 12);
+
+        // nodes: carrier + modulator + filter + gain -> analyser
         const now = audioCtx.currentTime;
-        gain.gain.cancelScheduledValues(now);
-        gain.gain.setValueAtTime(gain.gain.value, now);
-        gain.gain.linearRampToValueAtTime(0.18, now + 0.02);
-        gain.gain.linearRampToValueAtTime(0.03, now + 0.3);
-      };
+        const carrier = audioCtx.createOscillator();
+        carrier.type = 'sawtooth';
+        carrier.frequency.setValueAtTime(120, now);
+
+        const mod = audioCtx.createOscillator();
+        mod.type = 'sine';
+        mod.frequency.setValueAtTime(4 + Math.random()*6, now); // tremor
+
+        const modGain = audioCtx.createGain();
+        modGain.gain.value = 20 + Math.random()*40;
+
+        // filter to shape timbre
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(600 + Math.random()*800, now);
+        filter.Q.setValueAtTime(0.8 + Math.random()*2.2, now);
+
+        // amplitude envelope
+        const amp = audioCtx.createGain();
+        amp.gain.setValueAtTime(0.00001, now);
+        amp.gain.linearRampToValueAtTime(0.12, now + 0.02);
+        amp.gain.exponentialRampToValueAtTime(0.03, now + duration * 0.7);
+        amp.gain.linearRampToValueAtTime(0.00001, now + duration + 0.03);
+
+        // connect graph: mod -> modGain -> carrier.frequency
+        mod.connect(modGain);
+        modGain.connect(carrier.frequency);
+
+        // carrier -> filter -> amp -> analyser
+        carrier.connect(filter);
+        filter.connect(amp);
+        amp.connect(analyser);
+
+        // start/stop
+        carrier.start(now);
+        mod.start(now);
+        carrier.stop(now + duration + 0.04);
+        mod.stop(now + duration + 0.04);
+
+        // cleanup after stopping
+        const cleanup = () => {
+          try{
+            carrier.disconnect();
+            mod.disconnect();
+            modGain.disconnect();
+            filter.disconnect();
+            amp.disconnect();
+          }catch(e){}
+        };
+        setTimeout(cleanup, (duration + 0.12) * 1000);
+      } catch (e) {
+        // fail quietly
+        console.warn("visual voice error", e);
+      }
     }
 
+    // Wrap / hook Percy Voice.speak when available
+    function hookVoice(){
+      if(!window.Voice || typeof Voice.speak !== 'function') return false;
+      const original = Voice.speak.bind(Voice);
+      Voice.speak = function(text){
+        // resume audio if needed (safe)
+        if(!audioResumed){
+          audioCtx.resume().then(()=>{ audioResumed = true; }).catch(()=>{});
+        }
+        // call original TTS so Percy still speaks
+        try { original(text); } catch(e){ /* ignore */ }
+        // create the visual 'voice' to drive analyser (low-volume)
+        playVisualVoice(String(text || ''));
+      };
+      return true;
+    }
+
+    // If Voice is not yet ready, poll for it for a short time
+    if(!hookVoice()){
+      const to = setInterval(()=>{
+        if(hookVoice()){ clearInterval(to); }
+      }, 250);
+      // stop polling eventually
+      setTimeout(()=>clearInterval(to), 15000);
+    }
+
+    // Visual update loop
     function draw(){
       requestAnimationFrame(draw);
+
+      // get data
       analyser.getByteFrequencyData(freqData);
-      analyser.getByteTimeDomainData(waveData);
+      analyser.getByteTimeDomainData(timeData);
 
-      const w = canvas.width, h = canvas.height;
-      ctx.clearRect(0,0,w,h);
+      // draw sine-wave on canvas
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      // clear with slight overlay for trailing glow feel
+      ctx.fillStyle = 'rgba(2,8,12,0.12)';
+      ctx.fillRect(0,0,w,h);
 
-      // Bars
-      const bars = 50; // fewer bars for compact view
-      const step = Math.floor(freqData.length / bars);
-      const barWidth = w / bars;
-      for(let i=0;i<bars;i++){
-        const v = freqData[i*step]/255;
-        const barH = v * (h*0.7);
-        ctx.fillStyle = `hsla(${180+v*120},100%,60%,0.9)`;
-        ctx.shadowColor = `hsla(${180+v*120},100%,60%,0.7)`;
-        ctx.shadowBlur = 12;
-        ctx.fillRect(i*barWidth, h-barH, barWidth*0.8, barH);
-      }
+      ctx.lineWidth = 2.2;
+      ctx.strokeStyle = 'rgba(46, 235, 255, 0.95)';
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = 'rgba(46,235,255,0.9)';
 
-      // Wave
       ctx.beginPath();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = 'rgba(0,255,255,0.85)';
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = 'rgba(0,255,255,0.8)';
-      for(let i=0;i<waveData.length;i++){
-        const x = (i/waveData.length)*w;
-        const y = ((waveData[i]/255 - 0.5) * h * 1.5) + h/2;
-        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      const slice = Math.floor(timeData.length / w) || 1;
+      for(let i=0, x=0; x < w && i < timeData.length; i += slice, x++){
+        const v = (timeData[i] - 128) / 128; // -1..1
+        const y = (h/2) + v * (h/2) * 0.75;
+        if(x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       }
       ctx.stroke();
+
+      // Draw faint secondary glow (fades)
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(40,120,255,0.25)';
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      for(let i=0, x=0; x < w && i < timeData.length; i += slice, x++){
+        const v = (timeData[i] - 128) / 128;
+        const y = (h/2) + v * (h/2) * 0.6;
+        if(x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Bars — update DOM bars (7 of them)
+      // We'll aggregate freqData into 7 bands for stable visuals
+      const bandCount = bars.length;
+      const binsPerBand = Math.floor(freqData.length / bandCount);
+      for(let b=0;b<bandCount;b++){
+        let sum = 0;
+        const offset = b * binsPerBand;
+        for(let k=0;k<binsPerBand;k++){
+          sum += freqData[offset + k] || 0;
+        }
+        const avg = sum / Math.max(1, binsPerBand);
+        // Map avg (0..255) to height (6..full)
+        const maxBar = container.clientHeight - 24;
+        const hval = Math.max(6, Math.round((avg/255) * maxBar));
+        const barEl = bars[b];
+        barEl.style.height = hval + 'px';
+        // color shift
+        const hue = 180 + (avg/255) * 120; // cyan -> blueish -> purple
+        barEl.style.background = `linear-gradient(to top, hsl(${hue},100%,55%), hsl(${hue+40},95%,75%))`;
+        barEl.style.boxShadow = `0 0 ${8 + (avg/32)}px hsla(${hue},100%,60%,0.8)`;
+      }
     }
+
+    // kick the loop + ensure audio resumed if user already interacted
     draw();
+
+    // Make sure audio is resumed if site already got a gesture
+    document.addEventListener('visibilitychange', ()=> {
+      if(!audioResumed && !document.hidden){
+        audioCtx.resume().then(()=> audioResumed = true).catch(()=>{});
+      }
+    });
+
   })();
   </script>
 </body>
