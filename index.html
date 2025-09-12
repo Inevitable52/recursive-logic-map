@@ -1,174 +1,115 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Percy Recursive Logic Map</title>
-
-<link rel="stylesheet" href="style.css?v=6.4" />
+<meta charset="UTF-8">
+<title>Percy TrueAI</title>
 <style>
-  body { margin: 0; font-family: Arial,sans-serif; background: #0a0a0f; color: white; overflow: hidden; }
-  main { position: relative; width: 100%; height: 100%; }
-
-  .zoom-controls { position: fixed; top: 10px; right: 10px; z-index: 1000; display: flex; gap: 6px; }
-  .zoom-controls button { padding: 4px 8px; border-radius: 6px; border: none; background: #3764ff; color: white; cursor: pointer; }
-  .zoom-controls button:hover { background: #2a4de0; }
-
-  #seed-search { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; padding: 6px 10px; border-radius: 8px; border: 1px solid #555; width: 220px; background: #1a1a1a; color: white; }
-  #seed-search::placeholder { color: #bbb; }
-
-  #ask-input { padding: 6px 8px; border-radius: 6px; border: 1px solid #555; width: 220px; background: #1a1a1a; color: white; autocomplete: off; }
-  #ask-btn { padding: 6px 10px; border-radius: 6px; border: none; background: #2ac66d; color: white; cursor: pointer; }
-  #ask-btn:hover { background: #28b15f; }
-
-  #logic-map { position: absolute; top:0; left:0; width:100%; height:100%; overflow: visible; z-index:1; }
-  #logic-map svg { width: 100%; height: 100%; }
-
-  #percy-console { position: absolute; bottom: 100px; left:0; width:100%; max-height:100px; overflow-y:auto; background:#111; border-top:1px solid #333; padding:6px; font-size:12px; z-index:900; }
-  #percy-message { position: absolute; bottom: 200px; left:0; width:100%; padding:6px; background:#0d0d15; font-size:13px; border-top:1px solid #333; z-index:900; }
-
-  /* Visualizer */
-  #voice-visualizer {
-    position: fixed; bottom: 0; left: 0; width: 100%; display: flex; align-items: flex-end; gap: 6px; padding: 6px;
-    background: linear-gradient(90deg, #000022, #001144); border-top: 1px solid #333; z-index:950;
-  }
-  #voice-visualizer canvas { flex: 1; height: 80px; }
-  .bar { width: 6px; background: linear-gradient(to top, #27a0ff, #a0ffff); border-radius:2px; }
-
-  /* Bubbles */
-  .bubble {
-    position: absolute;
-    border-radius: 50%;
-    opacity: 0.5;
-    pointer-events: none;
-    z-index:2;
-    background: radial-gradient(circle at 30% 30%, #27a0ff, transparent);
-  }
-
+  body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; overflow:hidden; }
+  #logic-map { position:relative; width:100vw; height:100vh; background:#0a0a0f; overflow:hidden; }
+  #logic-nodes { position:absolute; top:50%; left:50%; width:100%; height:100%; transform:translate(-50%,-50%) scale(1); }
+  .console-line { margin:2px 0; font-family:ui-monospace,Monaco,Consolas, monospace; font-size:12px; color:#d6d8ff; }
+  #percy-console { position:fixed; bottom:0; left:0; width:35%; max-height:40%; overflow:auto; background:rgba(0,0,0,0.65); padding:6px; border-top-right-radius:12px; border:1px solid #444; }
+  #percy-message { position:fixed; bottom:0; left:35%; width:65%; padding:6px; background:rgba(0,0,0,0.65); border-top-left-radius:12px; border:1px solid #444; }
+  /* visualizer canvas will cover screen */
+  #voice-visualizer canvas { width:100%; height:100%; display:block; }
 </style>
 </head>
 <body>
-<header style="text-align:center; padding:10px;">
-  <h1>Percy Recursive Logic Map</h1>
-  <p>Visualizing Logic Seeds G080–G800</p>
-</header>
+  <div id="logic-map"><div id="logic-nodes"></div></div>
+  <div id="percy-console"></div>
+  <div id="percy-message"></div>
+  <input id="seed-search" placeholder="Search seeds" style="position:fixed;top:12px;left:12px;padding:6px;width:200px;z-index:9999;">
+  <input id="interpreter-input" placeholder="Ask Percy" style="position:fixed;top:12px;left:220px;padding:6px;width:300px;z-index:9999;">
 
-<main>
-  <input type="text" id="seed-search" placeholder="Search G-seed..." autocomplete="off"/>
-  <div class="zoom-controls">
-    <button onclick="zoomLevel *= 1.2; applyTransform();">Zoom In</button>
-    <button onclick="zoomLevel *= 0.8; applyTransform();">Zoom Out</button>
-  </div>
+  <!-- ✅ Load working Percy core -->
+  <script src="js/percy.js?v=6.4"></script>
 
-  <div id="logic-map">
-    <svg></svg>
-    <div id="logic-nodes"></div>
-  </div>
+  <!-- ✅ Add just the visualizer -->
+  <script>
+  (function(){
+    const visContainer = document.createElement('div');
+    visContainer.id = 'voice-visualizer';
+    visContainer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:60;';
+    document.body.appendChild(visContainer);
 
-  <div id="percy-message">Click a logic node to hear Percy’s thoughts...</div>
-  <div id="percy-console"><p class="console-line">Percy initialized. Click a node.</p></div>
-</main>
-
-<!-- Voice Visualizer -->
-<div id="voice-visualizer">
-  <canvas id="sinewave"></canvas>
-  <div class="bar"></div>
-  <div class="bar"></div>
-  <div class="bar"></div>
-  <div class="bar"></div>
-  <div class="bar"></div>
-</div>
-
-<div id="percy-ask" style="position:fixed; bottom:90px; left:50%; transform:translateX(-50%); display:flex; gap:4px; z-index:1000;">
-  <input type="text" id="ask-input" placeholder="Ask Percy..." autocomplete="off"/>
-  <button id="ask-btn">Ask</button>
-</div>
-
-<footer style="text-align:center;padding:8px;margin-top:10px;">
-  <p>© 2025 Fabian V Omega — Percy Recursive Logic System</p>
-</footer>
-
-<script src="js/percy.js?v=6.4"></script>
-<script>
-  window.Percy = { percyRespond };
-
-  // Search
-  const searchInput = document.getElementById('seed-search');
-  searchInput.addEventListener('input', ()=> {
-    const val = searchInput.value.trim().toUpperCase();
-    document.querySelectorAll('.node').forEach(n=>{
-      n.style.display = (!val || n.textContent.toUpperCase().includes(val)) ? 'flex' : 'none';
-    });
-  });
-
-  // Ask Percy
-  const askInput = document.getElementById('ask-input');
-  const askBtn = document.getElementById('ask-btn');
-  askBtn.addEventListener('click', () => {
-    if(askInput.value.trim()){
-      Percy.percyRespond('User', {message: askInput.value});
-      askInput.value='';
-    }
-  });
-  askInput.addEventListener('keydown', e => { if(e.key==='Enter') askBtn.click(); });
-
-  // ===== Bars & Sinewave without microphone =====
-  const bars = document.querySelectorAll('.bar');
-  let t = 0;
-
-  function animateVisualizer(){
-    t += 0.05;
-
-    // Bars futuristic pulsing
-    bars.forEach((bar,i)=>{
-      const h = 20 + 40 * Math.abs(Math.sin(t + i));
-      bar.style.height = h + 'px';
-    });
-
-    // Sinewave futuristic
-    const canvas = document.getElementById('sinewave');
+    const canvas = document.createElement('canvas');
+    visContainer.appendChild(canvas);
     const ctx = canvas.getContext('2d');
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
 
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.beginPath();
-    for(let x=0;x<canvas.width;x++){
-      const y = canvas.height/2 + Math.sin(x*0.04 + t)*Math.cos(x*0.02 + t*1.3)*30;
-      ctx.lineTo(x,y);
+    function resizeCanvas(){
+      const w = visContainer.clientWidth;
+      const h = visContainer.clientHeight;
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.floor(w * ratio));
+      canvas.height = Math.max(1, Math.floor(h * ratio));
+      canvas.style.width = w + 'px';
+      canvas.style.height = h + 'px';
+      ctx.setTransform(ratio,0,0,ratio,0,0);
     }
-    ctx.strokeStyle = '#27a0ff';
-    ctx.lineWidth = 2;
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = '#00ffff';
-    ctx.stroke();
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
 
-    requestAnimationFrame(animateVisualizer);
-  }
-  animateVisualizer();
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 512;
+    const freqData = new Uint8Array(analyser.frequencyBinCount);
+    const waveData = new Uint8Array(analyser.fftSize);
 
-  // ===== Floating Bubbles =====
-  const logicMap = document.getElementById('logic-map');
-  function createBubble(){
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble';
-    const size = 10 + Math.random()*40;
-    bubble.style.width = bubble.style.height = size+'px';
-    bubble.style.left = Math.random()*logicMap.offsetWidth+'px';
-    bubble.style.top = logicMap.offsetHeight+'px';
-    logicMap.appendChild(bubble);
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 220;
+    gain.gain.value = 0.03;
+    osc.connect(gain);
+    gain.connect(analyser);
+    analyser.connect(audioCtx.destination);
+    osc.start();
 
-    const speed = 0.5 + Math.random()*1.5;
-    function rise(){
-      const y = parseFloat(bubble.style.top);
-      if(y + size < 0){ bubble.remove(); return; }
-      bubble.style.top = (y - speed) + 'px';
-      requestAnimationFrame(rise);
+    // Hook Percy’s voice
+    const originalSpeak = (window.Voice && Voice.speak) ? Voice.speak.bind(Voice) : ()=>{};
+    if(window.Voice && typeof Voice.speak === 'function'){
+      Voice.speak = function(text){
+        try { originalSpeak(text); } catch(e){}
+        if(audioCtx.state === 'suspended'){ audioCtx.resume(); }
+        const now = audioCtx.currentTime;
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setValueAtTime(gain.gain.value, now);
+        gain.gain.linearRampToValueAtTime(0.18, now + 0.02);
+        gain.gain.linearRampToValueAtTime(0.03, now + 0.3);
+      };
     }
-    rise();
-  }
-  setInterval(createBubble, 300);
 
-</script>
+    function draw(){
+      requestAnimationFrame(draw);
+      analyser.getByteFrequencyData(freqData);
+      analyser.getByteTimeDomainData(waveData);
+
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0,0,w,h);
+
+      // Bars
+      const bars = freqData.length;
+      const barWidth = w / bars;
+      for(let i=0;i<bars;i++){
+        const v = freqData[i]/255;
+        const barH = v * (h*0.6);
+        ctx.fillStyle = `hsl(${200+v*120},80%,55%)`;
+        ctx.fillRect(i*barWidth, h-barH, barWidth*0.9, barH);
+      }
+
+      // Wave
+      ctx.beginPath();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+      for(let i=0;i<waveData.length;i++){
+        const x = (i/waveData.length)*w;
+        const y = ((waveData[i]/255 - 0.5) * h * 1.8) + h/2;
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+    }
+    draw();
+  })();
+  </script>
 </body>
 </html>
