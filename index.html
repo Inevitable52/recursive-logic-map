@@ -90,10 +90,15 @@
   </div>
 
 <script>
-const canvas = document.getElementById("voice-canvas"); // ✅ correct element
+const canvas = document.getElementById("voice-canvas");
 const ctx = canvas.getContext("2d");
-canvas.width = canvas.offsetWidth;
-canvas.height = canvas.offsetHeight;
+
+function resizeCanvas() {
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+}
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
 
 let isSpeaking = false;
 let speakEndTime = 0;
@@ -120,6 +125,7 @@ function animateVisualizer() {
     ctx.beginPath();
     let amplitude = isSpeaking ? 40 : 5;
     let freq = 0.02;
+    ctx.moveTo(0, canvas.height/2);
     for (let x = 0; x < canvas.width; x++) {
       let y = canvas.height/2 + Math.sin(x * freq + Date.now()/120) * amplitude;
       ctx.lineTo(x, y);
@@ -152,7 +158,6 @@ const Voice = {
   speak(text) {
     console.log("Percy says:", text);
     speakAnimation(text.length);
-    // keep your real TTS call here if desired
   }
 };
 
