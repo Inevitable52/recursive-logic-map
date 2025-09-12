@@ -57,7 +57,14 @@
     osc.connect(gain);
     gain.connect(analyser);
     analyser.connect(audioCtx.destination);
-    osc.start();
+
+    // 🔑 Start oscillator only after user interaction
+    function initAudio(){
+      if(audioCtx.state === 'suspended'){ audioCtx.resume(); }
+      try { osc.start(); } catch(e) {}
+      window.removeEventListener('click', initAudio);
+    }
+    window.addEventListener('click', initAudio);
 
     // Hook Percy’s voice
     const originalSpeak = (window.Voice && Voice.speak) ? Voice.speak.bind(Voice) : ()=>{};
