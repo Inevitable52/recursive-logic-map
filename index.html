@@ -75,9 +75,12 @@
   <!-- existing Percy core (unchanged) -->
   <script src="js/percy.js?v=6.4"></script>
 
-  <!-- visualizer (sinewave + neon bars) -->
+<!-- visualizer (voice synthesizer style) -->
 <div id="voice-visualizer" aria-hidden="true">
   <div id="voice-bars" aria-hidden="true">
+    <div class="vbar"></div>
+    <div class="vbar"></div>
+    <div class="vbar"></div>
     <div class="vbar"></div>
     <div class="vbar"></div>
     <div class="vbar"></div>
@@ -94,47 +97,48 @@
   position:fixed;
   top:12px;
   right:12px;
-  width:360px;
-  height:140px;
+  width:400px;
+  height:160px;
   pointer-events:none;
   z-index:9999;
   display:flex;
   flex-direction:column; /* bars on top, wave under */
-  gap:8px;
+  gap:6px;
   padding:10px;
   box-sizing:border-box;
-  border-radius:12px;
-  background: linear-gradient(180deg, rgba(7,7,12,0.6), rgba(7,7,12,0.35));
-  border:1px solid rgba(0,255,255,0.1);
-  box-shadow: 0 6px 24px rgba(0,255,255,0.12), inset 0 1px 0 rgba(255,255,255,0.05);
+  border-radius:14px;
+  background: rgba(10,10,20,0.7);
+  border:1px solid rgba(0,255,255,0.15);
+  box-shadow: 0 6px 24px rgba(0,255,255,0.25);
 }
 #voice-bars {
   display:flex;
-  justify-content:space-between; /* spread horizontally */
+  justify-content:space-between;
   align-items:flex-end;
-  height:60px;
+  height:70px;
 }
 .vbar {
   flex:1;
   margin:0 3px;
   border-radius:4px;
-  background: linear-gradient(to top, #27a0ff, #7efcff);
-  box-shadow: 0 0 10px rgba(39,160,255,0.8), 0 0 20px rgba(39,160,255,0.4);
-  height:10px; /* start small */
-  transition: height 0.08s ease-out;
+  background: linear-gradient(to top, #ff0080, #00f0ff, #00ff80);
+  box-shadow: 0 0 12px rgba(0,255,255,0.9), 0 0 24px rgba(255,0,200,0.6);
+  height:12px;
+  transition: height 0.1s ease-out;
 }
 #voice-canvas {
   width:100%;
-  height:60px;
+  height:70px;
   border-radius:8px;
   display:block;
-  background:rgba(0,0,0,0.1);
+  background:rgba(0,0,0,0.15);
 }
 </style>
 
 <script>
 const canvas = document.getElementById("voice-canvas");
 const ctx = canvas.getContext("2d");
+
 function resizeCanvas() {
   canvas.width = canvas.clientWidth;
   canvas.height = canvas.clientHeight;
@@ -145,38 +149,45 @@ window.addEventListener("resize", resizeCanvas);
 let isSpeaking = false;
 let speakEndTime = 0;
 let animationId;
-let t = 0; // time counter
+let t = 0;
+
 const bars = document.querySelectorAll(".vbar");
 
+// === trigger ===
 function speakAnimation(textLength) {
-  const duration = Math.max(1500, textLength * 60);
+  const duration = Math.max(2000, textLength * 70);
   isSpeaking = true;
   speakEndTime = Date.now() + duration;
   animateVisualizer();
 }
 
+// === draw ===
 function animateVisualizer() {
   cancelAnimationFrame(animationId);
+
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // === Neon sinewave (bottom style) ===
+    // === synthesizer waveform ===
     ctx.beginPath();
-    let amplitude = isSpeaking ? 25 : 4;
-    let freq = 0.03;
+    let mid = canvas.height/2;
     for (let x = 0; x < canvas.width; x++) {
-      let y = canvas.height/1.5 + Math.sin(x * freq + t/8) * amplitude;
+      // mix of sine waves for "synth" look
+      let y = mid
+        + Math.sin((x+t)/12) * 12
+        + Math.sin((x+t)/25) * 8
+        + Math.sin((x+t)/50) * 5;
       ctx.lineTo(x, y);
     }
-    ctx.strokeStyle = "cyan";
+    ctx.strokeStyle = "lime";
     ctx.lineWidth = 2;
-    ctx.shadowColor = "aqua";
-    ctx.shadowBlur = 15;
+    ctx.shadowColor = "cyan";
+    ctx.shadowBlur = 20;
     ctx.stroke();
 
-    // === Bars animation ===
-    bars.forEach(bar => {
-      let h = isSpeaking ? 15 + Math.random() * 45 : 8;
+    // === bars movement ===
+    bars.forEach((bar, i) => {
+      let h = isSpeaking ? 10 + Math.abs(Math.sin(t/5 + i))*60 : 8;
       bar.style.height = `${h}px`;
     });
 
@@ -184,13 +195,13 @@ function animateVisualizer() {
       isSpeaking = false;
     }
 
-    t += 2; // time moves
+    t += 2;
     animationId = requestAnimationFrame(draw);
   }
   draw();
 }
 
-// Hook into Percy’s Voice if available
+// hook into Voice if present
 if (window.Voice) {
   const originalSpeak = Voice.speak.bind(Voice);
   Voice.speak = function(text) {
@@ -198,8 +209,8 @@ if (window.Voice) {
     return originalSpeak(text);
   };
 } else {
-  console.warn("⚠️ Voice not found. Using demo.");
-  setTimeout(()=> speakAnimation(40), 2000);
+  console.warn("⚠️ Voice not found. Demo running.");
+  setTimeout(()=> speakAnimation(50), 2000);
 }
 </script>
 </body>
