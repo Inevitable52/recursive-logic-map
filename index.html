@@ -94,8 +94,8 @@ const canvas = document.getElementById("voice-canvas");
 const ctx = canvas.getContext("2d");
 
 function resizeCanvas() {
-  canvas.width = canvas.clientWidth;
-  canvas.height = canvas.clientHeight;
+  canvas.width = canvas.offsetWidth;   // ✅ use offsetWidth
+  canvas.height = canvas.offsetHeight; // ✅ use offsetHeight
 }
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
@@ -108,51 +108,46 @@ const bars = document.querySelectorAll(".vbar");
 
 // Trigger animation when Percy "speaks"
 function speakAnimation(textLength) {
-  const duration = Math.max(1500, textLength * 60); 
+  const duration = Math.max(1500, textLength * 60);
   isSpeaking = true;
   speakEndTime = Date.now() + duration;
-  animateVisualizer();
 }
 
-// Draw sinewave + bars
-function animateVisualizer() {
-  cancelAnimationFrame(animationId);
-  
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+// Draw sinewave + bars (keeps looping always)
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // === Neon sinewave ===
-    ctx.beginPath();
-    let amplitude = isSpeaking ? 40 : 5;
-    let freq = 0.02;
-    ctx.moveTo(0, canvas.height/2);
-    for (let x = 0; x < canvas.width; x++) {
-      let y = canvas.height/2 + Math.sin(x * freq + Date.now()/120) * amplitude;
-      ctx.lineTo(x, y);
-    }
-    ctx.strokeStyle = "cyan";
-    ctx.lineWidth = 2;
-    ctx.shadowColor = "aqua";
-    ctx.shadowBlur = 20;
-    ctx.stroke();
+  // === Neon sinewave ===
+  ctx.beginPath();
+  let amplitude = isSpeaking ? 40 : 5;
+  let freq = 0.02;
+  ctx.moveTo(0, canvas.height/2);
+  for (let x = 0; x < canvas.width; x++) {
+    let y = canvas.height/2 + Math.sin(x * freq + Date.now()/120) * amplitude;
+    ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = "cyan";
+  ctx.lineWidth = 2;
+  ctx.shadowColor = "aqua";
+  ctx.shadowBlur = 20;
+  ctx.stroke();
 
-    // === Animate CSS bars ===
-    bars.forEach(bar => {
-      let h = isSpeaking ? Math.random() * canvas.height * 0.8 : 6;
-      bar.style.height = `${h}px`;
-    });
+  // === Animate CSS bars ===
+  bars.forEach(bar => {
+    let h = isSpeaking ? (20 + Math.random() * canvas.height * 0.6) : 6;
+    bar.style.height = `${h}px`;
+  });
 
-    if (Date.now() > speakEndTime) {
-      isSpeaking = false;
-    }
-
-    animationId = requestAnimationFrame(draw);
+  // stop "speaking" after duration
+  if (Date.now() > speakEndTime) {
+    isSpeaking = false;
   }
 
-  draw();
+  animationId = requestAnimationFrame(draw);
 }
+draw(); // start loop immediately
 
-// ✅ Hook into existing Voice (don’t redeclare it)
+// ✅ Hook into existing Voice
 if (window.Voice) {
   const originalSpeak = Voice.speak.bind(Voice);
   Voice.speak = function(text) {
@@ -167,6 +162,8 @@ if (window.Voice) {
 setTimeout(() => {
   if (window.Voice) {
     Voice.speak("Hello my good sir, I am Percy and my visualizer is now alive!");
+  } else {
+    speakAnimation(40); // still animate even if no Voice
   }
 }, 2000);
 </script>
