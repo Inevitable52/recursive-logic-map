@@ -92,8 +92,9 @@
 <script>
 const canvas = document.getElementById("voice-canvas");
 const ctx = canvas.getContext("2d");
-const bars = document.querySelectorAll(".vbar");
+const barEls = document.querySelectorAll(".vbar");
 
+// Resize the canvas so it fits correctly
 function resizeCanvas() {
   canvas.width = canvas.clientWidth;
   canvas.height = canvas.clientHeight;
@@ -102,38 +103,45 @@ resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 
 let t = 0;
+let isSpeaking = true;  // we’ll animate always
 
-// 🎵 Fake animation loop
 function animateVisualizer() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // === Cyan glowing sinewave ===
+  // === Bars at top ===
+  const barCount = barEls.length;
+  const barMaxHeight = canvas.height * 0.6; // bars take upper 60% of height
+  barEls.forEach((bar, i) => {
+    // pseudo-rhythm: using sine + randomness
+    const h = 10 + Math.abs(Math.sin(t * 0.3 + i * 0.8)) * (barMaxHeight) + Math.random() * 10;
+    bar.style.height = `${h}px`;
+    // color shift
+    const hue = (t * 50 + i * 30) % 360;
+    bar.style.background = `hsl(${hue},100%,60%)`;
+    bar.style.boxShadow = `0 0 12px hsla(${hue},100%,70%,0.8), 0 0 24px hsla(${hue},100%,60%,0.4)`;
+  });
+
+  // === Synthesizer waveform at bottom of visualizer ===
+  const waveTop = canvas.height * 0.65;
+  const waveHeight = canvas.height * 0.3; // bottom 30%
+
   ctx.beginPath();
-  let amplitude = 25 + Math.sin(t * 0.05) * 10;
-  let freq = 0.05;
-  for (let x = 0; x < canvas.width; x++) {
-    let y = canvas.height / 2 + Math.sin(x * freq + t * 0.2) * amplitude;
-    ctx.lineTo(x, y);
-  }
   ctx.strokeStyle = "cyan";
   ctx.lineWidth = 2;
   ctx.shadowColor = "aqua";
-  ctx.shadowBlur = 20;
+  ctx.shadowBlur = 12;
+
+  // move to start of waveform
+  ctx.moveTo(0, waveTop + waveHeight / 2);
+
+  const freq = 0.08;
+  for(let x = 0; x <= canvas.width; x++) {
+    const y = waveTop + waveHeight/2 + Math.sin(x * freq + t * 0.15) * (waveHeight/2) * 0.7;
+    ctx.lineTo(x, y);
+  }
   ctx.stroke();
 
-  // === Neon bars ===
-  bars.forEach((bar, i) => {
-    // fake fast movement
-    let h = 8 + Math.abs(Math.sin(t * 0.2 + i)) * (canvas.height * 0.6) + Math.random() * 20;
-    bar.style.height = `${h}px`;
-
-    // rainbow neon glow
-    let hue = (t * 10 + i * 40) % 360;
-    bar.style.background = `linear-gradient(to top, hsl(${hue},100%,55%), hsl(${(hue+60)%360},100%,70%))`;
-    bar.style.boxShadow = `0 0 12px hsla(${hue},100%,60%,0.8), 0 0 24px hsla(${hue},100%,50%,0.5)`;
-  });
-
-  t += 0.5;
+  t += 0.1;
   requestAnimationFrame(animateVisualizer);
 }
 
