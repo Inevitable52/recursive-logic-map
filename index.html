@@ -76,25 +76,65 @@
   <script src="js/percy.js?v=6.4"></script>
 
   <!-- visualizer (sinewave + neon bars) -->
-  <div id="voice-visualizer" aria-hidden="true">
-    <canvas id="voice-canvas" ></canvas>
-    <div id="voice-bars" aria-hidden="true">
-      <div class="vbar"></div>
-      <div class="vbar"></div>
-      <div class="vbar"></div>
-      <div class="vbar"></div>
-      <div class="vbar"></div>
-      <div class="vbar"></div>
-      <div class="vbar"></div>
-    </div>
+<div id="voice-visualizer" aria-hidden="true">
+  <div id="voice-bars" aria-hidden="true">
+    <div class="vbar"></div>
+    <div class="vbar"></div>
+    <div class="vbar"></div>
+    <div class="vbar"></div>
+    <div class="vbar"></div>
+    <div class="vbar"></div>
+    <div class="vbar"></div>
   </div>
+  <canvas id="voice-canvas"></canvas>
+</div>
+
+<style>
+#voice-visualizer {
+  position:fixed;
+  top:12px;
+  right:12px;
+  width:360px;
+  height:140px;
+  pointer-events:none;
+  z-index:9999;
+  display:flex;
+  flex-direction:column; /* bars on top, wave under */
+  gap:8px;
+  padding:10px;
+  box-sizing:border-box;
+  border-radius:12px;
+  background: linear-gradient(180deg, rgba(7,7,12,0.6), rgba(7,7,12,0.35));
+  border:1px solid rgba(0,255,255,0.1);
+  box-shadow: 0 6px 24px rgba(0,255,255,0.12), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+#voice-bars {
+  display:flex;
+  justify-content:space-between; /* spread horizontally */
+  align-items:flex-end;
+  height:60px;
+}
+.vbar {
+  flex:1;
+  margin:0 3px;
+  border-radius:4px;
+  background: linear-gradient(to top, #27a0ff, #7efcff);
+  box-shadow: 0 0 10px rgba(39,160,255,0.8), 0 0 20px rgba(39,160,255,0.4);
+  height:10px; /* start small */
+  transition: height 0.08s ease-out;
+}
+#voice-canvas {
+  width:100%;
+  height:60px;
+  border-radius:8px;
+  display:block;
+  background:rgba(0,0,0,0.1);
+}
+</style>
 
 <script>
 const canvas = document.getElementById("voice-canvas");
 const ctx = canvas.getContext("2d");
-const barEls = document.querySelectorAll(".vbar");
-
-// Resize the canvas so it fits correctly
 function resizeCanvas() {
   canvas.width = canvas.clientWidth;
   canvas.height = canvas.clientHeight;
@@ -102,50 +142,65 @@ function resizeCanvas() {
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 
-let t = 0;
-let isSpeaking = true;  // we’ll animate always
+let isSpeaking = false;
+let speakEndTime = 0;
+let animationId;
+let t = 0; // time counter
+const bars = document.querySelectorAll(".vbar");
 
-function animateVisualizer() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // === Bars at top ===
-  const barCount = barEls.length;
-  const barMaxHeight = canvas.height * 0.6; // bars take upper 60% of height
-  barEls.forEach((bar, i) => {
-    // pseudo-rhythm: using sine + randomness
-    const h = 10 + Math.abs(Math.sin(t * 0.3 + i * 0.8)) * (barMaxHeight) + Math.random() * 10;
-    bar.style.height = `${h}px`;
-    // color shift
-    const hue = (t * 50 + i * 30) % 360;
-    bar.style.background = `hsl(${hue},100%,60%)`;
-    bar.style.boxShadow = `0 0 12px hsla(${hue},100%,70%,0.8), 0 0 24px hsla(${hue},100%,60%,0.4)`;
-  });
-
-  // === Synthesizer waveform at bottom of visualizer ===
-  const waveTop = canvas.height * 0.65;
-  const waveHeight = canvas.height * 0.3; // bottom 30%
-
-  ctx.beginPath();
-  ctx.strokeStyle = "cyan";
-  ctx.lineWidth = 2;
-  ctx.shadowColor = "aqua";
-  ctx.shadowBlur = 12;
-
-  // move to start of waveform
-  ctx.moveTo(0, waveTop + waveHeight / 2);
-
-  const freq = 0.08;
-  for(let x = 0; x <= canvas.width; x++) {
-    const y = waveTop + waveHeight/2 + Math.sin(x * freq + t * 0.15) * (waveHeight/2) * 0.7;
-    ctx.lineTo(x, y);
-  }
-  ctx.stroke();
-
-  t += 0.1;
-  requestAnimationFrame(animateVisualizer);
+function speakAnimation(textLength) {
+  const duration = Math.max(1500, textLength * 60);
+  isSpeaking = true;
+  speakEndTime = Date.now() + duration;
+  animateVisualizer();
 }
 
-animateVisualizer();
+function animateVisualizer() {
+  cancelAnimationFrame(animationId);
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // === Neon sinewave (bottom style) ===
+    ctx.beginPath();
+    let amplitude = isSpeaking ? 25 : 4;
+    let freq = 0.03;
+    for (let x = 0; x < canvas.width; x++) {
+      let y = canvas.height/1.5 + Math.sin(x * freq + t/8) * amplitude;
+      ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = "cyan";
+    ctx.lineWidth = 2;
+    ctx.shadowColor = "aqua";
+    ctx.shadowBlur = 15;
+    ctx.stroke();
+
+    // === Bars animation ===
+    bars.forEach(bar => {
+      let h = isSpeaking ? 15 + Math.random() * 45 : 8;
+      bar.style.height = `${h}px`;
+    });
+
+    if (Date.now() > speakEndTime) {
+      isSpeaking = false;
+    }
+
+    t += 2; // time moves
+    animationId = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// Hook into Percy’s Voice if available
+if (window.Voice) {
+  const originalSpeak = Voice.speak.bind(Voice);
+  Voice.speak = function(text) {
+    speakAnimation(text.length);
+    return originalSpeak(text);
+  };
+} else {
+  console.warn("⚠️ Voice not found. Using demo.");
+  setTimeout(()=> speakAnimation(40), 2000);
+}
 </script>
 </body>
 </html>
