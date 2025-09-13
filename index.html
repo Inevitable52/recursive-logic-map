@@ -92,38 +92,27 @@
 <script>
 const canvas = document.getElementById("voice-canvas");
 const ctx = canvas.getContext("2d");
+const bars = document.querySelectorAll(".vbar");
 
 function resizeCanvas() {
-  canvas.width = canvas.offsetWidth;   // ✅ use offsetWidth
-  canvas.height = canvas.offsetHeight; // ✅ use offsetHeight
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
 }
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 
-let isSpeaking = false;
-let speakEndTime = 0;
-let animationId;
+let t = 0;
 
-const bars = document.querySelectorAll(".vbar");
-
-// Trigger animation when Percy "speaks"
-function speakAnimation(textLength) {
-  const duration = Math.max(1500, textLength * 60);
-  isSpeaking = true;
-  speakEndTime = Date.now() + duration;
-}
-
-// Draw sinewave + bars (keeps looping always)
-function draw() {
+// 🎵 Fake animation loop
+function animateVisualizer() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // === Neon sinewave ===
+  // === Cyan glowing sinewave ===
   ctx.beginPath();
-  let amplitude = isSpeaking ? 40 : 5;
-  let freq = 0.02;
-  ctx.moveTo(0, canvas.height/2);
+  let amplitude = 25 + Math.sin(t * 0.05) * 10;
+  let freq = 0.05;
   for (let x = 0; x < canvas.width; x++) {
-    let y = canvas.height/2 + Math.sin(x * freq + Date.now()/120) * amplitude;
+    let y = canvas.height / 2 + Math.sin(x * freq + t * 0.2) * amplitude;
     ctx.lineTo(x, y);
   }
   ctx.strokeStyle = "cyan";
@@ -132,40 +121,23 @@ function draw() {
   ctx.shadowBlur = 20;
   ctx.stroke();
 
-  // === Animate CSS bars ===
-  bars.forEach(bar => {
-    let h = isSpeaking ? (20 + Math.random() * canvas.height * 0.6) : 6;
+  // === Neon bars ===
+  bars.forEach((bar, i) => {
+    // fake fast movement
+    let h = 8 + Math.abs(Math.sin(t * 0.2 + i)) * (canvas.height * 0.6) + Math.random() * 20;
     bar.style.height = `${h}px`;
+
+    // rainbow neon glow
+    let hue = (t * 10 + i * 40) % 360;
+    bar.style.background = `linear-gradient(to top, hsl(${hue},100%,55%), hsl(${(hue+60)%360},100%,70%))`;
+    bar.style.boxShadow = `0 0 12px hsla(${hue},100%,60%,0.8), 0 0 24px hsla(${hue},100%,50%,0.5)`;
   });
 
-  // stop "speaking" after duration
-  if (Date.now() > speakEndTime) {
-    isSpeaking = false;
-  }
-
-  animationId = requestAnimationFrame(draw);
-}
-draw(); // start loop immediately
-
-// ✅ Hook into existing Voice
-if (window.Voice) {
-  const originalSpeak = Voice.speak.bind(Voice);
-  Voice.speak = function(text) {
-    speakAnimation(text.length);
-    return originalSpeak(text);
-  };
-} else {
-  console.warn("⚠️ Voice not found. Visualizer will not sync.");
+  t += 0.5;
+  requestAnimationFrame(animateVisualizer);
 }
 
-// Example: auto test after 2s
-setTimeout(() => {
-  if (window.Voice) {
-    Voice.speak("Hello my good sir, I am Percy and my visualizer is now alive!");
-  } else {
-    speakAnimation(40); // still animate even if no Voice
-  }
-}, 2000);
+animateVisualizer();
 </script>
 </body>
 </html>
