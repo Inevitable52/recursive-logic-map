@@ -15,48 +15,38 @@
     flex-direction:column;
   }
 
-  /* Equalizer Bars */
+  /* === Equalizer Bars === */
   #bars {
     display:flex;
     align-items:flex-end;
     height:250px;
-    gap:4px;
+    gap:6px;
   }
   .bar {
-    width:10px;
-    background:linear-gradient(to top, red, yellow, lime, cyan);
+    width:12px;
+    background:linear-gradient(to top, red, orange, yellow, lime, cyan);
     border-radius:4px;
     animation: bounce 1s infinite ease-in-out;
+    filter: drop-shadow(0 0 6px cyan) drop-shadow(0 0 12px magenta);
   }
   @keyframes bounce {
     0%, 100% { height:20px; }
-    50% { height:200px; }
+    50% { height:220px; }
   }
 
-  /* Glowing Wave */
+  /* === Glowing Wave === */
   #wave {
     position:relative;
     width:100%;
     height:120px;
-    overflow:hidden;
     margin-top:40px;
+    overflow:hidden;
   }
-  .sine {
-    position:absolute;
-    width:200%;
+  canvas {
+    width:100%;
     height:100%;
-    background:repeating-linear-gradient(
-      to right, 
-      rgba(0,255,255,0.7) 0 5px, 
-      rgba(255,0,255,0.7) 5px 10px
-    );
-    animation: waveMove 4s linear infinite;
-    filter: blur(4px);
-    opacity:0.7;
-  }
-  @keyframes waveMove {
-    from { transform: translateX(0); }
-    to { transform: translateX(-50%); }
+    display:block;
+    filter: drop-shadow(0 0 8px cyan) drop-shadow(0 0 16px magenta);
   }
 </style>
 </head>
@@ -77,8 +67,55 @@
 
   <!-- Wave -->
   <div id="wave">
-    <div class="sine"></div>
+    <canvas id="sinewave"></canvas>
   </div>
+
+  <script>
+    // === Bars: randomize animation speed for variety ===
+    document.querySelectorAll('.bar').forEach(bar => {
+      const speed = (0.8 + Math.random() * 0.6).toFixed(2);
+      bar.style.animationDuration = `${speed}s`;
+    });
+
+    // === Glowing Sinewave ===
+    const canvas = document.getElementById("sinewave");
+    const ctx = canvas.getContext("2d");
+    let width, height, time = 0;
+
+    function resize() {
+      width = canvas.width = canvas.offsetWidth;
+      height = canvas.height = canvas.offsetHeight;
+    }
+    window.addEventListener("resize", resize);
+    resize();
+
+    function drawWave() {
+      ctx.clearRect(0, 0, width, height);
+
+      ctx.beginPath();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "cyan";
+
+      for (let x = 0; x < width; x++) {
+        const y = height/2 + Math.sin((x + time) * 0.04) * 30;
+        ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "magenta";
+      for (let x = 0; x < width; x++) {
+        const y = height/2 + Math.cos((x + time) * 0.05) * 20;
+        ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      time += 2;
+      requestAnimationFrame(drawWave);
+    }
+    drawWave();
+  </script>
 
   <!-- Keep Percy’s brain intact -->
   <script src="js/percy.js?v=6.4"></script>
