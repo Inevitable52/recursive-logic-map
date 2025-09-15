@@ -137,21 +137,31 @@
 })();
 </script>
 
+<!-- Voice Visualizer script stays above -->
+
 <script>
-// === Ask Percy input ===
-const interpreterInput=document.getElementById('interpreter-input');
-if(interpreterInput){
+// === Ask Percy input (single handler, no duplicates) ===
+(function(){
+  const interpreterInput=document.getElementById('interpreter-input');
+  if(!interpreterInput) return;
+
   interpreterInput.addEventListener('keydown',function(e){
     if(e.key==='Enter'){
       const query=interpreterInput.value.trim();
       if(query){
-        if(typeof percyRespond==='function'){ percyRespond(query); }
-        else if(window.Percy && typeof Percy.interpret==='function'){ Percy.interpret(query); }
+        if(typeof percyRespond==='function'){
+          percyRespond(query);
+        } else if(window.Percy && typeof Percy.interpret==='function'){
+          Percy.interpret(query);
+        }
         interpreterInput.value='';
       }
     }
   });
-}
+})();
 </script>
+</body>
+</html>
+
 </body>
 </html>
