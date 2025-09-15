@@ -16,12 +16,12 @@
     position:fixed;
     top:12px;
     right:12px;
-    width:320px;
-    height:120px;
+    width:360px;
+    height:128px;
     pointer-events:none;
     z-index:9999;
     display:flex;
-    gap:10px;
+    gap:12px;
     align-items:center;
     padding:8px;
     box-sizing:border-box;
@@ -30,37 +30,43 @@
     box-shadow: 0 6px 24px rgba(0,255,255,0.06), inset 0 1px 0 rgba(255,255,255,0.02);
     border:1px solid rgba(0,255,255,0.06);
   }
-  #voice-visualizer canvas {
+  #voice-canvas {
     flex:1;
     height:100%;
-    width: calc(100% - 76px);
+    width: calc(100% - 92px);
     display:block;
     border-radius:8px;
     background: linear-gradient(180deg, rgba(0,0,0,0.12), rgba(0,0,0,0.06));
   }
   /* bars column */
   #voice-bars {
-    width:60px;
+    width:84px;
     height:100%;
     display:flex;
     flex-direction:column;
-    justify-content:flex-end;
-    gap:6px;
+    justify-content:center;
+    gap:8px;
     align-items:center;
+    box-sizing:border-box;
+    padding:8px 6px;
   }
   .vbar {
-    width:10px;
-    height:12px;
-    border-radius:6px;
+    width:12px;
+    height:14px;
+    border-radius:8px;
     background: linear-gradient(to top, #27a0ff, #7efcff);
     box-shadow: 0 0 10px rgba(39,160,255,0.65), 0 0 20px rgba(39,160,255,0.25);
     transition: height 0.06s linear, background 0.06s linear;
     will-change: height;
+    transform-origin: bottom center;
   }
 
+  /* small label (hidden but useful for debug) */
+  #voice-visualizer .label { position:absolute; left:12px; top:6px; font-size:11px; opacity:0.7; color:#9ef; }
+
   @media (max-width:420px){
-    #voice-visualizer { right:6px; top:6px; width:260px; height:90px; }
-    #voice-bars { width:48px; gap:4px; }
+    #voice-visualizer { right:6px; top:6px; width:300px; height:90px; }
+    #voice-bars { width:60px; gap:4px; }
     .vbar { width:8px; }
   }
 </style>
@@ -72,146 +78,185 @@
   <input id="seed-search" placeholder="Search seeds" style="position:fixed;top:12px;left:12px;padding:6px;width:200px;z-index:9999;">
   <input id="interpreter-input" placeholder="Ask Percy" style="position:fixed;top:12px;left:220px;padding:6px;width:300px;z-index:9999;">
 
-  <!-- existing Percy core (unchanged) -->
+  <!-- Percy core (unchanged) -->
   <script src="js/percy.js?v=6.4"></script>
 
-<!-- visualizer (voice synthesizer style) -->
-<div id="voice-visualizer" aria-hidden="true">
-  <div id="voice-bars" aria-hidden="true">
-    <div class="vbar"></div>
-    <div class="vbar"></div>
-    <div class="vbar"></div>
-    <div class="vbar"></div>
-    <div class="vbar"></div>
-    <div class="vbar"></div>
-    <div class="vbar"></div>
-    <div class="vbar"></div>
-    <div class="vbar"></div>
-    <div class="vbar"></div>
+  <!-- Visualizer UI -->
+  <div id="voice-visualizer" aria-hidden="true">
+    <canvas id="voice-canvas" ></canvas>
+    <div id="voice-bars" aria-hidden="true">
+      <div class="vbar"></div>
+      <div class="vbar"></div>
+      <div class="vbar"></div>
+      <div class="vbar"></div>
+      <div class="vbar"></div>
+      <div class="vbar"></div>
+      <div class="vbar"></div>
+    </div>
   </div>
-  <canvas id="voice-canvas"></canvas>
-</div>
-
-<style>
-#voice-visualizer {
-  position:fixed;
-  top:12px;
-  right:12px;
-  width:400px;
-  height:160px;
-  pointer-events:none;
-  z-index:9999;
-  display:flex;
-  flex-direction:column; /* bars on top, wave under */
-  gap:6px;
-  padding:10px;
-  box-sizing:border-box;
-  border-radius:14px;
-  background: rgba(10,10,20,0.7);
-  border:1px solid rgba(0,255,255,0.15);
-  box-shadow: 0 6px 24px rgba(0,255,255,0.25);
-}
-#voice-bars {
-  display:flex;
-  justify-content:space-between;
-  align-items:flex-end;
-  height:70px;
-}
-.vbar {
-  flex:1;
-  margin:0 3px;
-  border-radius:4px;
-  background: linear-gradient(to top, #ff0080, #00f0ff, #00ff80);
-  box-shadow: 0 0 12px rgba(0,255,255,0.9), 0 0 24px rgba(255,0,200,0.6);
-  height:12px;
-  transition: height 0.1s ease-out;
-}
-#voice-canvas {
-  width:100%;
-  height:70px;
-  border-radius:8px;
-  display:block;
-  background:rgba(0,0,0,0.15);
-}
-</style>
 
 <script>
-const canvas = document.getElementById("voice-canvas");
-const ctx = canvas.getContext("2d");
+(function(){
+  // ---- setup canvas & bars ----
+  const canvas = document.getElementById('voice-canvas');
+  const ctx = canvas.getContext('2d');
+  const bars = Array.from(document.querySelectorAll('.vbar'));
+  let w = 1, h = 1;
 
-function resizeCanvas() {
-  canvas.width = canvas.clientWidth;
-  canvas.height = canvas.clientHeight;
-}
-resizeCanvas();
-window.addEventListener("resize", resizeCanvas);
-
-let isSpeaking = false;
-let speakEndTime = 0;
-let animationId;
-let t = 0;
-
-const bars = document.querySelectorAll(".vbar");
-
-// === trigger ===
-function speakAnimation(textLength) {
-  const duration = Math.max(2000, textLength * 70);
-  isSpeaking = true;
-  speakEndTime = Date.now() + duration;
-  animateVisualizer();
-}
-
-// === draw ===
-function animateVisualizer() {
-  cancelAnimationFrame(animationId);
-
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // === synthesizer waveform ===
-    ctx.beginPath();
-    let mid = canvas.height/2;
-    for (let x = 0; x < canvas.width; x++) {
-      // mix of sine waves for "synth" look
-      let y = mid
-        + Math.sin((x+t)/12) * 12
-        + Math.sin((x+t)/25) * 8
-        + Math.sin((x+t)/50) * 5;
-      ctx.lineTo(x, y);
-    }
-    ctx.strokeStyle = "lime";
-    ctx.lineWidth = 2;
-    ctx.shadowColor = "cyan";
-    ctx.shadowBlur = 20;
-    ctx.stroke();
-
-    // === bars movement ===
-    bars.forEach((bar, i) => {
-      let h = isSpeaking ? 10 + Math.abs(Math.sin(t/5 + i))*60 : 8;
-      bar.style.height = `${h}px`;
-    });
-
-    if (Date.now() > speakEndTime) {
-      isSpeaking = false;
-    }
-
-    t += 2;
-    animationId = requestAnimationFrame(draw);
+  function resize(){
+    w = canvas.clientWidth;
+    h = canvas.clientHeight;
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.floor(w * ratio));
+    canvas.height = Math.max(1, Math.floor(h * ratio));
+    ctx.setTransform(ratio,0,0,ratio,0,0);
   }
-  draw();
-}
+  window.addEventListener('resize', resize);
+  resize();
 
-// hook into Voice if present
-if (window.Voice) {
-  const originalSpeak = Voice.speak.bind(Voice);
-  Voice.speak = function(text) {
-    speakAnimation(text.length);
-    return originalSpeak(text);
-  };
-} else {
-  console.warn("⚠️ Voice not found. Demo running.");
-  setTimeout(()=> speakAnimation(50), 2000);
-}
+  // ---- synthetic audio envelope (no mic required) ----
+  // envelope ranges 0..1; triggered by speakAnimation()
+  let envelope = 0;
+  let envelopeTarget = 0;
+  let envelopeDecay = 0.003; // how fast envelope falls per frame
+  const barState = bars.map(() => 0); // smoothing for each bar
+  const barPhases = bars.map((_, i) => i * 0.6 + (Math.random()*2)); // unique phases for variety
+
+  function speakAnimation(textLength){
+    // duration is only used to apply repeated bumps; we use envelopeTarget
+    const strength = Math.min(1, Math.max(0.25, Math.sqrt(textLength)/8)); // scale by length
+    envelopeTarget = Math.max(envelopeTarget, strength);
+    // also do some pulsing
+    pulseUntil(Date.now() + Math.max(1200, textLength * 55));
+  }
+
+  // pulse helper: make envelopeTarget bump a bit for a while
+  let pulseUntilTs = 0;
+  function pulseUntil(ts){ pulseUntilTs = Math.max(pulseUntilTs, ts); }
+
+  // resume on first user gesture for autoplay policies
+  let audioUnlocked = false;
+  function unlockAudioOnGesture(){
+    if(audioUnlocked) return;
+    audioUnlocked = true;
+    // brief bump so user sees animation on click if Percy speaks shortly after
+    envelopeTarget = Math.max(envelopeTarget, 0.15);
+    window.removeEventListener('click', unlockAudioOnGesture);
+    window.removeEventListener('keydown', unlockAudioOnGesture);
+  }
+  window.addEventListener('click', unlockAudioOnGesture);
+  window.addEventListener('keydown', unlockAudioOnGesture);
+
+  // ---- draw loop: voice-synth waveform + bars ----
+  let t0 = performance.now();
+  function draw(now){
+    requestAnimationFrame(draw);
+    // update envelope
+    const nowMs = Date.now();
+    if(pulseUntilTs > nowMs){
+      // while pulsing, jitter target
+      envelopeTarget = Math.max(envelopeTarget, 0.25 + 0.75*Math.abs(Math.sin(now/120)));
+    } else {
+      envelopeTarget = Math.max(0, envelopeTarget - 0.002);
+    }
+    // approach target smoothly
+    envelope += (envelopeTarget - envelope) * 0.12;
+    // small gradual decay
+    envelopeTarget = Math.max(0, envelopeTarget - envelopeDecay);
+
+    // clear
+    ctx.clearRect(0,0,w,h);
+
+    // background glow (soft)
+    ctx.fillStyle = 'rgba(0,12,18,0.12)';
+    ctx.fillRect(0,0,w,h);
+
+    // --- bars (vertical neon columns on right side of canvas) ---
+    // We actually draw bars in DOM (bars elements) for crisp glow; we still render a subtle reflection on canvas.
+    const barCount = bars.length;
+    for(let bi=0; bi<barCount; bi++){
+      // target height based on envelope + per-bar phase
+      const phase = barPhases[bi];
+      const rnd = 0.4 + 0.6 * Math.abs(Math.sin((now/100) + phase));
+      const target = (0.15 + envelope * (0.6 + 0.4 * Math.random())) * rnd;
+      // smooth
+      barState[bi] += (target - barState[bi]) * 0.25;
+      const px = Math.round(barState[bi] * (h * 0.85));
+      bars[bi].style.height = px + 'px';
+      // adjust gradient hue slightly per bar
+      const hue = 190 + Math.floor(bi * (60 / barCount));
+      bars[bi].style.background = `linear-gradient(to top, hsl(${hue},100%,60%), hsl(${hue+40},100%,75%))`;
+      bars[bi].style.boxShadow = `0 0 12px hsla(${hue},100%,60%,0.9), 0 0 24px hsla(${hue},100%,60%,0.28)`;
+    }
+
+    // --- synth waveform (bottom area, voice-synth style) ---
+    const elapsed = (now - t0) / 1000;
+    const baseY = h * 0.65; // lower part of the canvas
+    const waveWidth = w;
+    const waveAmp = 8 + envelope * 46; // amplitude scaled by envelope
+    const freq = 0.9 + envelope * 4.0;  // higher freq when speaking
+    // draw multiple layered strokes for neon effect
+    for(let layer=0; layer<3; layer++){
+      ctx.beginPath();
+      const layerAlpha = 0.12 + 0.28*(1 - layer*0.22);
+      const layerWidth = 1.8 + layer;
+      ctx.lineWidth = layerWidth;
+      // glow color changes slightly over time for richness
+      const glowHue = 185 + Math.sin(elapsed * 1.2 + layer) * 12;
+      ctx.strokeStyle = `hsla(${glowHue}, 100%, ${55 - layer*6}%, ${0.9 * layerAlpha})`;
+      ctx.shadowBlur = 12 + layer*6;
+      ctx.shadowColor = `hsla(${glowHue}, 100%, 65%, 0.9)`;
+      for(let x=0; x<waveWidth; x+=2){
+        const nx = x / waveWidth;
+        // more complex wave: sum of sines, modulated by envelope and some per-x jitter
+        const y = baseY + Math.sin(x * (0.004 * freq) + elapsed * (1.6 + layer*0.6)) * (waveAmp * (0.6 + 0.4*Math.sin(x*0.01 + layer)));
+        if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+    }
+
+    // subtle reflection under bars (small)
+    // compute bars area within canvas coordinates
+    // (not necessary, but gives integrated look)
+  }
+  requestAnimationFrame(draw);
+
+  // ---- hook into existing Voice.speak without redeclaring Voice ----
+  // If percy.js provides window.Voice and Voice.speak, wrap it so visualizer syncs.
+  if(window.Voice && typeof window.Voice.speak === 'function'){
+    try {
+      const original = window.Voice.speak.bind(window.Voice);
+      window.Voice.speak = function(text){
+        try { speakAnimation(String(text ?? '').length); } catch(e){ console.warn(e); }
+        return original(text);
+      };
+    } catch(e){ console.warn('Failed to wrap Voice.speak:', e); }
+  } else {
+    // If Voice is not present yet, attach a watcher to wrap later
+    const wrapLater = () => {
+      if(window.Voice && typeof window.Voice.speak === 'function'){
+        try {
+          const original = window.Voice.speak.bind(window.Voice);
+          window.Voice.speak = function(text){
+            try { speakAnimation(String(text ?? '').length); } catch(e){ console.warn(e); }
+            return original(text);
+          };
+          window.removeEventListener('load', wrapLater);
+        } catch(e){ console.warn('wrapLater error', e); }
+      }
+    };
+    window.addEventListener('load', wrapLater);
+  }
+
+  // For debugging: if you want an auto-demo pulse (remove if not wanted)
+  setTimeout(()=> {
+    // only run demo if no Voice exists OR for a quick preview
+    if(!window.Voice) speakAnimation(48);
+  }, 800);
+
+  // expose speakAnimation for manual triggering (dev)
+  window.__percy_visual_speak = speakAnimation;
+})();
 </script>
 </body>
 </html>
