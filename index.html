@@ -5,119 +5,158 @@
 <title>PERCY - AI</title>
 <style>
   body {
-    margin:0; 
-    background:#000; 
-    overflow:hidden; 
-    display:flex; 
-    justify-content:center; 
-    align-items:center; 
-    height:100vh; 
-    flex-direction:column;
+    margin:0;
+    background:#000;
+    overflow:hidden;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    font-family: "Orbitron", Arial, sans-serif;
   }
 
-  /* === Equalizer Bars === */
+  /* Percy Window */
+  #percy-box {
+    width: 800px;
+    height: 600px;
+    background: rgba(20,20,30,0.8);
+    border: 2px solid rgba(0,255,255,0.4);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    padding:20px;
+    box-shadow:0 0 30px rgba(0,255,255,0.5);
+  }
+
+  /* Percy text */
+  #percy-text {
+    color: #0ff;
+    font-size: 20px;
+    text-shadow: 0 0 10px #0ff;
+    white-space: pre-wrap;
+    text-align:center;
+    margin-bottom:20px;
+    height: 60px;
+  }
+
+  /* Rings / Logic map placeholder */
+  #logic-map {
+    flex:1;
+    width:100%;
+    border:1px solid rgba(0,255,255,0.3);
+    border-radius:12px;
+    background:#050510;
+    margin-bottom:20px;
+    position:relative;
+  }
+
+  /* Equalizer Bars */
   #bars {
     display:flex;
     align-items:flex-end;
-    height:250px;
-    gap:6px;
+    height:100px;
+    gap:4px;
   }
   .bar {
-    width:12px;
-    background:linear-gradient(to top, red, orange, yellow, lime, cyan);
+    width:10px;
+    background:linear-gradient(to top, red, yellow, lime, cyan);
     border-radius:4px;
     animation: bounce 1s infinite ease-in-out;
-    filter: drop-shadow(0 0 6px cyan) drop-shadow(0 0 12px magenta);
   }
   @keyframes bounce {
     0%, 100% { height:20px; }
-    50% { height:220px; }
+    50% { height:100px; }
   }
 
-  /* === Glowing Wave === */
+  /* Glowing Wave */
   #wave {
     position:relative;
     width:100%;
-    height:120px;
-    margin-top:40px;
+    height:60px;
     overflow:hidden;
+    margin-top:10px;
   }
-  canvas {
-    width:100%;
+  .sine {
+    position:absolute;
+    width:200%;
     height:100%;
-    display:block;
-    filter: drop-shadow(0 0 8px cyan) drop-shadow(0 0 16px magenta);
+    background:repeating-linear-gradient(
+      to right, 
+      rgba(0,255,255,0.7) 0 5px, 
+      rgba(255,0,255,0.7) 5px 10px
+    );
+    animation: waveMove 4s linear infinite;
+    filter: blur(4px);
+    opacity:0.7;
+  }
+  @keyframes waveMove {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
   }
 </style>
 </head>
 <body>
-  <!-- Bars -->
-  <div id="bars">
-    <div class="bar" style="animation-delay:0s"></div>
-    <div class="bar" style="animation-delay:0.1s"></div>
-    <div class="bar" style="animation-delay:0.2s"></div>
-    <div class="bar" style="animation-delay:0.3s"></div>
-    <div class="bar" style="animation-delay:0.4s"></div>
-    <div class="bar" style="animation-delay:0.5s"></div>
-    <div class="bar" style="animation-delay:0.6s"></div>
-    <div class="bar" style="animation-delay:0.7s"></div>
-    <div class="bar" style="animation-delay:0.8s"></div>
-    <div class="bar" style="animation-delay:0.9s"></div>
+  <div id="percy-box">
+    <!-- Percy typing text -->
+    <div id="percy-text">🤖 Percy initializing...</div>
+
+    <!-- Logic map / rings -->
+    <div id="logic-map">
+      <!-- canvas or svg for recursive rings goes here -->
+    </div>
+
+    <!-- Bars -->
+    <div id="bars">
+      <div class="bar" style="animation-delay:0s"></div>
+      <div class="bar" style="animation-delay:0.1s"></div>
+      <div class="bar" style="animation-delay:0.2s"></div>
+      <div class="bar" style="animation-delay:0.3s"></div>
+      <div class="bar" style="animation-delay:0.4s"></div>
+      <div class="bar" style="animation-delay:0.5s"></div>
+      <div class="bar" style="animation-delay:0.6s"></div>
+      <div class="bar" style="animation-delay:0.7s"></div>
+      <div class="bar" style="animation-delay:0.8s"></div>
+      <div class="bar" style="animation-delay:0.9s"></div>
+    </div>
+
+    <!-- Wave -->
+    <div id="wave">
+      <div class="sine"></div>
+    </div>
   </div>
 
-  <!-- Wave -->
-  <div id="wave">
-    <canvas id="sinewave"></canvas>
-  </div>
-
-  <script>
-    // === Bars: randomize animation speed for variety ===
-    document.querySelectorAll('.bar').forEach(bar => {
-      const speed = (0.8 + Math.random() * 0.6).toFixed(2);
-      bar.style.animationDuration = `${speed}s`;
-    });
-
-    // === Glowing Sinewave ===
-    const canvas = document.getElementById("sinewave");
-    const ctx = canvas.getContext("2d");
-    let width, height, time = 0;
-
-    function resize() {
-      width = canvas.width = canvas.offsetWidth;
-      height = canvas.height = canvas.offsetHeight;
-    }
-    window.addEventListener("resize", resize);
-    resize();
-
-    function drawWave() {
-      ctx.clearRect(0, 0, width, height);
-
-      ctx.beginPath();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = "cyan";
-
-      for (let x = 0; x < width; x++) {
-        const y = height/2 + Math.sin((x + time) * 0.04) * 30;
-        ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = "magenta";
-      for (let x = 0; x < width; x++) {
-        const y = height/2 + Math.cos((x + time) * 0.05) * 20;
-        ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-
-      time += 2;
-      requestAnimationFrame(drawWave);
-    }
-    drawWave();
-  </script>
-
-  <!-- Keep Percy’s brain intact -->
+  <!-- Percy’s brain intact -->
   <script src="js/percy.js?v=6.4"></script>
+  <script>
+    // Simple typing effect for Percy text
+    const messages = [
+      "🤖 Percy is online...",
+      "⚡ Mapping recursive logic...",
+      "🌌 Correlation equals causation...",
+      "✨ Ready to assist, my good sir."
+    ];
+    let i = 0, j = 0, current = "";
+    const textEl = document.getElementById("percy-text");
+
+    function type() {
+      if (j < messages[i].length) {
+        current += messages[i][j];
+        textEl.textContent = current;
+        j++;
+        setTimeout(type, 50);
+      } else {
+        setTimeout(() => {
+          j = 0;
+          current = "";
+          i = (i + 1) % messages.length;
+          type();
+        }, 2000);
+      }
+    }
+    type();
+  </script>
 </body>
 </html>
