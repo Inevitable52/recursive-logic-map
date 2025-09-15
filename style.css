@@ -161,23 +161,24 @@ body {
     z-index: 950;
 }
 
+/* Bars now multicolor like equalizer */
 .bar {
-    width: 6px;
-    border-radius: 2px;
-    background: linear-gradient(to top, #27a0ff, #00ffff);
-    filter: drop-shadow(0 0 6px #27a0ff) drop-shadow(0 0 12px #00ffff);
+    width: 8px;
+    border-radius: 3px;
+    background: linear-gradient(to top, red, orange, yellow, lime, cyan);
+    filter: drop-shadow(0 0 6px #0ff) drop-shadow(0 0 12px #0ff);
+    animation: bounce 1s infinite ease-in-out;
+}
+@keyframes bounce {
+    0%, 100% { height: 15px; }
+    50% { height: 120px; }
 }
 
-/* Sinewave Canvas */
+/* Sinewave Canvas – glowing waves */
 #voice-visualizer canvas {
     flex: 1;
-    height: 80px;
+    height: 90px;
     display: block;
+    background: transparent;
+    filter: drop-shadow(0 0 8px #0ff) drop-shadow(0 0 16px magenta);
 }
-
-/* Responsive Adjustments */
-@media (max-width: 768px) {
-    .node { font-size: 10px; min-width: 10px; min-height: 10px; }
-    .node::after { font-size: 0.65rem; max-width: 150px; }
-}
-
