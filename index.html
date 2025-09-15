@@ -38,33 +38,9 @@
     border-radius:8px;
     background: linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.05));
   }
-  /* bars column */
-  #voice-bars {
-    width:84px;
-    height:100%;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    gap:8px;
-    align-items:center;
-    box-sizing:border-box;
-    padding:8px 6px;
-  }
-  .vbar {
-    width:12px;
-    height:14px;
-    border-radius:8px;
-    background: linear-gradient(to top, #27a0ff, #7efcff);
-    box-shadow: 0 0 12px rgba(39,160,255,0.8), 0 0 24px rgba(39,160,255,0.4);
-    transition: height 0.08s ease-out, background 0.08s linear;
-    will-change: height;
-    transform-origin: bottom center;
-  }
 
   @media (max-width:420px){
     #voice-visualizer { right:6px; top:6px; width:300px; height:90px; }
-    #voice-bars { width:60px; gap:4px; }
-    .vbar { width:8px; }
   }
 </style>
 </head>
@@ -78,10 +54,10 @@
   <!-- Percy core -->
   <script src="js/percy.js?v=6.4"></script>
 
-<!-- Visualizer -->
-<div id="voice-visualizer" aria-hidden="true">
-  <canvas id="voice-canvas"></canvas>
-</div>
+  <!-- Visualizer -->
+  <div id="voice-visualizer" aria-hidden="true">
+    <canvas id="voice-canvas"></canvas>
+  </div>
 
 <script>
 (function(){
@@ -186,6 +162,26 @@
   setTimeout(()=>{ if(!window.Voice) speakAnimation(48); },800);
   window.__percy_visual_speak=speakAnimation;
 })();
+</script>
+
+<!-- Ask Percy input handler -->
+<script>
+  const interpreterInput = document.getElementById('interpreter-input');
+  if (interpreterInput) {
+    interpreterInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        const query = interpreterInput.value.trim();
+        if (query) {
+          if (typeof percyRespond === 'function') {
+            percyRespond(query);
+          } else if (window.Percy && typeof Percy.interpret === 'function') {
+            Percy.interpret(query);
+          }
+          interpreterInput.value = '';
+        }
+      }
+    });
+  }
 </script>
 </body>
 </html>
