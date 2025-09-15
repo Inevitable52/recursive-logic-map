@@ -136,32 +136,42 @@
   window.__percy_visual_speak=speakAnimation;
 })();
 </script>
-
-<!-- Voice Visualizer script stays above -->
-
+  
 <script>
-// === Ask Percy input (single handler, no duplicates) ===
+// === Ask Percy input with echo into console ===
 (function(){
   const interpreterInput=document.getElementById('interpreter-input');
-  if(!interpreterInput) return;
+  const percyConsole=document.getElementById('percy-console');
 
-  interpreterInput.addEventListener('keydown',function(e){
-    if(e.key==='Enter'){
-      const query=interpreterInput.value.trim();
-      if(query){
-        if(typeof percyRespond==='function'){
-          percyRespond(query);
-        } else if(window.Percy && typeof Percy.interpret==='function'){
-          Percy.interpret(query);
+  function appendConsole(text,isUser=false){
+    const line=document.createElement('div');
+    line.className='console-line';
+    line.textContent=(isUser? '↳ ' : '')+text;
+    percyConsole.appendChild(line);
+    percyConsole.scrollTop=percyConsole.scrollHeight;
+  }
+
+  if(interpreterInput){
+    interpreterInput.addEventListener('keydown',function(e){
+      if(e.key==='Enter'){
+        const query=interpreterInput.value.trim();
+        if(query){
+          // echo user text first
+          appendConsole(query,true);
+
+          // send to Percy
+          if(typeof percyRespond==='function'){
+            percyRespond(query);
+          } else if(window.Percy && typeof Percy.interpret==='function'){
+            Percy.interpret(query);
+          }
+
+          interpreterInput.value='';
         }
-        interpreterInput.value='';
       }
-    }
-  });
+    });
+  }
 })();
 </script>
-</body>
-</html>
-
 </body>
 </html>
