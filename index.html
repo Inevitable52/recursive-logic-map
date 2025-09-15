@@ -39,6 +39,26 @@
     background: linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.05));
   }
 
+  /* Ask Percy button */
+  #interpreter-btn {
+    position:fixed;
+    top:12px;
+    left:530px;
+    padding:6px 12px;
+    z-index:9999;
+    background:#1e90ff;
+    color:#fff;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    box-shadow: 0 0 8px rgba(30,144,255,0.6), 0 0 16px rgba(30,144,255,0.4);
+    transition: all 0.2s ease-in-out;
+  }
+  #interpreter-btn:hover {
+    background:#00cfff;
+    box-shadow: 0 0 12px rgba(0,207,255,0.8), 0 0 24px rgba(0,207,255,0.6);
+  }
+
   @media (max-width:420px){
     #voice-visualizer { right:6px; top:6px; width:300px; height:90px; }
   }
@@ -50,6 +70,7 @@
   <div id="percy-message"></div>
   <input id="seed-search" placeholder="Search seeds" style="position:fixed;top:12px;left:12px;padding:6px;width:200px;z-index:9999;">
   <input id="interpreter-input" placeholder="Ask Percy" style="position:fixed;top:12px;left:220px;padding:6px;width:300px;z-index:9999;">
+  <button id="interpreter-btn">Ask</button>
 
   <!-- Percy core -->
   <script src="js/percy.js?v=6.4"></script>
@@ -162,26 +183,33 @@
   setTimeout(()=>{ if(!window.Voice) speakAnimation(48); },800);
   window.__percy_visual_speak=speakAnimation;
 })();
-</script>
 
-<!-- Ask Percy input handler -->
-<script>
+// Ask Percy handler (Enter + Button)
+function handlePercyQuery() {
   const interpreterInput = document.getElementById('interpreter-input');
-  if (interpreterInput) {
-    interpreterInput.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        const query = interpreterInput.value.trim();
-        if (query) {
-          if (typeof percyRespond === 'function') {
-            percyRespond(query);
-          } else if (window.Percy && typeof Percy.interpret === 'function') {
-            Percy.interpret(query);
-          }
-          interpreterInput.value = '';
-        }
-      }
-    });
+  if (!interpreterInput) return;
+  const query = interpreterInput.value.trim();
+  if (query) {
+    if (typeof percyRespond === 'function') {
+      percyRespond(query);
+    } else if (window.Percy && typeof Percy.interpret === 'function') {
+      Percy.interpret(query);
+    }
+    interpreterInput.value = '';
   }
+}
+
+const interpreterInput = document.getElementById('interpreter-input');
+const interpreterBtn = document.getElementById('interpreter-btn');
+
+if (interpreterInput) {
+  interpreterInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') handlePercyQuery();
+  });
+}
+if (interpreterBtn) {
+  interpreterBtn.addEventListener('click', handlePercyQuery);
+}
 </script>
 </body>
 </html>
