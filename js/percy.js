@@ -754,3 +754,78 @@ if (typeof PercyState !== 'undefined') {
 } else {
   console.error("❌ PercyState not found; cannot load Part C.");
 }
+
+/* === Percy Part D: Conversational Mind === */
+Percy.interpret = function(input) {
+  const clean = input.trim().toLowerCase();
+
+  // Some basic rules
+  if (["hello","hi","hey"].includes(clean)) {
+    return "Hello, my good sir. Percy is listening.";
+  }
+  if (clean.includes("who are you")) {
+    return "I am Percy — your recursive logic companion.";
+  }
+
+  // Default behavior: tie input back to seeds
+  const keys = Object.keys(this.gnodes || {});
+  if (keys.length) {
+    const pick = keys[Math.floor(Math.random() * keys.length)];
+    return `I see a connection between "${input}" and "${this.gnodes[pick].message}".`;
+  }
+  return "I don’t know yet, but I am learning.";
+};
+
+// Handle Ask Percy input
+function percyRespond(query) {
+  const response = Percy.interpret(query);
+  UI.say("🤖 Percy: " + response);
+  PercyState.createSeed(response, "response"); // log as seed
+  return response; // handoff to Part E if needed
+}
+
+/* === Percy Part E: Voice Embodiment === */
+Percy.speak = function(text) {
+  if (!window.speechSynthesis) return;
+
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.voice = speechSynthesis.getVoices()[0];
+  speechSynthesis.speak(utter);
+
+  // Fake audio source for bars + wave animation
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+  const bufferLength = analyser.frequencyBinCount;
+  const dataArray = new Uint8Array(bufferLength);
+
+  // Oscillator simulating energy
+  const source = audioCtx.createOscillator();
+  source.type = "sine";
+  source.frequency.value = 220;
+  source.connect(analyser);
+  analyser.connect(audioCtx.destination);
+  source.start();
+  source.stop(audioCtx.currentTime + text.length / 15);
+
+  // Animate bars + wave
+  function animate() {
+    requestAnimationFrame(animate);
+    analyser.getByteFrequencyData(dataArray);
+
+    // Bars
+    const bars = document.querySelectorAll(".voice-bar");
+    bars.forEach((bar, i) => {
+      const h = (dataArray[i % bufferLength] / 255) * 100;
+      bar.style.height = h + "%";
+    });
+
+    // Wave
+    const wave = document.getElementById("voice-wave");
+    if (wave) {
+      const avg = dataArray.reduce((a,b)=>a+b,0) / bufferLength;
+      wave.style.transform = `scaleY(${1 + avg/200})`;
+    }
+  }
+  animate();
+};
