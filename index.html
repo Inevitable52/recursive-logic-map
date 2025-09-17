@@ -45,7 +45,7 @@
   <input id="seed-search" placeholder="Search seeds" style="position:fixed;top:12px;left:12px;padding:6px;width:200px;z-index:9999;">
   <input id="interpreter-input" placeholder="Ask Percy" style="position:fixed;top:12px;left:220px;padding:6px;width:300px;z-index:9999;">
 
-  <!-- Percy core stays intact -->
+  <!-- Percy core -->
   <script src="js/percy.js?v=6.4"></script>
 
   <!-- Visualizer -->
@@ -54,7 +54,7 @@
   </div>
 
 <script>
-// === Voice Visualizer ===
+/* === Voice Visualizer === */
 (function(){
   const canvas = document.getElementById('voice-canvas');
   const ctx = canvas.getContext('2d');
@@ -122,23 +122,26 @@
 
   // Hook into Percy’s voice
   function wrap(){
-    if(window.Voice && typeof window.Voice.speak==='function'){
-      const orig=window.Voice.speak.bind(window.Voice);
-      window.Voice.speak=function(txt){ speakAnimation(String(txt??'').length); return orig(txt); };
+    if(window.Percy && typeof Percy.speak==='function'){
+      const orig=Percy.speak.bind(Percy);
+      Percy.speak=function(txt){
+        speakAnimation(String(txt??'').length);
+        return orig(txt);
+      };
       return true;
     }
     return false;
   }
   if(!wrap()) window.addEventListener('load',wrap);
 
-  // Demo
-  setTimeout(()=>{ if(!window.Voice) speakAnimation(48); },800);
+  // Demo pulse
+  setTimeout(()=>{ if(!window.Percy) speakAnimation(48); },800);
   window.__percy_visual_speak=speakAnimation;
 })();
 </script>
   
 <script>
-// === Ask Percy input with echo into console ===
+/* === Ask Percy input with echo and response === */
 (function(){
   const interpreterInput=document.getElementById('interpreter-input');
   const percyConsole=document.getElementById('percy-console');
@@ -156,16 +159,19 @@
       if(e.key==='Enter'){
         const query=interpreterInput.value.trim();
         if(query){
-          // echo user text first
-          appendConsole(query,true);
-
-          // send to Percy
+          appendConsole(query,true); // user input
+          let response="";
           if(typeof percyRespond==='function'){
-            percyRespond(query);
+            response=percyRespond(query);
           } else if(window.Percy && typeof Percy.interpret==='function'){
-            Percy.interpret(query);
+            response=Percy.interpret(query);
           }
-
+          if(response){
+            appendConsole("🤖 "+response);
+            if(Percy && typeof Percy.speak==='function'){
+              Percy.speak(response); // trigger voice + bars
+            }
+          }
           interpreterInput.value='';
         }
       }
