@@ -1,3 +1,5 @@
+window.Percy = window.Percy || {};
+
 // === percy.js (Part A) ===
 // Config, Memory and PercyState (includes Emergent Thought Generator)
 
