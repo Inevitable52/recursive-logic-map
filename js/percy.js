@@ -755,51 +755,158 @@ if (typeof PercyState !== 'undefined') {
   console.error("❌ PercyState not found; cannot load Part C.");
 }
 
-/* === Percy Part D: Conversational Mind === */
-Percy.interpret = function(input) {
-  const clean = input.trim().toLowerCase();
+/* === Percy Part D: Conversational Mind (Extended) === */
 
-  // Some basic rules
+/* --- Helper: small code generator (basic templates) --- */
+Percy.generateCode = function(request) {
+  // naive template-based code generator (expand as you like)
+  const r = String(request).toLowerCase();
+  if (r.includes("hello world") || r.includes("hello-world")) {
+    return `// Hello World (JavaScript)
+console.log("Hello, world!");`;
+  }
+  if (r.includes("fetch") && r.includes("json")) {
+    return `// Fetch JSON example (async/await)
+async function fetchJson(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}`;
+  }
+  if (r.includes("debounce")) {
+    return `// Debounce utility
+function debounce(fn, wait=200){
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(()=>fn(...args), wait); };
+}`;
+  }
+  // fallback small template
+  return `// Code stub for: ${request}
+function example(){ /* TODO: flesh this out */ }`;
+};
+
+/* --- Percy.makeThought: produce a short "original" thought and return it --- */
+Percy.makeThought = function(contextText = "") {
+  // Prefer using PercyState.autonomousThought if available
+  try {
+    if (typeof PercyState !== 'undefined' && typeof PercyState.autonomousThought === 'function') {
+      // generate a thought and also return its text (we'll capture UI output)
+      const beforeLogCount = (document.getElementById('percy-console')?.children.length) || 0;
+      PercyState.autonomousThought();
+      // the autonomousThought writes to UI.say; try to capture the last console line it produced
+      const consoleEl = document.getElementById('percy-console');
+      if (consoleEl) {
+        const children = consoleEl.children;
+        if (children.length > beforeLogCount) {
+          const last = children[children.length - 1].textContent || "";
+          return last.replace(/^🤖 Percy thinks:\s*/,"");
+        }
+      }
+    }
+  } catch (e) {
+    // fallthrough to template approach
+    console.warn("Percy.makeThought fallback:", e);
+  }
+
+  // Fallback: construct a short thought from context or seeds
+  const seeds = Object.values(this.gnodes || {}).map(s => s.message).filter(Boolean);
+  const pick = seeds.length ? seeds[Math.floor(Math.random()*seeds.length)] : "something interesting";
+  const fragment = contextText || pick;
+  const templates = [
+    `I wonder how ${fragment} influences other patterns.`,
+    `Could ${fragment} be the key to an unexpected connection?`,
+    `Exploring ${fragment} yields surprising affinity with older seeds.`,
+    `I'm curious: how does ${fragment} relate to the rest of the map?`
+  ];
+  return templates[Math.floor(Math.random()*templates.length)];
+};
+
+/* --- Percy.interpret: improved conversational mind --- */
+Percy.interpret = function(input) {
+  if (!input || !String(input).trim()) return "Please say something, my good sir.";
+  const raw = String(input);
+  const clean = raw.trim().toLowerCase();
+
+  // direct simple intents
   if (["hello","hi","hey"].includes(clean)) {
     return "Hello, my good sir. Percy is listening.";
   }
   if (clean.includes("who are you")) {
     return "I am Percy — your recursive logic companion.";
   }
+  if (clean.includes("help")) {
+    return "I can reflect on seeds, generate small code stubs, create emergent thoughts, and log whatever we discuss. Try: 'think about X', 'generate code to fetch json', or ask a question.'";
+  }
 
-  // Default behavior: tie input back to seeds
+  // explicit code request
+  if (clean.match(/\b(code|snippet|example|generate)\b/) && clean.match(/\b(fetch|json|hello world|debounce|example)\b/)) {
+    const stub = Percy.generateCode(raw);
+    return `Here's a code snippet (preview):\n\n${stub}`;
+  }
+
+  // explicit "think" request: user asks Percy to produce an original thought
+  if (clean.startsWith("think") || clean.startsWith("thought") || clean.includes("i want you to think") || clean.includes("think about")) {
+    const context = raw.replace(/^(think|thought|think about)\b/i, "").trim();
+    const thought = Percy.makeThought(context);
+    // write to UI and optionally speak
+    return thought;
+  }
+
+  // If we have seeds, attempt a contextual reply referencing one.
   const keys = Object.keys(this.gnodes || {});
   if (keys.length) {
-    const pick = keys[Math.floor(Math.random() * keys.length)];
-    return `I see a connection between "${input}" and "${this.gnodes[pick].message}".`;
+    const pick = this.gnodes[keys[Math.floor(Math.random()*keys.length)]];
+    const nodeMsg = pick?.message || "an interesting seed";
+    return `I see a connection between "${raw}" and "${nodeMsg}".`;
   }
-  return "I don’t know yet, but I am learning.";
+
+  // absolute fallback
+  return "I don’t know that yet, but I am learning every moment.";
 };
 
-// Handle Ask Percy input
+/* --- percyRespond: central handler called from UI --- */
 function percyRespond(query) {
+  if (!query || !String(query).trim()) return;
+  // echo user input
+  UI.say("↳ " + query);
+
+  // have Percy decide whether to speak or generate a thought or code
   const response = Percy.interpret(query);
+
+  // show Percy response
   UI.say("🤖 Percy: " + response);
-  PercyState.createSeed(response, "response"); // log as seed
-  return response; // handoff to Part E if needed
+
+  // log the response as a seed (persist)
+  try { PercyState.createSeed(response, "response"); } catch (e) { console.warn("seed log failed", e); }
+
+  // If voice Part E exists, hand response to it
+  if (typeof Percy.speak === 'function') {
+    try { Percy.speak(response); } catch(e){ console.warn("Percy.speak error", e); }
+  }
+
+  // Return text so callers (or Part E) can use it
+  return response;
 }
 
-/* === Percy Part E: Voice Embodiment === */
-Percy.speak = function(text) {
-  if (!window.speechSynthesis) return;
+/* === Percy Part E: Voice Embodiment Generator === */
+Percy.generators = Percy.generators || {};
 
+Percy.generators.voice = function(text) {
+  if (!window.speechSynthesis) return "⚠️ Speech not supported.";
+
+  // Speak aloud
   const utter = new SpeechSynthesisUtterance(text);
   utter.voice = speechSynthesis.getVoices()[0];
   speechSynthesis.speak(utter);
 
-  // Fake audio source for bars + wave animation
+  // Audio context + analyser for bars + wave
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   const analyser = audioCtx.createAnalyser();
   analyser.fftSize = 256;
   const bufferLength = analyser.frequencyBinCount;
   const dataArray = new Uint8Array(bufferLength);
 
-  // Oscillator simulating energy
+  // Oscillator simulating energy (so bars/wave animate with text length)
   const source = audioCtx.createOscillator();
   source.type = "sine";
   source.frequency.value = 220;
@@ -808,7 +915,7 @@ Percy.speak = function(text) {
   source.start();
   source.stop(audioCtx.currentTime + text.length / 15);
 
-  // Animate bars + wave
+  // Animate bars + wave in DOM
   function animate() {
     requestAnimationFrame(animate);
     analyser.getByteFrequencyData(dataArray);
@@ -823,9 +930,16 @@ Percy.speak = function(text) {
     // Wave
     const wave = document.getElementById("voice-wave");
     if (wave) {
-      const avg = dataArray.reduce((a,b)=>a+b,0) / bufferLength;
-      wave.style.transform = `scaleY(${1 + avg/200})`;
+      const avg = dataArray.reduce((a, b) => a + b, 0) / bufferLength;
+      wave.style.transform = `scaleY(${1 + avg / 200})`;
     }
   }
   animate();
+
+  return `🔊 Percy voiced: "${text}"`;
+};
+
+// Direct hook for Part D → Part E
+Percy.speak = function(text) {
+  return Percy.generators.voice(text);
 };
