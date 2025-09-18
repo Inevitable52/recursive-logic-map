@@ -905,46 +905,6 @@ function percyRespond(query) {
   return response;
 }
 
-/* --- Percy.rewriteSelf: propose code rewrites for a section --- */
-Percy.rewriteSelf = function(section, goal = "") {
-  if (!section) return "// No section specified.";
-
-  // Try to locate the requested Part in the DOM script tags
-  const scripts = document.querySelectorAll("script");
-  let sourceText = "";
-  scripts.forEach(scr => {
-    if (scr.textContent.includes(`Percy Part ${section}`)) {
-      sourceText = scr.textContent;
-    }
-  });
-
-  if (!sourceText) {
-    return `// Could not locate Part ${section}.`;
-  }
-
-  // Generate a replacement snippet if a goal is provided
-  let generated = "";
-  if (goal) {
-    generated = this.generateCode(goal) || this.makeThought("improving Part " + section);
-  }
-
-  const comment = `/* === Proposed Rewrite for Part ${section} === */
-${goal ? "// Goal: " + goal + "\n" : ""}
-`;
-
-  // Wrap original code with TODO and optional generated snippet
-  const rewritten = sourceText.replace(
-    /Percy\.interpret = function.*?};/s,
-    match => match + `\n// [TODO: improve logic per goal: ${goal}]\n` + generated
-  );
-
-  // Log proposal to UI and create a seed
-  UI.say("🤖 Percy (self-rewrite proposal):\n" + comment + rewritten);
-  try { PercyState.createSeed(comment + rewritten, "rewrite"); } catch(e){}
-
-  return comment + rewritten;
-};
-
 /* === Percy Part E: Voice Embodiment Generator === */
 Percy.generators = Percy.generators || {};
 
