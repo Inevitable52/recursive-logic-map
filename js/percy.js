@@ -905,166 +905,49 @@ function percyRespond(query) {
   return response;
 }
 
-// === Percy: Human-style Conversational Layer (plug-in for Part D) ===
-(function(){
-  // safety: attach to existing PercyState / Percy without overwriting
-  if (typeof window.Percy === 'undefined') window.Percy = {};
-  if (typeof window.PercyState === 'undefined') window.PercyState = window.PercyState || {};
+// === Human-Style Percy Respond (filtered from system logs) ===
+window.percyRespond = window.percyRespond || function(query) {
+  if (!query || !String(query).trim()) return;
 
-  // Conversation state (persistent-ish)
-  PercyState.conversation = PercyState.conversation || {
-    history: [],           // {role: 'user'|'percy', text, ts}
-    maxHistory: 8,         // sliding window
-    persona: {
-      name: "Percy",
-      style: "friendly, clear, logically-minded, slightly formal"
+  const cleanQuery = String(query).trim();
+
+  // Ignore system or logic-map status messages
+  if (cleanQuery.startsWith("🔄") || cleanQuery.startsWith("✨")) {
+    return "⚡ Ignoring system logs to stay focused on conversation.";
+  }
+
+  // Handle internal IDs (like Gxxx) or explicit commands with original interpret
+  if (/^G\d{3,}/i.test(cleanQuery) || cleanQuery.toLowerCase().startsWith("rewrite ")) {
+    if (typeof Percy.interpret === 'function') {
+      const res = Percy.interpret(cleanQuery);
+      try { PercyState.createSeed(res, "response"); } catch(e) {}
+      if (typeof Percy.speak === 'function') Percy.speak(res);
+      return res;
     }
-  };
-
-  // Small helper: save a turn
-  function _pushTurn(role, text){
-    PercyState.conversation.history.push({ role, text, ts: Date.now() });
-    if (PercyState.conversation.history.length > PercyState.conversation.maxHistory) {
-      PercyState.conversation.history.shift();
-    }
-    // also persist a compact memory log optionally
-    try { Memory.push("conversation:history", { role, text, ts: new Date().toISOString() }, 200); } catch(e){}
   }
 
-  // Retrieve short context string from history
-  function _getContextSummary(limit=4){
-    const hist = PercyState.conversation.history.slice(-limit);
-    return hist.map(h => `${h.role === 'user' ? 'You' : 'Percy'}: ${h.text}`).join(" | ");
-  }
-
-  // Retrieve relevant seeds from PercyState.gnodes using simple keyword matching
-  function _retrieveRelevantSeeds(input, max=3){
-    try{
-      const txt = String(input).toLowerCase();
-      const nodes = PercyState.gnodes || {};
-      const scored = Object.entries(nodes).map(([id, node])=>{
-        const msg = (node.message || "").toLowerCase();
-        // score by shared tokens
-        let score = 0;
-        txt.split(/\W+/).forEach(t => { if (t && msg.includes(t)) score += 1; });
-        // small bonus for recent/thought seeds
-        if(node.type === 'thought') score += 0.5;
-        return { id, score, msg: node.message || "" };
-      }).filter(s => s.score > 0).sort((a,b)=>b.score-a.score).slice(0,max);
-      return scored;
-    }catch(e){ return []; }
-  }
-
-  // Simple memory retrieval (pull short strings that match)
-  function _retrieveMemoryMatches(input, max=3){
-    try{
-      const mem = Memory.load("memories", []) || [];
-      const txt = String(input).toLowerCase();
-      return mem
-        .map((m,i)=>({ idx:i, text: String(m).slice(0,250) }))
-        .filter(m=>m.text.toLowerCase().includes(txt))
-        .slice(0,max);
-    }catch(e){ return []; }
-  }
-
-  // Small pragmatic reply generator — uses templates, retrieved seeds, and a context summary
-  function _composeReply(input){
-    // 1) quick retrieval
-    const seeds = _retrieveRelevantSeeds(input, 3);
-    const memMatches = _retrieveMemoryMatches(input, 3);
-    const ctx = _getContextSummary(6);
-
-    // 2) generate a guiding thought (short)
-    let guiding = "";
-    if (seeds.length) {
-      guiding = `I see links to: ${seeds.map(s=>`"${s.msg.replace(/\s+/g,' ').slice(0,80)}"`).join(", ")}.`;
-    } else if (memMatches.length) {
-      guiding = `This reminds me of prior notes: ${memMatches.map(m=>`"${m.text.slice(0,80)}"`).join(", ")}.`;
+  // Otherwise, use human-style percyTalk for normal conversation
+  let response = "";
+  try {
+    if (typeof Percy.percyTalk === 'function') {
+      response = Percy.percyTalk(cleanQuery);
+    } else if (typeof Percy.interpret === 'function') {
+      response = Percy.interpret(cleanQuery);
     } else {
-      // fallback thought using Percy's existing thought generator if present
-      try {
-        guiding = Percy.makeThought ? Percy.makeThought(input) : `I’m considering ${input}.`;
-      } catch(e){
-        guiding = `I'm considering that now.`;
-      }
+      response = "🤖 Percy is awake but has no conversation handler loaded.";
     }
-
-    // 3) produce a multi-step style reply:
-    const steps = [];
-    // Step 1: acknowledge
-    steps.push(`Thanks — I hear you. You said: "${input}".`);
-    // Step 2: main thought
-    steps.push(guiding);
-    // Step 3: short analysis / one inference
-    let inference = "";
-    if (seeds.length) inference = `A plausible inference is that ${seeds[0].msg.split(/\s+/).slice(0,8).join(' ')}...`;
-    else inference = `A useful next question might be to clarify what you mean by "${input.split(/\s+/)[0] || input}".`;
-    steps.push(inference);
-    // Step 4: explicit next action
-    steps.push(`Next, would you like me to: (a) expand on this idea, (b) make a seed, or (c) rewrite a Part to integrate this? Reply with a choice or tell me more.`);
-
-    // 4) combine into natural paragraph-style reply with persona flavor
-    const reply = [
-      `Hello, my good sir — ${PercyState.conversation.persona.name} here.`,
-      steps.join(" "),
-      `(context: ${ctx})`
-    ].join("\n\n");
-
-    return reply;
+  } catch(e) {
+    console.error("Percy.percyTalk error:", e);
+    response = "🤖 Percy encountered an error while thinking.";
   }
 
-  // Public: percyTalk — use this in place of Percy.interpret for richer conversation
-  Percy.percyTalk = function(userInput){
-    if(!userInput || !String(userInput).trim()) return "Please say something, my good sir.";
-    const input = String(userInput).trim();
+  // Create a short seed for traceability but only from real conversation
+  try {
+    if (!response.startsWith("⚡")) PercyState.createSeed(response.split("\n")[0], "response");
+  } catch(e) {}
 
-    // push user turn
-    _pushTurn('user', input);
-
-    // Compose a reply
-    let reply = "";
-    try {
-      reply = _composeReply(input);
-    } catch(e){
-      reply = "Sorry — I had trouble forming that thought. Could you rephrase?";
-      console.error("percyTalk error:", e);
-    }
-
-    // push percy turn
-    _pushTurn('percy', reply);
-
-    // Create a seed for traceability (short)
-    try { PercyState.createSeed(`Conversation: ${input} -> ${reply.split("\n")[0]}`, "conversation"); } catch(e){}
-
-    // speak if available
-    try { if (typeof Percy.speak === 'function') Percy.speak(reply); } catch(e){}
-
-    // return the text (also usable by percyRespond wrapper)
-    return reply;
-  };
-
-  // Optional: a convenience wrapper so existing UI can call percyTalk
-  window.percyRespond = window.percyRespond || function(query){
-    if (!query || !String(query).trim()) return;
-    // If query looks like an internal node id (Gxxx) or special command, keep existing behavior:
-    if(/^G\d{3,}/i.test(String(query).trim()) || String(query).startsWith("rewrite ")) {
-      // call original interpret if available
-      if (typeof Percy.interpret === 'function') {
-        const res = Percy.interpret(query);
-        try { PercyState.createSeed(res, "response"); } catch(e){}
-        if (typeof Percy.speak === 'function') Percy.speak(res);
-        return res;
-      }
-    }
-    // otherwise use human-style percyTalk
-    const res = Percy.percyTalk(String(query));
-    try { PercyState.createSeed(res.split("\n")[0], "response"); } catch(e){}
-    return res;
-  };
-
-  // Helpful debug/info message
-  UI.say("🗣 Percy conversational layer loaded. Use percyTalk(\"your text\") or continue using AskPercy.");
-})();
+  return response;
+};
 
 /* === Percy Part E: Voice Embodiment Generator === */
 Percy.generators = Percy.generators || {};
