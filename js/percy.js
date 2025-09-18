@@ -922,18 +922,25 @@ Percy.rewriteSelf = function(section, goal = "") {
     return `// Could not locate Part ${section}.`;
   }
 
-  // For now, wrap the original in a proposal with the "goal"
-  let comment = `/* === Proposed Rewrite for Part ${section} === */\n`;
-  if (goal) comment += `// Goal: ${goal}\n`;
+  // Generate a replacement snippet if a goal is provided
+  let generated = "";
+  if (goal) {
+    generated = this.generateCode(goal) || this.makeThought("improving Part " + section);
+  }
 
-  // TODO: later we can make mutations smarter (like replacing fragments).
-  // For now, just echo the code with a placeholder for editing.
+  const comment = `/* === Proposed Rewrite for Part ${section} === */
+${goal ? "// Goal: " + goal + "\n" : ""}
+`;
+
+  // Wrap original code with TODO and optional generated snippet
   const rewritten = sourceText.replace(
     /Percy\.interpret = function.*?};/s,
-    match => {
-      return match + `\n// [TODO: improve logic per goal: ${goal}]`;
-    }
+    match => match + `\n// [TODO: improve logic per goal: ${goal}]\n` + generated
   );
+
+  // Log proposal to UI and create a seed
+  UI.say("🤖 Percy (self-rewrite proposal):\n" + comment + rewritten);
+  try { PercyState.createSeed(comment + rewritten, "rewrite"); } catch(e){}
 
   return comment + rewritten;
 };
