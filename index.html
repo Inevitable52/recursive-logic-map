@@ -35,6 +35,23 @@
     border-radius:8px;
     background: linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.05));
   }
+
+  /* AskPercy button style */
+  #askPercyButton {
+    position:fixed;
+    top:12px;
+    left:530px;
+    padding:6px 12px;
+    background:#1a1aff;
+    color:white;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    z-index:9999;
+  }
+  #askPercyButton:hover {
+    background:#3333ff;
+  }
 </style>
 </head>
 <body>
@@ -44,6 +61,7 @@
 
   <input id="seed-search" placeholder="Search seeds" style="position:fixed;top:12px;left:12px;padding:6px;width:200px;z-index:9999;">
   <input id="interpreter-input" placeholder="Ask Percy" style="position:fixed;top:12px;left:220px;padding:6px;width:300px;z-index:9999;">
+  <button id="askPercyButton">Run</button>
 
   <!-- Percy core -->
   <script src="js/percy.js?v=6.4"></script>
@@ -145,6 +163,7 @@
 (function(){
   const interpreterInput=document.getElementById('interpreter-input');
   const percyConsole=document.getElementById('percy-console');
+  const askButton=document.getElementById('askPercyButton');
 
   function appendConsole(text,isUser=false){
     const line=document.createElement('div');
@@ -154,30 +173,37 @@
     percyConsole.scrollTop=percyConsole.scrollHeight;
   }
 
-  if(interpreterInput){
-    interpreterInput.addEventListener('keydown',function(e){
-      if(e.key==='Enter'){
-        const query=interpreterInput.value.trim();
-        if(query){
-          appendConsole(query,true); // user input
-          let response="";
-          if(typeof percyRespond==='function'){
-            response=percyRespond(query);
-          } else if(window.Percy && typeof Percy.interpret==='function'){
-            response=Percy.interpret(query);
-          }
-          if(response){
-            appendConsole("🤖 "+response);
-            if(Percy && typeof Percy.speak==='function'){
-              Percy.speak(response); // trigger voice + bars
-            }
-          }
-          interpreterInput.value='';
+  function runPercyCommand(){
+    const query=interpreterInput.value.trim();
+    if(query){
+      appendConsole(query,true); // user input
+      let response="";
+      if(typeof percyRespond==='function'){
+        response=percyRespond(query);
+      } else if(window.Percy && typeof Percy.interpret==='function'){
+        response=Percy.interpret(query);
+      }
+      if(response){
+        appendConsole("🤖 "+response);
+        if(Percy && typeof Percy.speak==='function'){
+          Percy.speak(response); // trigger voice + bars
         }
       }
+      interpreterInput.value='';
+    }
+  }
+
+  if(interpreterInput){
+    interpreterInput.addEventListener('keydown',function(e){
+      if(e.key==='Enter') runPercyCommand();
     });
+  }
+
+  if(askButton){
+    askButton.addEventListener('click',runPercyCommand);
   }
 })();
 </script>
 </body>
 </html>
+
