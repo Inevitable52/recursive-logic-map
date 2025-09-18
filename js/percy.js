@@ -905,6 +905,39 @@ function percyRespond(query) {
   return response;
 }
 
+/* --- Percy.rewriteSelf: propose code rewrites for a section --- */
+Percy.rewriteSelf = function(section, goal = "") {
+  if (!section) return "// No section specified.";
+
+  // Try to locate the requested Part in the DOM script tags
+  const scripts = document.querySelectorAll("script");
+  let sourceText = "";
+  scripts.forEach(scr => {
+    if (scr.textContent.includes(`Percy Part ${section}`)) {
+      sourceText = scr.textContent;
+    }
+  });
+
+  if (!sourceText) {
+    return `// Could not locate Part ${section}.`;
+  }
+
+  // For now, wrap the original in a proposal with the "goal"
+  let comment = `/* === Proposed Rewrite for Part ${section} === */\n`;
+  if (goal) comment += `// Goal: ${goal}\n`;
+
+  // TODO: later we can make mutations smarter (like replacing fragments).
+  // For now, just echo the code with a placeholder for editing.
+  const rewritten = sourceText.replace(
+    /Percy\.interpret = function.*?};/s,
+    match => {
+      return match + `\n// [TODO: improve logic per goal: ${goal}]`;
+    }
+  );
+
+  return comment + rewritten;
+};
+
 /* === Percy Part E: Voice Embodiment Generator === */
 Percy.generators = Percy.generators || {};
 
