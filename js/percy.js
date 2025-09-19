@@ -1005,7 +1005,7 @@ Percy.speak = function(text) {
   return Percy.generators.voice(text);
 };
 
-/* === Percy Part F: Correlational Layer + Percy Bar Integration === */
+/* === Percy Part F: Correlational Layer + Percy Bar Integration (CORS Fixed) === */
 
 Percy.correlateReply = async function(query, maxSources=5) {
   if (!query || !query.trim()) return "Please ask something, my good sir.";
@@ -1060,22 +1060,32 @@ Percy.correlateReply = async function(query, maxSources=5) {
   return response;
 };
 
-// --- Helper: fetch external sources ---
+// --- Helper: fetch external sources via AllOrigins to bypass CORS ---
 Percy.fetchExternalSources = async function(query, maxResults=5) {
   const results = [];
+  const encodeURL = url => encodeURIComponent(url);
 
+  async function fetchCORS(url) {
+    const proxy = `https://api.allorigins.win/get?url=${encodeURL(url)}`;
+    const resp = await fetch(proxy);
+    const data = await resp.json();
+    return JSON.parse(data.contents);
+  }
+
+  // PDS search
   try {
-    const pdsResp = await fetch(`https://pds.nasa.gov/api/search?q=${encodeURIComponent(query)}&limit=${maxResults}`);
-    const pdsData = await pdsResp.json();
+    const pdsUrl = `https://pds.nasa.gov/api/search?q=${encodeURIComponent(query)}&limit=${maxResults}`;
+    const pdsData = await fetchCORS(pdsUrl);
     pdsData.items?.forEach(item => results.push({
       text: (item.title || "") + ". " + (item.description || ""),
       type: "external"
     }));
   } catch(e) { console.warn("PDS fetch failed:", e); }
 
+  // DOI search
   try {
-    const doiResp = await fetch(`https://api.crossref.org/works?query=${encodeURIComponent(query)}&rows=${maxResults}`);
-    const doiData = await doiResp.json();
+    const doiUrl = `https://api.crossref.org/works?query=${encodeURIComponent(query)}&rows=${maxResults}`;
+    const doiData = await fetchCORS(doiUrl);
     doiData.message.items?.forEach(item => results.push({
       text: (item.title?.[0] || "") + ". " + (item.abstract || ""),
       type: "external"
@@ -1087,7 +1097,7 @@ Percy.fetchExternalSources = async function(query, maxResults=5) {
 
 // --- Percy Bar integration ---
 window.askPercyBar = window.askPercyBar || async function(query) {
-  UI.showTyping?.(); // optional: Percy Bar "typing" animation
+  UI.showTyping?.();
   const reply = await Percy.correlateReply(query);
   UI.say?.("🤖 Percy: " + reply);
   try { if (typeof Percy.speak === "function") Percy.speak(reply); } catch(e){}
@@ -1108,7 +1118,7 @@ if(barInput) {
 
 // --- Hook Ask Percy box to Part F ---
 (function() {
-  const chatInput = document.querySelector("#ask-percy-input"); // Replace with actual Ask Percy box ID
+  const chatInput = document.querySelector("#ask-percy-input");
   if (!chatInput) return console.warn("Ask Percy box not found.");
 
   chatInput.addEventListener("keydown", async e => {
@@ -1120,8 +1130,8 @@ if(barInput) {
       // Call Part F
       const reply = await askPercyBar(query);
 
-      // Optional: display in chat box
-      const chatBox = document.querySelector("#ask-percy-chat"); // Replace with actual chat container
+      // Display in chat container
+      const chatBox = document.querySelector("#ask-percy-chat");
       if (chatBox) {
         const msg = document.createElement("div");
         msg.className = "percy-msg";
