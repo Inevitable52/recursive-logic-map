@@ -1005,7 +1005,7 @@ Percy.speak = function(text) {
   return Percy.generators.voice(text);
 };
 
-/* === Percy Part F: Correlational Layer + Percy Bar Integration (CORS Fixed) === */
+/* === Percy Part F: Correlational Layer + Percy Bar Integration (CORS Fixed + Ask Percy Hooked) === */
 
 Percy.correlateReply = async function(query, maxSources=5) {
   if (!query || !query.trim()) return "Please ask something, my good sir.";
@@ -1116,27 +1116,39 @@ if(barInput) {
   });
 }
 
-// --- Hook Ask Percy box to Part F ---
+// --- Fully override Ask Percy box to use Part F ---
 (function() {
   const chatInput = document.querySelector("#ask-percy-input");
   if (!chatInput) return console.warn("Ask Percy box not found.");
 
-  chatInput.addEventListener("keydown", async e => {
-    if (e.key === "Enter" && chatInput.value.trim()) {
+  const chatBox = document.querySelector("#ask-percy-chat"); // chat container
+  if (!chatBox) console.warn("Ask Percy chat container not found.");
+
+  // Remove any previous handlers to prevent conflicts
+  chatInput.replaceWith(chatInput.cloneNode(true));
+  const newInput = document.querySelector("#ask-percy-input");
+
+  newInput.addEventListener("keydown", async e => {
+    if (e.key === "Enter" && newInput.value.trim()) {
       e.preventDefault();
-      const query = chatInput.value.trim();
-      chatInput.value = "";
-      
-      // Call Part F
+      const query = newInput.value.trim();
+      newInput.value = "";
+
+      // Run Part F
       const reply = await askPercyBar(query);
 
-      // Display in chat container
-      const chatBox = document.querySelector("#ask-percy-chat");
-      if (chatBox) {
-        const msg = document.createElement("div");
-        msg.className = "percy-msg";
-        msg.innerText = "🤖 Percy: " + reply;
-        chatBox.appendChild(msg);
+      // Append messages to chat container
+      if(chatBox) {
+        const userMsg = document.createElement("div");
+        userMsg.className = "user-msg";
+        userMsg.innerText = "You: " + query;
+        chatBox.appendChild(userMsg);
+
+        const percyMsg = document.createElement("div");
+        percyMsg.className = "percy-msg";
+        percyMsg.innerText = "🤖 Percy: " + reply;
+        chatBox.appendChild(percyMsg);
+
         chatBox.scrollTop = chatBox.scrollHeight;
       }
     }
