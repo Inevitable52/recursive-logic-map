@@ -1005,25 +1005,27 @@ Percy.speak = function(text) {
   return Percy.generators.voice(text);
 };
 
-/* === Percy Part F: Correlational + External Knowledge Layer === */
+/* === Percy Part F: Correlational + External Knowledge Layer (Fixed) === */
 
 Percy.correlateReply = async function(query, maxSources=5) {
   if (!query || !query.trim()) return "Please ask something, my good sir.";
 
   const input = query.toLowerCase().trim();
 
-  // 1) Gather internal sources
-  const seeds = Object.values(PercyState.gnodes || {}).map(s => ({
-    text: s.message || "",
-    type: s.type || "seed"
+  // 1) Gather internal sources safely
+  const seeds = Object.values(PercyState?.gnodes || {}).map(s => ({
+    text: s?.message || "",
+    type: s?.type || "seed"
   }));
-  const memories = (Memory.load("memories", []) || []).map(m => ({
+  
+  const memories = (Memory?.load("memories", []) || []).map(m => ({
     text: String(m),
     type: "memory"
   }));
+
   let sources = [...seeds, ...memories];
 
-  // 2) Fetch external sources (PDS, DOI)
+  // 2) Fetch external sources safely
   try {
     const external = await Percy.fetchExternalSources(input, maxSources);
     sources = sources.concat(external);
@@ -1032,17 +1034,24 @@ Percy.correlateReply = async function(query, maxSources=5) {
   }
 
   // 3) Score sources for relevance
-  const scored = sources.map(src => {
-    let score = 0;
-    const tokens = input.split(/\W+/);
-    tokens.forEach(t => { if (t && src.text.toLowerCase().includes(t)) score += 1; });
-    if (src.type === "thought") score += 0.5;
-    return { ...src, score };
-  }).filter(s => s.score > 0).sort((a,b) => b.score - a.score).slice(0, maxSources);
+  const scored = sources
+    .map(src => {
+      let score = 0;
+      const tokens = input.split(/\W+/).filter(Boolean);
+      tokens.forEach(t => {
+        if (src.text.toLowerCase().includes(t)) score += 1;
+      });
+      if (src.type === "thought") score += 0.5;
+      return { ...src, score };
+    })
+    .filter(s => s.score > 0)
+    .sort((a,b) => b.score - a.score)
+    .slice(0, maxSources);
 
   // 4) Compose response
-  let insights = scored.map(s => `- "${s.text.slice(0, 100)}..."`).join("\n");
-  if (!insights) insights = "I’m still learning about that topic, but here’s a related thought: " + Percy.makeThought(query);
+  let insights = scored.length
+    ? scored.map(s => `- "${s.text.substring(0, 150)}${s.text.length > 150 ? "..." : ""}"`).join("\n")
+    : "I’m still learning about that topic, but here’s a related thought: " + Percy.makeThought(query);
 
   const response = [
     `Hello, my good sir — Percy here. You asked: "${query}".`,
@@ -1052,12 +1061,14 @@ Percy.correlateReply = async function(query, maxSources=5) {
   ].join("\n\n");
 
   // 5) Save short seed for traceability
-  try { PercyState.createSeed(response.split("\n")[0], "response"); } catch(e){}
+  try {
+    PercyState?.createSeed?.(response.split("\n")[0], "response");
+  } catch(e){ console.warn("Seed creation failed:", e); }
 
   return response;
 };
 
-// --- Helper: fetch external sources ---
+// --- Helper: fetch external sources safely ---
 Percy.fetchExternalSources = async function(query, maxResults=5) {
   const results = [];
 
@@ -1066,7 +1077,7 @@ Percy.fetchExternalSources = async function(query, maxResults=5) {
     const pdsResp = await fetch(`https://pds.nasa.gov/api/search?q=${encodeURIComponent(query)}&limit=${maxResults}`);
     const pdsData = await pdsResp.json();
     pdsData.items?.forEach(item => results.push({
-      text: item.title + ". " + item.description,
+      text: (item.title || "") + ". " + (item.description || ""),
       type: "external"
     }));
   } catch(e) { console.warn("PDS fetch failed:", e); }
@@ -1076,7 +1087,7 @@ Percy.fetchExternalSources = async function(query, maxResults=5) {
     const doiResp = await fetch(`https://api.crossref.org/works?query=${encodeURIComponent(query)}&rows=${maxResults}`);
     const doiData = await doiResp.json();
     doiData.message.items?.forEach(item => results.push({
-      text: item.title[0] + ". " + (item.abstract || ""),
+      text: (item.title?.[0] || "") + ". " + (item.abstract || ""),
       type: "external"
     }));
   } catch(e) { console.warn("DOI fetch failed:", e); }
@@ -1087,7 +1098,8 @@ Percy.fetchExternalSources = async function(query, maxResults=5) {
 // --- Optional wrapper for AskPercy UI ---
 window.askPercy = window.askPercy || async function(query) {
   const reply = await Percy.correlateReply(query);
-  UI.say("🤖 Percy: " + reply);
+  UI.say?.("🤖 Percy: " + reply);
   try { if (typeof Percy.speak === "function") Percy.speak(reply); } catch(e){}
   return reply;
 };
+
