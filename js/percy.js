@@ -1005,42 +1005,36 @@ Percy.speak = function(text) {
   return Percy.generators.voice(text);
 };
 
-/* === Percy Part F: Correlational + External Knowledge Layer (Fixed) === */
+/* === Percy Part F: Correlational Layer + Percy Bar Integration === */
 
 Percy.correlateReply = async function(query, maxSources=5) {
   if (!query || !query.trim()) return "Please ask something, my good sir.";
 
   const input = query.toLowerCase().trim();
 
-  // 1) Gather internal sources safely
+  // 1) Gather internal sources
   const seeds = Object.values(PercyState?.gnodes || {}).map(s => ({
     text: s?.message || "",
     type: s?.type || "seed"
   }));
-  
   const memories = (Memory?.load("memories", []) || []).map(m => ({
     text: String(m),
     type: "memory"
   }));
-
   let sources = [...seeds, ...memories];
 
-  // 2) Fetch external sources safely
+  // 2) Fetch external sources
   try {
     const external = await Percy.fetchExternalSources(input, maxSources);
     sources = sources.concat(external);
-  } catch(e) {
-    console.warn("External fetch failed:", e);
-  }
+  } catch(e) { console.warn("External fetch failed:", e); }
 
-  // 3) Score sources for relevance
+  // 3) Score sources
   const scored = sources
     .map(src => {
       let score = 0;
       const tokens = input.split(/\W+/).filter(Boolean);
-      tokens.forEach(t => {
-        if (src.text.toLowerCase().includes(t)) score += 1;
-      });
+      tokens.forEach(t => { if (src.text.toLowerCase().includes(t)) score += 1; });
       if (src.type === "thought") score += 0.5;
       return { ...src, score };
     })
@@ -1061,18 +1055,15 @@ Percy.correlateReply = async function(query, maxSources=5) {
   ].join("\n\n");
 
   // 5) Save short seed for traceability
-  try {
-    PercyState?.createSeed?.(response.split("\n")[0], "response");
-  } catch(e){ console.warn("Seed creation failed:", e); }
+  try { PercyState?.createSeed?.(response.split("\n")[0], "response"); } catch(e){}
 
   return response;
 };
 
-// --- Helper: fetch external sources safely ---
+// --- Helper: fetch external sources ---
 Percy.fetchExternalSources = async function(query, maxResults=5) {
   const results = [];
 
-  // PDS search API (pseudo)
   try {
     const pdsResp = await fetch(`https://pds.nasa.gov/api/search?q=${encodeURIComponent(query)}&limit=${maxResults}`);
     const pdsData = await pdsResp.json();
@@ -1082,7 +1073,6 @@ Percy.fetchExternalSources = async function(query, maxResults=5) {
     }));
   } catch(e) { console.warn("PDS fetch failed:", e); }
 
-  // DOI search API (CrossRef)
   try {
     const doiResp = await fetch(`https://api.crossref.org/works?query=${encodeURIComponent(query)}&rows=${maxResults}`);
     const doiData = await doiResp.json();
@@ -1095,11 +1085,23 @@ Percy.fetchExternalSources = async function(query, maxResults=5) {
   return results.slice(0, maxResults);
 };
 
-// --- Optional wrapper for AskPercy UI ---
-window.askPercy = window.askPercy || async function(query) {
+// --- Percy Bar integration ---
+window.askPercyBar = window.askPercyBar || async function(query) {
+  UI.showTyping?.(); // optional: Percy Bar "typing" animation
   const reply = await Percy.correlateReply(query);
   UI.say?.("🤖 Percy: " + reply);
   try { if (typeof Percy.speak === "function") Percy.speak(reply); } catch(e){}
   return reply;
 };
 
+// Automatically hook Percy Bar input
+const barInput = document.querySelector("#percy-bar-input");
+if(barInput) {
+  barInput.addEventListener("keydown", async e => {
+    if(e.key === "Enter" && barInput.value.trim()) {
+      e.preventDefault();
+      await askPercyBar(barInput.value);
+      barInput.value = "";
+    }
+  });
+}
