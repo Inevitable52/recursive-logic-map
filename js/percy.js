@@ -1005,7 +1005,7 @@ Percy.speak = function(text) {
   return Percy.generators.voice(text);
 };
 
-/* === Percy Part F: Correlational Layer + Percy Bar Integration (CORS Fixed + Ask Percy Hooked) === */
+/* === Percy Part F: Correlational Layer + Percy Bar Integration (CORS Fixed + Ask Percy Hooked + DOM Wait) === */
 
 Percy.correlateReply = async function(query, maxSources=5) {
   if (!query || !query.trim()) return "Please ask something, my good sir.";
@@ -1116,29 +1116,44 @@ if(barInput) {
   });
 }
 
-// --- Fully override Ask Percy box to use Part F ---
-(function() {
-  const chatInput = document.querySelector("#ask-percy-input");
-  if (!chatInput) return console.warn("Ask Percy box not found.");
+// --- Wait for Ask Percy elements and hook them safely ---
+function waitForElement(selector, timeout = 5000) {
+  return new Promise((resolve, reject) => {
+    const interval = 50;
+    let elapsed = 0;
+    const timer = setInterval(() => {
+      const el = document.querySelector(selector);
+      if (el) {
+        clearInterval(timer);
+        resolve(el);
+      }
+      elapsed += interval;
+      if (elapsed >= timeout) {
+        clearInterval(timer);
+        reject(`Element ${selector} not found within ${timeout}ms`);
+      }
+    }, interval);
+  });
+}
 
-  const chatBox = document.querySelector("#ask-percy-chat"); // chat container
-  if (!chatBox) console.warn("Ask Percy chat container not found.");
+(async () => {
+  try {
+    const chatInput = await waitForElement("#ask-percy-input");
+    const chatBox = await waitForElement("#ask-percy-chat");
 
-  // Remove any previous handlers to prevent conflicts
-  chatInput.replaceWith(chatInput.cloneNode(true));
-  const newInput = document.querySelector("#ask-percy-input");
+    // Remove old handlers
+    chatInput.replaceWith(chatInput.cloneNode(true));
+    const newInput = document.querySelector("#ask-percy-input");
 
-  newInput.addEventListener("keydown", async e => {
-    if (e.key === "Enter" && newInput.value.trim()) {
-      e.preventDefault();
-      const query = newInput.value.trim();
-      newInput.value = "";
+    newInput.addEventListener("keydown", async e => {
+      if (e.key === "Enter" && newInput.value.trim()) {
+        e.preventDefault();
+        const query = newInput.value.trim();
+        newInput.value = "";
 
-      // Run Part F
-      const reply = await askPercyBar(query);
+        const reply = await askPercyBar(query);
 
-      // Append messages to chat container
-      if(chatBox) {
+        // Append messages to chat
         const userMsg = document.createElement("div");
         userMsg.className = "user-msg";
         userMsg.innerText = "You: " + query;
@@ -1151,6 +1166,8 @@ if(barInput) {
 
         chatBox.scrollTop = chatBox.scrollHeight;
       }
-    }
-  });
+    });
+  } catch(err) {
+    console.warn(err);
+  }
 })();
