@@ -1005,7 +1005,7 @@ Percy.speak = function(text) {
   return Percy.generators.voice(text);
 };
 
-/* === Percy Part F: Correlational Layer + Ask Percy Integration (CORS Fixed + DOM Hook) === */
+/* === Percy Part F: Correlational Layer + Ask Percy Integration (CORS Fixed + DOM Hook + Run Button Support) === */
 
 Percy.correlateReply = async function(query, maxSources=5) {
   if (!query || !query.trim()) return "Please ask something, my good sir.";
@@ -1119,17 +1119,31 @@ window.askPercy = window.askPercy || async function(query) {
   return reply;
 };
 
-// --- Hook Ask Percy input (#interpreter-input) ---
+// --- Hook Ask Percy input + Run button ---
 (function(){
   const input = document.querySelector("#interpreter-input");
+  const runBtn = document.querySelector("#interpreter-run"); // <- your Run button
   if (!input) return;
 
+  async function handleAskPercy() {
+    if (!input.value.trim()) return;
+    const query = input.value.trim();
+    input.value = "";
+    await askPercy(query);
+  }
+
+  // ENTER key
   input.addEventListener("keydown", async e => {
-    if (e.key === "Enter" && input.value.trim()) {
+    if (e.key === "Enter") {
       e.preventDefault();
-      const query = input.value.trim();
-      input.value = "";
-      await askPercy(query);
+      await handleAskPercy();
     }
   });
+
+  // RUN button click
+  if (runBtn) {
+    runBtn.addEventListener("click", async () => {
+      await handleAskPercy();
+    });
+  }
 })();
