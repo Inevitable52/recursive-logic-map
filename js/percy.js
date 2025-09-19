@@ -1094,7 +1094,7 @@ window.askPercyBar = window.askPercyBar || async function(query) {
   return reply;
 };
 
-// Automatically hook Percy Bar input
+// --- Automatically hook Percy Bar input ---
 const barInput = document.querySelector("#percy-bar-input");
 if(barInput) {
   barInput.addEventListener("keydown", async e => {
@@ -1105,3 +1105,33 @@ if(barInput) {
     }
   });
 }
+
+// --- Hook main Chat Percy input box ---
+const chatInput = document.querySelector("#ask-percy-input"); // adjust ID if needed
+if (chatInput) {
+  chatInput.addEventListener("keydown", async e => {
+    if (e.key === "Enter" && chatInput.value.trim()) {
+      e.preventDefault();
+      const userQuery = chatInput.value.trim();
+      chatInput.value = "";
+      // Run through Part F
+      const reply = await askPercyBar(userQuery);
+      // Optional: append to chat history if UI supports it
+      const chatHistory = document.querySelector("#chat-history");
+      if(chatHistory) {
+        const userNode = document.createElement("div");
+        userNode.className = "user-msg";
+        userNode.textContent = "You: " + userQuery;
+        chatHistory.appendChild(userNode);
+
+        const percyNode = document.createElement("div");
+        percyNode.className = "percy-msg";
+        percyNode.textContent = "🤖 Percy: " + reply;
+        chatHistory.appendChild(percyNode);
+
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+      }
+    }
+  });
+}
+
