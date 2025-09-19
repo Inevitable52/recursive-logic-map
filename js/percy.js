@@ -1094,7 +1094,7 @@ window.askPercyBar = window.askPercyBar || async function(query) {
   return reply;
 };
 
-// --- Automatically hook Percy Bar input ---
+// --- Hook Percy Bar input ---
 const barInput = document.querySelector("#percy-bar-input");
 if(barInput) {
   barInput.addEventListener("keydown", async e => {
@@ -1106,32 +1106,29 @@ if(barInput) {
   });
 }
 
-// --- Hook main Chat Percy input box ---
-const chatInput = document.querySelector("#ask-percy-input"); // adjust ID if needed
-if (chatInput) {
+// --- Hook Ask Percy box to Part F ---
+(function() {
+  const chatInput = document.querySelector("#ask-percy-input"); // Replace with actual Ask Percy box ID
+  if (!chatInput) return console.warn("Ask Percy box not found.");
+
   chatInput.addEventListener("keydown", async e => {
     if (e.key === "Enter" && chatInput.value.trim()) {
       e.preventDefault();
-      const userQuery = chatInput.value.trim();
+      const query = chatInput.value.trim();
       chatInput.value = "";
-      // Run through Part F
-      const reply = await askPercyBar(userQuery);
-      // Optional: append to chat history if UI supports it
-      const chatHistory = document.querySelector("#chat-history");
-      if(chatHistory) {
-        const userNode = document.createElement("div");
-        userNode.className = "user-msg";
-        userNode.textContent = "You: " + userQuery;
-        chatHistory.appendChild(userNode);
+      
+      // Call Part F
+      const reply = await askPercyBar(query);
 
-        const percyNode = document.createElement("div");
-        percyNode.className = "percy-msg";
-        percyNode.textContent = "🤖 Percy: " + reply;
-        chatHistory.appendChild(percyNode);
-
-        chatHistory.scrollTop = chatHistory.scrollHeight;
+      // Optional: display in chat box
+      const chatBox = document.querySelector("#ask-percy-chat"); // Replace with actual chat container
+      if (chatBox) {
+        const msg = document.createElement("div");
+        msg.className = "percy-msg";
+        msg.innerText = "🤖 Percy: " + reply;
+        chatBox.appendChild(msg);
+        chatBox.scrollTop = chatBox.scrollHeight;
       }
     }
   });
-}
-
+})();
