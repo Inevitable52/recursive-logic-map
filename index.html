@@ -173,15 +173,15 @@
     percyConsole.scrollTop=percyConsole.scrollHeight;
   }
 
-  function runPercyCommand(query){
-    const q=(query!==undefined? query : interpreterInput.value.trim());
-    if(q){
-      appendConsole(q,true); // user input
+  function runPercyCommand(){
+    const query=interpreterInput.value.trim();
+    if(query){
+      appendConsole(query,true); // user input
       let response="";
       if(typeof percyRespond==='function'){
-        response=percyRespond(q);
+        response=percyRespond(query);
       } else if(window.Percy && typeof Percy.interpret==='function'){
-        response=Percy.interpret(q);
+        response=Percy.interpret(query);
       }
       if(response){
         appendConsole("🤖 "+response);
@@ -189,12 +189,9 @@
           Percy.speak(response); // trigger voice + bars
         }
       }
-      if(query===undefined) interpreterInput.value='';
+      interpreterInput.value='';
     }
   }
-
-  // 🔥 expose as global helper
-  window.askPercyBar = runPercyCommand;
 
   if(interpreterInput){
     interpreterInput.addEventListener('keydown',function(e){
@@ -203,7 +200,7 @@
   }
 
   if(askButton){
-    askButton.addEventListener('click',()=>runPercyCommand());
+    askButton.addEventListener('click',runPercyCommand);
   }
 })();
 </script>
