@@ -1005,7 +1005,7 @@ Percy.speak = function(text) {
   return Percy.generators.voice(text);
 };
 
-/* === Percy Part F: Correlational Layer + Percy Bar Integration (CORS Fixed + Ask Percy Hooked + DOM Wait) === */
+/* === Percy Part F: Correlational Layer + Ask Percy Integration (CORS Fixed + DOM Hook) === */
 
 Percy.correlateReply = async function(query, maxSources=5) {
   if (!query || !query.trim()) return "Please ask something, my good sir.";
@@ -1095,79 +1095,41 @@ Percy.fetchExternalSources = async function(query, maxResults=5) {
   return results.slice(0, maxResults);
 };
 
-// --- Percy Bar integration ---
-window.askPercyBar = window.askPercyBar || async function(query) {
-  UI.showTyping?.();
+// --- Percy integration with your Ask Percy input ---
+window.askPercy = window.askPercy || async function(query) {
   const reply = await Percy.correlateReply(query);
-  UI.say?.("🤖 Percy: " + reply);
+
+  // Append to console
+  const percyConsole = document.querySelector("#percy-console");
+  if (percyConsole) {
+    const userLine = document.createElement("div");
+    userLine.className = "console-line";
+    userLine.textContent = "↳ " + query;
+    percyConsole.appendChild(userLine);
+
+    const percyLine = document.createElement("div");
+    percyLine.className = "console-line";
+    percyLine.textContent = "🤖 " + reply;
+    percyConsole.appendChild(percyLine);
+
+    percyConsole.scrollTop = percyConsole.scrollHeight;
+  }
+
   try { if (typeof Percy.speak === "function") Percy.speak(reply); } catch(e){}
   return reply;
 };
 
-// --- Hook Percy Bar input ---
-const barInput = document.querySelector("#percy-bar-input");
-if(barInput) {
-  barInput.addEventListener("keydown", async e => {
-    if(e.key === "Enter" && barInput.value.trim()) {
+// --- Hook Ask Percy input (#interpreter-input) ---
+(function(){
+  const input = document.querySelector("#interpreter-input");
+  if (!input) return;
+
+  input.addEventListener("keydown", async e => {
+    if (e.key === "Enter" && input.value.trim()) {
       e.preventDefault();
-      await askPercyBar(barInput.value);
-      barInput.value = "";
+      const query = input.value.trim();
+      input.value = "";
+      await askPercy(query);
     }
   });
-}
-
-// --- Wait for Ask Percy elements and hook them safely ---
-function waitForElement(selector, timeout = 5000) {
-  return new Promise((resolve, reject) => {
-    const interval = 50;
-    let elapsed = 0;
-    const timer = setInterval(() => {
-      const el = document.querySelector(selector);
-      if (el) {
-        clearInterval(timer);
-        resolve(el);
-      }
-      elapsed += interval;
-      if (elapsed >= timeout) {
-        clearInterval(timer);
-        reject(`Element ${selector} not found within ${timeout}ms`);
-      }
-    }, interval);
-  });
-}
-
-(async () => {
-  try {
-    const chatInput = await waitForElement("#ask-percy-input");
-    const chatBox = await waitForElement("#ask-percy-chat");
-
-    // Remove old handlers
-    chatInput.replaceWith(chatInput.cloneNode(true));
-    const newInput = document.querySelector("#ask-percy-input");
-
-    newInput.addEventListener("keydown", async e => {
-      if (e.key === "Enter" && newInput.value.trim()) {
-        e.preventDefault();
-        const query = newInput.value.trim();
-        newInput.value = "";
-
-        const reply = await askPercyBar(query);
-
-        // Append messages to chat
-        const userMsg = document.createElement("div");
-        userMsg.className = "user-msg";
-        userMsg.innerText = "You: " + query;
-        chatBox.appendChild(userMsg);
-
-        const percyMsg = document.createElement("div");
-        percyMsg.className = "percy-msg";
-        percyMsg.innerText = "🤖 Percy: " + reply;
-        chatBox.appendChild(percyMsg);
-
-        chatBox.scrollTop = chatBox.scrollHeight;
-      }
-    });
-  } catch(err) {
-    console.warn(err);
-  }
 })();
