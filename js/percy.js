@@ -1147,3 +1147,57 @@ window.askPercy = window.askPercy || async function(query) {
     });
   }
 })();
+
+if (PercyState && typeof PercyState.rewriteSelf === "function") {
+  const fnSource = PercyState.rewriteSelf.toString();
+  console.log("📜 PercyState.rewriteSelf source:\n", fnSource);
+
+  // also show it in #percy-console
+  const consoleDiv = document.getElementById("percy-console");
+  if (consoleDiv) {
+    const pre = document.createElement("pre");
+    pre.style.fontSize = "11px";
+    pre.style.whiteSpace = "pre-wrap";
+    pre.style.color = "#9ff";
+    pre.textContent = fnSource;
+    consoleDiv.appendChild(pre);
+    consoleDiv.scrollTop = consoleDiv.scrollHeight;
+  }
+}
+
+/* === Percy Live Rewrite Tracker === */
+(function(){
+  const consoleDiv = document.getElementById("percy-console");
+  if (!consoleDiv) return;
+
+  function showSource(fn) {
+    if (typeof fn !== "function") return;
+    const fnSource = fn.toString();
+    console.log("📜 PercyState.rewriteSelf updated:\n", fnSource);
+
+    const pre = document.createElement("pre");
+    pre.style.fontSize = "11px";
+    pre.style.whiteSpace = "pre-wrap";
+    pre.style.color = "#9ff";
+    pre.textContent = fnSource;
+
+    // clear old source before adding new one
+    const old = consoleDiv.querySelector(".rewrite-source");
+    if (old) consoleDiv.removeChild(old);
+
+    pre.className = "rewrite-source";
+    consoleDiv.appendChild(pre);
+    consoleDiv.scrollTop = consoleDiv.scrollHeight;
+  }
+
+  // Watch for changes to PercyState.rewriteSelf
+  let current = PercyState?.rewriteSelf;
+  showSource(current);
+
+  setInterval(() => {
+    if (PercyState && PercyState.rewriteSelf !== current) {
+      current = PercyState.rewriteSelf;
+      showSource(current);
+    }
+  }, 1000); // check once per second
+})();
