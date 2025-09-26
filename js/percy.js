@@ -1276,3 +1276,79 @@ if (PercyState && typeof PercyState.rewriteSelf === "function") {
   }, 30000);
 
 })();
+
+/* === percy.js (Part H — MCP Toolkit Integration) === */
+if (typeof PercyState !== 'undefined') {
+
+  // Percy’s Tool Registry
+  PercyState.tools = PercyState.tools || {};
+
+  /**
+   * Register a tool for Percy.
+   * @param {string} name - Tool name (unique key)
+   * @param {function} handler - Function that takes (input, options) and returns a result
+   * @param {object} meta - Metadata like description, usage example, etc.
+   */
+  PercyState.registerTool = function(name, handler, meta={}) {
+    if (!name || typeof handler !== 'function') {
+      console.error("❌ Invalid tool registration:", name);
+      return;
+    }
+    this.tools[name] = { handler, meta };
+    UI.say(`🛠️ Tool registered: ${name}`);
+  };
+
+  /**
+   * Call a registered tool.
+   * @param {string} name - Tool name
+   * @param {any} input - Input for the tool
+   * @param {object} options - Extra options/context
+   * @returns {any} - Tool result or error
+   */
+  PercyState.useTool = async function(name, input, options={}) {
+    const tool = this.tools[name];
+    if (!tool) {
+      UI.say(`⚠️ Tool "${name}" not found.`);
+      return null;
+    }
+    try {
+      const result = await tool.handler(input, options);
+      UI.say(`✅ Tool "${name}" executed.`);
+      return result;
+    } catch (err) {
+      console.error("Tool error:", err);
+      UI.say(`❌ Tool "${name}" failed: ${err.message}`);
+      return null;
+    }
+  };
+
+  /**
+   * List available tools
+   */
+  PercyState.listTools = function() {
+    return Object.keys(this.tools).map(name => ({
+      name,
+      ...this.tools[name].meta
+    }));
+  };
+
+  // Example built-in tool: Echo
+  PercyState.registerTool("echo", async (input) => {
+    return `Echo: ${input}`;
+  }, { description: "Repeats back whatever you say." });
+
+  // Example built-in tool: Math Eval (safe)
+  PercyState.registerTool("math", async (input) => {
+    try {
+      const res = Function('"use strict";return (' + input + ')')();
+      return res;
+    } catch {
+      return "⚠️ Invalid math expression.";
+    }
+  }, { description: "Evaluates simple math expressions safely." });
+
+  UI.say("🔌 Percy Part H (MCP Toolkit) loaded.");
+} else {
+  console.error("❌ PercyState not found; cannot load Part H.");
+}
+
