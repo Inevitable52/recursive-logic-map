@@ -1277,6 +1277,13 @@ if (typeof PercyState !== 'undefined') {
   console.error("❌ PercyState not found; cannot load Part H.");
 }
 
+// === Add new custom tool: Search Seeds ===
+PercyState.registerTool("searchSeeds", async (query) => {
+  const seeds = Object.entries(PercyState.gnodes || {});
+  const results = seeds.filter(([id, text]) => text.toLowerCase().includes(query.toLowerCase()));
+  return results.slice(0, 5).map(([id, text]) => ({ id, text }));
+}, { description: "Searches Percy’s logic map for seeds related to a query." });
+
 /* === Percy Part I: Introspective & Strategic Reasoning Engine === */
 if (typeof PercyState !== 'undefined') {
 
