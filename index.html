@@ -155,10 +155,6 @@
 
     consoleDiv.scrollTop = consoleDiv.scrollHeight;
 
-    // Speak output
-    if(window.Percy && typeof Percy.speak === "function"){
-      try { Percy.speak(output); } catch(e){}
-    }
   }
 
   // ENTER key
