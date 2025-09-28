@@ -203,7 +203,7 @@
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
 
-  let audioCtx, analyser, dataArrayFreq, dataArrayWave, source;
+  let audioCtx, analyser, dataArrayFreq, dataArrayWave;
 
   async function initAudio(){
     if(audioCtx) return;
@@ -216,11 +216,11 @@
       dataArrayFreq = new Uint8Array(bufferLength);
       dataArrayWave = new Uint8Array(bufferLength);
 
-      const stream = await navigator.mediaDevices.getUserMedia({audio:true});
-      source = audioCtx.createMediaStreamSource(stream);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const source = audioCtx.createMediaStreamSource(stream);
       source.connect(analyser);
 
-      draw();
+      draw(); // start visualization
     } catch(err) {
       console.error("🎤 Microphone access denied:", err);
     }
@@ -229,37 +229,40 @@
   function draw(){
     requestAnimationFrame(draw);
 
+    if(!analyser) return;
+
     const WIDTH = canvas.width;
     const HEIGHT = canvas.height;
+
     ctx.clearRect(0,0,WIDTH,HEIGHT);
 
-    if(analyser){
-      analyser.getByteFrequencyData(dataArrayFreq);
-      const barWidth = WIDTH / dataArrayFreq.length;
-      for(let i=0;i<dataArrayFreq.length;i++){
-        const barHeight = dataArrayFreq[i]/255 * HEIGHT;
-        ctx.fillStyle = `rgb(${dataArrayFreq[i]},${255-dataArrayFreq[i]},255)`;
-        ctx.fillRect(i*barWidth, HEIGHT-barHeight, barWidth*0.6, barHeight);
-      }
-
-      analyser.getByteTimeDomainData(dataArrayWave);
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = 'rgba(0,255,255,0.8)';
-      ctx.beginPath();
-      const sliceWidth = WIDTH / dataArrayWave.length;
-      let x = 0;
-      for(let i=0;i<dataArrayWave.length;i++){
-        const v = dataArrayWave[i]/128.0;
-        const y = v * HEIGHT/2;
-        if(i===0) ctx.moveTo(x,y);
-        else ctx.lineTo(x,y);
-        x += sliceWidth;
-      }
-      ctx.stroke();
+    // Bars
+    analyser.getByteFrequencyData(dataArrayFreq);
+    const barWidth = WIDTH / dataArrayFreq.length;
+    for(let i=0;i<dataArrayFreq.length;i++){
+      const barHeight = dataArrayFreq[i]/255 * HEIGHT;
+      ctx.fillStyle = `rgb(${dataArrayFreq[i]},${255-dataArrayFreq[i]},255)`;
+      ctx.fillRect(i*barWidth, HEIGHT-barHeight, barWidth*0.6, barHeight);
     }
+
+    // Waveform
+    analyser.getByteTimeDomainData(dataArrayWave);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(0,255,255,0.8)';
+    ctx.beginPath();
+    const sliceWidth = WIDTH / dataArrayWave.length;
+    let x = 0;
+    for(let i=0;i<dataArrayWave.length;i++){
+      const v = dataArrayWave[i]/128.0;
+      const y = v * HEIGHT/2;
+      if(i===0) ctx.moveTo(x,y);
+      else ctx.lineTo(x,y);
+      x += sliceWidth;
+    }
+    ctx.stroke();
   }
 
-  // Init audio on first interaction anywhere
+  // init audio on first user interaction anywhere
   ['click','keydown','touchstart'].forEach(evt => {
     window.addEventListener(evt, initAudio, {once:true, passive:true});
   });
