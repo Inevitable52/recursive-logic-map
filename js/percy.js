@@ -1284,89 +1284,6 @@ PercyState.registerTool("searchSeeds", async (query) => {
   return results.slice(0, 5).map(([id, text]) => ({ id, text }));
 }, { description: "Searches Percy’s logic map for seeds related to a query." });
 
-/* === Percy Part I: Introspective & Strategic Reasoning Engine === */
-if (typeof PercyState !== 'undefined') {
-
-  PercyState.PartI = {};
-
-  /* =========================
-  GOAL PRIORITIZATION & STRATEGIC PLANNING
-  ========================== */
-  PercyState.PartI.planGoals = function() {
-    const goals = Memory.load("goals", []);
-    if (!goals.length) return;
-
-    // Assign priority based on timing, type, and potential impact
-    goals.forEach(g => {
-      g.priority = 0;
-      if (g.when === "onStart") g.priority += 10;
-      if (g.task?.type === "speak") g.priority += 5;
-      if (g.task?.type === "autoLearn") g.priority += 8;
-      if (g.urgency) g.priority += g.urgency;
-    });
-
-    // Sort descending by priority
-    goals.sort((a,b)=>b.priority - a.priority);
-    Memory.save("goals", goals);
-    return goals;
-  };
-
-  /* =========================
-  PREDICTIVE THINKING & SIMULATION
-  ========================== */
-  PercyState.PartI.simulateOutcome = function(task) {
-    // Basic heuristic prediction
-    let confidence = 0.5; // 50% base
-    if (task.type === "speak") confidence += 0.2;
-    if (task.type === "autoLearn") confidence += 0.3;
-    if (task.type === "highlightSeed") confidence += 0.1;
-    confidence = Math.min(0.99, confidence);
-    return {
-      taskId: task.id ?? "unknown",
-      type: task.type,
-      confidence,
-      predictedEffect: `Estimated effect confidence: ${(confidence*100).toFixed(1)}%`
-    };
-  };
-
-  /* =========================
-  INTROSPECTIVE SELF-ASSESSMENT
-  ========================== */
-  PercyState.PartI.introspect = function() {
-    const seedsCount = Object.keys(PercyState.gnodes || {}).length;
-    const tasksQueued = Tasks.queue.length;
-    const tasksDone = Tasks.done.length;
-    const recentThought = Memory.load("lastThought") || "None";
-
-    const assessment = `💭 Percy introspection:
-      - Seeds stored: ${seedsCount}
-      - Tasks queued: ${tasksQueued}
-      - Tasks completed: ${tasksDone}
-      - Last thought: ${recentThought}`;
-
-    UI.say(assessment);
-    return assessment;
-  };
-
-  /* =========================
-  ADAPTIVE REASONING LOOP
-  ========================== */
-  PercyState.PartI.reasonLoop = function(intervalMs=50000) {
-    setInterval(()=>{
-      try {
-        const goals = PercyState.PartI.planGoals();
-        const topGoal = goals?.[0] ?? null;
-        if(topGoal) {
-          const simulation = PercyState.PartI.simulateOutcome(topGoal.task);
-          UI.say(`🧠 Strategic simulation for top goal: ${simulation.predictedEffect}`);
-        }
-        PercyState.PartI.introspect();
-      } catch(e){
-        console.error("Percy Part I error:", e);
-        UI.say("⚠️ Part I encountered an error during reasoning loop.");
-      }
-    }, intervalMs);
-  };
 
   /* === Percy Part H Add-on: Universal Ask Percy Router (Advanced) === */
 PercyState.PartH = PercyState.PartH || {};
@@ -1496,6 +1413,91 @@ PercyState.registerTool("math", async (expr) => {
 
 UI.say("🔌 Percy Part H Add-on (Universal Router + Advanced Math/Code/Tools) loaded.");
 
+/* === Percy Part I: Introspective & Strategic Reasoning Engine === */
+if (typeof PercyState !== 'undefined') {
+
+  PercyState.PartI = {};
+
+  /* =========================
+  GOAL PRIORITIZATION & STRATEGIC PLANNING
+  ========================== */
+  PercyState.PartI.planGoals = function() {
+    const goals = Memory.load("goals", []);
+    if (!goals.length) return;
+
+    // Assign priority based on timing, type, and potential impact
+    goals.forEach(g => {
+      g.priority = 0;
+      if (g.when === "onStart") g.priority += 10;
+      if (g.task?.type === "speak") g.priority += 5;
+      if (g.task?.type === "autoLearn") g.priority += 8;
+      if (g.urgency) g.priority += g.urgency;
+    });
+
+    // Sort descending by priority
+    goals.sort((a,b)=>b.priority - a.priority);
+    Memory.save("goals", goals);
+    return goals;
+  };
+
+  /* =========================
+  PREDICTIVE THINKING & SIMULATION
+  ========================== */
+  PercyState.PartI.simulateOutcome = function(task) {
+    // Basic heuristic prediction
+    let confidence = 0.5; // 50% base
+    if (task.type === "speak") confidence += 0.2;
+    if (task.type === "autoLearn") confidence += 0.3;
+    if (task.type === "highlightSeed") confidence += 0.1;
+    confidence = Math.min(0.99, confidence);
+    return {
+      taskId: task.id ?? "unknown",
+      type: task.type,
+      confidence,
+      predictedEffect: `Estimated effect confidence: ${(confidence*100).toFixed(1)}%`
+    };
+  };
+
+  /* =========================
+  INTROSPECTIVE SELF-ASSESSMENT
+  ========================== */
+  PercyState.PartI.introspect = function() {
+    const seedsCount = Object.keys(PercyState.gnodes || {}).length;
+    const tasksQueued = Tasks.queue.length;
+    const tasksDone = Tasks.done.length;
+    const recentThought = Memory.load("lastThought") || "None";
+
+    const assessment = `💭 Percy introspection:
+      - Seeds stored: ${seedsCount}
+      - Tasks queued: ${tasksQueued}
+      - Tasks completed: ${tasksDone}
+      - Last thought: ${recentThought}`;
+
+    UI.say(assessment);
+    return assessment;
+  };
+
+  /* =========================
+  ADAPTIVE REASONING LOOP
+  ========================== */
+  PercyState.PartI.reasonLoop = function(intervalMs=50000) {
+    setInterval(()=>{
+      try {
+        const goals = PercyState.PartI.planGoals();
+        const topGoal = goals?.[0] ?? null;
+        if(topGoal) {
+          const simulation = PercyState.PartI.simulateOutcome(topGoal.task);
+          UI.say(`🧠 Strategic simulation for top goal: ${simulation.predictedEffect}`);
+        }
+        PercyState.PartI.introspect();
+      } catch(e){
+        console.error("Percy Part I error:", e);
+        UI.say("⚠️ Part I encountered an error during reasoning loop.");
+      }
+    }, intervalMs);
+  };
+
+ 
   /* =========================
   INITIALIZE PART I
   ========================== */
