@@ -1279,45 +1279,76 @@ PercyState.PartH.routeInput = async function(input) {
   const mode = modeSelect ? modeSelect.value : "auto";
 
   // Forced modes
-  if (mode === "math") {
+if (mode === "math") {
+  try {
+    let result = await PercyState.useTool("math", input);
+    PercyState.log(`🧮 [Math Mode] ${input} = ${result}`);
+    return result;
+  } catch (err) {
+    return "⚠️ Math evaluation failed.";
+  }
+}
+
+if (mode === "java") {
+  if (typeof PercyState.rewriteSelf === "function") {
+    PercyState.log("📝 [Java Mode] Forwarding snippet to Part F self-rewrite.");
     try {
-      let result = await PercyState.useTool("math", input);
-      PercyState.log(`🧮 [Math Mode] ${input} = ${result}`);
-      return result;
-    } catch (err) { return "⚠️ Math evaluation failed."; }
+      let result = await PercyState.rewriteSelf("F", "Integrate Java snippet", {
+        code: input,
+        apply: false
+      });
+      return result || "⚠️ Java execution returned nothing.";
+    } catch (err) {
+      return "⚠️ Java execution failed.";
+    }
   }
+  return "⚠️ Percy Part F not loaded.";
+}
 
-  if (mode === "java") {
-    PercyState.log("📝 [Java Mode] Sending to Part F self-rewrite.");
-    return PercyState.PartF?.rewriteSelf("H", "Integrate Java snippet", {code: input, apply: false});
+if (mode === "tools") {
+  if (PercyState.PartH.isToolCommand(input)) {
+    let toolName = input.replace(/^make tool\s*/i, "").trim() || "customTool";
+    PercyState.registerTool(
+      toolName,
+      async (query) => `Tool "${toolName}" executed with query: ${query}`,
+      { description: `Dynamically created tool: ${toolName}` }
+    );
+    return `✅ Tool "${toolName}" created.`;
   }
+  const tools = PercyState.listTools();
+  return tools.length
+    ? tools.map(t => `🔧 ${t.name}: ${t.description}`).join("\n")
+    : "⚠️ No tools registered yet.";
+}
 
-  if (mode === "tools") {
-    if (PercyState.PartH.isToolCommand(input)) {
-      let toolName = input.replace(/^make tool\s*/i, "").trim() || "customTool";
-      PercyState.registerTool(toolName, async (query) => `Tool "${toolName}" executed with query: ${query}`, { description: `Dynamically created tool: ${toolName}`});
-      return `✅ Tool "${toolName}" created.`;
-    }
-    return PercyState.listTools().map(t => `🔧 ${t.name}: ${t.description}`).join("\n");
+// Auto Mode
+if (mode === "auto") {
+  if (PercyState.PartH.isMath(input)) {
+    return PercyState.useTool("math", input);
   }
-
-  // Auto Mode
-  if (mode === "auto") {
-    if (PercyState.PartH.isMath(input)) {
-      return PercyState.useTool("math", input);
+  if (PercyState.PartH.isJava(input)) {
+    if (typeof PercyState.rewriteSelf === "function") {
+      return PercyState.rewriteSelf("F", "Integrate Java snippet", {
+        code: input,
+        apply: false
+      });
     }
-    if (PercyState.PartH.isJava(input)) {
-      return PercyState.PartF?.rewriteSelf("H", "Integrate Java snippet", {code: input, apply: false});
-    }
-    if (PercyState.PartH.isToolCommand(input)) {
-      let toolName = input.replace(/^make tool\s*/i, "").trim() || "customTool";
-      PercyState.registerTool(toolName, async (query) => `Tool "${toolName}" executed with query: ${query}`, { description: `Dynamically created tool: ${toolName}`});
-      return `✅ Tool "${toolName}" created.`;
-    }
-    if (PercyState.PartI?.autoLearnCycle) return PercyState.PartI.autoLearnCycle(input);
-    return Percy.correlateReply ? await Percy.correlateReply(input) : "Processed as thought.";
+    return "⚠️ Percy Part F not loaded.";
   }
-};
+  if (PercyState.PartH.isToolCommand(input)) {
+    let toolName = input.replace(/^make tool\s*/i, "").trim() || "customTool";
+    PercyState.registerTool(
+      toolName,
+      async (query) => `Tool "${toolName}" executed with query: ${query}`,
+      { description: `Dynamically created tool: ${toolName}` }
+    );
+    return `✅ Tool "${toolName}" created.`;
+  }
+  if (PercyState.PartI?.autoLearnCycle) return PercyState.PartI.autoLearnCycle(input);
+  return Percy.correlateReply
+    ? await Percy.correlateReply(input)
+    : "Processed as thought.";
+}
 
 // --- Hook Ask Percy bar & ENTER / RUN ---
 PercyState.PartH.hookAskPercy = function() {
