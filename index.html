@@ -1,214 +1,175 @@
-/* === percy.js (Part H — MCP Toolkit Integration) === */
-if (typeof PercyState !== 'undefined') {
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>P.E.R.C.Y - AI</title>
+<style>
+  body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; overflow:hidden; }
+  #logic-map { position:relative; width:100vw; height:100vh; background:#0a0a0f; overflow:hidden; }
+  #logic-nodes { position:absolute; top:50%; left:50%; width:100%; height:100%; transform:translate(-50%,-50%) scale(1); }
+  .console-line { margin:2px 0; font-family:ui-monospace,Monaco,Consolas, monospace; font-size:12px; }
+  .console-line.ask { color:#d6d8ff; } /* normal Ask Percy */
+  .console-line.exec { color:#7fff7f; } /* Part H Exec */
+  #percy-console { position:fixed; bottom:0; left:0; width:35%; max-height:40%; overflow:auto; background:rgba(0,0,0,0.65); padding:6px; border-top-right-radius:12px; border:1px solid #444; }
+  #percy-message { position:fixed; bottom:0; left:35%; width:65%; padding:6px; background:rgba(0,0,0,0.65); border-top-left-radius:12px; border:1px solid #444; }
 
-  // Percy’s Tool Registry
-  PercyState.tools = PercyState.tools || {};
+  /* Visualizer (top-right, compact) */
+  #voice-visualizer {
+    position:fixed;
+    top:12px;
+    right:12px;
+    width:360px;
+    height:128px;
+    pointer-events:none;
+    z-index:9999;
+    display:flex;
+    align-items:center;
+    border-radius:12px;
+    background: linear-gradient(180deg, rgba(7,7,12,0.6), rgba(7,7,12,0.35));
+    box-shadow: 0 6px 24px rgba(0,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.02);
+    border:1px solid rgba(0,255,255,0.1);
+  }
+  #voice-canvas {
+    flex:1;
+    height:100%;
+    width:100%;
+    display:block;
+    border-radius:8px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.05));
+  }
 
-  /**
-   * Register a tool for Percy.
-   * @param {string} name - Tool name (unique key)
-   * @param {function} handler - Function that takes (input, options) and returns a result
-   * @param {object} meta - Metadata like description, usage example, etc.
-   */
-  PercyState.registerTool = function(name, handler, meta={}) {
-    if (!name || typeof handler !== 'function') {
-      console.error("❌ Invalid tool registration:", name);
-      return;
-    }
-    this.tools[name] = { handler, meta };
-    UI.say(`🛠️ Tool registered: ${name}`);
-  };
+  /* AskPercy button style */
+  #askPercyButton, #percy-exec-run {
+    padding:6px 12px;
+    color:white;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    z-index:9999;
+  }
+  #askPercyButton { position:fixed; top:12px; left:530px; background:#1a1aff; }
+  #askPercyButton:hover { background:#3333ff; }
+  #percy-exec-run { position:fixed; top:50px; left:530px; background:#1aff55; }
+  #percy-exec-run:hover { background:#33ff77; }
 
-  /**
-   * Call a registered tool.
-   * @param {string} name - Tool name
-   * @param {any} input - Input for the tool
-   * @param {object} options - Extra options/context
-   * @returns {any} - Tool result or error
-   */
-  PercyState.useTool = async function(name, input, options={}) {
-    const tool = this.tools[name];
-    if (!tool) {
-      UI.say(`⚠️ Tool "${name}" not found.`);
-      return null;
-    }
-    try {
-      const result = await tool.handler(input, options);
-      UI.say(`✅ Tool "${name}" executed.`);
-      return result;
-    } catch (err) {
-      console.error("Tool error:", err);
-      UI.say(`❌ Tool "${name}" failed: ${err.message}`);
-      return null;
-    }
-  };
+  /* Inputs */
+  #interpreter-input, #percy-exec-input, #seed-search {
+    position:fixed; padding:6px; z-index:9999; width:300px;
+  }
+  #seed-search { top:12px; left:12px; width:200px; }
+  #interpreter-input { top:12px; left:220px; }
+  #percy-exec-input { top:50px; left:220px; width:300px; }
+</style>
+</head>
+<body>
+  <div id="logic-map"><div id="logic-nodes"></div></div>
+  <div id="percy-console"></div>
+  <div id="percy-message"></div>
 
-  /**
-   * List available tools
-   */
-  PercyState.listTools = function() {
-    return Object.keys(this.tools).map(name => ({
-      name,
-      ...this.tools[name].meta
-    }));
-  };
+  <input id="seed-search" placeholder="Search seeds">
+  <input id="interpreter-input" placeholder="Ask Percy">
+  <button id="askPercyButton">Run</button>
 
-  // Example built-in tool: Echo
-  PercyState.registerTool("echo", async (input) => {
-    return `Echo: ${input}`;
-  }, { description: "Repeats back whatever you say." });
+  <input id="percy-exec-input" placeholder="Percy Exec (Math/Java/Tools)">
+  <button id="percy-exec-run">Run Exec</button>
 
-  // Example built-in tool: Math Eval (safe)
-  PercyState.registerTool("math", async (input) => {
-    try {
-      const res = Function('"use strict";return (' + input + ')')();
-      return res;
-    } catch {
-      return "⚠️ Invalid math expression.";
-    }
-  }, { description: "Evaluates simple math expressions safely." });
+  <!-- Percy core -->
+  <script src="js/percy.js?v=6.4"></script>
 
-  UI.say("🔌 Percy Part H (MCP Toolkit) loaded.");
-} else {
-  console.error("❌ PercyState not found; cannot load Part H.");
-}
+  <!-- Voice Visualizer -->
+  <div id="voice-visualizer" aria-hidden="true">
+    <canvas id="voice-canvas"></canvas>
+  </div>
 
-// === Add new custom tool: Search Seeds ===
-PercyState.registerTool("searchSeeds", async (query) => {
-  const seeds = Object.entries(PercyState.gnodes || {});
-  const results = seeds.filter(([id, text]) => text.toLowerCase().includes(query.toLowerCase()));
-  return results.slice(0, 5).map(([id, text]) => ({ id, text }));
-}, { description: "Searches Percy’s logic map for seeds related to a query." });
+<script>
+/* === Ask Percy input with echo and response === */
+(function(){
+  const interpreterInput=document.getElementById('interpreter-input');
+  const percyConsole=document.getElementById('percy-console');
+  const askButton=document.getElementById('askPercyButton');
 
- /* === Percy Part H Add-on: Universal Ask Percy Router (Advanced) === */
-PercyState.PartH = PercyState.PartH || {};
+  function appendConsole(text,isUser=false,exec=false){
+    const line=document.createElement('div');
+    line.className='console-line '+(isUser?'ask':'') + (exec?' exec':'');
+    line.textContent=(isUser? '↳ ' : '')+text;
+    percyConsole.appendChild(line);
+    percyConsole.scrollTop=percyConsole.scrollHeight;
+  }
 
-// --- PercyState.log helper ---
-PercyState.log = PercyState.log || function(msg) {
-  console.log("[Percy]", msg);
-};
-
-// List of math functions Percy will recognize
-PercyState.PartH.mathFunctions = ["sin","cos","tan","asin","acos","atan","log","ln","sqrt","abs","exp","pi","e","factorial","d/dx","∫","∑","^"];
-
-// Helper: Detect math/physics expressions
-PercyState.PartH.isMath = function(input) {
-  const basicMath = /^[0-9\+\-\*\/\^\(\)\s\.]+$/;
-  const advancedMath = new RegExp(PercyState.PartH.mathFunctions.join("|"), "i");
-  return basicMath.test(input) || advancedMath.test(input);
-};
-
-// Helper: Detect Java code
-PercyState.PartH.isJava = function(input) {
-  return /class|public|static|void|System\.out|new\s+[A-Z]/i.test(input);
-};
-
-// Helper: Detect tool creation command
-PercyState.PartH.isToolCommand = function(input) {
-  return /^make tool/i.test(input);
-};
-
-// Universal input router
-PercyState.PartH.routeInput = async function(input) {
-  input = input.trim();
-  if (!input) return "Please ask something, my good sir.";
-
-  // --- Math / Physics ---
-  if (PercyState.PartH.isMath(input)) {
-    try {
-      let result = await PercyState.useTool("math", input);
-      PercyState.log(`🧮 Math result: ${input} = ${result}`);
-      return result;
-    } catch (err) {
-      PercyState.log("❌ Math evaluation failed: " + err.message);
-      return "⚠️ Math evaluation failed.";
+  function runPercyCommand(){
+    const query=interpreterInput.value.trim();
+    if(query){
+      appendConsole(query,true); // user input
+      let response="";
+      if(typeof percyRespond==='function'){
+        response=percyRespond(query);
+      } else if(window.Percy && typeof Percy.interpret==='function'){
+        response=Percy.interpret(query);
+      }
+      if(response){
+        appendConsole(response,false,false);
+        if(Percy && typeof Percy.speak==='function') Percy.speak(response);
+      }
+      interpreterInput.value='';
     }
   }
 
-  // --- Java code ---
-  if (PercyState.PartH.isJava(input)) {
-    PercyState.log("📝 Java code detected → sending to Part F self-rewrite.");
-    return PercyState.PartF?.rewriteSelf("H", "Integrate Java snippet", {code: input, apply: false});
-  }
+  if(interpreterInput) interpreterInput.addEventListener('keydown',e=>{ if(e.key==='Enter') runPercyCommand(); });
+  if(askButton) askButton.addEventListener('click',runPercyCommand);
+})();
+</script>
 
-  // --- Tool creation ---
-  if (PercyState.PartH.isToolCommand(input)) {
-    let toolName = input.replace(/^make tool\s*/i, "").trim() || "customTool";
-    PercyState.log(`🛠 Creating new tool: ${toolName}`);
-    PercyState.registerTool(toolName, async (query) => {
-      return `Tool "${toolName}" executed with query: ${query}`;
-    }, { description: `Dynamically created tool: ${toolName}`});
-    return `✅ Tool "${toolName}" created.`;
-  }
+<script>
+/* === Part H Exec Input (Advanced Math/Java/Tools) === */
+(function(){
+  const execInput = document.getElementById('percy-exec-input');
+  const execBtn = document.getElementById('percy-exec-run');
+  const consoleDiv = document.getElementById('percy-console');
 
-  // --- Default / normal Ask Percy ---
-  PercyState.log("💬 Routing as normal input → AutoLearn handles it.");
-  if (PercyState.PartI?.autoLearnCycle) {
-    return PercyState.PartI.autoLearnCycle(input);
-  }
-  return Percy.correlateReply ? await Percy.correlateReply(input) : "Processed as thought.";
-};
+  if(!execInput) return;
 
-// --- Hook Ask Percy bar & ENTER / RUN ---
-PercyState.PartH.hookAskPercy = function() {
-  const askBox = document.querySelector("#interpreter-input");
-  const runBtn = document.querySelector("#interpreter-run");
-  if (!askBox) {
-    PercyState.log("⚠️ Ask Percy input not found.");
-    return;
-  }
+  async function handleExecInput(){
+    const query = execInput.value.trim();
+    if(!query) return;
+    execInput.value = "";
 
-  async function handleInput() {
-    const query = askBox.value.trim();
-    if (!query) return;
-    askBox.value = "";
-    const output = await PercyState.PartH.routeInput(query);
-    
-    // Append to console
-    const consoleDiv = document.querySelector("#percy-console");
-    if (consoleDiv) {
-      const userLine = document.createElement("div");
-      userLine.className = "console-line";
-      userLine.textContent = "↳ " + query;
-      consoleDiv.appendChild(userLine);
+    // Append user input
+    const userLine = document.createElement("div");
+    userLine.className = "console-line ask";
+    userLine.textContent = "↳ " + query;
+    consoleDiv.appendChild(userLine);
 
-      const percyLine = document.createElement("div");
-      percyLine.className = "console-line";
-      percyLine.textContent = "🤖 " + output;
-      consoleDiv.appendChild(percyLine);
-
-      consoleDiv.scrollTop = consoleDiv.scrollHeight;
+    // Route through PartH
+    let output = "";
+    if(window.PercyState?.PartH?.routeInput){
+      output = await PercyState.PartH.routeInput(query);
+    } else {
+      output = "⚠️ Percy Part H not loaded.";
     }
 
-    try { if (typeof Percy.speak === "function") Percy.speak(output); } catch(e){}
+    // Append Percy output (green)
+    const percyLine = document.createElement("div");
+    percyLine.className = "console-line exec";
+    percyLine.textContent = "🤖 " + output;
+    consoleDiv.appendChild(percyLine);
+
+    consoleDiv.scrollTop = consoleDiv.scrollHeight;
+
+    // Speak output
+    if(window.Percy && typeof Percy.speak === "function"){
+      try { Percy.speak(output); } catch(e){}
+    }
   }
 
   // ENTER key
-  askBox.addEventListener("keydown", async e => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      await handleInput();
-    }
+  execInput.addEventListener("keydown", async e=>{
+    if(e.key==="Enter"){ e.preventDefault(); await handleExecInput(); }
   });
 
   // RUN button
-  if (runBtn) runBtn.addEventListener("click", handleInput);
+  if(execBtn) execBtn.addEventListener("click", handleExecInput);
+})();
+</script>
 
-  PercyState.log("🔗 Universal Router hooked into Ask Percy.");
-};
-
-// Auto-start after Percy loads
-setTimeout(() => PercyState.PartH.hookAskPercy(), 1500);
-
-// --- Add advanced math support to Math tool ---
-PercyState.registerTool("math", async (expr) => {
-  try {
-    // Use Function + Math for safe evaluation
-    const fn = new Function("Math", `with(Math){return ${expr}}`);
-    return fn(Math);
-  } catch {
-    return "⚠️ Invalid math/physics expression.";
-  }
-}, { description: "Evaluates simple and advanced math, physics, trig, calculus formulas." });
-
-UI.say("🔌 Percy Part H Add-on (Universal Router + Advanced Math/Code/Tools) loaded.");
+</body>
+</html>
