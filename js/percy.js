@@ -1512,7 +1512,7 @@ if (typeof PercyState !== 'undefined') {
   /* =========================
   ADAPTIVE REASONING LOOP
   ========================== */
-  PercyState.PartI.reasonLoop = function(intervalMs=50000) {
+  PercyState.PartI.reasonLoop = function(intervalMs=12000) {
     setInterval(()=>{
       try {
         const goals = PercyState.PartI.planGoals();
@@ -1529,7 +1529,6 @@ if (typeof PercyState !== 'undefined') {
     }, intervalMs);
   };
 
- 
   /* =========================
   INITIALIZE PART I
   ========================== */
@@ -1544,4 +1543,3 @@ if (typeof PercyState !== 'undefined') {
 } else {
   console.error("❌ PercyState not found; cannot load Part I.");
 }
-
