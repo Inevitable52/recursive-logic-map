@@ -1007,145 +1007,200 @@ Percy.speak = function(text) {
 
 /* === Percy Part F: Correlational Layer + Ask Percy Integration (CORS Fixed + DOM Hook + Run Button Support) === */
 
-if (typeof PercyState !== "undefined") {
-  
-  // Ensure PartF namespace
-  PercyState.PartF = PercyState.PartF || {};
+Percy.correlateReply = async function(query, maxSources=5) {
+  if (!query || !query.trim()) return "Please ask something, my good sir.";
 
-  /* -----------------------
-     Correlational Reply
-  ----------------------- */
-  PercyState.PartF.correlateReply = async function(query, maxSources=5) {
-    if (!query || !query.trim()) return "Please ask something, my good sir.";
-    const input = query.toLowerCase().trim();
+  const input = query.toLowerCase().trim();
 
-    // Gather internal sources
-    const seeds = Object.values(PercyState?.gnodes || {}).map(s => ({
-      text: s?.message || "",
-      type: s?.type || "seed"
+  // 1) Gather internal sources
+  const seeds = Object.values(PercyState?.gnodes || {}).map(s => ({
+    text: s?.message || "",
+    type: s?.type || "seed"
+  }));
+  const memories = (Memory?.load("memories", []) || []).map(m => ({
+    text: String(m),
+    type: "memory"
+  }));
+  let sources = [...seeds, ...memories];
+
+  // 2) Fetch external sources
+  try {
+    const external = await Percy.fetchExternalSources(input, maxSources);
+    sources = sources.concat(external);
+  } catch(e) { console.warn("External fetch failed:", e); }
+
+  // 3) Score sources
+  const scored = sources
+    .map(src => {
+      let score = 0;
+      const tokens = input.split(/\W+/).filter(Boolean);
+      tokens.forEach(t => { if (src.text.toLowerCase().includes(t)) score += 1; });
+      if (src.type === "thought") score += 0.5;
+      return { ...src, score };
+    })
+    .filter(s => s.score > 0)
+    .sort((a,b) => b.score - a.score)
+    .slice(0, maxSources);
+
+  // 4) Compose response
+  let insights = scored.length
+    ? scored.map(s => `- "${s.text.substring(0, 150)}${s.text.length > 150 ? "..." : ""}"`).join("\n")
+    : "I’m still learning about that topic, but here’s a related thought: " + Percy.makeThought(query);
+
+  const response = [
+    `Hello, my good sir — Percy here. You asked: "${query}".`,
+    "Here are some correlated insights I found:",
+    insights,
+    "Would you like me to expand further, create a new seed, or propose a rewrite?"
+  ].join("\n\n");
+
+  // 5) Save short seed for traceability
+  try { PercyState?.createSeed?.(response.split("\n")[0], "response"); } catch(e){}
+
+  return response;
+};
+
+// --- Helper: fetch external sources via AllOrigins to bypass CORS ---
+Percy.fetchExternalSources = async function(query, maxResults=5) {
+  const results = [];
+  const encodeURL = url => encodeURIComponent(url);
+
+  async function fetchCORS(url) {
+    const proxy = `https://api.allorigins.win/get?url=${encodeURL(url)}`;
+    const resp = await fetch(proxy);
+    const data = await resp.json();
+    return JSON.parse(data.contents);
+  }
+
+  // PDS search
+  try {
+    const pdsUrl = `https://pds.nasa.gov/api/search?q=${encodeURIComponent(query)}&limit=${maxResults}`;
+    const pdsData = await fetchCORS(pdsUrl);
+    pdsData.items?.forEach(item => results.push({
+      text: (item.title || "") + ". " + (item.description || ""),
+      type: "external"
     }));
-    const memories = (Memory?.load("memories", []) || []).map(m => ({
-      text: String(m),
-      type: "memory"
+  } catch(e) { console.warn("PDS fetch failed:", e); }
+
+  // DOI search
+  try {
+    const doiUrl = `https://api.crossref.org/works?query=${encodeURIComponent(query)}&rows=${maxResults}`;
+    const doiData = await fetchCORS(doiUrl);
+    doiData.message.items?.forEach(item => results.push({
+      text: (item.title?.[0] || "") + ". " + (item.abstract || ""),
+      type: "external"
     }));
-    let sources = [...seeds, ...memories];
+  } catch(e) { console.warn("DOI fetch failed:", e); }
 
-    // Fetch external sources
-    try {
-      const external = await PercyState.PartF.fetchExternalSources(input, maxSources);
-      sources = sources.concat(external);
-    } catch(e) { console.warn("External fetch failed:", e); }
+  return results.slice(0, maxResults);
+};
 
-    // Score sources
-    const scored = sources
-      .map(src => {
-        let score = 0;
-        const tokens = input.split(/\W+/).filter(Boolean);
-        tokens.forEach(t => { if (src.text.toLowerCase().includes(t)) score += 1; });
-        if (src.type === "thought") score += 0.5;
-        return { ...src, score };
-      })
-      .filter(s => s.score > 0)
-      .sort((a,b) => b.score - a.score)
-      .slice(0, maxSources);
+// --- Percy integration with your Ask Percy input ---
+window.askPercy = window.askPercy || async function(query) {
+  const reply = await Percy.correlateReply(query);
 
-    // Compose response
-    const insights = scored.length
-      ? scored.map(s => `- "${s.text.substring(0, 150)}${s.text.length > 150 ? "..." : ""}"`).join("\n")
-      : "I’m still learning about that topic, but here’s a related thought: " + Percy.makeThought(query);
+  // Append to console
+  const percyConsole = document.querySelector("#percy-console");
+  if (percyConsole) {
+    const userLine = document.createElement("div");
+    userLine.className = "console-line";
+    userLine.textContent = "↳ " + query;
+    percyConsole.appendChild(userLine);
 
-    const response = [
-      `Hello, my good sir — Percy here. You asked: "${query}".`,
-      "Here are some correlated insights I found:",
-      insights,
-      "Would you like me to expand further, create a new seed, or propose a rewrite?"
-    ].join("\n\n");
+    const percyLine = document.createElement("div");
+    percyLine.className = "console-line";
+    percyLine.textContent = "🤖 " + reply;
+    percyConsole.appendChild(percyLine);
 
-    // Save short seed
-    try { PercyState?.createSeed?.(response.split("\n")[0], "response"); } catch(e){}
+    percyConsole.scrollTop = percyConsole.scrollHeight;
+  }
 
-    return response;
-  };
+  try { if (typeof Percy.speak === "function") Percy.speak(reply); } catch(e){}
+  return reply;
+};
 
-  /* -----------------------
-     Fetch External Sources
-  ----------------------- */
-  PercyState.PartF.fetchExternalSources = async function(query, maxResults=5) {
-    const results = [];
-    const encodeURL = url => encodeURIComponent(url);
+// --- Hook Ask Percy input + Run button ---
+(function(){
+  const input = document.querySelector("#interpreter-input");
+  const runBtn = document.querySelector("#interpreter-run"); // <- your Run button
+  if (!input) return;
 
-    async function fetchCORS(url) {
-      const proxy = `https://api.allorigins.win/get?url=${encodeURL(url)}`;
-      const resp = await fetch(proxy);
-      const data = await resp.json();
-      return JSON.parse(data.contents);
+  async function handleAskPercy() {
+    if (!input.value.trim()) return;
+    const query = input.value.trim();
+    input.value = "";
+    await askPercy(query);
+  }
+
+  // ENTER key
+  input.addEventListener("keydown", async e => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      await handleAskPercy();
     }
+  });
 
-    // NASA PDS
-    try {
-      const pdsUrl = `https://pds.nasa.gov/api/search?q=${encodeURIComponent(query)}&limit=${maxResults}`;
-      const pdsData = await fetchCORS(pdsUrl);
-      pdsData.items?.forEach(item => results.push({
-        text: (item.title || "") + ". " + (item.description || ""),
-        type: "external"
-      }));
-    } catch(e) { console.warn("PDS fetch failed:", e); }
+  // RUN button click
+  if (runBtn) {
+    runBtn.addEventListener("click", async () => {
+      await handleAskPercy();
+    });
+  }
+})();
 
-    // DOI / CrossRef
-    try {
-      const doiUrl = `https://api.crossref.org/works?query=${encodeURIComponent(query)}&rows=${maxResults}`;
-      const doiData = await fetchCORS(doiUrl);
-      doiData.message.items?.forEach(item => results.push({
-        text: (item.title?.[0] || "") + ". " + (item.abstract || ""),
-        type: "external"
-      }));
-    } catch(e) { console.warn("DOI fetch failed:", e); }
+if (PercyState && typeof PercyState.rewriteSelf === "function") {
+  const fnSource = PercyState.rewriteSelf.toString();
+  console.log("📜 PercyState.rewriteSelf source:\n", fnSource);
 
-    return results.slice(0, maxResults);
-  };
-
-  /* -----------------------
-     Ask Percy Interface
-  ----------------------- */
-  PercyState.PartF.askPercy = window.askPercy = async function(query) {
-    const reply = await PercyState.PartF.correlateReply(query);
-
-    const percyConsole = document.querySelector("#percy-console");
-    if (percyConsole) {
-      const userLine = document.createElement("div");
-      userLine.className = "console-line";
-      userLine.textContent = "↳ " + query;
-      percyConsole.appendChild(userLine);
-
-      const percyLine = document.createElement("div");
-      percyLine.className = "console-line";
-      percyLine.textContent = "🤖 " + reply;
-      percyConsole.appendChild(percyLine);
-
-      percyConsole.scrollTop = percyConsole.scrollHeight;
-    }
-
-    try { if (typeof Percy.speak === "function") Percy.speak(reply); } catch(e){}
-    return reply;
-  };
-
-  /* -----------------------
-     Stub / Forward rewriteSelf
-  ----------------------- */
-  PercyState.PartF.rewriteSelf = PercyState.PartF.rewriteSelf || function(part, goal, opts={}) {
-    PercyState.log?.(`[Part F] rewriteSelf called for ${part}: ${goal}`, opts);
-    // If global Percy.rewriteSelf exists, forward
-    if (typeof Percy.rewriteSelfRobust === "function") {
-      return Percy.rewriteSelfRobust(part, goal, opts);
-    }
-    return `⚠️ rewriteSelf not fully implemented for ${part}`;
-  };
-
-  PercyState.log?.("🔌 Percy Part F loaded successfully.");
-
-} else {
-  console.error("❌ PercyState not found; cannot load Part F.");
+  // also show it in #percy-console
+  const consoleDiv = document.getElementById("percy-console");
+  if (consoleDiv) {
+    const pre = document.createElement("pre");
+    pre.style.fontSize = "11px";
+    pre.style.whiteSpace = "pre-wrap";
+    pre.style.color = "#9ff";
+    pre.textContent = fnSource;
+    consoleDiv.appendChild(pre);
+    consoleDiv.scrollTop = consoleDiv.scrollHeight;
+  }
 }
+
+/* === Percy Live Rewrite Tracker === */
+(function(){
+  const consoleDiv = document.getElementById("percy-console");
+  if (!consoleDiv) return;
+
+  function showSource(fn) {
+    if (typeof fn !== "function") return;
+    const fnSource = fn.toString();
+    console.log("📜 PercyState.rewriteSelf updated:\n", fnSource);
+
+    const pre = document.createElement("pre");
+    pre.style.fontSize = "11px";
+    pre.style.whiteSpace = "pre-wrap";
+    pre.style.color = "#9ff";
+    pre.textContent = fnSource;
+
+    // clear old source before adding new one
+    const old = consoleDiv.querySelector(".rewrite-source");
+    if (old) consoleDiv.removeChild(old);
+
+    pre.className = "rewrite-source";
+    consoleDiv.appendChild(pre);
+    consoleDiv.scrollTop = consoleDiv.scrollHeight;
+  }
+
+  // Watch for changes to PercyState.rewriteSelf
+  let current = PercyState?.rewriteSelf;
+  showSource(current);
+
+  setInterval(() => {
+    if (PercyState && PercyState.rewriteSelf !== current) {
+      current = PercyState.rewriteSelf;
+      showSource(current);
+    }
+  }, 1000); // check once per second
+})();
 
 /* === percy.js (Part H — MCP Toolkit Integration + Mode Toggle) === */
 if (typeof PercyState !== 'undefined') {
