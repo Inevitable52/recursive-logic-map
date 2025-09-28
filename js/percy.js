@@ -1407,13 +1407,41 @@ setTimeout(() => PercyState.PartH.hookAskPercy(), 1500);
 // --- Add advanced math support to Math tool ---
 PercyState.registerTool("math", async (expr) => {
   try {
-    // Use Function + Math for safe evaluation
-    const fn = new Function("Math", `with(Math){return ${expr}}`);
-    return fn(Math);
-  } catch {
+    // Define helpers
+    const helpers = {
+      fact: n => { if(n<0) return NaN; let r=1; for(let i=2;i<=n;i++) r*=i; return r; },
+      factorial: n => { if(n<0) return NaN; let r=1; for(let i=2;i<=n;i++) r*=i; return r; },
+      ln: Math.log,
+      π: Math.PI,
+      pi: Math.PI,
+      e: Math.E
+    };
+
+    // Preprocess
+    expr = expr.replace(/\^/g, "**"); // ^ → **
+
+    // Summation ∑(i=1 to 5, i^2)
+    expr = expr.replace(/∑\(\s*(\w+)\s*=\s*(\d+)\s*to\s*(\d+)\s*,\s*([^)]+)\)/gi, (_,v,start,end,body) => {
+      start=parseInt(start); end=parseInt(end);
+      let sum=0;
+      for(let i=start;i<=end;i++){ sum += Function(v,`with(Math){return ${body}}`)(i); }
+      return sum;
+    });
+
+    // Derivative: d/dx(expr) → numeric derivative
+    expr = expr.replace(/d\/dx\s*\(\s*([^)]+)\)/gi, (_,body) => {
+      const f = x => Function("x","with(Math){return "+body+"}")(x);
+      const h=1e-5;
+      return (f(1+h)-f(1-h))/(2*h); // numeric derivative at x=1 (default)
+    });
+
+    const fn = new Function(...Object.keys(helpers), `with(Math){return ${expr}}`);
+    return fn(...Object.values(helpers));
+
+  } catch(e){
     return "⚠️ Invalid math/physics expression.";
   }
-}, { description: "Evaluates simple and advanced math, physics, trig, calculus formulas." });
+}, { description: "Evaluates math, physics, trig, factorials, ln, summations, derivatives." });
 
 UI.say("🔌 Percy Part H Add-on (Universal Router + Advanced Math/Code/Tools) loaded.");
 
