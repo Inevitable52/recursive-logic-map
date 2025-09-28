@@ -137,9 +137,7 @@
   if(interpreterInput) interpreterInput.addEventListener('keydown',e=>{ if(e.key==='Enter') runPercyCommand(); });
   if(askButton) askButton.addEventListener('click',runPercyCommand);
 })();
-</script>
 
-<script>
 /* === Part H Exec Input (Advanced Math/Java/Tools) with toggle === */
 (function(){
   const execInput = document.getElementById('percy-exec-input');
@@ -191,9 +189,7 @@
 
   if(execBtn) execBtn.addEventListener("click", handleExecInput);
 })();
-</script>
 
-<script>
 /* === Voice Visualizer (Bars + Waveform) === */
 (function(){
   const canvas = document.getElementById('voice-canvas');
@@ -209,23 +205,25 @@
 
   let audioCtx, analyser, dataArrayFreq, dataArrayWave, source;
 
-  function initAudio(){
+  async function initAudio(){
     if(audioCtx) return;
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 256;
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
 
-    const bufferLength = analyser.frequencyBinCount;
-    dataArrayFreq = new Uint8Array(bufferLength);
-    dataArrayWave = new Uint8Array(bufferLength);
+      const bufferLength = analyser.frequencyBinCount;
+      dataArrayFreq = new Uint8Array(bufferLength);
+      dataArrayWave = new Uint8Array(bufferLength);
 
-    navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+      const stream = await navigator.mediaDevices.getUserMedia({audio:true});
       source = audioCtx.createMediaStreamSource(stream);
       source.connect(analyser);
+
       draw();
-    }).catch(err=>{
+    } catch(err) {
       console.error("🎤 Microphone access denied:", err);
-    });
+    }
   }
 
   function draw(){
@@ -235,33 +233,36 @@
     const HEIGHT = canvas.height;
     ctx.clearRect(0,0,WIDTH,HEIGHT);
 
-    // Bars
-    analyser.getByteFrequencyData(dataArrayFreq);
-    const barWidth = WIDTH / dataArrayFreq.length;
-    for(let i=0;i<dataArrayFreq.length;i++){
-      const barHeight = dataArrayFreq[i]/255 * HEIGHT;
-      ctx.fillStyle = `rgb(${dataArrayFreq[i]},${255-dataArrayFreq[i]},255)`;
-      ctx.fillRect(i*barWidth, HEIGHT-barHeight, barWidth*0.6, barHeight);
-    }
+    if(analyser){
+      analyser.getByteFrequencyData(dataArrayFreq);
+      const barWidth = WIDTH / dataArrayFreq.length;
+      for(let i=0;i<dataArrayFreq.length;i++){
+        const barHeight = dataArrayFreq[i]/255 * HEIGHT;
+        ctx.fillStyle = `rgb(${dataArrayFreq[i]},${255-dataArrayFreq[i]},255)`;
+        ctx.fillRect(i*barWidth, HEIGHT-barHeight, barWidth*0.6, barHeight);
+      }
 
-    // Waveform
-    analyser.getByteTimeDomainData(dataArrayWave);
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(0,255,255,0.8)';
-    ctx.beginPath();
-    const sliceWidth = WIDTH / dataArrayWave.length;
-    let x = 0;
-    for(let i=0;i<dataArrayWave.length;i++){
-      const v = dataArrayWave[i]/128.0;
-      const y = v * HEIGHT/2;
-      if(i===0) ctx.moveTo(x,y);
-      else ctx.lineTo(x,y);
-      x += sliceWidth;
+      analyser.getByteTimeDomainData(dataArrayWave);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(0,255,255,0.8)';
+      ctx.beginPath();
+      const sliceWidth = WIDTH / dataArrayWave.length;
+      let x = 0;
+      for(let i=0;i<dataArrayWave.length;i++){
+        const v = dataArrayWave[i]/128.0;
+        const y = v * HEIGHT/2;
+        if(i===0) ctx.moveTo(x,y);
+        else ctx.lineTo(x,y);
+        x += sliceWidth;
+      }
+      ctx.stroke();
     }
-    ctx.stroke();
   }
 
-  document.body.addEventListener('click', initAudio, {once:true});
+  // Init audio on first interaction anywhere
+  ['click','keydown','touchstart'].forEach(evt => {
+    window.addEventListener(evt, initAudio, {once:true, passive:true});
+  });
 })();
 </script>
 
