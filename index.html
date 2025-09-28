@@ -110,7 +110,7 @@
 
   function appendConsole(text,isUser=false,exec=false){
     const line=document.createElement('div');
-    line.className='console-line '+(isUser?'ask':'') + (exec?' exec':'');
+    line.className='console-line '+(isUser?'ask':'') + (exec?' exec':'' );
     line.textContent=(isUser? '↳ ' : '')+text;
     percyConsole.appendChild(line);
     percyConsole.scrollTop=percyConsole.scrollHeight;
@@ -151,7 +151,6 @@
 
   let PercyExecMode = "math"; // default mode
 
-  // Toggle button click
   toggleBtns.forEach(btn=>{
     btn.addEventListener('click',()=>{
       toggleBtns.forEach(b=>b.classList.remove('active'));
@@ -165,15 +164,12 @@
     if(!query) return;
     execInput.value = "";
 
-    // Append user input
     const userLine = document.createElement("div");
     userLine.className = "console-line ask";
     userLine.textContent = "↳ " + query;
     consoleDiv.appendChild(userLine);
 
     let output = "";
-
-    // Route by selected mode
     if(PercyExecMode === "math"){
       output = await PercyState.useTool("math", query);
     } else if(PercyExecMode === "java"){
@@ -182,22 +178,81 @@
       output = await PercyState.PartH?.routeInput(query) || "⚠️ Percy Part H not loaded.";
     }
 
-    // Append Percy output (green)
     const percyLine = document.createElement("div");
     percyLine.className = "console-line exec";
     percyLine.textContent = "🤖 " + output;
     consoleDiv.appendChild(percyLine);
-
     consoleDiv.scrollTop = consoleDiv.scrollHeight;
   }
 
-  // ENTER key
   execInput.addEventListener("keydown", async e=>{
     if(e.key==="Enter"){ e.preventDefault(); await handleExecInput(); }
   });
 
-  // RUN button
   if(execBtn) execBtn.addEventListener("click", handleExecInput);
+})();
+</script>
+
+<script>
+/* === Voice Visualizer (Bars + Waveform) === */
+(function(){
+  const canvas = document.getElementById('voice-canvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const WIDTH = canvas.width = canvas.clientWidth;
+  const HEIGHT = canvas.height = canvas.clientHeight;
+
+  let audioCtx, analyser, dataArray, source;
+
+  function initAudio(){
+    if(audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    const bufferLength = analyser.frequencyBinCount;
+    dataArray = new Uint8Array(bufferLength);
+
+    navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+      source = audioCtx.createMediaStreamSource(stream);
+      source.connect(analyser);
+      draw();
+    }).catch(err=>{
+      console.error("🎤 Microphone access denied:", err);
+    });
+  }
+
+  function draw(){
+    requestAnimationFrame(draw);
+    analyser.getByteFrequencyData(dataArray);
+    ctx.clearRect(0,0,WIDTH,HEIGHT);
+
+    // Bars
+    const barWidth = WIDTH / dataArray.length;
+    for(let i=0;i<dataArray.length;i++){
+      const barHeight = dataArray[i]/255*HEIGHT;
+      const x = i*barWidth;
+      ctx.fillStyle = `rgb(${dataArray[i]},${255-dataArray[i]},255)`;
+      ctx.fillRect(x, HEIGHT-barHeight, barWidth*0.6, barHeight);
+    }
+
+    // Waveform overlay
+    analyser.getByteTimeDomainData(dataArray);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(0,255,255,0.8)';
+    ctx.beginPath();
+    let x = 0;
+    const sliceWidth = WIDTH / dataArray.length;
+    for(let i=0;i<dataArray.length;i++){
+      const v = dataArray[i]/128.0;
+      const y = v * HEIGHT/2;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      x += sliceWidth;
+    }
+    ctx.stroke();
+  }
+
+  // Start audio on first interaction
+  document.body.addEventListener('click', initAudio, {once:true});
 })();
 </script>
 
