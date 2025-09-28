@@ -1202,6 +1202,27 @@ if (PercyState && typeof PercyState.rewriteSelf === "function") {
   }, 1000); // check once per second
 })();
 
+/* === Register Percy Part F === */
+if (typeof PercyState !== "undefined") {
+  PercyState.PartF = {
+    runJava: async function(code) {
+      // right now just echo, later we can wire to a Java runner
+      const reply = "🤖 [Java Stub] Percy Part F received:\n" + code;
+      console.log(reply);
+
+      const consoleDiv = document.getElementById("percy-console");
+      if (consoleDiv) {
+        const pre = document.createElement("pre");
+        pre.style.color = "#9f9";
+        pre.textContent = reply;
+        consoleDiv.appendChild(pre);
+        consoleDiv.scrollTop = consoleDiv.scrollHeight;
+      }
+      return reply;
+    }
+  };
+}
+
 /* === percy.js (Part H — MCP Toolkit Integration + Mode Toggle, Cleaned) === */
 if (typeof PercyState !== 'undefined') {
 
