@@ -82,7 +82,7 @@
   </div>
 
 <script>
-/* === Voice Visualizer (bars + waves) === */
+/* === Voice Visualizer (bars + waves) with hum fix === */
 (function(){
   const canvas = document.getElementById('voice-canvas');
   const ctx = canvas.getContext('2d');
@@ -96,10 +96,15 @@
   window.addEventListener('resize',resize); resize();
 
   let envelope=0, target=0, pulseUntilTs=0;
+  const minEnvelopeThreshold = 0.01; // hum suppression threshold
+
   function speakAnimation(len){
-    target=Math.max(target,Math.min(1,Math.sqrt(len)/8));
-    pulseUntil(Date.now()+Math.max(1200,len*55));
+    // Shorter, quieter pulse for Exec calls
+    const duration = Math.min(800, len*40); // faster decay
+    target=Math.max(target, Math.min(1, Math.sqrt(len)/8));
+    pulseUntil(Date.now() + duration);
   }
+
   function pulseUntil(ts){ pulseUntilTs=Math.max(pulseUntilTs,ts); }
 
   const barCount=20;
@@ -107,56 +112,61 @@
   const barPhases=barStates.map((_,i)=>i*0.5+Math.random()*2);
 
   function draw(now){
-  requestAnimationFrame(draw);
-  const nowMs=Date.now();
+    requestAnimationFrame(draw);
+    const nowMs=Date.now();
 
-  // Only update target if actively pulsing
-  if(pulseUntilTs>nowMs) target=Math.max(target,0.25+0.75*Math.abs(Math.sin(now/120)));
-  else target=0;  // <-- makes it silent when no speech
+    // Update target only if actively pulsing
+    if(pulseUntilTs>nowMs) target=Math.max(target,0.25+0.75*Math.abs(Math.sin(now/120)));
+    else target=0;  
 
-  envelope+=(target-envelope)*0.15;
+    // Smooth envelope and suppress low hum
+    envelope+=(target-envelope)*0.15;
+    if(envelope < minEnvelopeThreshold) envelope = 0;
 
-  ctx.clearRect(0,0,w,h);
+    ctx.clearRect(0,0,w,h);
 
-  // Bars
-  const barWidth=w/barCount*0.6;
-  for(let i=0;i<barCount;i++){
-    const rnd=0.5+0.5*Math.abs(Math.sin(now/200+barPhases[i]));
-    const val=(0.1+envelope*(0.6+0.4*Math.random()))*rnd;
-    barStates[i]+=(val-barStates[i])*0.25;
-    const barHeight=Math.round(barStates[i]*(h*0.7));
-    const x=i*(w/barCount)+(w/barCount-barWidth)/2;
-    const y=h-barHeight;
-    const hue=180+i*6;
-    const grad=ctx.createLinearGradient(x,y,x,y+barHeight);
-    grad.addColorStop(0,`hsl(${hue},100%,65%)`);
-    grad.addColorStop(1,`hsl(${hue+40},100%,50%)`);
-    ctx.fillStyle=grad;
-    ctx.fillRect(x,y,barWidth,barHeight);
-  }
-
-  // Waves
-  const baseY=h*0.75, amp=6+envelope*40, freq=1.0+envelope*4, elapsed=now/1000;
-  for(let layer=0;layer<3;layer++){
-    ctx.beginPath();
-    ctx.lineWidth=1.5+layer;
-    const hue=185+Math.sin(elapsed*1.2+layer)*12;
-    ctx.strokeStyle=`hsla(${hue},100%,${55-layer*6}%,0.9)`;
-    for(let x=0;x<w;x+=2){
-      const y=baseY+Math.sin(x*(0.004*freq)+elapsed*(1.6+layer*0.6))*amp;
-      if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    // Bars
+    const barWidth=w/barCount*0.6;
+    for(let i=0;i<barCount;i++){
+      const rnd=0.5+0.5*Math.abs(Math.sin(now/200+barPhases[i]));
+      const val=(0.1+envelope*(0.6+0.4*Math.random()))*rnd;
+      barStates[i]+=(val-barStates[i])*0.25;
+      const barHeight=Math.round(barStates[i]*(h*0.7));
+      const x=i*(w/barCount)+(w/barCount-barWidth)/2;
+      const y=h-barHeight;
+      const hue=180+i*6;
+      const grad=ctx.createLinearGradient(x,y,x,y+barHeight);
+      grad.addColorStop(0,`hsl(${hue},100%,65%)`);
+      grad.addColorStop(1,`hsl(${hue+40},100%,50%)`);
+      ctx.fillStyle=grad;
+      ctx.fillRect(x,y,barWidth,barHeight);
     }
-    ctx.stroke();
+
+    // Waves
+    const baseY=h*0.75, amp=6+envelope*40, freq=1.0+envelope*4, elapsed=now/1000;
+    for(let layer=0;layer<3;layer++){
+      ctx.beginPath();
+      ctx.lineWidth=1.5+layer;
+      const hue=185+Math.sin(elapsed*1.2+layer)*12;
+      ctx.strokeStyle=`hsla(${hue},100%,${55-layer*6}%,0.9)`;
+      for(let x=0;x<w;x+=2){
+        const y=baseY+Math.sin(x*(0.004*freq)+elapsed*(1.6+layer*0.6))*amp;
+        if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+    }
   }
-}
-  
+
   requestAnimationFrame(draw);
 
+  // Wrap Percy.speak to trigger visualizer
   function wrap(){
     if(window.Percy && typeof Percy.speak==='function'){
       const orig=Percy.speak.bind(Percy);
       Percy.speak=function(txt){
         speakAnimation(String(txt??'').length);
+        // Optionally reduce volume for quieter Exec response
+        if(orig.length > 0) return orig(txt, {volume:0.25}); // scale down volume
         return orig(txt);
       };
       return true;
