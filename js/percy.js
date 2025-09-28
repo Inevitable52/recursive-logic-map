@@ -949,33 +949,36 @@ window.percyRespond = window.percyRespond || function(query) {
   return response;
 };
 
-/* === Percy Part E: Voice Embodiment Generator (Hum-Free) === */
-Percy.generators.voice = (function() {
-  // Single shared AudioContext & analyser for visualizer
+/* === Percy Part E: Voice Embodiment Generator === */
+Percy.generators = Percy.generators || {};
+
+Percy.generators.voice = function(text) {
+  if (!window.speechSynthesis) return "⚠️ Speech not supported.";
+
+  // Speak aloud
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.voice = speechSynthesis.getVoices()[0];
+  speechSynthesis.speak(utter);
+
+  // Audio context + analyser for bars + wave
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   const analyser = audioCtx.createAnalyser();
   analyser.fftSize = 256;
-  analyser.connect(audioCtx.destination);
   const bufferLength = analyser.frequencyBinCount;
   const dataArray = new Uint8Array(bufferLength);
 
-  // Optional: minimal silent oscillator to give analyser data (no audible hum)
-  let oscillator = null;
+  // Oscillator simulating energy (so bars/wave animate with text length)
+  const source = audioCtx.createOscillator();
+  source.type = "sine";
+  source.frequency.value = 220;
+  source.connect(analyser);
+  analyser.connect(audioCtx.destination);
+  source.start();
+  source.stop(audioCtx.currentTime + text.length / 15);
 
-  function startOscillator(duration = 0.05) {
-    if (oscillator) oscillator.disconnect();
-    oscillator = audioCtx.createOscillator();
-    oscillator.type = "sine";
-    oscillator.frequency.value = 0; // silent
-    oscillator.connect(analyser);
-    oscillator.start();
-    oscillator.stop(audioCtx.currentTime + duration);
-    oscillator.onended = () => oscillator.disconnect();
-  }
-
-  // Visualizer animation (bars/wave)
-  function animateVisualizer() {
-    requestAnimationFrame(animateVisualizer);
+  // Animate bars + wave in DOM
+  function animate() {
+    requestAnimationFrame(animate);
     analyser.getByteFrequencyData(dataArray);
 
     // Bars
@@ -992,25 +995,12 @@ Percy.generators.voice = (function() {
       wave.style.transform = `scaleY(${1 + avg / 200})`;
     }
   }
-  animateVisualizer(); // start once
+  animate();
 
-  // Main function
-  return function(text) {
-    if (!window.speechSynthesis) return "⚠️ Speech not supported.";
+  return `🔊 Percy voiced: "${text}"`;
+};
 
-    // Speak aloud
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.voice = speechSynthesis.getVoices()[0];
-    speechSynthesis.speak(utter);
-
-    // Trigger silent oscillator briefly to drive analyser for visualizer
-    startOscillator(Math.max(0.05, text.length / 20));
-
-    return `🔊 Percy voiced: "${text}"`;
-  };
-})();
-
-// Hook for Part D → Part E
+// Direct hook for Part D → Part E
 Percy.speak = function(text) {
   return Percy.generators.voice(text);
 };
