@@ -8,12 +8,12 @@
   #logic-map { position:relative; width:100vw; height:100vh; background:#0a0a0f; overflow:hidden; }
   #logic-nodes { position:absolute; top:50%; left:50%; width:100%; height:100%; transform:translate(-50%,-50%) scale(1); }
   .console-line { margin:2px 0; font-family:ui-monospace,Monaco,Consolas, monospace; font-size:12px; }
-  .console-line.ask { color:#d6d8ff; }
-  .console-line.exec { color:#7fff7f; }
+  .console-line.ask { color:#d6d8ff; } /* normal Ask Percy */
+  .console-line.exec { color:#7fff7f; } /* Part H Exec */
   #percy-console { position:fixed; bottom:0; left:0; width:35%; max-height:40%; overflow:auto; background:rgba(0,0,0,0.65); padding:6px; border-top-right-radius:12px; border:1px solid #444; }
   #percy-message { position:fixed; bottom:0; left:35%; width:65%; padding:6px; background:rgba(0,0,0,0.65); border-top-left-radius:12px; border:1px solid #444; }
 
-  /* Visualizer (top-right, compact with waves & bars) */
+  /* Visualizer (top-right, compact) */
   #voice-visualizer {
     position:fixed;
     top:12px;
@@ -38,7 +38,7 @@
     background: linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.05));
   }
 
-  /* AskPercy & Exec buttons */
+  /* AskPercy button style */
   #askPercyButton, #percy-exec-run {
     padding:6px 12px;
     color:white;
@@ -49,16 +49,29 @@
   }
   #askPercyButton { position:fixed; top:12px; left:530px; background:#1a1aff; }
   #askPercyButton:hover { background:#3333ff; }
-  #percy-exec-run { position:fixed; top:50px; left:530px; background:#1aff55; }
+  #percy-exec-run { position:fixed; top:90px; left:530px; background:#1aff55; }
   #percy-exec-run:hover { background:#33ff77; }
 
   /* Inputs */
-  #seed-search, #interpreter-input, #percy-exec-input {
+  #interpreter-input, #percy-exec-input, #seed-search {
     position:fixed; padding:6px; z-index:9999; width:300px;
   }
   #seed-search { top:12px; left:12px; width:200px; }
   #interpreter-input { top:12px; left:220px; }
-  #percy-exec-input { top:50px; left:220px; width:300px; }
+  #percy-exec-input { top:90px; left:220px; width:300px; }
+
+  /* Toggle buttons */
+  #exec-toggle { position:fixed; top:50px; left:220px; z-index:9999; }
+  #exec-toggle button {
+    padding:4px 12px;
+    margin-right:6px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    background:#333;
+    color:white;
+  }
+  #exec-toggle button.active { background:#1aff55; color:black; }
 </style>
 </head>
 <body>
@@ -69,6 +82,13 @@
   <input id="seed-search" placeholder="Search seeds">
   <input id="interpreter-input" placeholder="Ask Percy">
   <button id="askPercyButton">Run</button>
+
+  <!-- Toggle for Percy Exec -->
+  <div id="exec-toggle">
+    <button data-mode="math" class="active">Math</button>
+    <button data-mode="java">Java</button>
+    <button data-mode="tools">Tools</button>
+  </div>
 
   <input id="percy-exec-input" placeholder="Percy Exec (Math/Java/Tools)">
   <button id="percy-exec-run">Run Exec</button>
@@ -90,7 +110,7 @@
 
   function appendConsole(text,isUser=false,exec=false){
     const line=document.createElement('div');
-    line.className='console-line '+(isUser?'ask':'')+(exec?' exec':'');
+    line.className='console-line '+(isUser?'ask':'') + (exec?' exec':'');
     line.textContent=(isUser? '↳ ' : '')+text;
     percyConsole.appendChild(line);
     percyConsole.scrollTop=percyConsole.scrollHeight;
@@ -99,7 +119,7 @@
   function runPercyCommand(){
     const query=interpreterInput.value.trim();
     if(query){
-      appendConsole(query,true);
+      appendConsole(query,true); // user input
       let response="";
       if(typeof percyRespond==='function'){
         response=percyRespond(query);
@@ -120,85 +140,64 @@
 </script>
 
 <script>
-/* === Part H Exec Input (Advanced Math/Java/Tools) === */
+/* === Part H Exec Input (Advanced Math/Java/Tools) with toggle === */
 (function(){
-  const execInput=document.getElementById('percy-exec-input');
-  const execBtn=document.getElementById('percy-exec-run');
-  const consoleDiv=document.getElementById('percy-console');
+  const execInput = document.getElementById('percy-exec-input');
+  const execBtn = document.getElementById('percy-exec-run');
+  const consoleDiv = document.getElementById('percy-console');
+  const toggleBtns = document.querySelectorAll('#exec-toggle button');
 
   if(!execInput) return;
 
-  async function handleExecInput(){
-    const query=execInput.value.trim();
-    if(!query) return;
-    execInput.value="";
+  let PercyExecMode = "math"; // default mode
 
-    const userLine=document.createElement("div");
-    userLine.className="console-line ask";
-    userLine.textContent="↳ "+query;
+  // Toggle button click
+  toggleBtns.forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      toggleBtns.forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      PercyExecMode = btn.dataset.mode;
+    });
+  });
+
+  async function handleExecInput(){
+    const query = execInput.value.trim();
+    if(!query) return;
+    execInput.value = "";
+
+    // Append user input
+    const userLine = document.createElement("div");
+    userLine.className = "console-line ask";
+    userLine.textContent = "↳ " + query;
     consoleDiv.appendChild(userLine);
 
-    let output="";
-    if(window.PercyState?.PartH?.routeInput){
-      output=await PercyState.PartH.routeInput(query);
-    } else {
-      output="⚠️ Percy Part H not loaded.";
+    let output = "";
+
+    // Route by selected mode
+    if(PercyExecMode === "math"){
+      output = await PercyState.useTool("math", query);
+    } else if(PercyExecMode === "java"){
+      output = PercyState.PartF?.rewriteSelf("H", "Integrate Java snippet", {code: query, apply:false}) || "⚠️ Percy Part F not loaded.";
+    } else if(PercyExecMode === "tools"){
+      output = await PercyState.PartH?.routeInput(query) || "⚠️ Percy Part H not loaded.";
     }
 
-    const percyLine=document.createElement("div");
-    percyLine.className="console-line exec";
-    percyLine.textContent="🤖 "+output;
+    // Append Percy output (green)
+    const percyLine = document.createElement("div");
+    percyLine.className = "console-line exec";
+    percyLine.textContent = "🤖 " + output;
     consoleDiv.appendChild(percyLine);
 
-    consoleDiv.scrollTop=consoleDiv.scrollHeight;
+    consoleDiv.scrollTop = consoleDiv.scrollHeight;
   }
 
-  execInput.addEventListener("keydown",async e=>{ if(e.key==="Enter"){ e.preventDefault(); await handleExecInput(); }});
-  if(execBtn) execBtn.addEventListener("click",handleExecInput);
-})();
-</script>
+  // ENTER key
+  execInput.addEventListener("keydown", async e=>{
+    if(e.key==="Enter"){ e.preventDefault(); await handleExecInput(); }
+  });
 
-<script>
-/* === Voice Visualizer: Waves + Bars === */
-(function(){
-  const canvas=document.getElementById("voice-canvas");
-  if(!canvas) return;
-  const ctx=canvas.getContext("2d");
-  let t=0;
-
-  function draw(){
-    const {width:w,height:h}=canvas;
-    ctx.clearRect(0,0,w,h);
-
-    // Bars
-    const bars=32;
-    for(let i=0;i<bars;i++){
-      const barHeight=Math.sin(t/10+i/2)*20+30;
-      ctx.fillStyle=`rgba(0,255,255,${0.5+0.5*Math.sin(t/20+i)})`;
-      ctx.fillRect(i*(w/bars),h-barHeight,(w/bars)-2,barHeight);
-    }
-
-    // Wave
-    ctx.beginPath();
-    for(let x=0;x<w;x++){
-      const y=h/2+Math.sin(x/30+t/15)*20*Math.sin(t/50);
-      ctx.lineTo(x,y);
-    }
-    ctx.strokeStyle="rgba(0,200,255,0.8)";
-    ctx.lineWidth=2;
-    ctx.stroke();
-
-    t++;
-    requestAnimationFrame(draw);
-  }
-
-  function resize(){
-    canvas.width=canvas.clientWidth;
-    canvas.height=canvas.clientHeight;
-  }
-  window.addEventListener("resize",resize);
-  resize();
-  draw();
+  // RUN button
+  if(execBtn) execBtn.addEventListener("click", handleExecInput);
 })();
 </script>
 
