@@ -1287,6 +1287,11 @@ PercyState.registerTool("searchSeeds", async (query) => {
  /* === Percy Part H Add-on: Universal Ask Percy Router (Advanced) === */
 PercyState.PartH = PercyState.PartH || {};
 
+// --- PercyState.log helper ---
+PercyState.log = PercyState.log || function(msg) {
+  console.log("[Percy]", msg);
+};
+
 // List of math functions Percy will recognize
 PercyState.PartH.mathFunctions = ["sin","cos","tan","asin","acos","atan","log","ln","sqrt","abs","exp","pi","e","factorial","d/dx","∫","∑","^"];
 
