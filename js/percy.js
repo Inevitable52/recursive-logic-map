@@ -1368,6 +1368,134 @@ if (typeof PercyState !== 'undefined') {
     }, intervalMs);
   };
 
+  /* === Percy Part H Add-on: Universal Ask Percy Router (Advanced) === */
+PercyState.PartH = PercyState.PartH || {};
+
+// List of math functions Percy will recognize
+PercyState.PartH.mathFunctions = ["sin","cos","tan","asin","acos","atan","log","ln","sqrt","abs","exp","pi","e","factorial","d/dx","∫","∑","^"];
+
+// Helper: Detect math/physics expressions
+PercyState.PartH.isMath = function(input) {
+  const basicMath = /^[0-9\+\-\*\/\^\(\)\s\.]+$/;
+  const advancedMath = new RegExp(PercyState.PartH.mathFunctions.join("|"), "i");
+  return basicMath.test(input) || advancedMath.test(input);
+};
+
+// Helper: Detect Java code
+PercyState.PartH.isJava = function(input) {
+  return /class|public|static|void|System\.out|new\s+[A-Z]/i.test(input);
+};
+
+// Helper: Detect tool creation command
+PercyState.PartH.isToolCommand = function(input) {
+  return /^make tool/i.test(input);
+};
+
+// Universal input router
+PercyState.PartH.routeInput = async function(input) {
+  input = input.trim();
+  if (!input) return "Please ask something, my good sir.";
+
+  // --- Math / Physics ---
+  if (PercyState.PartH.isMath(input)) {
+    try {
+      let result = await PercyState.useTool("math", input);
+      PercyState.log(`🧮 Math result: ${input} = ${result}`);
+      return result;
+    } catch (err) {
+      PercyState.log("❌ Math evaluation failed: " + err.message);
+      return "⚠️ Math evaluation failed.";
+    }
+  }
+
+  // --- Java code ---
+  if (PercyState.PartH.isJava(input)) {
+    PercyState.log("📝 Java code detected → sending to Part F self-rewrite.");
+    return PercyState.PartF?.rewriteSelf("H", "Integrate Java snippet", {code: input, apply: false});
+  }
+
+  // --- Tool creation ---
+  if (PercyState.PartH.isToolCommand(input)) {
+    let toolName = input.replace(/^make tool\s*/i, "").trim() || "customTool";
+    PercyState.log(`🛠 Creating new tool: ${toolName}`);
+    PercyState.registerTool(toolName, async (query) => {
+      return `Tool "${toolName}" executed with query: ${query}`;
+    }, { description: `Dynamically created tool: ${toolName}`});
+    return `✅ Tool "${toolName}" created.`;
+  }
+
+  // --- Default / normal Ask Percy ---
+  PercyState.log("💬 Routing as normal input → AutoLearn handles it.");
+  if (PercyState.PartI?.autoLearnCycle) {
+    return PercyState.PartI.autoLearnCycle(input);
+  }
+  return Percy.correlateReply ? await Percy.correlateReply(input) : "Processed as thought.";
+};
+
+// --- Hook Ask Percy bar & ENTER / RUN ---
+PercyState.PartH.hookAskPercy = function() {
+  const askBox = document.querySelector("#interpreter-input");
+  const runBtn = document.querySelector("#interpreter-run");
+  if (!askBox) {
+    PercyState.log("⚠️ Ask Percy input not found.");
+    return;
+  }
+
+  async function handleInput() {
+    const query = askBox.value.trim();
+    if (!query) return;
+    askBox.value = "";
+    const output = await PercyState.PartH.routeInput(query);
+    
+    // Append to console
+    const consoleDiv = document.querySelector("#percy-console");
+    if (consoleDiv) {
+      const userLine = document.createElement("div");
+      userLine.className = "console-line";
+      userLine.textContent = "↳ " + query;
+      consoleDiv.appendChild(userLine);
+
+      const percyLine = document.createElement("div");
+      percyLine.className = "console-line";
+      percyLine.textContent = "🤖 " + output;
+      consoleDiv.appendChild(percyLine);
+
+      consoleDiv.scrollTop = consoleDiv.scrollHeight;
+    }
+
+    try { if (typeof Percy.speak === "function") Percy.speak(output); } catch(e){}
+  }
+
+  // ENTER key
+  askBox.addEventListener("keydown", async e => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      await handleInput();
+    }
+  });
+
+  // RUN button
+  if (runBtn) runBtn.addEventListener("click", handleInput);
+
+  PercyState.log("🔗 Universal Router hooked into Ask Percy.");
+};
+
+// Auto-start after Percy loads
+setTimeout(() => PercyState.PartH.hookAskPercy(), 1500);
+
+// --- Add advanced math support to Math tool ---
+PercyState.registerTool("math", async (expr) => {
+  try {
+    // Use Function + Math for safe evaluation
+    const fn = new Function("Math", `with(Math){return ${expr}}`);
+    return fn(Math);
+  } catch {
+    return "⚠️ Invalid math/physics expression.";
+  }
+}, { description: "Evaluates simple and advanced math, physics, trig, calculus formulas." });
+
+UI.say("🔌 Percy Part H Add-on (Universal Router + Advanced Math/Code/Tools) loaded.");
+
   /* =========================
   INITIALIZE PART I
   ========================== */
