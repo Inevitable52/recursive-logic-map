@@ -1284,8 +1284,7 @@ PercyState.registerTool("searchSeeds", async (query) => {
   return results.slice(0, 5).map(([id, text]) => ({ id, text }));
 }, { description: "Searches Percy’s logic map for seeds related to a query." });
 
-
-  /* === Percy Part H Add-on: Universal Ask Percy Router (Advanced) === */
+ /* === Percy Part H Add-on: Universal Ask Percy Router (Advanced) === */
 PercyState.PartH = PercyState.PartH || {};
 
 // List of math functions Percy will recognize
