@@ -111,42 +111,29 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
       output=await PercyState.useTool("math",query);
     }
     else if(PercyExecMode==="java"){
-      // Persistent Java REPL context
-      window.percyJavaContext = window.percyJavaContext || { vars:{} };
+  // Persistent Java REPL context
+  window.percyJavaContext = window.percyJavaContext || { vars:{} };
+  try{
+    const lines = query.split(/;\s*/).filter(l=>l.trim().length>0);
+    for(const line of lines){
       try{
-        const lines=query.split(/;\s*/).filter(l=>l.trim().length>0);
-        for(const line of lines){
-          const fnMatch = line.match(/int\s+(\w+)\(([^)]*)\)\s*{\s*return\s+([^}]+);?\s*}/);
-          if(fnMatch){
-            const [_, name, args, body] = fnMatch;
-            window.percyJavaContext.vars[name] = new Function(args, `return ${body};`);
-            output += `✅ Function ${name} defined\n`;
-            continue;
-          }
-          const callMatch = line.match(/(\w+)\(([^)]*)\)/);
-          if(callMatch){
-            const [_, fnName, fnArgs] = callMatch;
-            const fn = window.percyJavaContext.vars[fnName];
-            if(fn){
-              const argsArray = fnArgs.split(',').map(a=>parseInt(a.trim()));
-              const result = fn(...argsArray);
-              output += `🤖 ${fnName}(${fnArgs}) = ${result}\n`;
-            } else output += `⚠️ Function ${fnName} not defined\n`;
-            continue;
-          }
-          try{
-            const result = Function('"use strict";return ('+line+')')();
-            output += `🤖 ${line} = ${result}\n`;
-          }catch(e){
-            output += `⚠️ Could not evaluate line: ${line}\n`;
-          }
-        }
-        const suggestion = Percy.rewriteSelf("Java", query);
-        output += "\n💡 Percy suggests:\n" + suggestion;
+        // Evaluate line in persistent context
+        const result = Function('"use strict"; with(window.percyJavaContext.vars){ return (' + line + ') }')();
+        output += `🤖 ${line} = ${result}\n`;
       }catch(e){
-        output = "⚠️ Java REPL error: "+e.message;
+        // If assignment, e.g., x = 42
+        try{
+          Function('"use strict"; with(window.percyJavaContext.vars){ ' + line + ' }')();
+          output += `✅ Executed: ${line}\n`;
+        }catch(err){
+          output += `⚠️ Could not evaluate line: ${line}\n`;
+        }
       }
     }
+  }catch(e){
+    output = "⚠️ Java REPL error: "+e.message;
+  }
+}
     else if(PercyExecMode==="tools") {
       output = await PercyState.PartH?.routeInput(query) || "⚠️ Percy Part H not loaded.";
     }
