@@ -1206,7 +1206,7 @@ if (PercyState && typeof PercyState.rewriteSelf === "function") {
 if (typeof PercyState !== "undefined") {
   PercyState.PartF = {
     runJava: async function(code) {
-      // right now just echo, later we can wire to a Java runner
+      // For now just echo back what was sent
       const reply = "🤖 [Java Stub] Percy Part F received:\n" + code;
       console.log(reply);
 
