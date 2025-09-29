@@ -59,7 +59,7 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
 
   function appendConsole(text,isUser=false,exec=false){
     const line=document.createElement('div');
-    line.className='console-line '+(isUser?'ask':'')+(exec?' exec':'');
+    line.className='console-line '+(isUser?'ask':'')+(exec?' exec':'' );
     line.textContent=(isUser?'↳ ':'')+text;
     percyConsole.appendChild(line);
     percyConsole.scrollTop = percyConsole.scrollHeight;
@@ -106,24 +106,54 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
     consoleDiv.appendChild(userLine);
 
     let output="";
-    if(PercyExecMode==="math") output=await PercyState.useTool("math",query);
-    else if(PercyExecMode==="java"){
-      try{
-        const parts=query.split(/;\s*/).filter(p=>p.trim().length>0);
-        const funcDefs={}; let result="";
-        for(const p of parts){
-          const m=p.match(/int\s+(\w+)\(([^)]*)\)\s*{\s*return\s+([^}]+);?\s*}/);
-          if(m){ funcDefs[m[1]]=new Function(m[2],`return ${m[3]};`); result=`✅ Function ${m[1]} defined`; }
-        }
-        for(const p of parts){
-          const c=p.match(/(\w+)\(([^)]*)\)/);
-          if(c) result = funcDefs[c[1]] ? funcDefs[c[1]](...c[2].split(',').map(a=>parseInt(a.trim()))) : `⚠️ Function ${c[1]} not defined`;
-        }
-        output=result;
-      }catch(e){ output="⚠️ Error executing Java snippet: "+e.message; }
-    } else if(PercyExecMode==="tools") output = await PercyState.PartH?.routeInput(query) || "⚠️ Percy Part H not loaded.";
 
-    const percyLine=document.createElement("div"); percyLine.className="console-line exec"; percyLine.textContent="🤖 "+output;
+    if(PercyExecMode==="math") {
+      output=await PercyState.useTool("math",query);
+    }
+    else if(PercyExecMode==="java"){
+      // Persistent Java REPL context
+      window.percyJavaContext = window.percyJavaContext || { vars:{} };
+      try{
+        const lines=query.split(/;\s*/).filter(l=>l.trim().length>0);
+        for(const line of lines){
+          const fnMatch = line.match(/int\s+(\w+)\(([^)]*)\)\s*{\s*return\s+([^}]+);?\s*}/);
+          if(fnMatch){
+            const [_, name, args, body] = fnMatch;
+            window.percyJavaContext.vars[name] = new Function(args, `return ${body};`);
+            output += `✅ Function ${name} defined\n`;
+            continue;
+          }
+          const callMatch = line.match(/(\w+)\(([^)]*)\)/);
+          if(callMatch){
+            const [_, fnName, fnArgs] = callMatch;
+            const fn = window.percyJavaContext.vars[fnName];
+            if(fn){
+              const argsArray = fnArgs.split(',').map(a=>parseInt(a.trim()));
+              const result = fn(...argsArray);
+              output += `🤖 ${fnName}(${fnArgs}) = ${result}\n`;
+            } else output += `⚠️ Function ${fnName} not defined\n`;
+            continue;
+          }
+          try{
+            const result = Function('"use strict";return ('+line+')')();
+            output += `🤖 ${line} = ${result}\n`;
+          }catch(e){
+            output += `⚠️ Could not evaluate line: ${line}\n`;
+          }
+        }
+        const suggestion = Percy.rewriteSelf("Java", query);
+        output += "\n💡 Percy suggests:\n" + suggestion;
+      }catch(e){
+        output = "⚠️ Java REPL error: "+e.message;
+      }
+    }
+    else if(PercyExecMode==="tools") {
+      output = await PercyState.PartH?.routeInput(query) || "⚠️ Percy Part H not loaded.";
+    }
+
+    const percyLine=document.createElement("div"); 
+    percyLine.className="console-line exec"; 
+    percyLine.textContent="🤖 "+output;
     consoleDiv.appendChild(percyLine);
     consoleDiv.scrollTop=consoleDiv.scrollHeight;
   }
