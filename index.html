@@ -114,24 +114,25 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
   // Persistent Java REPL context
   window.percyJavaContext = window.percyJavaContext || { vars:{} };
   try{
-    const lines = query.split(/;\s*/).filter(l=>l.trim().length>0);
+    // Treat input as one whole chunk instead of splitting by semicolon
+    const lines = [query];
     for(const line of lines){
-      try{
-        // Evaluate line in persistent context
+      try {
+        // Try to evaluate as an expression
         const result = Function('"use strict"; with(window.percyJavaContext.vars){ return (' + line + ') }')();
         output += `🤖 ${line} = ${result}\n`;
-      }catch(e){
-        // If assignment, e.g., x = 42
-        try{
+      } catch(e) {
+        // If that fails, attempt to run as a statement (assignment, function, etc.)
+        try {
           Function('"use strict"; with(window.percyJavaContext.vars){ ' + line + ' }')();
           output += `✅ Executed: ${line}\n`;
-        }catch(err){
+        } catch(err) {
           output += `⚠️ Could not evaluate line: ${line}\n`;
         }
       }
     }
-  }catch(e){
-    output = "⚠️ Java REPL error: "+e.message;
+  } catch(e){
+    output = "⚠️ Java REPL error: " + e.message;
   }
 }
     else if(PercyExecMode==="tools") {
