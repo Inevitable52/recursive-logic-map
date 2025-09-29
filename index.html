@@ -139,31 +139,33 @@
     if(PercyExecMode === "math"){
       output = await PercyState.useTool("math", query);
     } 
-    else if(PercyExecMode === "java"){
-      try {
-        // Simple Java-like simulation: function definition + call
-        // Converts Java int functions into JS function
-        const funcMatch = query.match(/int\s+(\w+)\(([^)]*)\)\s*{\s*return\s+([^;]+);?\s*}/);
-        if(funcMatch){
-          const funcName = funcMatch[1];
-          const args = funcMatch[2];
-          const body = funcMatch[3];
-          const jsFunc = new Function(args, `return ${body};`);
-          // extract call after function if exists
-          const callMatch = query.match(new RegExp(`${funcName}\\(([^)]*)\\)`));
-          if(callMatch){
-            output = jsFunc(...callMatch[1].split(',').map(s=>parseInt(s.trim())));
-          } else {
-            output = `✅ Function ${funcName} defined`;
-          }
-        } else {
-          output = "⚠️ Could not parse Java snippet";
-        }
-      } catch(err){
-        output = "⚠️ Error executing Java snippet: " + err.message;
+      else if(PercyExecMode === "java"){
+  try {
+    const funcMatch = query.match(/int\s+(\w+)\(([^)]*)\)\s*{\s*return\s+([^;]+);?\s*}/);
+    if(funcMatch){
+      const funcName = funcMatch[1];
+      const args = funcMatch[2];
+      const body = funcMatch[3];
+      const jsFunc = new Function(args, `return ${body};`);
+
+      // extract function calls after definition
+      const callRegex = new RegExp(`${funcName}\\(([^)]*)\\)`);
+      const callMatch = query.match(callRegex);
+
+      if(callMatch){
+        const rawArgs = callMatch[1].split(',').map(s=>s.trim().replace(/;$/,''));
+        output = jsFunc(...rawArgs.map(a=>parseInt(a)));
+      } else {
+        output = `✅ Function ${funcName} defined`;
       }
-    } 
-    else if(PercyExecMode === "tools"){
+    } else {
+      output = "⚠️ Could not parse Java snippet";
+    }
+  } catch(err){
+    output = "⚠️ Error executing Java snippet: " + err.message;
+  }
+}
+     else if(PercyExecMode === "tools"){
       output = await PercyState.PartH?.routeInput(query) || "⚠️ Percy Part H not loaded.";
     }
 
