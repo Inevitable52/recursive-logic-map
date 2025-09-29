@@ -141,30 +141,41 @@
     } 
       else if(PercyExecMode === "java"){
   try {
-    const funcMatch = query.match(/int\s+(\w+)\(([^)]*)\)\s*{\s*return\s+([^;]+);?\s*}/);
-    if(funcMatch){
-      const funcName = funcMatch[1];
-      const args = funcMatch[2];
-      const body = funcMatch[3];
-      const jsFunc = new Function(args, `return ${body};`);
+    // Split definitions from calls
+    const parts = query.split(/;\s*/).filter(p => p.trim().length > 0);
+    let output = "";
 
-      // extract function calls after definition
-      const callRegex = new RegExp(`${funcName}\\(([^)]*)\\)`);
-      const callMatch = query.match(callRegex);
-
-      if(callMatch){
-        const rawArgs = callMatch[1].split(',').map(s=>s.trim().replace(/;$/,''));
-        output = jsFunc(...rawArgs.map(a=>parseInt(a)));
-      } else {
+    const funcDefs = {};
+    
+    // First pass: define functions
+    for(const part of parts){
+      const funcMatch = part.match(/int\s+(\w+)\(([^)]*)\)\s*{\s*return\s+([^}]+);?\s*}/);
+      if(funcMatch){
+        const funcName = funcMatch[1];
+        const args = funcMatch[2];
+        const body = funcMatch[3];
+        funcDefs[funcName] = new Function(args, `return ${body};`);
         output = `✅ Function ${funcName} defined`;
       }
-    } else {
-      output = "⚠️ Could not parse Java snippet";
     }
+
+    // Second pass: execute calls
+    for(const part of parts){
+      const callMatch = part.match(/(\w+)\(([^)]*)\)/);
+      if(callMatch){
+        const name = callMatch[1];
+        const args = callMatch[2].split(',').map(a => parseInt(a.trim()));
+        if(funcDefs[name]) output = funcDefs[name](...args);
+        else output = `⚠️ Function ${name} not defined`;
+      }
+    }
+
+    return output;
   } catch(err){
-    output = "⚠️ Error executing Java snippet: " + err.message;
+    return "⚠️ Error executing Java snippet: " + err.message;
   }
 }
+        
      else if(PercyExecMode === "tools"){
       output = await PercyState.PartH?.routeInput(query) || "⚠️ Percy Part H not loaded.";
     }
