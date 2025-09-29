@@ -41,10 +41,10 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
 <div id="exec-toggle">
   <button data-mode="math" class="active">Math</button>
   <button data-mode="java">Java</button>
-  <button data-mode="tools">Tools</button>
+  <button data-mode="percydirect">Percy</button>
 </div>
 
-<input id="percy-exec-input" placeholder="Percy Exec (Math/Java/Tools)">
+<input id="percy-exec-input" placeholder="Percy Exec (Math/Java/Percy)">
 <button id="percy-exec-run">Run Exec</button>
 
 <script src="js/percy.js?v=6.4"></script>
@@ -86,50 +86,72 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
 
 <script>
 (function(){
-  const execInput=document.getElementById('percy-exec-input'),
-        execBtn=document.getElementById('percy-exec-run'),
-        consoleDiv=document.getElementById('percy-console'),
-        toggleBtns=document.querySelectorAll('#exec-toggle button');
+  const execInput = document.getElementById('percy-exec-input'),
+        execBtn   = document.getElementById('percy-exec-run'),
+        consoleDiv = document.getElementById('percy-console'),
+        toggleBtns = document.querySelectorAll('#exec-toggle button');
 
   if(!execInput) return;
-  let PercyExecMode="math";
+  let PercyExecMode = "percydirect"; // default Percy-aware
 
-  toggleBtns.forEach(btn=>btn.addEventListener('click',()=>{
-    toggleBtns.forEach(b=>b.classList.remove('active'));
+  toggleBtns.forEach(btn => btn.addEventListener('click', () => {
+    toggleBtns.forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    PercyExecMode=btn.dataset.mode;
+    PercyExecMode = btn.dataset.mode;
   }));
 
   async function handleExecInput(){
-    const query=execInput.value.trim(); if(!query) return; execInput.value="";
-    const userLine=document.createElement("div"); userLine.className="console-line ask"; userLine.textContent="↳ "+query;
+    const query = execInput.value.trim();
+    if(!query) return;
+    execInput.value = "";
+
+    const userLine = document.createElement("div");
+    userLine.className = "console-line ask";
+    userLine.textContent = "↳ " + query;
     consoleDiv.appendChild(userLine);
 
-    let output="";
-    if(PercyExecMode==="math") output=await PercyState.useTool("math",query);
-    else if(PercyExecMode==="java"){
-      try{
-        const parts=query.split(/;\s*/).filter(p=>p.trim().length>0);
-        const funcDefs={}; let result="";
+    let output = "";
+
+    if(PercyExecMode === "percydirect"){
+      try {
+        if(typeof window.percyRespond === 'function'){
+          output = await window.percyRespond(query);
+        } else {
+          output = "⚠️ Percy logic not loaded.";
+        }
+      } catch(err){
+        output = "⚠️ Error processing Percy command: " + err.message;
+      }
+    }
+    else if(PercyExecMode === "math"){
+      output = await PercyState.useTool("math", query);
+    }
+    else if(PercyExecMode === "java"){
+      try {
+        const parts = query.split(/;\s*/).filter(p=>p.trim());
+        const funcDefs = {};
+        let result = "";
         for(const p of parts){
-          const m=p.match(/int\s+(\w+)\(([^)]*)\)\s*{\s*return\s+([^}]+);?\s*}/);
-          if(m){ funcDefs[m[1]]=new Function(m[2],`return ${m[3]};`); result=`✅ Function ${m[1]} defined`; }
+          const m = p.match(/int\s+(\w+)\(([^)]*)\)\s*{\s*return\s+([^}]+);?\s*}/);
+          if(m){ funcDefs[m[1]] = new Function(m[2], `return ${m[3]};`); result = `✅ Function ${m[1]} defined`; }
         }
         for(const p of parts){
-          const c=p.match(/(\w+)\(([^)]*)\)/);
+          const c = p.match(/(\w+)\(([^)]*)\)/);
           if(c) result = funcDefs[c[1]] ? funcDefs[c[1]](...c[2].split(',').map(a=>parseInt(a.trim()))) : `⚠️ Function ${c[1]} not defined`;
         }
-        output=result;
-      }catch(e){ output="⚠️ Error executing Java snippet: "+e.message; }
-    } else if(PercyExecMode==="tools") output = await PercyState.PartH?.routeInput(query) || "⚠️ Percy Part H not loaded.";
+        output = result;
+      } catch(e){ output = "⚠️ Error executing Java snippet: " + e.message; }
+    }
 
-    const percyLine=document.createElement("div"); percyLine.className="console-line exec"; percyLine.textContent="🤖 "+output;
+    const percyLine = document.createElement("div");
+    percyLine.className = "console-line exec";
+    percyLine.textContent = "🤖 " + output;
     consoleDiv.appendChild(percyLine);
-    consoleDiv.scrollTop=consoleDiv.scrollHeight;
+    consoleDiv.scrollTop = consoleDiv.scrollHeight;
   }
 
-  execInput.addEventListener("keydown",async e=>{ if(e.key==="Enter"){ e.preventDefault(); await handleExecInput(); } });
-  execBtn.addEventListener("click",handleExecInput);
+  execInput.addEventListener("keydown", async e=>{ if(e.key==="Enter"){ e.preventDefault(); await handleExecInput(); } });
+  execBtn.addEventListener("click", handleExecInput);
 })();
 </script>
 
