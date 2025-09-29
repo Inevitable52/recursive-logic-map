@@ -105,50 +105,82 @@
 
   <!-- Percy Exec -->
   <script>
-  (function(){
-    const execInput = document.getElementById('percy-exec-input');
-    const execBtn = document.getElementById('percy-exec-run');
-    const consoleDiv = document.getElementById('percy-console');
-    const toggleBtns = document.querySelectorAll('#exec-toggle button');
-    if(!execInput) return;
+/* === Part H Exec Input (Java Sandbox) Enhancement === */
+(function(){
+  const execInput = document.getElementById('percy-exec-input');
+  const execBtn = document.getElementById('percy-exec-run');
+  const consoleDiv = document.getElementById('percy-console');
+  const toggleBtns = document.querySelectorAll('#exec-toggle button');
 
-    let PercyExecMode = "math";
+  if(!execInput) return;
 
-    toggleBtns.forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        toggleBtns.forEach(b=>b.classList.remove('active'));
-        btn.classList.add('active');
-        PercyExecMode = btn.dataset.mode;
-      });
+  let PercyExecMode = "math"; // default mode
+
+  toggleBtns.forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      toggleBtns.forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      PercyExecMode = btn.dataset.mode;
     });
+  });
 
-    async function handleExecInput(){
-      const query = execInput.value.trim();
-      if(!query) return;
-      execInput.value = "";
-      const userLine = document.createElement("div");
-      userLine.className = "console-line ask";
-      userLine.textContent = "↳ " + query;
-      consoleDiv.appendChild(userLine);
+  async function handleExecInput(){
+    const query = execInput.value.trim();
+    if(!query) return;
+    execInput.value = "";
 
-      let output = "";
-      if(PercyExecMode === "math") output = await PercyState.useTool("math", query);
-      else if(PercyExecMode === "java") output = PercyState.PartF?.rewriteSelf("H", "Integrate Java snippet", {code: query, apply:false}) || "⚠️ Percy Part F not loaded.";
-      else if(PercyExecMode === "tools") output = await PercyState.PartH?.routeInput(query) || "⚠️ Percy Part H not loaded.";
+    const userLine = document.createElement("div");
+    userLine.className = "console-line ask";
+    userLine.textContent = "↳ " + query;
+    consoleDiv.appendChild(userLine);
 
-      const percyLine = document.createElement("div");
-      percyLine.className = "console-line exec";
-      percyLine.textContent = "🤖 " + output;
-      consoleDiv.appendChild(percyLine);
-      consoleDiv.scrollTop = consoleDiv.scrollHeight;
+    let output = "";
+
+    if(PercyExecMode === "math"){
+      output = await PercyState.useTool("math", query);
+    } 
+    else if(PercyExecMode === "java"){
+      try {
+        // Simple Java-like simulation: function definition + call
+        // Converts Java int functions into JS function
+        const funcMatch = query.match(/int\s+(\w+)\(([^)]*)\)\s*{\s*return\s+([^;]+);?\s*}/);
+        if(funcMatch){
+          const funcName = funcMatch[1];
+          const args = funcMatch[2];
+          const body = funcMatch[3];
+          const jsFunc = new Function(args, `return ${body};`);
+          // extract call after function if exists
+          const callMatch = query.match(new RegExp(`${funcName}\\(([^)]*)\\)`));
+          if(callMatch){
+            output = jsFunc(...callMatch[1].split(',').map(s=>parseInt(s.trim())));
+          } else {
+            output = `✅ Function ${funcName} defined`;
+          }
+        } else {
+          output = "⚠️ Could not parse Java snippet";
+        }
+      } catch(err){
+        output = "⚠️ Error executing Java snippet: " + err.message;
+      }
+    } 
+    else if(PercyExecMode === "tools"){
+      output = await PercyState.PartH?.routeInput(query) || "⚠️ Percy Part H not loaded.";
     }
 
-    execInput.addEventListener("keydown", async e=>{
-      if(e.key==="Enter"){ e.preventDefault(); await handleExecInput(); }
-    });
-    if(execBtn) execBtn.addEventListener("click", handleExecInput);
-  })();
-  </script>
+    const percyLine = document.createElement("div");
+    percyLine.className = "console-line exec";
+    percyLine.textContent = "🤖 " + output;
+    consoleDiv.appendChild(percyLine);
+    consoleDiv.scrollTop = consoleDiv.scrollHeight;
+  }
+
+  execInput.addEventListener("keydown", async e=>{
+    if(e.key==="Enter"){ e.preventDefault(); await handleExecInput(); }
+  });
+
+  if(execBtn) execBtn.addEventListener("click", handleExecInput);
+})();
+</script>
 
   <!-- Voice Visualizer -->
   <script>
