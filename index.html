@@ -174,8 +174,7 @@
   } catch(err){
     return "⚠️ Error executing Java snippet: " + err.message;
   }
-}
-        
+}    
      else if(PercyExecMode === "tools"){
       output = await PercyState.PartH?.routeInput(query) || "⚠️ Percy Part H not loaded.";
     }
