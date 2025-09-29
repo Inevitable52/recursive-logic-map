@@ -1206,19 +1206,28 @@ if (PercyState && typeof PercyState.rewriteSelf === "function") {
 if (typeof PercyState !== "undefined") {
   PercyState.PartF = {
     runJava: async function(code) {
-      // For now just echo back what was sent
-      const reply = "🤖 [Java Stub] Percy Part F received:\n" + code;
-      console.log(reply);
-
-      const consoleDiv = document.getElementById("percy-console");
-      if (consoleDiv) {
-        const pre = document.createElement("pre");
-        pre.style.color = "#9f9";
-        pre.textContent = reply;
-        consoleDiv.appendChild(pre);
-        consoleDiv.scrollTop = consoleDiv.scrollHeight;
+      // Detect if it's JS or Java style
+      if (code.trim().startsWith("public class")) {
+        // Convert a simple Java snippet to JS-like syntax
+        const jsEquivalent = code
+          .replace(/System\.out\.println/g, "console.log")
+          .replace(/int\s+(\w+)\s*=\s*(.+);/g, "let $1 = $2;");
+        const reply = `🤖 [Converted Java to JS]:\n${jsEquivalent}`;
+        console.log(reply);
+        return reply;
+      } else {
+        // Treat as JS and execute
+        try {
+          const result = eval(code); // sandbox later for safety
+          const reply = `🤖 [JS Executed]:\n${result !== undefined ? result : "Code executed successfully."}`;
+          console.log(reply);
+          return reply;
+        } catch (err) {
+          const reply = `⚠️ [JS Execution Error]: ${err.message}`;
+          console.error(reply);
+          return reply;
+        }
       }
-      return reply;
     }
   };
 }
