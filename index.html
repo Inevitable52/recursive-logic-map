@@ -8,69 +8,37 @@
   #logic-map { position:relative; width:100vw; height:100vh; background:#0a0a0f; overflow:hidden; }
   #logic-nodes { position:absolute; top:50%; left:50%; width:100%; height:100%; transform:translate(-50%,-50%) scale(1); }
   .console-line { margin:2px 0; font-family:ui-monospace,Monaco,Consolas, monospace; font-size:12px; }
-  .console-line.ask { color:#d6d8ff; } /* normal Ask Percy */
-  .console-line.exec { color:#7fff7f; } /* Part H Exec */
+  .console-line.ask { color:#d6d8ff; }
+  .console-line.exec { color:#7fff7f; }
   #percy-console { position:fixed; bottom:0; left:0; width:35%; max-height:40%; overflow:auto; background:rgba(0,0,0,0.65); padding:6px; border-top-right-radius:12px; border:1px solid #444; }
   #percy-message { position:fixed; bottom:0; left:35%; width:65%; padding:6px; background:rgba(0,0,0,0.65); border-top-left-radius:12px; border:1px solid #444; }
 
-  /* Visualizer (top-right, compact) */
+  /* Visualizer */
   #voice-visualizer {
-    position:fixed;
-    top:12px;
-    right:12px;
-    width:360px;
-    height:128px;
-    pointer-events:none;
-    z-index:9999;
-    display:flex;
-    align-items:center;
-    border-radius:12px;
+    position:fixed; top:12px; right:12px; width:360px; height:128px; pointer-events:none; z-index:9999;
+    display:flex; align-items:center; border-radius:12px;
     background: linear-gradient(180deg, rgba(7,7,12,0.6), rgba(7,7,12,0.35));
     box-shadow: 0 6px 24px rgba(0,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.02);
     border:1px solid rgba(0,255,255,0.1);
   }
-  #voice-canvas {
-    flex:1;
-    height:100%;
-    width:100%;
-    display:block;
-    border-radius:8px;
-    background: linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.05));
-  }
+  #voice-canvas { flex:1; height:100%; width:100%; display:block; border-radius:8px; background: linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.05)); }
 
-  /* AskPercy button style */
-  #askPercyButton, #percy-exec-run {
-    padding:6px 12px;
-    color:white;
-    border:none;
-    border-radius:6px;
-    cursor:pointer;
-    z-index:9999;
-  }
+  /* Buttons */
+  #askPercyButton, #percy-exec-run { padding:6px 12px; color:white; border:none; border-radius:6px; cursor:pointer; z-index:9999; }
   #askPercyButton { position:fixed; top:12px; left:530px; background:#1a1aff; }
   #askPercyButton:hover { background:#3333ff; }
   #percy-exec-run { position:fixed; top:90px; left:530px; background:#1aff55; }
   #percy-exec-run:hover { background:#33ff77; }
 
   /* Inputs */
-  #interpreter-input, #percy-exec-input, #seed-search {
-    position:fixed; padding:6px; z-index:9999; width:300px;
-  }
+  #interpreter-input, #percy-exec-input, #seed-search { position:fixed; padding:6px; z-index:9999; width:300px; }
   #seed-search { top:12px; left:12px; width:200px; }
   #interpreter-input { top:12px; left:220px; }
   #percy-exec-input { top:90px; left:220px; width:300px; }
 
   /* Toggle buttons */
   #exec-toggle { position:fixed; top:50px; left:220px; z-index:9999; }
-  #exec-toggle button {
-    padding:4px 12px;
-    margin-right:6px;
-    border:none;
-    border-radius:6px;
-    cursor:pointer;
-    background:#333;
-    color:white;
-  }
+  #exec-toggle button { padding:4px 12px; margin-right:6px; border:none; border-radius:6px; cursor:pointer; background:#333; color:white; }
   #exec-toggle button.active { background:#1aff55; color:black; }
 </style>
 </head>
@@ -83,7 +51,6 @@
   <input id="interpreter-input" placeholder="Ask Percy">
   <button id="askPercyButton">Run</button>
 
-  <!-- Toggle for Percy Exec -->
   <div id="exec-toggle">
     <button data-mode="math" class="active">Math</button>
     <button data-mode="java">Java</button>
@@ -101,173 +68,156 @@
     <canvas id="voice-canvas"></canvas>
   </div>
 
-<script>
-/* === Ask Percy input with echo and response === */
-(function(){
-  const interpreterInput=document.getElementById('interpreter-input');
-  const percyConsole=document.getElementById('percy-console');
-  const askButton=document.getElementById('askPercyButton');
+  <!-- Ask Percy -->
+  <script>
+  (function(){
+    const interpreterInput=document.getElementById('interpreter-input');
+    const percyConsole=document.getElementById('percy-console');
+    const askButton=document.getElementById('askPercyButton');
 
-  function appendConsole(text,isUser=false,exec=false){
-    const line=document.createElement('div');
-    line.className='console-line '+(isUser?'ask':'') + (exec?' exec':'' );
-    line.textContent=(isUser? '↳ ' : '')+text;
-    percyConsole.appendChild(line);
-    percyConsole.scrollTop=percyConsole.scrollHeight;
-  }
-
-  function runPercyCommand(){
-    const query=interpreterInput.value.trim();
-    if(query){
-      appendConsole(query,true); // user input
-      let response="";
-      if(typeof percyRespond==='function'){
-        response=percyRespond(query);
-      } else if(window.Percy && typeof Percy.interpret==='function'){
-        response=Percy.interpret(query);
-      }
-      if(response){
-        appendConsole(response,false,false);
-        if(Percy && typeof Percy.speak==='function') Percy.speak(response);
-      }
-      interpreterInput.value='';
+    function appendConsole(text,isUser=false,exec=false){
+      const line=document.createElement('div');
+      line.className='console-line '+(isUser?'ask':'') + (exec?' exec':'' );
+      line.textContent=(isUser? '↳ ' : '')+text;
+      percyConsole.appendChild(line);
+      percyConsole.scrollTop=percyConsole.scrollHeight;
     }
-  }
 
-  if(interpreterInput) interpreterInput.addEventListener('keydown',e=>{ if(e.key==='Enter') runPercyCommand(); });
-  if(askButton) askButton.addEventListener('click',runPercyCommand);
-})();
+    function runPercyCommand(){
+      const query=interpreterInput.value.trim();
+      if(query){
+        appendConsole(query,true);
+        let response="";
+        if(typeof percyRespond==='function') response=percyRespond(query);
+        else if(window.Percy && typeof Percy.interpret==='function') response=Percy.interpret(query);
+        if(response){
+          appendConsole(response,false,false);
+          if(Percy && typeof Percy.speak==='function') Percy.speak(response);
+        }
+        interpreterInput.value='';
+      }
+    }
 
-/* === Part H Exec Input (Advanced Math/Java/Tools) with toggle === */
-(function(){
-  const execInput = document.getElementById('percy-exec-input');
-  const execBtn = document.getElementById('percy-exec-run');
-  const consoleDiv = document.getElementById('percy-console');
-  const toggleBtns = document.querySelectorAll('#exec-toggle button');
+    if(interpreterInput) interpreterInput.addEventListener('keydown',e=>{ if(e.key==='Enter') runPercyCommand(); });
+    if(askButton) askButton.addEventListener('click',runPercyCommand);
+  })();
+  </script>
 
-  if(!execInput) return;
+  <!-- Percy Exec -->
+  <script>
+  (function(){
+    const execInput = document.getElementById('percy-exec-input');
+    const execBtn = document.getElementById('percy-exec-run');
+    const consoleDiv = document.getElementById('percy-console');
+    const toggleBtns = document.querySelectorAll('#exec-toggle button');
+    if(!execInput) return;
 
-  let PercyExecMode = "math"; // default mode
+    let PercyExecMode = "math";
 
-  toggleBtns.forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      toggleBtns.forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      PercyExecMode = btn.dataset.mode;
+    toggleBtns.forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        toggleBtns.forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        PercyExecMode = btn.dataset.mode;
+      });
     });
-  });
 
-  async function handleExecInput(){
-    const query = execInput.value.trim();
-    if(!query) return;
-    execInput.value = "";
+    async function handleExecInput(){
+      const query = execInput.value.trim();
+      if(!query) return;
+      execInput.value = "";
+      const userLine = document.createElement("div");
+      userLine.className = "console-line ask";
+      userLine.textContent = "↳ " + query;
+      consoleDiv.appendChild(userLine);
 
-    const userLine = document.createElement("div");
-    userLine.className = "console-line ask";
-    userLine.textContent = "↳ " + query;
-    consoleDiv.appendChild(userLine);
+      let output = "";
+      if(PercyExecMode === "math") output = await PercyState.useTool("math", query);
+      else if(PercyExecMode === "java") output = PercyState.PartF?.rewriteSelf("H", "Integrate Java snippet", {code: query, apply:false}) || "⚠️ Percy Part F not loaded.";
+      else if(PercyExecMode === "tools") output = await PercyState.PartH?.routeInput(query) || "⚠️ Percy Part H not loaded.";
 
-    let output = "";
-    if(PercyExecMode === "math"){
-      output = await PercyState.useTool("math", query);
-    } else if(PercyExecMode === "java"){
-      output = PercyState.PartF?.rewriteSelf("H", "Integrate Java snippet", {code: query, apply:false}) || "⚠️ Percy Part F not loaded.";
-    } else if(PercyExecMode === "tools"){
-      output = await PercyState.PartH?.routeInput(query) || "⚠️ Percy Part H not loaded.";
+      const percyLine = document.createElement("div");
+      percyLine.className = "console-line exec";
+      percyLine.textContent = "🤖 " + output;
+      consoleDiv.appendChild(percyLine);
+      consoleDiv.scrollTop = consoleDiv.scrollHeight;
     }
 
-    const percyLine = document.createElement("div");
-    percyLine.className = "console-line exec";
-    percyLine.textContent = "🤖 " + output;
-    consoleDiv.appendChild(percyLine);
-    consoleDiv.scrollTop = consoleDiv.scrollHeight;
-  }
+    execInput.addEventListener("keydown", async e=>{
+      if(e.key==="Enter"){ e.preventDefault(); await handleExecInput(); }
+    });
+    if(execBtn) execBtn.addEventListener("click", handleExecInput);
+  })();
+  </script>
 
-  execInput.addEventListener("keydown", async e=>{
-    if(e.key==="Enter"){ e.preventDefault(); await handleExecInput(); }
-  });
+  <!-- Voice Visualizer -->
+  <script>
+  (function(){
+    const canvas = document.getElementById('voice-canvas');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
 
-  if(execBtn) execBtn.addEventListener("click", handleExecInput);
-})();
+    function resizeCanvas(){ canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight; }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
 
-/* === Voice Visualizer (Bars + Waveform) === */
-(function(){
-  const canvas = document.getElementById('voice-canvas');
-  if(!canvas) return;
-  const ctx = canvas.getContext('2d');
+    let audioCtx, analyser, dataArrayFreq, dataArrayWave;
 
-  function resizeCanvas(){
-    canvas.width = canvas.clientWidth;
-    canvas.height = canvas.clientHeight;
-  }
-  resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
+    async function initAudio(){
+      if(audioCtx) return;
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256;
 
-  let audioCtx, analyser, dataArrayFreq, dataArrayWave;
+        const bufferLength = analyser.frequencyBinCount;
+        dataArrayFreq = new Uint8Array(bufferLength);
+        dataArrayWave = new Uint8Array(bufferLength);
 
-  async function initAudio(){
-    if(audioCtx) return;
-    try {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 256;
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const source = audioCtx.createMediaStreamSource(stream);
+        source.connect(analyser);
 
-      const bufferLength = analyser.frequencyBinCount;
-      dataArrayFreq = new Uint8Array(bufferLength);
-      dataArrayWave = new Uint8Array(bufferLength);
-
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const source = audioCtx.createMediaStreamSource(stream);
-      source.connect(analyser);
-
-      draw(); // start visualization
-    } catch(err) {
-      console.error("🎤 Microphone access denied:", err);
-    }
-  }
-
-  function draw(){
-    requestAnimationFrame(draw);
-
-    if(!analyser) return;
-
-    const WIDTH = canvas.width;
-    const HEIGHT = canvas.height;
-
-    ctx.clearRect(0,0,WIDTH,HEIGHT);
-
-    // Bars
-    analyser.getByteFrequencyData(dataArrayFreq);
-    const barWidth = WIDTH / dataArrayFreq.length;
-    for(let i=0;i<dataArrayFreq.length;i++){
-      const barHeight = dataArrayFreq[i]/255 * HEIGHT;
-      ctx.fillStyle = `rgb(${dataArrayFreq[i]},${255-dataArrayFreq[i]},255)`;
-      ctx.fillRect(i*barWidth, HEIGHT-barHeight, barWidth*0.6, barHeight);
+        draw();
+      } catch(err){ console.error("🎤 Microphone access denied:", err); }
     }
 
-    // Waveform
-    analyser.getByteTimeDomainData(dataArrayWave);
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(0,255,255,0.8)';
-    ctx.beginPath();
-    const sliceWidth = WIDTH / dataArrayWave.length;
-    let x = 0;
-    for(let i=0;i<dataArrayWave.length;i++){
-      const v = dataArrayWave[i]/128.0;
-      const y = v * HEIGHT/2;
-      if(i===0) ctx.moveTo(x,y);
-      else ctx.lineTo(x,y);
-      x += sliceWidth;
-    }
-    ctx.stroke();
-  }
+    function draw(){
+      requestAnimationFrame(draw);
+      if(!analyser) return;
 
-  // init audio on first user interaction anywhere
-  ['click','keydown','touchstart'].forEach(evt => {
-    window.addEventListener(evt, initAudio, {once:true, passive:true});
-  });
-})();
-</script>
+      const WIDTH = canvas.width;
+      const HEIGHT = canvas.height;
+      ctx.clearRect(0,0,WIDTH,HEIGHT);
+
+      analyser.getByteFrequencyData(dataArrayFreq);
+      const barWidth = WIDTH / dataArrayFreq.length;
+      for(let i=0;i<dataArrayFreq.length;i++){
+        const barHeight = dataArrayFreq[i]/255 * HEIGHT;
+        ctx.fillStyle = `rgb(${dataArrayFreq[i]},${255-dataArrayFreq[i]},255)`;
+        ctx.fillRect(i*barWidth, HEIGHT-barHeight, barWidth*0.6, barHeight);
+      }
+
+      analyser.getByteTimeDomainData(dataArrayWave);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(0,255,255,0.8)';
+      ctx.beginPath();
+      let x=0;
+      const sliceWidth = WIDTH / dataArrayWave.length;
+      for(let i=0;i<dataArrayWave.length;i++){
+        const v = dataArrayWave[i]/128.0;
+        const y = v * HEIGHT/2;
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        x += sliceWidth;
+      }
+      ctx.stroke();
+    }
+
+    ['click','keydown','touchstart'].forEach(evt => {
+      window.addEventListener(evt, initAudio, {once:true, passive:true});
+    });
+  })();
+  </script>
 
 </body>
 </html>
