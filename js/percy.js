@@ -1238,7 +1238,7 @@ if (typeof PercyState !== "undefined") {
   };
 }
 
-/* === percy.js (Part H — MCP Toolkit Integration + Mode Toggle, Cleaned) === */
+/* === percy.js (Part H — MCP Toolkit Integration + Mode Toggle, with Java Executor) === */
 if (typeof PercyState !== 'undefined') {
 
   // Percy’s Tool Registry
@@ -1319,6 +1319,28 @@ if (typeof PercyState !== 'undefined') {
     description: "Evaluates math, physics, trig, factorials, ln, summations, derivatives."
   });
 
+  // === Java Tool ===
+  PercyState.registerTool("java", async (code) => {
+    try {
+      if (!/class\s+\w+/.test(code)) {
+        code = `
+        public class PercyTool {
+          public static void main(String[] args) {
+            ${code.includes("System.out") ? code : `System.out.println(${code});`}
+          }
+        }`;
+      }
+      if (typeof Percy.runJava === "function") {
+        return await Percy.runJava(code, "PercyTool");
+      }
+      return "⚠️ Percy.runJava not available. Please define it in your Node/Electron backend.";
+    } catch (err) {
+      return "❌ Java tool error: " + err.message;
+    }
+  }, {
+    description: "Compiles and runs Java snippets dynamically."
+  });
+
   /* === Percy Part H Add-on: Universal Ask Percy Router (Advanced) === */
   PercyState.PartH = PercyState.PartH || {};
   PercyState.log = PercyState.log || function(msg) { console.log("[Percy]", msg); };
@@ -1345,30 +1367,12 @@ if (typeof PercyState !== 'undefined') {
     const modeSelect = document.querySelector("#percy-mode");
     const mode = modeSelect ? modeSelect.value : "auto";
 
-    // Forced modes
     if (mode === "math") {
-      try {
-        let result = await PercyState.useTool("math", input);
-        PercyState.log(`🧮 [Math Mode] ${input} = ${result}`);
-        return result;
-      } catch (err) {
-        return "⚠️ Math evaluation failed.";
-      }
+      return PercyState.useTool("math", input);
     }
 
     if (mode === "java") {
-      if (typeof PercyState.rewriteSelf === "function") {
-        PercyState.log("📝 [Java Mode] Forwarding snippet to Part F self-rewrite.");
-        try {
-          let result = await PercyState.rewriteSelf("F", "Integrate Java snippet", {
-            code: input, apply: false
-          });
-          return result || "⚠️ Java execution returned nothing.";
-        } catch (err) {
-          return "⚠️ Java execution failed.";
-        }
-      }
-      return "⚠️ Percy Part F not loaded.";
+      return PercyState.useTool("java", input);
     }
 
     if (mode === "tools") {
@@ -1393,12 +1397,7 @@ if (typeof PercyState !== 'undefined') {
         return PercyState.useTool("math", input);
       }
       if (PercyState.PartH.isJava(input)) {
-        if (typeof PercyState.rewriteSelf === "function") {
-          return PercyState.rewriteSelf("F", "Integrate Java snippet", {
-            code: input, apply: false
-          });
-        }
-        return "⚠️ Percy Part F not loaded.";
+        return PercyState.useTool("java", input);
       }
       if (PercyState.PartH.isToolCommand(input)) {
         let toolName = input.replace(/^make tool\s*/i, "").trim() || "customTool";
@@ -1455,7 +1454,39 @@ if (typeof PercyState !== 'undefined') {
 
   setTimeout(() => PercyState.PartH.hookAskPercy(), 1500);
 
-  UI.say("🔌 Percy Part H (Toolkit + Universal Router + Advanced Math/Code/Tools) loaded.");
+  UI.say("🔌 Percy Part H (Toolkit + Universal Router + Math + Java + Tools) loaded.");
+
+  /* === Percy Java Executor Backend Helper === */
+  if (typeof require !== "undefined") {
+    try {
+      const { exec } = require("child_process");
+      const fs = require("fs");
+      const path = require("path");
+
+      Percy.runJava = async function(javaCode, className="PercyTool") {
+        return new Promise((resolve, reject) => {
+          try {
+            const javaFile = path.join(__dirname, `${className}.java`);
+            fs.writeFileSync(javaFile, javaCode);
+
+            exec(`javac ${javaFile}`, (err, stdout, stderr) => {
+              if (err) return reject(`Compile Error:\n${stderr}`);
+
+              exec(`java -cp ${__dirname} ${className}`, (err2, stdout2, stderr2) => {
+                if (err2) return reject(`Runtime Error:\n${stderr2}`);
+                resolve(stdout2.trim());
+              });
+            });
+          } catch (e) {
+            reject("Java execution failed: " + e.message);
+          }
+        });
+      };
+      PercyState.log("☕ Java backend helper loaded.");
+    } catch (err) {
+      PercyState.log("⚠️ Java backend helper not available in this environment.");
+    }
+  }
 
 } else {
   console.error("❌ PercyState not found; cannot load Part H.");
