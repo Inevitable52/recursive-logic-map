@@ -1319,27 +1319,53 @@ if (typeof PercyState !== 'undefined') {
     description: "Evaluates math, physics, trig, factorials, ln, summations, derivatives."
   });
 
-  // === Java Tool ===
-  PercyState.registerTool("java", async (code) => {
-    try {
-      if (!/class\s+\w+/.test(code)) {
-        code = `
-        public class PercyTool {
-          public static void main(String[] args) {
-            ${code.includes("System.out") ? code : `System.out.println(${code});`}
-          }
-        }`;
-      }
-      if (typeof Percy.runJava === "function") {
-        return await Percy.runJava(code, "PercyTool");
-      }
-      return "⚠️ Percy.runJava not available. Please define it in your Node/Electron backend.";
-    } catch (err) {
-      return "❌ Java tool error: " + err.message;
+// === Java Tool (browser-side handler with WS fallback) ===
+PercyState.registerTool("java", async (code) => {
+  try {
+    // If the environment provides a direct Percy.runJava helper (Node/Electron), use it
+    if (typeof Percy !== "undefined" && typeof Percy.runJava === "function") {
+      return await Percy.runJava(code, "PercyTool");
     }
-  }, {
-    description: "Compiles and runs Java snippets dynamically."
-  });
+
+    // Otherwise fallback to WebSocket to local server (Computer Percy)
+    const payload = JSON.stringify({ action: "runJava", params: { code } });
+    return await new Promise((resolve) => {
+      try {
+        const ws = new WebSocket("ws://localhost:8787");
+        const timeout = setTimeout(() => {
+          try { ws.close(); } catch(e){}
+          resolve("⚠️ runJava timeout or Percy Puppeteer server not available.");
+        }, 25000);
+
+        ws.onopen = () => { ws.send(payload); };
+        ws.onmessage = (ev) => {
+          clearTimeout(timeout);
+          try {
+            const data = JSON.parse(ev.data);
+            if (data.result === "OK") resolve(data.output || "");
+            else if (data.result === "Compile Error" || data.result === "Runtime Error") resolve(`⚠️ ${data.result}:\n${data.error}`);
+            else resolve(data.result || JSON.stringify(data));
+          } catch (e) {
+            resolve(String(ev.data));
+          } finally {
+            try { ws.close(); } catch(e){}
+          }
+        };
+        ws.onerror = (err) => {
+          clearTimeout(timeout);
+          resolve("⚠️ WebSocket error connecting to local Percy server.");
+        };
+      } catch (err) {
+        resolve("⚠️ Failed to contact local Percy server for Java execution.");
+      }
+    });
+
+  } catch (err) {
+    return "❌ Java tool error: " + err.message;
+  }
+}, {
+  description: "Compiles and runs Java snippets dynamically (uses local server fallback)."
+});
 
   /* === Percy Part H Add-on: Universal Ask Percy Router (Advanced) === */
   PercyState.PartH = PercyState.PartH || {};
