@@ -102,39 +102,19 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
 
   async function handleExecInput(){
     const query=execInput.value.trim(); if(!query) return; execInput.value="";
-    const userLine=document.createElement("div"); userLine.className="console-line ask"; userLine.textContent="↳ "+query;
+    const userLine=document.createElement("div");
+    userLine.className="console-line ask";
+    userLine.textContent="↳ "+query;
     consoleDiv.appendChild(userLine);
 
     let output="";
 
     if(PercyExecMode==="math") {
-      output=await PercyState.useTool("math",query);
+      output = await PercyState.useTool("math", query);
     }
     else if(PercyExecMode==="java"){
-  // Persistent Java REPL context
-  window.percyJavaContext = window.percyJavaContext || { vars:{} };
-  try{
-    // Treat input as one whole chunk instead of splitting by semicolon
-    const lines = [query];
-    for(const line of lines){
-      try {
-        // Try to evaluate as an expression
-        const result = Function('"use strict"; with(window.percyJavaContext.vars){ return (' + line + ') }')();
-        output += `🤖 ${line} = ${result}\n`;
-      } catch(e) {
-        // If that fails, attempt to run as a statement (assignment, function, etc.)
-        try {
-          Function('"use strict"; with(window.percyJavaContext.vars){ ' + line + ' }')();
-          output += `✅ Executed: ${line}\n`;
-        } catch(err) {
-          output += `⚠️ Could not evaluate line: ${line}\n`;
-        }
-      }
+      output = await PercyState.useTool("java", query);
     }
-  } catch(e){
-    output = "⚠️ Java REPL error: " + e.message;
-  }
-}
     else if(PercyExecMode==="tools") {
       output = await PercyState.PartH?.routeInput(query) || "⚠️ Percy Part H not loaded.";
     }
@@ -146,7 +126,9 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
     consoleDiv.scrollTop=consoleDiv.scrollHeight;
   }
 
-  execInput.addEventListener("keydown",async e=>{ if(e.key==="Enter"){ e.preventDefault(); await handleExecInput(); } });
+  execInput.addEventListener("keydown",async e=>{
+    if(e.key==="Enter"){ e.preventDefault(); await handleExecInput(); }
+  });
   execBtn.addEventListener("click",handleExecInput);
 })();
 </script>
