@@ -1496,10 +1496,6 @@ if (typeof require !== "undefined") {
 } else {
   console.error("❌ PercyState not found; cannot load Part H.");
 }
-  
-} else {
-  console.error("❌ PercyState not found; cannot load Part H.");
-}
 
 /* === Percy Part I: Introspective & Strategic Reasoning Engine === */
 if (typeof PercyState !== 'undefined') {
