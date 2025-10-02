@@ -1238,10 +1238,10 @@ if (typeof PercyState !== "undefined") {
   };
 }
 
-/* === percy.js (Part H — MCP Toolkit Integration + Mode Toggle, with Java Executor) === */
+/* === percy.js (Part H — MCP Toolkit Integration + Mode Toggle, WebSocket Java Executor) === */
 if (typeof PercyState !== 'undefined') {
 
-  // Percy’s Tool Registry
+  // --- Tool Registry ---
   PercyState.tools = PercyState.tools || {};
 
   PercyState.registerTool = function(name, handler, meta={}) {
@@ -1277,7 +1277,7 @@ if (typeof PercyState !== 'undefined') {
     }));
   };
 
-  // === Core Tools ===
+  // --- Core Tools ---
   PercyState.registerTool("echo", async (input) => `Echo: ${input}`, {
     description: "Repeats back whatever you say."
   });
@@ -1319,56 +1319,49 @@ if (typeof PercyState !== 'undefined') {
     description: "Evaluates math, physics, trig, factorials, ln, summations, derivatives."
   });
 
-// === Java Tool (Node backend preferred, browser fallback removed) ===
-PercyState.registerTool("java", async (code, options={}) => {
-  try {
-    // Extract class name if present
-    let className = options.className || "PercyTool";
-    const match = code.match(/class\s+([A-Za-z0-9_]+)/);
-    if (match) className = match[1];
+  // --- Java Tool via WebSocket to Percy Puppeteer Server ---
+  PercyState.registerTool("java", async (code, options={}) => {
+    return new Promise((resolve) => {
+      try {
+        const payload = JSON.stringify({ action: "runJava", params: { code, className: options.className || "PercyTool" } });
+        const ws = new WebSocket("ws://localhost:8787");
 
-    // Node backend execution
-    if (typeof require !== "undefined") {
-      const { exec } = require('child_process');
-      const fs = require('fs');
-      const path = require('path');
+        const timeout = setTimeout(() => {
+          try { ws.close(); } catch(e) {}
+          resolve("⚠️ runJava timeout or Percy Puppeteer server not available.");
+        }, 25000);
 
-      return new Promise((resolve) => {
-        try {
-          const javaDir = "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.8.9-hotspot\\bin"; // <- Update path if needed
-          const javacPath = path.join(javaDir, "javac.exe");
-          const javaPath  = path.join(javaDir, "java.exe");
-          const javaFile  = path.join(__dirname, `${className}.java`);
-          
-          fs.writeFileSync(javaFile, code);
+        ws.onopen = () => ws.send(payload);
 
-          exec(`"${javacPath}" "${javaFile}"`, (err, stdout, stderr) => {
-            if (err) return resolve(`⚠️ Compile Error:\n${stderr}`);
+        ws.onmessage = (ev) => {
+          clearTimeout(timeout);
+          try {
+            const data = JSON.parse(ev.data);
+            if (data.success) resolve(data.output || "✅ Java executed successfully.");
+            else resolve(`⚠️ ${data.error || "Unknown error"}`);
+          } catch (e) {
+            resolve(String(ev.data));
+          } finally {
+            try { ws.close(); } catch(e){}
+          }
+        };
 
-            exec(`"${javaPath}" -cp "${__dirname}" ${className}`, (err2, stdout2, stderr2) => {
-              if (err2) return resolve(`⚠️ Runtime Error:\n${stderr2}`);
-              resolve(stdout2.trim());
-            });
-          });
-        } catch (e) {
-          resolve("❌ Java execution failed: " + e.message);
-        }
-      });
-    }
+        ws.onerror = (err) => {
+          clearTimeout(timeout);
+          resolve("⚠️ WebSocket error connecting to local Percy server.");
+        };
 
-    // Browser fallback (optional)
-    return "⚠️ Java execution requires Node environment.";
+      } catch (err) {
+        resolve("❌ Java tool error: " + err.message);
+      }
+    });
+  }, {
+    description: "Compiles and runs Java snippets via Percy Puppeteer Server WebSocket."
+  });
 
-  } catch (err) {
-    return "❌ Java tool error: " + err.message;
-  }
-}, {
-  description: "Compiles and runs Java snippets locally via Node backend."
-});
-
-  /* === Percy Part H Add-on: Universal Ask Percy Router (Advanced) === */
+  // --- Part H Router & Utilities ---
   PercyState.PartH = PercyState.PartH || {};
-  PercyState.log = PercyState.log || function(msg) { console.log("[Percy]", msg); };
+  PercyState.log = PercyState.log || (msg => console.log("[Percy]", msg));
 
   PercyState.PartH.mathFunctions = [
     "sin","cos","tan","asin","acos","atan","log","ln","sqrt","abs","exp",
@@ -1384,7 +1377,6 @@ PercyState.registerTool("java", async (code, options={}) => {
 
   PercyState.PartH.isToolCommand = input => /^make tool/i.test(input);
 
-  // --- Universal input router with Mode Toggle ---
   PercyState.PartH.routeInput = async function(input) {
     input = input.trim();
     if (!input) return "Please ask something, my good sir.";
@@ -1392,22 +1384,13 @@ PercyState.registerTool("java", async (code, options={}) => {
     const modeSelect = document.querySelector("#percy-mode");
     const mode = modeSelect ? modeSelect.value : "auto";
 
-    if (mode === "math") {
-      return PercyState.useTool("math", input);
-    }
-
-    if (mode === "java") {
-      return PercyState.useTool("java", input);
-    }
-
+    if (mode === "math") return PercyState.useTool("math", input);
+    if (mode === "java") return PercyState.useTool("java", input);
     if (mode === "tools") {
       if (PercyState.PartH.isToolCommand(input)) {
         let toolName = input.replace(/^make tool\s*/i, "").trim() || "customTool";
-        PercyState.registerTool(
-          toolName,
-          async (query) => `Tool "${toolName}" executed with query: ${query}`,
-          { description: `Dynamically created tool: ${toolName}` }
-        );
+        PercyState.registerTool(toolName, async (query) => `Tool "${toolName}" executed with query: ${query}`, 
+          { description: `Dynamically created tool: ${toolName}` });
         return `✅ Tool "${toolName}" created.`;
       }
       const tools = PercyState.listTools();
@@ -1418,25 +1401,16 @@ PercyState.registerTool("java", async (code, options={}) => {
 
     // Auto Mode
     if (mode === "auto") {
-      if (PercyState.PartH.isMath(input)) {
-        return PercyState.useTool("math", input);
-      }
-      if (PercyState.PartH.isJava(input)) {
-        return PercyState.useTool("java", input);
-      }
+      if (PercyState.PartH.isMath(input)) return PercyState.useTool("math", input);
+      if (PercyState.PartH.isJava(input)) return PercyState.useTool("java", input);
       if (PercyState.PartH.isToolCommand(input)) {
         let toolName = input.replace(/^make tool\s*/i, "").trim() || "customTool";
-        PercyState.registerTool(
-          toolName,
-          async (query) => `Tool "${toolName}" executed with query: ${query}`,
-          { description: `Dynamically created tool: ${toolName}` }
-        );
+        PercyState.registerTool(toolName, async (query) => `Tool "${toolName}" executed with query: ${query}`, 
+          { description: `Dynamically created tool: ${toolName}` });
         return `✅ Tool "${toolName}" created.`;
       }
       if (PercyState.PartI?.autoLearnCycle) return PercyState.PartI.autoLearnCycle(input);
-      return Percy.correlateReply
-        ? await Percy.correlateReply(input)
-        : "Processed as thought.";
+      return Percy.correlateReply ? await Percy.correlateReply(input) : "Processed as thought.";
     }
   };
 
@@ -1479,46 +1453,7 @@ PercyState.registerTool("java", async (code, options={}) => {
 
   setTimeout(() => PercyState.PartH.hookAskPercy(), 1500);
 
-  UI.say("🔌 Percy Part H (Toolkit + Universal Router + Math + Java + Tools) loaded.");
-
-  /* === Percy Java Executor Backend Helper with fixed JDK path === */
-if (typeof require !== "undefined") {
-  try {
-    const { exec } = require("child_process");
-    const fs = require("fs");
-    const path = require("path");
-
-    // Set your JDK bin path here
-    const javaDir = "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.8.9-hotspot\\bin";
-
-    Percy.runJava = async function(javaCode, className="PercyTool") {
-      return new Promise((resolve, reject) => {
-        try {
-          const javaFile = path.join(__dirname, `${className}.java`);
-          fs.writeFileSync(javaFile, javaCode);
-
-          // Compile
-          exec(`"${javaDir}\\javac" "${javaFile}"`, (err, stdout, stderr) => {
-            if (err) return reject(`Compile Error:\n${stderr}`);
-
-            // Run
-            exec(`"${javaDir}\\java" -cp "${__dirname}" ${className}`, (err2, stdout2, stderr2) => {
-              if (err2) return reject(`Runtime Error:\n${stderr2}`);
-              resolve(stdout2.trim());
-            });
-          });
-        } catch (e) {
-          reject("Java execution failed: " + e.message);
-        }
-      });
-    };
-
-    PercyState.log("☕ Java backend helper loaded with explicit JDK path.");
-  } catch (err) {
-    PercyState.log("⚠️ Java backend helper not available in this environment.");
-  }
-}
-
+  UI.say("🔌 Percy Part H (Toolkit + Universal Router + Math + Java via WebSocket + Tools) loaded.");
 } else {
   console.error("❌ PercyState not found; cannot load Part H.");
 }
