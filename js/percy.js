@@ -1481,37 +1481,43 @@ PercyState.registerTool("java", async (code, options={}) => {
 
   UI.say("🔌 Percy Part H (Toolkit + Universal Router + Math + Java + Tools) loaded.");
 
-  /* === Percy Java Executor Backend Helper === */
-  if (typeof require !== "undefined") {
-    try {
-      const { exec } = require("child_process");
-      const fs = require("fs");
-      const path = require("path");
+  /* === Percy Java Executor Backend Helper (Updated Path for Eclipse Adoptium) === */
+if (typeof require !== "undefined") {
+  try {
+    const { exec } = require("child_process");
+    const fs = require("fs");
+    const path = require("path");
 
-      Percy.runJava = async function(javaCode, className="PercyTool") {
-        return new Promise((resolve, reject) => {
-          try {
-            const javaFile = path.join(__dirname, `${className}.java`);
-            fs.writeFileSync(javaFile, javaCode);
+    // Full path to your Eclipse Adoptium JDK bin
+    const javaDir = "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.8.9-hotspot\\bin";
 
-            exec(`javac ${javaFile}`, (err, stdout, stderr) => {
-              if (err) return reject(`Compile Error:\n${stderr}`);
+    Percy.runJava = async function(javaCode, className="PercyTool") {
+      return new Promise((resolve, reject) => {
+        try {
+          const javaFile = path.join(__dirname, `${className}.java`);
+          fs.writeFileSync(javaFile, javaCode);
 
-              exec(`java -cp ${__dirname} ${className}`, (err2, stdout2, stderr2) => {
-                if (err2) return reject(`Runtime Error:\n${stderr2}`);
-                resolve(stdout2.trim());
-              });
+          // Compile with full path to javac
+          exec(`"${javaDir}\\javac" "${javaFile}"`, (err, stdout, stderr) => {
+            if (err) return reject(`Compile Error:\n${stderr}`);
+
+            // Run with full path to java
+            exec(`"${javaDir}\\java" -cp "${__dirname}" ${className}`, (err2, stdout2, stderr2) => {
+              if (err2) return reject(`Runtime Error:\n${stderr2}`);
+              resolve(stdout2.trim());
             });
-          } catch (e) {
-            reject("Java execution failed: " + e.message);
-          }
-        });
-      };
-      PercyState.log("☕ Java backend helper loaded.");
-    } catch (err) {
-      PercyState.log("⚠️ Java backend helper not available in this environment.");
-    }
+          });
+        } catch (e) {
+          reject("Java execution failed: " + e.message);
+        }
+      });
+    };
+
+    PercyState.log("☕ Java backend helper loaded (Eclipse Adoptium path).");
+  } catch (err) {
+    PercyState.log("⚠️ Java backend helper not available in this environment.");
   }
+}
 
 } else {
   console.error("❌ PercyState not found; cannot load Part H.");
