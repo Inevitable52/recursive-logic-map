@@ -1320,11 +1320,15 @@ if (typeof PercyState !== 'undefined') {
   });
 
 // === Java Tool (browser-side handler with WS fallback) ===
-PercyState.registerTool("java", async (code) => {
+PercyState.registerTool("java", async (code, options={}) => {
   try {
-    // If the environment provides a direct Percy.runJava helper (Node/Electron), use it
+    // Extract class name if present
+    let className = options.className || "PercyTool";
+    const match = code.match(/class\s+([A-Za-z0-9_]+)/);
+    if (match) className = match[1];
+
     if (typeof Percy !== "undefined" && typeof Percy.runJava === "function") {
-      return await Percy.runJava(code, "PercyTool");
+      return await Percy.runJava(code, className);
     }
 
     // Otherwise fallback to WebSocket to local server (Computer Percy)
