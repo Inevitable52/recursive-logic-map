@@ -1335,7 +1335,7 @@ PercyState.registerTool("java", async (code, options={}) => {
 
       return new Promise((resolve) => {
         try {
-          const javaDir = options.javaDir || "C:\\Program Files\\Java\\jdk-21.0.8.9-hotspot\\bin"; // <- Update path if needed
+          const javaDir = "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.8.9-hotspot\\bin"; // <- Update path if needed
           const javacPath = path.join(javaDir, "javac.exe");
           const javaPath  = path.join(javaDir, "java.exe");
           const javaFile  = path.join(__dirname, `${className}.java`);
