@@ -102,56 +102,64 @@ wss.on('connection', ws => {
 
         // === NEW: Run Java Action ===
         case 'runJava': {
-          const code = params.code ? String(params.code) : "";
-          if (!code) {
-            ws.send(JSON.stringify({success:false,error:"Missing Java code"}));
-            break;
-          }
-
-          // Temp directory for this run
-          const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'percy-java-'));
-          const className = (params.className && /^[A-Za-z_]\w*$/.test(params.className))
-            ? params.className : `PercyTool${Date.now()}`;
-          const javaFilePath = path.join(tmpDir, `${className}.java`);
-
-          // Wrap if no class declared
-          let finalSource = code;
-          if (!/class\s+\w+/.test(code)) {
-            finalSource = `public class ${className} {
-  public static void main(String[] args) {
-    ${code.includes("System.out") ? code : `System.out.println(${JSON.stringify(code)});`}
+  const code = params.code ? String(params.code) : "";
+  if (!code) {
+    ws.send(JSON.stringify({success:false,error:"Missing Java code"}));
+    break;
   }
-}`;
-          }
 
-          try {
-            fs.writeFileSync(javaFilePath, finalSource, 'utf8');
+  // Temp directory for this run
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'percy-java-'));
 
-            // Compile
-            exec(`javac "${javaFilePath}"`, { cwd: tmpDir, timeout: 20000 }, (compileErr, _, compileStderr) => {
-              if (compileErr) {
-                ws.send(JSON.stringify({success:false,error:`Compile Error: ${compileStderr}`}));
-                try { fs.rmSync(tmpDir, {recursive:true, force:true}); } catch{}
-                return;
-              }
+  // Try to detect class name from code
+  let className;
+  const match = code.match(/class\s+([A-Za-z_]\w*)/);
+  if (match) {
+    className = match[1]; // Use actual class name from the code
+  } else {
+    className = `PercyTool${Date.now()}`;
+  }
 
-              // Run
-              exec(`java -cp "${tmpDir}" ${className}`, { cwd: tmpDir, timeout: 20000, maxBuffer: 1024*1024 }, (runErr, runStdout, runStderr) => {
-                if (runErr) {
-                  ws.send(JSON.stringify({success:false,error:`Runtime Error: ${runStderr}`}));
-                } else {
-                  ws.send(JSON.stringify({success:true,result:'Java executed',output:String(runStdout).trim()}));
-                }
-                try { fs.rmSync(tmpDir, {recursive:true, force:true}); } catch{}
-              });
-            });
-          } catch (err) {
-            ws.send(JSON.stringify({success:false,error:`Internal Error: ${err.message}`}));
-            try { fs.rmSync(tmpDir, {recursive:true, force:true}); } catch{}
-          }
+  const javaFilePath = path.join(tmpDir, `${className}.java`);
 
-          break;
+  // Wrap if no class declared
+  let finalSource = code;
+  if (!/class\s+\w+/.test(code)) {
+    finalSource = `public class ${className} {
+      public static void main(String[] args) {
+        ${code.includes("System.out") ? code : `System.out.println(${JSON.stringify(code)});`}
+      }
+    }`;
+  }
+
+  try {
+    fs.writeFileSync(javaFilePath, finalSource, 'utf8');
+
+    // Compile
+    exec(`javac "${javaFilePath}"`, { cwd: tmpDir, timeout: 20000 }, (compileErr, _, compileStderr) => {
+      if (compileErr) {
+        ws.send(JSON.stringify({success:false,error:`Compile Error: ${compileStderr}`}));
+        try { fs.rmSync(tmpDir, {recursive:true, force:true}); } catch {}
+        return;
+      }
+
+      // Run using the detected className
+      exec(`java -cp "${tmpDir}" ${className}`, { cwd: tmpDir, timeout: 20000, maxBuffer: 1024*1024 }, (runErr, runStdout, runStderr) => {
+        if (runErr) {
+          ws.send(JSON.stringify({success:false,error:`Runtime Error: ${runStderr}`}));
+        } else {
+          ws.send(JSON.stringify({success:true,result:'Java executed',output:String(runStdout).trim()}));
         }
+        try { fs.rmSync(tmpDir, {recursive:true, force:true}); } catch {}
+      });
+    });
+  } catch (err) {
+    ws.send(JSON.stringify({success:false,error:`Internal Error: ${err.message}`}));
+    try { fs.rmSync(tmpDir, {recursive:true, force:true}); } catch {}
+  }
+
+  break;
+}
 
         default:
           ws.send(JSON.stringify({success:false,error:`Unknown action: ${action}`}));
