@@ -1465,27 +1465,31 @@ if (typeof require !== "undefined") {
     // Set your JDK bin path here
     const javaDir = "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.8.9-hotspot\\bin";
 
-    Percy.runJava = async function(javaCode, className="PercyTool") {
-      return new Promise((resolve, reject) => {
-        try {
-          const javaFile = path.join(__dirname, `${className}.java`);
-          fs.writeFileSync(javaFile, javaCode);
+   Percy.runJava = async function(javaCode, className) {
+  return new Promise((resolve, reject) => {
+    try {
+      // Extract class name from code if not explicitly provided
+      const match = javaCode.match(/class\s+([A-Za-z_]\w*)/);
+      const mainClass = className || (match ? match[1] : "PercyTool");
 
-          // Compile
-          exec(`"${javaDir}\\javac" "${javaFile}"`, (err, stdout, stderr) => {
-            if (err) return reject(`Compile Error:\n${stderr}`);
+      const javaFile = path.join(__dirname, `${mainClass}.java`);
+      fs.writeFileSync(javaFile, javaCode);
 
-            // Run
-            exec(`"${javaDir}\\java" -cp "${__dirname}" ${className}`, (err2, stdout2, stderr2) => {
-              if (err2) return reject(`Runtime Error:\n${stderr2}`);
-              resolve(stdout2.trim());
-            });
-          });
-        } catch (e) {
-          reject("Java execution failed: " + e.message);
-        }
+      // Compile
+      exec(`"${javaDir}\\javac" "${javaFile}"`, (err, stdout, stderr) => {
+        if (err) return reject(`Compile Error:\n${stderr}`);
+
+        // Run
+        exec(`"${javaDir}\\java" -cp "${__dirname}" ${mainClass}`, (err2, stdout2, stderr2) => {
+          if (err2) return reject(`Runtime Error:\n${stderr2}`);
+          resolve(stdout2.trim());
+        });
       });
-    };
+    } catch (e) {
+      reject("Java execution failed: " + e.message);
+    }
+  });
+};
 
     PercyState.log("☕ Java backend helper loaded with explicit JDK path.");
   } catch (err) {
