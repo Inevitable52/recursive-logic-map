@@ -1481,14 +1481,14 @@ PercyState.registerTool("java", async (code, options={}) => {
 
   UI.say("🔌 Percy Part H (Toolkit + Universal Router + Math + Java + Tools) loaded.");
 
-  /* === Percy Java Executor Backend Helper (Updated Path for Eclipse Adoptium) === */
+  /* === Percy Java Executor Backend Helper with fixed JDK path === */
 if (typeof require !== "undefined") {
   try {
     const { exec } = require("child_process");
     const fs = require("fs");
     const path = require("path");
 
-    // Full path to your Eclipse Adoptium JDK bin
+    // Set your JDK bin path here
     const javaDir = "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.8.9-hotspot\\bin";
 
     Percy.runJava = async function(javaCode, className="PercyTool") {
@@ -1497,11 +1497,11 @@ if (typeof require !== "undefined") {
           const javaFile = path.join(__dirname, `${className}.java`);
           fs.writeFileSync(javaFile, javaCode);
 
-          // Compile with full path to javac
+          // Compile
           exec(`"${javaDir}\\javac" "${javaFile}"`, (err, stdout, stderr) => {
             if (err) return reject(`Compile Error:\n${stderr}`);
 
-            // Run with full path to java
+            // Run
             exec(`"${javaDir}\\java" -cp "${__dirname}" ${className}`, (err2, stdout2, stderr2) => {
               if (err2) return reject(`Runtime Error:\n${stderr2}`);
               resolve(stdout2.trim());
@@ -1513,7 +1513,7 @@ if (typeof require !== "undefined") {
       });
     };
 
-    PercyState.log("☕ Java backend helper loaded (Eclipse Adoptium path).");
+    PercyState.log("☕ Java backend helper loaded with explicit JDK path.");
   } catch (err) {
     PercyState.log("⚠️ Java backend helper not available in this environment.");
   }
