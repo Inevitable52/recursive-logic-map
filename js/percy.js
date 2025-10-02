@@ -1319,7 +1319,7 @@ if (typeof PercyState !== 'undefined') {
     description: "Evaluates math, physics, trig, factorials, ln, summations, derivatives."
   });
 
-// === Java Tool (browser-side handler with WS fallback) ===
+// === Java Tool (Node backend preferred, browser fallback removed) ===
 PercyState.registerTool("java", async (code, options={}) => {
   try {
     // Extract class name if present
@@ -1327,48 +1327,43 @@ PercyState.registerTool("java", async (code, options={}) => {
     const match = code.match(/class\s+([A-Za-z0-9_]+)/);
     if (match) className = match[1];
 
-    if (typeof Percy !== "undefined" && typeof Percy.runJava === "function") {
-      return await Percy.runJava(code, className);
+    // Node backend execution
+    if (typeof require !== "undefined") {
+      const { exec } = require('child_process');
+      const fs = require('fs');
+      const path = require('path');
+
+      return new Promise((resolve) => {
+        try {
+          const javaDir = options.javaDir || "C:\\Program Files\\Java\\jdk-21.0.8.9-hotspot\\bin"; // <- Update path if needed
+          const javacPath = path.join(javaDir, "javac.exe");
+          const javaPath  = path.join(javaDir, "java.exe");
+          const javaFile  = path.join(__dirname, `${className}.java`);
+          
+          fs.writeFileSync(javaFile, code);
+
+          exec(`"${javacPath}" "${javaFile}"`, (err, stdout, stderr) => {
+            if (err) return resolve(`⚠️ Compile Error:\n${stderr}`);
+
+            exec(`"${javaPath}" -cp "${__dirname}" ${className}`, (err2, stdout2, stderr2) => {
+              if (err2) return resolve(`⚠️ Runtime Error:\n${stderr2}`);
+              resolve(stdout2.trim());
+            });
+          });
+        } catch (e) {
+          resolve("❌ Java execution failed: " + e.message);
+        }
+      });
     }
 
-    // Otherwise fallback to WebSocket to local server (Computer Percy)
-    const payload = JSON.stringify({ action: "runJava", params: { code } });
-    return await new Promise((resolve) => {
-      try {
-        const ws = new WebSocket("ws://localhost:8787");
-        const timeout = setTimeout(() => {
-          try { ws.close(); } catch(e){}
-          resolve("⚠️ runJava timeout or Percy Puppeteer server not available.");
-        }, 25000);
-
-        ws.onopen = () => { ws.send(payload); };
-        ws.onmessage = (ev) => {
-          clearTimeout(timeout);
-          try {
-            const data = JSON.parse(ev.data);
-            if (data.result === "OK") resolve(data.output || "");
-            else if (data.result === "Compile Error" || data.result === "Runtime Error") resolve(`⚠️ ${data.result}:\n${data.error}`);
-            else resolve(data.result || JSON.stringify(data));
-          } catch (e) {
-            resolve(String(ev.data));
-          } finally {
-            try { ws.close(); } catch(e){}
-          }
-        };
-        ws.onerror = (err) => {
-          clearTimeout(timeout);
-          resolve("⚠️ WebSocket error connecting to local Percy server.");
-        };
-      } catch (err) {
-        resolve("⚠️ Failed to contact local Percy server for Java execution.");
-      }
-    });
+    // Browser fallback (optional)
+    return "⚠️ Java execution requires Node environment.";
 
   } catch (err) {
     return "❌ Java tool error: " + err.message;
   }
 }, {
-  description: "Compiles and runs Java snippets dynamically (uses local server fallback)."
+  description: "Compiles and runs Java snippets locally via Node backend."
 });
 
   /* === Percy Part H Add-on: Universal Ask Percy Router (Advanced) === */
