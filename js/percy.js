@@ -1359,48 +1359,6 @@ if (typeof PercyState !== 'undefined') {
     description: "Compiles and runs Java snippets via Percy Puppeteer Server WebSocket."
   });
 
-  /* === Upgrade: Universal Tools Executor === */
-  PercyState.registerTool("toolsExec", async (code, options={}) => {
-    try {
-      const title = options.title || "Percy Tool Runner";
-      const win = window.open("", "_blank", "width=800,height=600,scrollbars=yes,resizable=yes");
-      if (!win) return "⚠️ Popup blocked. Please allow popups.";
-
-      win.document.open();
-      win.document.write(`
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="UTF-8">
-          <title>${title}</title>
-          <style>
-            body { margin:0; font-family:sans-serif; }
-            #output { padding:10px; }
-            canvas { display:block; margin:auto; }
-          </style>
-        </head>
-        <body>
-          <div id="output"></div>
-          <script>
-            try {
-              ${code}
-            } catch(e) {
-              document.getElementById("output").innerText = "❌ Error: " + e.message;
-            }
-          <\/script>
-        </body>
-        </html>
-      `);
-      win.document.close();
-
-      return \`✅ Code executed in new window: "\${title}"\`;
-    } catch (err) {
-      return "❌ toolsExec failed: " + err.message;
-    }
-  }, {
-    description: "Run raw JS/HTML in a sandbox popup window."
-  });
-
   // --- Part H Router & Utilities ---
   PercyState.PartH = PercyState.PartH || {};
   PercyState.log = PercyState.log || (msg => console.log("[Percy]", msg));
