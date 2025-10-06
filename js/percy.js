@@ -1600,22 +1600,17 @@ if (typeof PercyState !== 'undefined') {
   console.error("❌ PercyState not found; cannot load Part I.");
 }
 
-/* === Percy Part J: OpenAI Direct Integration ===
- * Purpose: Allow Percy to communicate directly with the OpenAI API
- *           without external workflow tools like n8n.
- * Logic: Handles configuration, message dispatch, and safe queuing.
- */
-
+/* === Percy Part J: OpenAI Direct Integration === */
 Percy.PartJ = {};
 
-/* Step 1: Configuration */
+/* 1. Configuration */
 Percy.PartJ.config = {
-  openaiApiKey: "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", // 🔐 Replace with your key
-  model: "gpt-4o-mini", // Can upgrade to "gpt-4o" for full power
+  openaiApiKey: "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", // 🔐
+  model: "gpt-4o-mini",
   endpoint: "https://api.openai.com/v1/chat/completions"
 };
 
-/* Step 2: Core Send Function */
+/* 2. Core Send Function */
 Percy.PartJ.sendToOpenAI = async function (input) {
   try {
     const response = await fetch(Percy.PartJ.config.endpoint, {
@@ -1627,7 +1622,7 @@ Percy.PartJ.sendToOpenAI = async function (input) {
       body: JSON.stringify({
         model: Percy.PartJ.config.model,
         messages: [
-          { role: "system", content: "You are Percy, a logical, evolving AI with reasoning and code integration abilities." },
+          { role: "system", content: "You are Percy, a logical, evolving AI." },
           { role: "user", content: input.message }
         ],
         temperature: 0.6
@@ -1635,15 +1630,17 @@ Percy.PartJ.sendToOpenAI = async function (input) {
     });
 
     const data = await response.json();
-    console.log("🤖 Percy (OpenAI) replied:", data);
-    return data.choices?.[0]?.message?.content || "No response received.";
+    const reply = data.choices?.[0]?.message?.content || "No response received.";
+    console.log("🤖 Percy (OpenAI) replied:", reply);
+    return reply;
+
   } catch (error) {
     console.error("❌ Percy OpenAI Error:", error);
     return "Error contacting OpenAI.";
   }
 };
 
-/* Step 3: Safe Queue Layer */
+/* 3. Safe Queue Layer */
 Percy.PartJ.safeSend = async function (input) {
   if (window._percyBusy) {
     console.log("⏳ Waiting for Percy’s previous task...");
@@ -1655,9 +1652,5 @@ Percy.PartJ.safeSend = async function (input) {
   return reply;
 };
 
-/* Example Usage:
- * Percy.PartJ.safeSend({ message: "What is the weather in Dallas?" });
- */
-
-console.log("✅ Percy Part J loaded: OpenAI direct integration ready.");
+console.log("✅ Percy Part J loaded — OpenAI Direct Integration ready.");
 /* === End Percy Part J === */
