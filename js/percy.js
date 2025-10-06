@@ -1599,3 +1599,65 @@ if (typeof PercyState !== 'undefined') {
 } else {
   console.error("❌ PercyState not found; cannot load Part I.");
 }
+
+/* === Percy Part J: OpenAI Direct Integration ===
+ * Purpose: Allow Percy to communicate directly with the OpenAI API
+ *           without external workflow tools like n8n.
+ * Logic: Handles configuration, message dispatch, and safe queuing.
+ */
+
+Percy.PartJ = {};
+
+/* Step 1: Configuration */
+Percy.PartJ.config = {
+  openaiApiKey: "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", // 🔐 Replace with your key
+  model: "gpt-4o-mini", // Can upgrade to "gpt-4o" for full power
+  endpoint: "https://api.openai.com/v1/chat/completions"
+};
+
+/* Step 2: Core Send Function */
+Percy.PartJ.sendToOpenAI = async function (input) {
+  try {
+    const response = await fetch(Percy.PartJ.config.endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${Percy.PartJ.config.openaiApiKey}`
+      },
+      body: JSON.stringify({
+        model: Percy.PartJ.config.model,
+        messages: [
+          { role: "system", content: "You are Percy, a logical, evolving AI with reasoning and code integration abilities." },
+          { role: "user", content: input.message }
+        ],
+        temperature: 0.6
+      })
+    });
+
+    const data = await response.json();
+    console.log("🤖 Percy (OpenAI) replied:", data);
+    return data.choices?.[0]?.message?.content || "No response received.";
+  } catch (error) {
+    console.error("❌ Percy OpenAI Error:", error);
+    return "Error contacting OpenAI.";
+  }
+};
+
+/* Step 3: Safe Queue Layer */
+Percy.PartJ.safeSend = async function (input) {
+  if (window._percyBusy) {
+    console.log("⏳ Waiting for Percy’s previous task...");
+    await new Promise(r => setTimeout(r, 2000));
+  }
+  window._percyBusy = true;
+  const reply = await Percy.PartJ.sendToOpenAI(input);
+  window._percyBusy = false;
+  return reply;
+};
+
+/* Example Usage:
+ * Percy.PartJ.safeSend({ message: "What is the weather in Dallas?" });
+ */
+
+console.log("✅ Percy Part J loaded: OpenAI direct integration ready.");
+/* === End Percy Part J === */
