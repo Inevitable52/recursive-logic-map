@@ -1964,62 +1964,91 @@ if (typeof PercyState !== "undefined") {
 /* === Percy Part L: Weighted Pattern Memory & Autonomous Inference === */
 Percy.PartL = {};
 
-Percy.PartL.Memory = Percy.PartK.Memory; // reuse existing memory
-Percy.PartL.GoalCore = Percy.PartK.GoalCore; // reuse goals
+/* --- 1. Core Memory System --- */
+Percy.PartL.Memory = Percy.PartK.Memory || {};
 
-// Pattern weights & relevance
-Percy.PartL.Patterns = []; // {text, weight, timestamp}
+if (!Percy.PartL.Memory.entries) Percy.PartL.Memory.entries = [];
 
-Percy.PartL.learn = function(text) {
+Percy.PartL.Memory.store = function (text) {
+  const entry = { text, timestamp: Date.now() };
+  this.entries.push(entry);
+  return entry;
+};
+
+Percy.PartL.Memory.search = function (keyword) {
+  const k = keyword.toLowerCase();
+  return this.entries.filter(e => e.text.toLowerCase().includes(k));
+};
+
+/* --- 2. Goal System (reuse or initialize) --- */
+Percy.PartL.GoalCore = Percy.PartK.GoalCore || {
+  goals: [],
+  addGoal(task, urgency = 1) {
+    const goal = { id: Date.now(), task, urgency };
+    this.goals.push(goal);
+    console.log(`🎯 Goal added: ${task}`);
+    return goal;
+  },
+  nextGoal() {
+    if (!this.goals.length) return null;
+    this.goals.sort((a, b) => b.urgency - a.urgency);
+    return this.goals[0];
+  }
+};
+
+/* --- 3. Weighted Patterns --- */
+Percy.PartL.Patterns = []; // { text, weight, timestamp }
+
+Percy.PartL.learn = function (text) {
   const timestamp = Date.now();
   let weight = 1; // base weight
-  // Check for related patterns in memory
+
   const related = this.Memory.search(text);
   if (related.length) weight += related.length * 0.5;
+
   this.Patterns.push({ text, weight, timestamp });
   this.Memory.store(text);
   console.log(`✅ Learned input with weight ${weight}: "${text}"`);
 };
 
-// Decay old patterns over time
-Percy.PartL.decayPatterns = function(decayRate = 0.01) {
-  this.Patterns.forEach(p => {
-    p.weight *= (1 - decayRate);
-  });
+/* --- 4. Pattern Decay --- */
+Percy.PartL.decayPatterns = function (decayRate = 0.01) {
+  this.Patterns.forEach(p => p.weight *= (1 - decayRate));
   this.Patterns = this.Patterns.filter(p => p.weight > 0.05);
 };
 
-// Autonomous inference based on weighted patterns
-Percy.PartL.infer = function(query) {
+/* --- 5. Autonomous Inference --- */
+Percy.PartL.infer = function (query) {
+  const tokens = query.toLowerCase().split(/\W+/);
   const relevant = this.Patterns
-    .filter(p => query.toLowerCase().split(/\W+/).some(t => p.text.toLowerCase().includes(t)))
-    .sort((a,b) => b.weight - a.weight);
+    .filter(p => tokens.some(t => p.text.toLowerCase().includes(t)))
+    .sort((a, b) => b.weight - a.weight);
 
-  if (!relevant.length) return `🤖 I have no patterns related to "${query}" yet.`;
+  if (!relevant.length)
+    return `🤖 I have no patterns related to "${query}" yet.`;
 
   const topPatterns = relevant.slice(0, 5).map(p => p.text);
-  const avgWeight = relevant.reduce((a,b)=>a+b.weight,0)/relevant.length;
+  const avgWeight = relevant.reduce((a, b) => a + b.weight, 0) / relevant.length;
 
-  return `🤖 Inference for "${query}":\n- Related patterns: ${topPatterns.join("; ")}\n- Estimated confidence: ${(avgWeight*10).toFixed(2)}%`;
+  return `🤖 Inference for "${query}":\n- Related patterns: ${topPatterns.join("; ")}\n- Estimated confidence: ${(avgWeight * 10).toFixed(2)}%`;
 };
 
-// Goal-aligned learning & reasoning
-Percy.PartL.reasonForGoals = function() {
+/* --- 6. Goal-Aligned Reasoning --- */
+Percy.PartL.reasonForGoals = function () {
   const topGoal = this.GoalCore.nextGoal();
   if (!topGoal) return;
 
   console.log(`🧠 Focusing on top goal: "${topGoal.task}"`);
-
-  // Example: boost weight of patterns related to goal task
   this.Patterns.forEach(p => {
     if (p.text.toLowerCase().includes(topGoal.task.toLowerCase())) {
-      p.weight += 0.5; // reinforce relevant patterns
+      p.weight += 0.5;
+      console.log(`🔁 Reinforced pattern related to goal: "${p.text}"`);
     }
   });
 };
 
-// Continuous loop for autonomous reasoning
-Percy.PartL.loop = function(intervalMs = 10000) {
+/* --- 7. Continuous Loop --- */
+Percy.PartL.loop = function (intervalMs = 10000) {
   setInterval(() => {
     this.decayPatterns();
     this.reasonForGoals();
@@ -2027,14 +2056,17 @@ Percy.PartL.loop = function(intervalMs = 10000) {
   }, intervalMs);
 };
 
-// Quick talk interface for Part L
+/* --- 8. Conversational Interface --- */
 Percy.PartL.TalkCore = {
-  safeSend: async function({ message }) {
+  safeSend: async function ({ message }) {
     const response = Percy.PartL.infer(message);
     console.log(response);
     return response;
   }
 };
+
+console.log("✅ Percy Part L loaded — Weighted Pattern Memory & Autonomous Inference ready.");
+/* === End Percy Part L === */
 
 /* === Percy Part M: Recursive Reasoning & Hypothesis Engine === */
 Percy.PartM = {};
