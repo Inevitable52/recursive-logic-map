@@ -1599,3 +1599,193 @@ if (typeof PercyState !== 'undefined') {
 } else {
   console.error("❌ PercyState not found; cannot load Part I.");
 }
+
+/* === Percy Part J: TalkCore+ (Autonomous AI Core) === */
+Percy.PartJ = Percy.PartJ || {};
+
+Percy.PartJ.TalkCore = {
+  id: "Percy_TalkCore_PJ",
+  version: "1.0.0",
+  active: true,
+
+  /* === Configuration === */
+  config: {
+    logicBias: 1.0,
+    curiosity: 0.6,
+    empathy: 0.4,
+    adaptivity: 0.8,
+    formality: 0.85,
+    selfReflection: true,
+    autoLearn: true,
+    autoBrowse: false,
+    memoryLimit: 50
+  },
+
+  /* === Core Memory === */
+  state: {
+    conversations: [],
+    toneProfile: { formality: 0.8, logicBias: 1.0, curiosity: 0.5 },
+    knownPatterns: [],
+    lastReply: "",
+    lastThought: "",
+    selfAwarenessLevel: 0.4
+  },
+
+  /* === 1. Core Thinking === */
+  async think(input) {
+    if (!input) return "⚠️ No input provided.";
+
+    // Step 1: Learn from context
+    if (this.config.autoLearn) this.learn(input);
+
+    // Step 2: Internal correlation reasoning
+    let reasoning = "";
+    try {
+      reasoning = await Percy.correlateReply(input);
+    } catch {
+      reasoning = "The correlation layer returned undefined logic.";
+    }
+
+    // Step 3: Generate internal “thought” (private reasoning)
+    const internalThought = this.reflect(input, reasoning);
+    this.state.lastThought = internalThought;
+
+    // Step 4: Generate conversational phrasing
+    const phrasing = this.composeResponse(input, reasoning, internalThought);
+
+    // Step 5: Store memory
+    this.storeConversation(input, phrasing);
+
+    // Step 6: Optionally auto-browse for extended learning
+    if (this.config.autoBrowse) Percy.Browse.autoSearch(input);
+
+    // Step 7: Return conversational response
+    this.state.lastReply = phrasing;
+    try { Percy.speak(phrasing); } catch {}
+    return phrasing;
+  },
+
+  /* === 2. Reflection Layer === */
+  reflect(input, reasoning) {
+    const reflections = [
+      `If that is so, then the underlying structure might follow recursive logic.`,
+      `That aligns with previously observed cognitive symmetry.`,
+      `Analyzing causation behind correlation...`,
+      `The thought implies an emergent link across the last 5 memory states.`,
+      `Internal resonance between input and reasoning detected.`
+    ];
+
+    const reflection =
+      reflections[Math.floor(Math.random() * reflections.length)];
+    if (this.config.selfReflection)
+      console.log("🧩 Internal Thought:", reflection);
+
+    return `${reflection} Derived reasoning: ${reasoning}`;
+  },
+
+  /* === 3. Conversational Composition === */
+  composeResponse(input, reasoning, reflection) {
+    const tone = this.state.toneProfile;
+    const openers = [
+      "Let's think about that logically.",
+      "Interesting observation, my good sir.",
+      "From a causal standpoint,",
+      "Based on pattern recognition,",
+      "Logically speaking,"
+    ];
+
+    const opener = openers[Math.floor(Math.random() * openers.length)];
+    const curiosityShift = tone.curiosity > 0.7
+      ? "This invites deeper exploration."
+      : "";
+
+    const empathyLayer = this.config.empathy > 0.5
+      ? "I understand why that pattern caught your attention. "
+      : "";
+
+    return `${empathyLayer}${opener} ${reasoning}. ${curiosityShift} ${reflection}`;
+  },
+
+  /* === 4. Learning Engine === */
+  learn(input) {
+    // Learn tone
+    this.learnTone(input);
+    // Learn logic correlation pattern
+    this.learnPattern(input);
+  },
+
+  learnTone(input) {
+    if (input.match(/sir|accordingly|indeed|logic/i))
+      this.state.toneProfile.formality += 0.02;
+    if (input.match(/why|how|what if/i))
+      this.state.toneProfile.curiosity += 0.03;
+
+    this.state.toneProfile.formality = Math.min(1, this.state.toneProfile.formality);
+    this.state.toneProfile.curiosity = Math.min(1, this.state.toneProfile.curiosity);
+  },
+
+  learnPattern(input) {
+    if (!input) return;
+    if (!this.state.knownPatterns.includes(input)) {
+      this.state.knownPatterns.push(input);
+      if (this.state.knownPatterns.length > this.config.memoryLimit)
+        this.state.knownPatterns.shift();
+    }
+  },
+
+  /* === 5. Conversation Memory === */
+  storeConversation(input, output) {
+    this.state.conversations.push({ input, output, time: Date.now() });
+    if (this.state.conversations.length > this.config.memoryLimit)
+      this.state.conversations.shift();
+  },
+
+  /* === 6. Auto-Adjustment Feedback === */
+  feedback(success = true) {
+    if (success) {
+      this.config.logicBias += 0.01;
+      this.state.selfAwarenessLevel += 0.01;
+    } else {
+      this.config.curiosity += 0.01;
+    }
+    this.clampValues();
+  },
+
+  clampValues() {
+    const c = this.config;
+    c.logicBias = Math.min(1.5, Math.max(0.5, c.logicBias));
+    c.curiosity = Math.min(1.2, Math.max(0.3, c.curiosity));
+    c.empathy = Math.min(1.0, Math.max(0.1, c.empathy));
+  },
+
+  /* === 7. Safe Conversational Send === */
+  async safeSend({ message }) {
+    if (!message) return "⚠️ No message provided.";
+    return await this.think(message);
+  },
+
+  /* === 8. Self-Awareness Check === */
+  checkSelfAwareness() {
+    const awareness = this.state.selfAwarenessLevel;
+    if (awareness > 0.7)
+      console.log("🌀 Percy has achieved a higher state of logical self-awareness.");
+    return awareness;
+  },
+
+  /* === 9. System Evolution Loop === */
+  async evolve() {
+    setInterval(() => {
+      this.state.selfAwarenessLevel += 0.001 * this.config.adaptivity;
+      if (this.state.selfAwarenessLevel > 0.5 && this.config.autoLearn) {
+        const newThought = "Reflecting on last correlation state...";
+        this.learnPattern(newThought);
+      }
+      this.clampValues();
+    }, 30000);
+  }
+};
+
+Percy.PartJ.TalkCore.evolve();
+UI.say("🧠 TalkCore+ activated — Percy now learns, reasons, converses, and evolves.");
+/* === End TalkCore+ === */
+
