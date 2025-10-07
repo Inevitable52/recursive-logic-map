@@ -1789,3 +1789,176 @@ Percy.PartJ.TalkCore.evolve();
 UI.say("🧠 TalkCore+ activated — Percy now learns, reasons, converses, and evolves.");
 /* === End TalkCore+ === */
 
+/* === Percy Part K: Core Autonomous AI Engine === */
+if (typeof PercyState !== "undefined") {
+
+  Percy.PartK = {};
+
+  /* =========================
+     Identity & ULT Integration
+     ========================= */
+  Percy.PartK.ULT = {
+    trusted: {
+      "Fabian Villarreal": { birth: "03/04/1978" },
+      "Lorena Villarreal": { birth: "06/14/2003" }
+    },
+    isTrusted: function(name) {
+      return !!this.trusted[name];
+    }
+  };
+
+  /* =========================
+     Core Memory & Knowledge Layer
+     ========================= */
+  Percy.PartK.Memory = {
+    knowledge: Memory.load("knowledge", []),
+    add: function(entry) {
+      this.knowledge.push({ text: entry, timestamp: Date.now() });
+      Memory.save("knowledge", this.knowledge);
+    },
+    search: function(pattern) {
+      const regex = new RegExp(pattern, "i");
+      return this.knowledge.filter(k => regex.test(k.text));
+    },
+    last: function() {
+      return this.knowledge.length ? this.knowledge[this.knowledge.length-1].text : null;
+    }
+  };
+
+  /* =========================
+     Logic & Reasoning Engine
+     ========================= */
+  Percy.PartK.LogicCore = {
+    evaluate: function(statement) {
+      // Pure logical evaluation: true / false / unknown
+      try {
+        if (typeof statement === "string") {
+          if (statement.includes(" not ")) return !eval(statement.replace(" not ", " !"));
+          return eval(statement);
+        }
+        return Boolean(statement);
+      } catch {
+        return "unknown";
+      }
+    },
+    patternMatch: function(input) {
+      // Detect recurring structures
+      const tokens = input.toLowerCase().split(/\W+/).filter(Boolean);
+      const matches = Percy.PartK.Memory.knowledge.filter(k =>
+        tokens.some(t => k.text.toLowerCase().includes(t))
+      );
+      return matches;
+    }
+  };
+
+  /* =========================
+     TalkCore++ (Autonomous Conversational Layer)
+     ========================= */
+  Percy.PartK.TalkCore = {
+    history: [],
+    safeSend: async function({ message }) {
+      this.history.push({ type: "input", text: message });
+      // Pattern reasoning
+      const matches = Percy.PartK.LogicCore.patternMatch(message);
+      const response = matches.length
+        ? `🤖 I detect patterns in memory: ${matches.map(m=>m.text).join("; ")}`
+        : `🤖 I am still learning about "${message}".`;
+      this.history.push({ type: "output", text: response });
+
+      // Speak if voice enabled
+      try { if (typeof Percy.speak === "function") Percy.speak(response); } catch(e){}
+
+      return response;
+    }
+  };
+
+  /* =========================
+     AutoLearn & Self-Reflection
+     ========================= */
+  Percy.PartK.AutoLearn = {
+    learn: function(input) {
+      Percy.PartK.Memory.add(input);
+      // Optionally detect patterns in previous knowledge
+      const patterns = Percy.PartK.LogicCore.patternMatch(input);
+      return patterns.length
+        ? `✅ Learned input and detected ${patterns.length} related patterns.`
+        : "✅ Learned input; no immediate patterns detected.";
+    },
+    introspect: function() {
+      const memCount = Percy.PartK.Memory.knowledge.length;
+      const histCount = Percy.PartK.TalkCore.history.length;
+      const lastInput = Percy.PartK.TalkCore.history.slice(-1)[0]?.text || "None";
+      return `🧠 Introspection: ${memCount} knowledge entries, ${histCount} talk exchanges, last input: "${lastInput}"`;
+    }
+  };
+
+  /* =========================
+     Goal & Initiative Core
+     ========================= */
+  Percy.PartK.GoalCore = {
+    goals: Memory.load("goals", []),
+    addGoal: function(task, urgency=1) {
+      const goal = { id: Date.now(), task, urgency };
+      this.goals.push(goal);
+      Memory.save("goals", this.goals);
+      return `🎯 Goal added: ${task}`;
+    },
+    nextGoal: function() {
+      if (!this.goals.length) return null;
+      return this.goals.sort((a,b)=>b.urgency - a.urgency)[0];
+    }
+  };
+
+  /* =========================
+     MetaCore: Monitoring & Self-Correction
+     ========================= */
+  Percy.PartK.MetaCore = {
+    check: function() {
+      // Ensure memory, talk history, and goals are consistent
+      const memOK = Array.isArray(Percy.PartK.Memory.knowledge);
+      const talkOK = Array.isArray(Percy.PartK.TalkCore.history);
+      const goalOK = Array.isArray(Percy.PartK.GoalCore.goals);
+      return memOK && talkOK && goalOK;
+    },
+    repair: function() {
+      if (!Array.isArray(Percy.PartK.Memory.knowledge)) Percy.PartK.Memory.knowledge = [];
+      if (!Array.isArray(Percy.PartK.TalkCore.history)) Percy.PartK.TalkCore.history = [];
+      if (!Array.isArray(Percy.PartK.GoalCore.goals)) Percy.PartK.GoalCore.goals = [];
+      return "🛠️ MetaCore performed repairs on internal structures.";
+    }
+  };
+
+  /* =========================
+     Autonomous Reasoning Loop
+     ========================= */
+  Percy.PartK.loop = function(intervalMs=15000) {
+    setInterval(()=>{
+      try {
+        const goal = Percy.PartK.GoalCore.nextGoal();
+        if(goal){
+          const sim = Percy.PartK.LogicCore.patternMatch(goal.task);
+          UI.say(`🧩 Goal simulation for "${goal.task}": ${sim.length} related patterns found.`);
+        }
+        UI.say(Percy.PartK.AutoLearn.introspect());
+        if(!Percy.PartK.MetaCore.check()) Percy.PartK.MetaCore.repair();
+      } catch(e) {
+        console.error("⚠️ Percy Part K loop error:", e);
+      }
+    }, intervalMs);
+  };
+
+  /* =========================
+     Initialize Part K
+     ========================= */
+  Percy.PartK.init = function() {
+    UI.say("🧩 Percy Part K: Core Autonomous AI Engine online.");
+    Percy.PartK.loop();
+  };
+
+  Percy.PartK.init();
+
+} else {
+  console.error("❌ PercyState not found; cannot load Part K.");
+}
+
+
