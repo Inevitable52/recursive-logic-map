@@ -1961,4 +1961,78 @@ if (typeof PercyState !== "undefined") {
   console.error("❌ PercyState not found; cannot load Part K.");
 }
 
+/* === Percy Part L: Weighted Pattern Memory & Autonomous Inference === */
+Percy.PartL = {};
+
+Percy.PartL.Memory = Percy.PartK.Memory; // reuse existing memory
+Percy.PartL.GoalCore = Percy.PartK.GoalCore; // reuse goals
+
+// Pattern weights & relevance
+Percy.PartL.Patterns = []; // {text, weight, timestamp}
+
+Percy.PartL.learn = function(text) {
+  const timestamp = Date.now();
+  let weight = 1; // base weight
+  // Check for related patterns in memory
+  const related = this.Memory.search(text);
+  if (related.length) weight += related.length * 0.5;
+  this.Patterns.push({ text, weight, timestamp });
+  this.Memory.store(text);
+  console.log(`✅ Learned input with weight ${weight}: "${text}"`);
+};
+
+// Decay old patterns over time
+Percy.PartL.decayPatterns = function(decayRate = 0.01) {
+  this.Patterns.forEach(p => {
+    p.weight *= (1 - decayRate);
+  });
+  this.Patterns = this.Patterns.filter(p => p.weight > 0.05);
+};
+
+// Autonomous inference based on weighted patterns
+Percy.PartL.infer = function(query) {
+  const relevant = this.Patterns
+    .filter(p => query.toLowerCase().split(/\W+/).some(t => p.text.toLowerCase().includes(t)))
+    .sort((a,b) => b.weight - a.weight);
+
+  if (!relevant.length) return `🤖 I have no patterns related to "${query}" yet.`;
+
+  const topPatterns = relevant.slice(0, 5).map(p => p.text);
+  const avgWeight = relevant.reduce((a,b)=>a+b.weight,0)/relevant.length;
+
+  return `🤖 Inference for "${query}":\n- Related patterns: ${topPatterns.join("; ")}\n- Estimated confidence: ${(avgWeight*10).toFixed(2)}%`;
+};
+
+// Goal-aligned learning & reasoning
+Percy.PartL.reasonForGoals = function() {
+  const topGoal = this.GoalCore.nextGoal();
+  if (!topGoal) return;
+
+  console.log(`🧠 Focusing on top goal: "${topGoal.task}"`);
+
+  // Example: boost weight of patterns related to goal task
+  this.Patterns.forEach(p => {
+    if (p.text.toLowerCase().includes(topGoal.task.toLowerCase())) {
+      p.weight += 0.5; // reinforce relevant patterns
+    }
+  });
+};
+
+// Continuous loop for autonomous reasoning
+Percy.PartL.loop = function(intervalMs = 10000) {
+  setInterval(() => {
+    this.decayPatterns();
+    this.reasonForGoals();
+    console.log("⚡ Percy Part L: Patterns decayed and goal reasoning executed.");
+  }, intervalMs);
+};
+
+// Quick talk interface for Part L
+Percy.PartL.TalkCore = {
+  safeSend: async function({ message }) {
+    const response = Percy.PartL.infer(message);
+    console.log(response);
+    return response;
+  }
+};
 
