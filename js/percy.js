@@ -2281,4 +2281,58 @@ Percy.PartO.loop(10000);
 console.log("✅ Percy Part O loaded — Adaptive Self-Optimization active.");
 /* === End Percy Part O === */
 
+/* === Percy Part P: Autonomous Hypothesis Generator === */
+Percy.PartP = {
+  hypotheses: [], // {text, confidence, timestamp}
+
+  // Generate hypotheses based on patterns
+  generateHypotheses: function() {
+    const patterns = Percy.PartL.Patterns.filter(p => p.weight > 0.1);
+    console.log("🧩 Part P: Generating hypotheses from strong patterns...");
+
+    for (let i = 0; i < patterns.length - 1; i++) {
+      const p1 = patterns[i];
+      const p2 = patterns[i + 1];
+
+      // Simple conditional hypothesis if texts share keywords
+      const sharedWords = p1.text.toLowerCase().split(/\W+/)
+        .filter(w => p2.text.toLowerCase().includes(w));
+
+      if (sharedWords.length > 0) {
+        const confidence = Math.min(p1.weight, p2.weight);
+        const hypothesisText = `If "${p1.text}" then "${p2.text}" (related words: ${sharedWords.join(", ")})`;
+        this.hypotheses.push({ text: hypothesisText, confidence, timestamp: Date.now() });
+        console.log(`💡 Hypothesis generated: "${hypothesisText}" (confidence: ${confidence.toFixed(2)})`);
+      }
+    }
+  },
+
+  // Validate hypotheses against existing patterns
+  validateHypotheses: function() {
+    console.log("🔍 Part P: Validating hypotheses...");
+    this.hypotheses.forEach(h => {
+      const matches = Percy.PartL.Patterns.some(p =>
+        h.text.toLowerCase().includes(p.text.toLowerCase())
+      );
+      h.validated = matches;
+      console.log(matches ? `✅ Validated: "${h.text}"` : `❌ Needs more data: "${h.text}"`);
+    });
+  },
+
+  // Continuous reasoning loop
+  loop: function(intervalMs = 15000) {
+    setInterval(() => {
+      this.generateHypotheses();
+      this.validateHypotheses();
+      console.log(`🧠 Part P: Hypotheses cycle complete (total: ${this.hypotheses.length})`);
+    }, intervalMs);
+  }
+};
+
+// Start Part P autonomous hypothesis generation
+Percy.PartP.loop(15000);
+
+console.log("✅ Percy Part P loaded — Autonomous Hypothesis Generator active.");
+/* === End Percy Part P === */
+
 
