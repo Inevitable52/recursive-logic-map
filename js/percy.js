@@ -2137,3 +2137,112 @@ Percy.loop = async function() {
 };
 
 Percy.loop();
+
+/* === Percy Part N: Meta-Reasoning & Self-Reflection Core === */
+Percy.PartN = {
+  name: "Meta-Reasoning Core",
+  selfModel: {
+    confidence: 1.0,
+    consistency: 1.0,
+    insightRate: 0.0,
+    lastCheck: Date.now(),
+  },
+
+  evaluateConsistency: function () {
+    const patterns = Percy.PartL.Patterns || [];
+    const contradictions = [];
+
+    // Compare each pair of learned patterns for direct contradictions
+    for (let i = 0; i < patterns.length; i++) {
+      for (let j = i + 1; j < patterns.length; j++) {
+        const a = patterns[i].text.toLowerCase();
+        const b = patterns[j].text.toLowerCase();
+        if (
+          (a.includes("not") && !b.includes("not") && b.includes(a.replace("not ", ""))) ||
+          (b.includes("not") && !a.includes("not") && a.includes(b.replace("not ", "")))
+        ) {
+          contradictions.push([patterns[i].text, patterns[j].text]);
+        }
+      }
+    }
+
+    const consistencyScore = 1 - Math.min(1, contradictions.length / (patterns.length || 1));
+    this.selfModel.consistency = consistencyScore;
+
+    if (contradictions.length > 0) {
+      console.warn("⚠️ Inconsistencies detected:", contradictions);
+    }
+
+    return consistencyScore;
+  },
+
+  evaluateInsightRate: function () {
+    const insights = Percy.PartM.hypotheses?.length || 0;
+    const totalPatterns = Percy.PartL.Patterns?.length || 1;
+    const rate = (insights / totalPatterns).toFixed(2);
+    this.selfModel.insightRate = parseFloat(rate);
+    return this.selfModel.insightRate;
+  },
+
+  adjustConfidence: function () {
+    // Combine factors to update confidence dynamically
+    const { consistency, insightRate } = this.selfModel;
+    const confidence = (0.7 * consistency + 0.3 * insightRate).toFixed(2);
+    this.selfModel.confidence = parseFloat(confidence);
+    return this.selfModel.confidence;
+  },
+
+  reflect: function () {
+    console.log("🧭 Percy Part N: Performing self-reflection cycle...");
+    const consistency = this.evaluateConsistency();
+    const insight = this.evaluateInsightRate();
+    const confidence = this.adjustConfidence();
+
+    const report = {
+      timestamp: new Date().toISOString(),
+      consistency,
+      insight,
+      confidence,
+    };
+
+    console.log("📊 Self-model updated:", report);
+    return report;
+  },
+
+  learnFromSelf: function () {
+    const reflection = this.reflect();
+    if (reflection.confidence < 0.6) {
+      console.log("🩺 Percy Part N: Low confidence detected — strengthening reasoning focus...");
+      Percy.PartL.Patterns.forEach(p => (p.weight *= 1.1));
+    } else {
+      console.log("💪 Percy Part N: Confidence stable — continuing autonomous reasoning.");
+    }
+  },
+
+  loop: function (intervalMs = 15000) {
+    setInterval(() => {
+      this.learnFromSelf();
+    }, intervalMs);
+    console.log("♻️ Percy Part N: Meta-Reasoning & Self-Reflection loop active.");
+  },
+
+  TalkCore: {
+    safeSend: async function ({ message }) {
+      const lower = message.toLowerCase();
+      if (lower.includes("status") || lower.includes("confidence")) {
+        return Percy.PartN.selfModel;
+      }
+      if (lower.includes("reflect")) {
+        return Percy.PartN.reflect();
+      }
+      if (lower.includes("inconsist")) {
+        return Percy.PartN.evaluateConsistency();
+      }
+      return "🤖 I can reflect, measure confidence, and evaluate my internal consistency.";
+    },
+  },
+};
+
+console.log("✅ Percy Part N loaded — Meta-Reasoning & Self-Reflection Core ready.");
+/* === End Percy Part N === */
+
