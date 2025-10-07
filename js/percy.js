@@ -2246,3 +2246,39 @@ Percy.PartN = {
 console.log("✅ Percy Part N loaded — Meta-Reasoning & Self-Reflection Core ready.");
 /* === End Percy Part N === */
 
+/* === Percy Part O: Adaptive Self-Optimization === */
+Percy.PartO = {};
+
+// Link to Part L (patterns) and Part N (self-model)
+Percy.PartO.optimizePatterns = function() {
+  const confidence = Percy.PartN.SelfModel?.confidence || 0.5; // default baseline
+  console.log(`🔧 Part O: Optimizing patterns based on confidence ${confidence.toFixed(2)}`);
+
+  Percy.PartL.Patterns.forEach(p => {
+    // If confidence is low, decay unreliable patterns faster
+    const decayMultiplier = confidence < 0.6 ? 1.5 : 1.0;
+    p.weight *= (1 - 0.01 * decayMultiplier);
+
+    // If confidence is high, reinforce useful patterns
+    if (confidence > 0.8) p.weight += 0.05;
+
+    // Keep patterns with minimal weight
+    if (p.weight < 0.05) p.weight = 0;
+  });
+};
+
+// Continuous adaptive loop
+Percy.PartO.loop = function(intervalMs = 10000) {
+  setInterval(() => {
+    this.optimizePatterns();
+    console.log("♻️ Percy Part O: Patterns adjusted adaptively based on confidence.");
+  }, intervalMs);
+};
+
+// Start adaptive optimization loop
+Percy.PartO.loop(10000);
+
+console.log("✅ Percy Part O loaded — Adaptive Self-Optimization active.");
+/* === End Percy Part O === */
+
+
