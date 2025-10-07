@@ -2036,3 +2036,74 @@ Percy.PartL.TalkCore = {
   }
 };
 
+/* === Percy Part M: Recursive Reasoning & Hypothesis Engine === */
+Percy.PartM = {};
+
+Percy.PartM.Memory = Percy.PartL.Memory;
+Percy.PartM.Patterns = Percy.PartL.Patterns;
+Percy.PartM.GoalCore = Percy.PartL.GoalCore;
+
+// Utility to find shared words between patterns
+Percy.PartM.sharedTokens = function(a, b) {
+  const tokensA = new Set(a.toLowerCase().split(/\W+/));
+  const tokensB = new Set(b.toLowerCase().split(/\W+/));
+  return [...tokensA].filter(t => tokensB.has(t) && t.length > 2);
+};
+
+// Hypothesis generation logic
+Percy.PartM.generateHypotheses = function() {
+  const newHypotheses = [];
+  for (let i = 0; i < this.Patterns.length; i++) {
+    for (let j = i + 1; j < this.Patterns.length; j++) {
+      const p1 = this.Patterns[i];
+      const p2 = this.Patterns[j];
+      const shared = this.sharedTokens(p1.text, p2.text);
+
+      if (shared.length >= 2) {
+        const hypothesis = `If ${p1.text.toLowerCase()} and ${p2.text.toLowerCase()}, then it may suggest a link between ${shared.join(", ")}.`;
+        const weight = (p1.weight + p2.weight) / 2;
+        newHypotheses.push({ text: hypothesis, weight, timestamp: Date.now() });
+      }
+    }
+  }
+
+  if (newHypotheses.length) {
+    console.log(`🧩 Generated ${newHypotheses.length} hypotheses.`);
+    newHypotheses.forEach(h => Percy.PartL.Patterns.push(h)); // store in main pattern pool
+  }
+};
+
+// Insight proposal system
+Percy.PartM.proposeInsights = function() {
+  const highWeight = this.Patterns.filter(p => p.weight > 2).sort((a, b) => b.weight - a.weight);
+  if (!highWeight.length) return "🤖 No strong insights yet.";
+
+  const insights = highWeight.slice(0, 3).map(p => `• ${p.text}`);
+  return `💡 Proposed Insights:\n${insights.join("\n")}`;
+};
+
+// Recursive reasoning loop (build → refine → propose)
+Percy.PartM.loop = function(intervalMs = 15000) {
+  setInterval(() => {
+    this.generateHypotheses();
+    const insights = this.proposeInsights();
+    console.log(insights);
+    Percy.PartL.decayPatterns(0.005); // slow decay
+    console.log("♻️ Recursive reasoning cycle completed.");
+  }, intervalMs);
+};
+
+// TalkCore extension for reasoning queries
+Percy.PartM.TalkCore = {
+  safeSend: async function({ message }) {
+    if (/insight|hypothesis|reason/i.test(message)) {
+      const response = Percy.PartM.proposeInsights();
+      console.log(response);
+      return response;
+    } else {
+      const response = Percy.PartL.infer(message);
+      console.log(response);
+      return response;
+    }
+  }
+};
