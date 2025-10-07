@@ -2056,6 +2056,13 @@ Percy.PartL.loop = function (intervalMs = 10000) {
   }, intervalMs);
 };
 
+// === Autonomous cycle handler (so Part M can call Part L) ===
+Percy.PartL.run = async function() {
+  this.decayPatterns();
+  this.reasonForGoals();
+  console.log("⚙️ Percy Part L: Cycle complete (decay + reasoning).");
+};
+
 /* --- 8. Conversational Interface --- */
 Percy.PartL.TalkCore = {
   safeSend: async function ({ message }) {
