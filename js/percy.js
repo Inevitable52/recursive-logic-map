@@ -2378,4 +2378,71 @@ Percy.PartP = {
 console.log("✅ Percy Part P loaded — Advanced Hypothesis Engine ready.");
 /* === End Percy Part P === */
 
+/* === Percy Part Q: Hypothesis Prioritization & Strategic Reasoning === */
+Percy.PartQ = {
+  name: "Hypothesis Prioritization Engine",
+
+  /* --- 1. Score Hypotheses --- */
+  scoreHypotheses: function() {
+    Percy.PartP.hypotheses.forEach(h => {
+      const topGoal = Percy.PartL.GoalCore.nextGoal();
+      let goalRelevance = 0;
+      if (topGoal && h.text.toLowerCase().includes(topGoal.task.toLowerCase())) {
+        goalRelevance = 0.3 * topGoal.urgency; // increase score if hypothesis aligns with top goal
+      }
+      h.score = (h.confidence || 0.5) + goalRelevance;
+    });
+  },
+
+  /* --- 2. Get Highest Priority Hypothesis --- */
+  topHypothesis: function() {
+    this.scoreHypotheses();
+    if (!Percy.PartP.hypotheses.length) return null;
+    return Percy.PartP.hypotheses.reduce((prev, curr) => (curr.score > (prev.score || 0) ? curr : prev), {});
+  },
+
+  /* --- 3. Execute Strategic Reasoning --- */
+  execute: function() {
+    const top = this.topHypothesis();
+    if (!top) {
+      console.log("🤖 Part Q: No hypotheses to prioritize yet.");
+      return;
+    }
+
+    console.log(`🚀 Part Q: Focusing on top hypothesis: "${top.text}" (score: ${top.score.toFixed(2)})`);
+    // Example: reinforce related patterns in Part L
+    Percy.PartL.Patterns.forEach(p => {
+      if (top.text.includes(p.text)) {
+        p.weight += 0.3;
+        console.log(`🔁 Reinforced pattern "${p.text}" based on top hypothesis.`);
+      }
+    });
+  },
+
+  /* --- 4. Conversational Interface --- */
+  TalkCore: {
+    safeSend: async function({ message }) {
+      if (message.toLowerCase().includes("top hypothesis")) {
+        const top = Percy.PartQ.topHypothesis();
+        const response = top ? `🤖 Top hypothesis: "${top.text}" (score: ${top.score.toFixed(2)})` : "🤖 No hypotheses available.";
+        console.log(response);
+        return response;
+      }
+      const response = "🤖 Part Q can report the top hypothesis if asked.";
+      console.log(response);
+      return response;
+    }
+  },
+
+  /* --- 5. Autonomous Loop --- */
+  loop: function(intervalMs = 10000) {
+    setInterval(() => {
+      this.execute();
+      console.log(`♻️ Part Q loop executed.`);
+    }, intervalMs);
+  }
+};
+
+console.log("✅ Percy Part Q loaded — Hypothesis Prioritization & Strategic Reasoning ready.");
+/* === End Percy Part Q === */
 
