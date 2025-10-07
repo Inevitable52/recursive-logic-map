@@ -2281,58 +2281,101 @@ Percy.PartO.loop(10000);
 console.log("✅ Percy Part O loaded — Adaptive Self-Optimization active.");
 /* === End Percy Part O === */
 
-/* === Percy Part P: Autonomous Hypothesis Generator === */
+/* === Percy Part P: Advanced Hypothesis Engine === */
 Percy.PartP = {
-  hypotheses: [], // {text, confidence, timestamp}
+  name: "Advanced Hypothesis Engine",
+  hypotheses: [],
 
-  // Generate hypotheses based on patterns
+  /* --- 1. Generate Hypotheses from Part L patterns --- */
   generateHypotheses: function() {
-    const patterns = Percy.PartL.Patterns.filter(p => p.weight > 0.1);
-    console.log("🧩 Part P: Generating hypotheses from strong patterns...");
+    const patterns = Percy.PartL.Patterns;
+    if (!patterns || patterns.length < 2) return;
+
+    console.log("🧩 Part P: Generating hypotheses from patterns...");
 
     for (let i = 0; i < patterns.length - 1; i++) {
       const p1 = patterns[i];
       const p2 = patterns[i + 1];
 
-      // Simple conditional hypothesis if texts share keywords
-      const sharedWords = p1.text.toLowerCase().split(/\W+/)
-        .filter(w => p2.text.toLowerCase().includes(w));
-
-      if (sharedWords.length > 0) {
-        const confidence = Math.min(p1.weight, p2.weight);
-        const hypothesisText = `If "${p1.text}" then "${p2.text}" (related words: ${sharedWords.join(", ")})`;
-        this.hypotheses.push({ text: hypothesisText, confidence, timestamp: Date.now() });
-        console.log(`💡 Hypothesis generated: "${hypothesisText}" (confidence: ${confidence.toFixed(2)})`);
+      if (this.isContradictory(p1.text, p2.text)) {
+        const hypothesis = this.formHypothesis(p1.text, p2.text);
+        if (!this.hypotheses.find(h => h.text === hypothesis)) {
+          this.hypotheses.push({ text: hypothesis, validated: false, confidence: this.assignConfidence(hypothesis) });
+          console.log(`💡 Hypothesis formed: "${hypothesis}" (confidence: ${this.assignConfidence(hypothesis)})`);
+        }
       }
     }
   },
 
-  // Validate hypotheses against existing patterns
+  /* --- 2. Contradiction Detection --- */
+  isContradictory: function(a, b) {
+    const negations = ["not", "no", "never", "cannot", "some"];
+    return (
+      negations.some(n => a.toLowerCase().includes(n) && !b.toLowerCase().includes(n)) ||
+      negations.some(n => b.toLowerCase().includes(n) && !a.toLowerCase().includes(n))
+    );
+  },
+
+  /* --- 3. Form Hypothesis --- */
+  formHypothesis: function(a, b) {
+    return `If "${a}" and "${b}" both hold, a conditional relationship may exist between them.`;
+  },
+
+  /* --- 4. Assign Confidence Score --- */
+  assignConfidence: function(hypothesisText) {
+    let base = 0.5;
+    const related = Percy.PartL.Patterns.filter(p => hypothesisText.includes(p.text));
+    base += 0.1 * related.length;
+    return Math.min(base, 1.0);
+  },
+
+  /* --- 5. Validate Hypotheses against Part L patterns --- */
   validateHypotheses: function() {
     console.log("🔍 Part P: Validating hypotheses...");
     this.hypotheses.forEach(h => {
-      const matches = Percy.PartL.Patterns.some(p =>
-        h.text.toLowerCase().includes(p.text.toLowerCase())
-      );
+      const matches = Percy.PartL.Patterns.some(p => h.text.toLowerCase().includes(p.text.toLowerCase()));
       h.validated = matches;
-      console.log(matches ? `✅ Validated: "${h.text}"` : `❌ Needs more data: "${h.text}"`);
+      console.log(matches ? `✅ Confirmed: "${h.text}"` : `❌ Needs more data: "${h.text}"`);
     });
   },
 
-  // Continuous reasoning loop
+  /* --- 6. Integrate validated hypotheses back into Part L --- */
+  integrateValidated: function() {
+    this.hypotheses.forEach(h => {
+      if (h.validated) {
+        Percy.PartL.learn(h.text);
+        console.log(`🔁 Integrated validated hypothesis into Part L: "${h.text}"`);
+      }
+    });
+  },
+
+  /* --- 7. Conversational interface for Part P --- */
+  TalkCore: {
+    safeSend: async function({ message }) {
+      const related = Percy.PartP.hypotheses.filter(h => message.toLowerCase().includes(h.text.toLowerCase()));
+      if (related.length) {
+        const response = related.map(h => `${h.text} (confidence: ${h.confidence})`).join("; ");
+        console.log(`🤖 Part P response: ${response}`);
+        return response;
+      }
+      const defaultResponse = "🤖 I have no hypotheses directly related to your query yet.";
+      console.log(defaultResponse);
+      return defaultResponse;
+    }
+  },
+
+  /* --- 8. Continuous autonomous loop --- */
   loop: function(intervalMs = 15000) {
     setInterval(() => {
       this.generateHypotheses();
       this.validateHypotheses();
-      console.log(`🧠 Part P: Hypotheses cycle complete (total: ${this.hypotheses.length})`);
+      this.integrateValidated();
+      console.log(`♻️ Part P loop executed. Total hypotheses: ${this.hypotheses.length}`);
     }, intervalMs);
   }
 };
 
-// Start Part P autonomous hypothesis generation
-Percy.PartP.loop(15000);
-
-console.log("✅ Percy Part P loaded — Autonomous Hypothesis Generator active.");
+console.log("✅ Percy Part P loaded — Advanced Hypothesis Engine ready.");
 /* === End Percy Part P === */
 
 
