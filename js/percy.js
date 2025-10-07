@@ -2375,6 +2375,15 @@ Percy.PartP = {
   }
 };
 
+  /* --- 9. Run all core steps once (manual trigger) --- */
+  run: function() {
+    console.log("🚀 Part P: Manual run initiated...");
+    this.generateHypotheses();
+    this.validateHypotheses();
+    this.integrateValidated();
+    console.log(`✅ Part P completed — total hypotheses: ${this.hypotheses.length}`);
+  }
+
 console.log("✅ Percy Part P loaded — Advanced Hypothesis Engine ready.");
 /* === End Percy Part P === */
 
