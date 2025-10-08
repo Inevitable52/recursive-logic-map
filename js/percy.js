@@ -2465,37 +2465,71 @@ Percy.PartQ = {
 console.log("✅ Percy Part Q loaded — Hypothesis Prioritization & Strategic Reasoning ready.");
 /* === End Percy Part Q === */
 
-/* === Percy Part R: Abstractor & Rule Synthesizer === */
+/* === Percy Part R: Enhanced Abstractor & Rule Synthesizer === */
 Percy.PartR = {
-  name: "Abstractor & Rule Synthesizer",
+  name: "Enhanced Abstractor & Rule Synthesizer",
   abstractRules: [],
 
-  /* --- 1. Scan Part P & Part M hypotheses for abstraction --- */
+  /* --- 1. Scan Part P & Part M hypotheses for abstraction & domain detection --- */
   scanHypotheses: function() {
     const allHypotheses = [...Percy.PartP.hypotheses, ...(Percy.PartM?.hypotheses || [])];
     if (!allHypotheses.length) return;
 
-    console.log("🔍 Part R: Scanning hypotheses for abstraction...");
+    console.log("🔍 Part R: Scanning hypotheses for abstraction & cross-domain links...");
+
+    const domains = ["bird", "swans", "penguin", "muscle", "brain", "server", "network", "code", "programming", "stress", "cognitive"];
 
     allHypotheses.forEach(h => {
-      // Check if this hypothesis is already abstracted
       if (!this.abstractRules.find(r => r.text === h.text)) {
-        const abstracted = this.abstractHypothesis(h.text);
-        this.abstractRules.push({ text: abstracted, origin: h.text, confidence: h.confidence || 0.6 });
-        console.log(`💡 Abstracted rule: "${abstracted}"`);
+        let abstracted = this.abstractHypothesis(h.text);
+
+        // Detect domain
+        const foundDomain = domains.find(d => abstracted.toLowerCase().includes(d)) || "general";
+
+        this.abstractRules.push({
+          text: abstracted,
+          origin: h.text,
+          domain: foundDomain,
+          confidence: h.confidence || 0.6,
+          validated: false
+        });
+
+        console.log(`💡 Abstracted rule [${foundDomain}]: "${abstracted}"`);
       }
     });
   },
 
   /* --- 2. Form abstracted version of a hypothesis --- */
   abstractHypothesis: function(text) {
-    // Simplistic abstraction: remove nested "If ... both hold" repetitions
+    // Remove nested "If ... both hold" repetitions
     let cleaned = text.replace(/If\s+"(.*?)"\s+and\s+"(.*?)"\s+both hold,/g, 'If $1, then $2,');
     cleaned = cleaned.replace(/both hold, then a conditional relationship may exist between them\./g, 'then a relationship may exist.');
     return cleaned;
   },
 
-  /* --- 3. Validate abstract rules against Part L patterns --- */
+  /* --- 3. Multi-hypothesis chaining --- */
+  chainHypotheses: function() {
+    const rules = this.abstractRules;
+    for (let i = 0; i < rules.length - 1; i++) {
+      const r1 = rules[i].text;
+      const r2 = rules[i + 1].text;
+      if (r1 !== r2 && r1 && r2) {
+        const chain = `Chain: "${r1}" may lead to "${r2}".`;
+        if (!rules.find(r => r.text === chain)) {
+          rules.push({
+            text: chain,
+            origin: `${rules[i].origin} + ${rules[i+1].origin}`,
+            domain: "multi",
+            confidence: 0.5,
+            validated: false
+          });
+          console.log(`🔗 Created chained rule: ${chain}`);
+        }
+      }
+    }
+  },
+
+  /* --- 4. Validate abstract rules against Part L patterns --- */
   validateRules: function() {
     console.log("🔍 Part R: Validating abstracted rules...");
     this.abstractRules.forEach(r => {
@@ -2505,7 +2539,7 @@ Percy.PartR = {
     });
   },
 
-  /* --- 4. Integrate abstract rules into Part L --- */
+  /* --- 5. Integrate validated rules into Part L --- */
   integrateRules: function() {
     this.abstractRules.forEach(r => {
       if (r.validated) {
@@ -2515,27 +2549,28 @@ Percy.PartR = {
     });
   },
 
-  /* --- 5. Autonomous run cycle --- */
+  /* --- 6. Autonomous run cycle --- */
   run: function() {
     this.scanHypotheses();
+    this.chainHypotheses();
     this.validateRules();
     this.integrateRules();
     console.log(`♻️ Part R run complete — total abstract rules: ${this.abstractRules.length}`);
   },
 
-  /* --- 6. Loop for autonomous execution --- */
+  /* --- 7. Loop for autonomous execution --- */
   loop: function(intervalMs = 20000) {
     setInterval(() => {
       this.run();
     }, intervalMs);
   },
 
-  /* --- 7. Conversational interface --- */
+  /* --- 8. Conversational interface --- */
   TalkCore: {
     safeSend: async function({ message }) {
       const related = Percy.PartR.abstractRules.filter(r => message.toLowerCase().includes(r.text.toLowerCase()));
       if (related.length) {
-        const response = related.map(r => `${r.text} (confidence: ${r.confidence})`).join("; ");
+        const response = related.map(r => `${r.text} (confidence: ${r.confidence}, domain: ${r.domain})`).join("; ");
         console.log(`🤖 Part R response: ${response}`);
         return response;
       }
@@ -2546,5 +2581,5 @@ Percy.PartR = {
   }
 };
 
-console.log("✅ Percy Part R loaded — Abstractor & Rule Synthesizer ready.");
+console.log("✅ Percy Part R loaded — Enhanced Abstractor & Rule Synthesizer ready.");
 /* === End Percy Part R === */
