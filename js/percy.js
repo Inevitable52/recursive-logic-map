@@ -2281,18 +2281,17 @@ Percy.PartO.loop(10000);
 console.log("✅ Percy Part O loaded — Adaptive Self-Optimization active.");
 /* === End Percy Part O === */
 
-/* === Percy Part P: Advanced Hypothesis Engine === */
+/* === Percy Part P: Advanced Hypothesis Engine (with Q integration) === */
 Percy.PartP = {
   name: "Advanced Hypothesis Engine",
   hypotheses: [],
 
   /* --- 1. Generate Hypotheses from Part L patterns --- */
-  generateHypotheses: function() {
+  generateHypotheses() {
     const patterns = Percy.PartL.Patterns;
     if (!patterns || patterns.length < 2) return;
 
     console.log("🧩 Part P: Generating hypotheses from patterns...");
-
     for (let i = 0; i < patterns.length - 1; i++) {
       const p1 = patterns[i];
       const p2 = patterns[i + 1];
@@ -2300,15 +2299,16 @@ Percy.PartP = {
       if (this.isContradictory(p1.text, p2.text)) {
         const hypothesis = this.formHypothesis(p1.text, p2.text);
         if (!this.hypotheses.find(h => h.text === hypothesis)) {
-          this.hypotheses.push({ text: hypothesis, validated: false, confidence: this.assignConfidence(hypothesis) });
-          console.log(`💡 Hypothesis formed: "${hypothesis}" (confidence: ${this.assignConfidence(hypothesis)})`);
+          const conf = this.assignConfidence(hypothesis);
+          this.hypotheses.push({ text: hypothesis, validated: false, confidence: conf });
+          console.log(`💡 Hypothesis formed: "${hypothesis}" (confidence: ${conf})`);
         }
       }
     }
   },
 
   /* --- 2. Contradiction Detection --- */
-  isContradictory: function(a, b) {
+  isContradictory(a, b) {
     const negations = ["not", "no", "never", "cannot", "some"];
     return (
       negations.some(n => a.toLowerCase().includes(n) && !b.toLowerCase().includes(n)) ||
@@ -2317,12 +2317,12 @@ Percy.PartP = {
   },
 
   /* --- 3. Form Hypothesis --- */
-  formHypothesis: function(a, b) {
+  formHypothesis(a, b) {
     return `If "${a}" and "${b}" both hold, a conditional relationship may exist between them.`;
   },
 
   /* --- 4. Assign Confidence Score --- */
-  assignConfidence: function(hypothesisText) {
+  assignConfidence(hypothesisText) {
     let base = 0.5;
     const related = Percy.PartL.Patterns.filter(p => hypothesisText.includes(p.text));
     base += 0.1 * related.length;
@@ -2330,7 +2330,7 @@ Percy.PartP = {
   },
 
   /* --- 5. Validate Hypotheses against Part L patterns --- */
-  validateHypotheses: function() {
+  validateHypotheses() {
     console.log("🔍 Part P: Validating hypotheses...");
     this.hypotheses.forEach(h => {
       const matches = Percy.PartL.Patterns.some(p => h.text.toLowerCase().includes(p.text.toLowerCase()));
@@ -2340,7 +2340,7 @@ Percy.PartP = {
   },
 
   /* --- 6. Integrate validated hypotheses back into Part L --- */
-  integrateValidated: function() {
+  integrateValidated() {
     this.hypotheses.forEach(h => {
       if (h.validated) {
         Percy.PartL.learn(h.text);
@@ -2349,10 +2349,25 @@ Percy.PartP = {
     });
   },
 
-  /* --- 7. Conversational interface for Part P --- */
+  /* --- 7. Manual Run (now auto-triggers Part Q) --- */
+  run() {
+    console.log("⚙️ Part P: Manual run initiated...");
+    this.generateHypotheses();
+    this.validateHypotheses();
+    this.integrateValidated();
+    console.log(`✅ Part P completed — total hypotheses: ${this.hypotheses.length}`);
+    if (Percy.PartQ && typeof Percy.PartQ.execute === "function") {
+      console.log("➡️ Triggering Part Q (prioritization)..."); 
+      Percy.PartQ.execute();
+    }
+  },
+
+  /* --- 8. Conversational interface for Part P --- */
   TalkCore: {
-    safeSend: async function({ message }) {
-      const related = Percy.PartP.hypotheses.filter(h => message.toLowerCase().includes(h.text.toLowerCase()));
+    async safeSend({ message }) {
+      const related = Percy.PartP.hypotheses.filter(h =>
+        message.toLowerCase().includes(h.text.toLowerCase())
+      );
       if (related.length) {
         const response = related.map(h => `${h.text} (confidence: ${h.confidence})`).join("; ");
         console.log(`🤖 Part P response: ${response}`);
@@ -2364,27 +2379,22 @@ Percy.PartP = {
     }
   },
 
-    /* --- 8. Continuous autonomous loop --- */
-  loop: function(intervalMs = 15000) {
+  /* --- 9. Continuous autonomous loop (auto-triggers Q) --- */
+  loop(intervalMs = 15000) {
     setInterval(() => {
       this.generateHypotheses();
       this.validateHypotheses();
       this.integrateValidated();
       console.log(`♻️ Part P loop executed. Total hypotheses: ${this.hypotheses.length}`);
+      if (Percy.PartQ && typeof Percy.PartQ.execute === "function") {
+        console.log("➡️ Auto-triggering Part Q (prioritization)..."); 
+        Percy.PartQ.execute();
+      }
     }, intervalMs);
-  },
-
-  /* --- 9. Run all core steps once (manual trigger) --- */
-  run: function() {
-    console.log("🚀 Part P: Manual run initiated...");
-    this.generateHypotheses();
-    this.validateHypotheses();
-    this.integrateValidated();
-    console.log(`✅ Part P completed — total hypotheses: ${this.hypotheses.length}`);
   }
 };
 
-console.log("✅ Percy Part P loaded — Advanced Hypothesis Engine ready.");
+console.log("✅ Percy Part P loaded — Advanced Hypothesis Engine ready (Q integration active).");
 /* === End Percy Part P === */
 
 /* === Percy Part Q: Hypothesis Prioritization & Strategic Reasoning === */
