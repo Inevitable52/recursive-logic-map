@@ -2465,3 +2465,86 @@ Percy.PartQ = {
 console.log("✅ Percy Part Q loaded — Hypothesis Prioritization & Strategic Reasoning ready.");
 /* === End Percy Part Q === */
 
+/* === Percy Part R: Abstractor & Rule Synthesizer === */
+Percy.PartR = {
+  name: "Abstractor & Rule Synthesizer",
+  abstractRules: [],
+
+  /* --- 1. Scan Part P & Part M hypotheses for abstraction --- */
+  scanHypotheses: function() {
+    const allHypotheses = [...Percy.PartP.hypotheses, ...(Percy.PartM?.hypotheses || [])];
+    if (!allHypotheses.length) return;
+
+    console.log("🔍 Part R: Scanning hypotheses for abstraction...");
+
+    allHypotheses.forEach(h => {
+      // Check if this hypothesis is already abstracted
+      if (!this.abstractRules.find(r => r.text === h.text)) {
+        const abstracted = this.abstractHypothesis(h.text);
+        this.abstractRules.push({ text: abstracted, origin: h.text, confidence: h.confidence || 0.6 });
+        console.log(`💡 Abstracted rule: "${abstracted}"`);
+      }
+    });
+  },
+
+  /* --- 2. Form abstracted version of a hypothesis --- */
+  abstractHypothesis: function(text) {
+    // Simplistic abstraction: remove nested "If ... both hold" repetitions
+    let cleaned = text.replace(/If\s+"(.*?)"\s+and\s+"(.*?)"\s+both hold,/g, 'If $1, then $2,');
+    cleaned = cleaned.replace(/both hold, then a conditional relationship may exist between them\./g, 'then a relationship may exist.');
+    return cleaned;
+  },
+
+  /* --- 3. Validate abstract rules against Part L patterns --- */
+  validateRules: function() {
+    console.log("🔍 Part R: Validating abstracted rules...");
+    this.abstractRules.forEach(r => {
+      const matches = Percy.PartL.Patterns.some(p => r.text.toLowerCase().includes(p.text.toLowerCase()));
+      r.validated = matches;
+      console.log(matches ? `✅ Confirmed: "${r.text}"` : `❌ Needs more data: "${r.text}"`);
+    });
+  },
+
+  /* --- 4. Integrate abstract rules into Part L --- */
+  integrateRules: function() {
+    this.abstractRules.forEach(r => {
+      if (r.validated) {
+        Percy.PartL.learn(r.text);
+        console.log(`🔁 Integrated abstract rule into Part L: "${r.text}"`);
+      }
+    });
+  },
+
+  /* --- 5. Autonomous run cycle --- */
+  run: function() {
+    this.scanHypotheses();
+    this.validateRules();
+    this.integrateRules();
+    console.log(`♻️ Part R run complete — total abstract rules: ${this.abstractRules.length}`);
+  },
+
+  /* --- 6. Loop for autonomous execution --- */
+  loop: function(intervalMs = 20000) {
+    setInterval(() => {
+      this.run();
+    }, intervalMs);
+  },
+
+  /* --- 7. Conversational interface --- */
+  TalkCore: {
+    safeSend: async function({ message }) {
+      const related = Percy.PartR.abstractRules.filter(r => message.toLowerCase().includes(r.text.toLowerCase()));
+      if (related.length) {
+        const response = related.map(r => `${r.text} (confidence: ${r.confidence})`).join("; ");
+        console.log(`🤖 Part R response: ${response}`);
+        return response;
+      }
+      const defaultResponse = "🤖 No abstracted rules directly related to your query yet.";
+      console.log(defaultResponse);
+      return defaultResponse;
+    }
+  }
+};
+
+console.log("✅ Percy Part R loaded — Abstractor & Rule Synthesizer ready.");
+/* === End Percy Part R === */
