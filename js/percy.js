@@ -2364,7 +2364,7 @@ Percy.PartP = {
     }
   },
 
-  /* --- 8. Continuous autonomous loop --- */
+    /* --- 8. Continuous autonomous loop --- */
   loop: function(intervalMs = 15000) {
     setInterval(() => {
       this.generateHypotheses();
@@ -2372,8 +2372,7 @@ Percy.PartP = {
       this.integrateValidated();
       console.log(`♻️ Part P loop executed. Total hypotheses: ${this.hypotheses.length}`);
     }, intervalMs);
-  }
-};
+  },
 
   /* --- 9. Run all core steps once (manual trigger) --- */
   run: function() {
@@ -2383,6 +2382,7 @@ Percy.PartP = {
     this.integrateValidated();
     console.log(`✅ Part P completed — total hypotheses: ${this.hypotheses.length}`);
   }
+};
 
 console.log("✅ Percy Part P loaded — Advanced Hypothesis Engine ready.");
 /* === End Percy Part P === */
