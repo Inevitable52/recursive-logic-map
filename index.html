@@ -71,17 +71,19 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
   </div>
 </div>
 
-<!-- === Existing Console Script === -->
+<!-- === Updated Console Script === -->
 <script>
 (function(){
   const interpreterInput = document.getElementById('interpreter-input'),
         percyConsole = document.getElementById('percy-console'),
         askButton = document.getElementById('askPercyButton');
 
+  let lastIdleMsg = "";
+
   function appendConsole(text,isUser=false,exec=false){
-    const line=document.createElement('div');
-    line.className='console-line '+(isUser?'ask':'')+(exec?' exec':'' );
-    line.textContent=(isUser?'↳ ':'')+text;
+    const line = document.createElement('div');
+    line.className = 'console-line ' + (isUser ? 'ask' : '') + (exec ? ' exec' : '');
+    line.textContent = (isUser ? '↳ ' : '') + text;
     percyConsole.appendChild(line);
     percyConsole.scrollTop = percyConsole.scrollHeight;
   }
@@ -90,18 +92,38 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
     const query = interpreterInput.value.trim();
     if(!query) return;
     appendConsole(query,true);
-    let response="";
-    if(typeof percyRespond==='function') response=percyRespond(query);
-    else if(window.Percy && typeof Percy.interpret==='function') response=Percy.interpret(query);
+    let response = "";
+
+    if(typeof percyRespond === 'function') response = percyRespond(query);
+    else if(window.Percy && typeof Percy.interpret === 'function') response = Percy.interpret(query);
+
     if(response){
-      appendConsole(response,false,false);
-      if(Percy?.speak) Percy.speak(response);
+      // Suppress repeated idle messages
+      if(response.includes("Logic network idle")){
+        if(lastIdleMsg !== response){
+          appendConsole(response,false,false);
+          if(Percy?.speak) Percy.speak(response);
+          lastIdleMsg = response;
+        }
+      } else {
+        appendConsole(response,false,false);
+        if(Percy?.speak) Percy.speak(response);
+        lastIdleMsg = "";
+      }
+
+      // Optional self-initiation explanation
+      if(response.includes("energy and data flow")){
+        const explain = "⚙️ Percy is analyzing general data and energy patterns in his logic network.";
+        appendConsole(explain,false,false);
+        if(Percy?.speak) Percy.speak(explain);
+      }
     }
-    interpreterInput.value='';
+
+    interpreterInput.value = '';
   }
 
-  interpreterInput.addEventListener('keydown',e=>{ if(e.key==='Enter') runPercyCommand(); });
-  askButton.addEventListener('click',runPercyCommand);
+  interpreterInput.addEventListener('keydown', e => { if(e.key==='Enter') runPercyCommand(); });
+  askButton.addEventListener('click', runPercyCommand);
 })();
 </script>
 
