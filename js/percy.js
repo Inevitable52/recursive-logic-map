@@ -3019,3 +3019,95 @@ Percy.PartY = {
 };
 
 UI.say("🔧 Percy Parts U/Y (Governance, T-upgrade, V sandbox, W audit, X verifier, Y updater) installed.");
+
+// === Percy Part Z: Visual Intelligence ===
+Percy.PartZ = (function() {
+  const PartZ = {};
+  let video = null;
+  let canvas = null;
+  let ctx = null;
+  let faceModelLoaded = false;
+  let objectModel = null;
+
+  // Initialize video and canvas
+  PartZ.initCamera = async function(containerId="logic-map") {
+    try {
+      video = document.createElement("video");
+      video.style.display = "none";
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+      await video.play();
+
+      // Canvas overlay
+      canvas = document.createElement("canvas");
+      canvas.style.position = "absolute";
+      canvas.style.top = "0";
+      canvas.style.left = "0";
+      canvas.style.zIndex = "9998";
+      document.getElementById(containerId).appendChild(canvas);
+      ctx = canvas.getContext("2d");
+
+      window.addEventListener("resize", () => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+      });
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      await PartZ.loadModels();
+      PartZ.loopDetection();
+    } catch(e) {
+      console.error("Percy Part Z: Camera access failed", e);
+    }
+  };
+
+  // Load face-api and TensorFlow object detection models
+  PartZ.loadModels = async function() {
+    // Face detection
+    await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+    await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+    await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+    faceModelLoaded = true;
+
+    // Object detection
+    objectModel = await cocoSsd.load();
+  };
+
+  // Main detection loop
+  PartZ.loopDetection = async function() {
+    if (!video || !ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Face detection
+    if (faceModelLoaded) {
+      const faces = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+                                   .withFaceLandmarks().withFaceDescriptors();
+      faces.forEach(f => {
+        const { x, y, width, height } = f.detection.box;
+        ctx.strokeStyle = "#00ffcc";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, width, height);
+      });
+      Percy.onVisualInput?.({faces});
+    }
+
+    // Object detection
+    if (objectModel) {
+      const predictions = await objectModel.detect(video);
+      predictions.forEach(pred => {
+        ctx.strokeStyle = "#ff33cc";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(pred.bbox[0], pred.bbox[1], pred.bbox[2], pred.bbox[3]);
+        ctx.fillStyle = "#ff33cc";
+        ctx.font = "14px Arial";
+        ctx.fillText(pred.class, pred.bbox[0], pred.bbox[1] > 14 ? pred.bbox[1]-4 : 14);
+      });
+      Percy.onVisualInput?.({objects: predictions});
+    }
+
+    requestAnimationFrame(PartZ.loopDetection);
+  };
+
+  return PartZ;
+})();
+
