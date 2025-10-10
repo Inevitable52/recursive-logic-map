@@ -46,6 +46,7 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
 
 /* === Camera Feed === */
 #camera-feed { position:fixed; top:150px; right:12px; width:320px; height:240px; border:1px solid #333; border-radius:12px; z-index:9999; }
+#camera-overlay { position:fixed; top:150px; right:12px; width:320px; height:240px; pointer-events:none; z-index:10000; }
 </style>
 </head>
 <body>
@@ -74,6 +75,7 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
 
 <!-- === Camera Feed === -->
 <video id="camera-feed" autoplay muted></video>
+<canvas id="camera-overlay"></canvas>
 
 <!-- === Percy Chat Box === -->
 <div id="percy-chat-box">
@@ -93,7 +95,7 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
 
   function appendConsole(text,isUser=false,exec=false){
     const line=document.createElement('div');
-    line.className='console-line '+(isUser?'ask':'')+(exec?' exec':'');
+    line.className='console-line '+(isUser?'ask':'')+(exec?' exec':'' );
     line.textContent=(isUser?'↳ ':'')+text;
     percyConsole.appendChild(line);
     percyConsole.scrollTop = percyConsole.scrollHeight;
@@ -106,9 +108,8 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
     let response="";
     if(typeof percyRespond==='function') response=percyRespond(query);
     else if(window.Percy && typeof Percy.interpret==='function') response=Percy.interpret(query);
-    
+
     if(response){
-      // Only speak if response is meaningful
       appendConsole(response,false,false);
       if(Percy?.speak && !response.includes("Logic network idle")){
         Percy.speak(response);
@@ -193,7 +194,6 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
     if (percyMemory.length > 10) percyMemory.shift();
     appendMsg('Percy', raw);
 
-    // Speak only if meaningful
     if(Percy?.speak && !raw.includes("Logic network idle")){
       Percy.speak(raw);
     }
@@ -216,7 +216,7 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
 })();
 </script>
 
-<!-- === Voice Visualizer Script === -->
+<!-- === Voice Visualizer Script (bars + sine) === -->
 <script>
 (function(){
   const canvas=document.getElementById('voice-canvas'); if(!canvas) return;
@@ -268,17 +268,45 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
 })();
 </script>
 
-<!-- === Camera Script (Test Feed) === -->
+<!-- === Camera + TensorFlow Part Z Script === -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.9/dist/blazeface.min.js"></script>
 <script>
-(async function initCamera() {
+(async function initCameraAndDetection() {
   const video = document.getElementById('camera-feed');
-  try {
+  const overlay = document.getElementById('camera-overlay');
+  const ctx = overlay.getContext('2d');
+
+  try{
     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
     video.srcObject = stream;
     console.log("✅ Camera access granted!");
   } catch (err) {
     console.error("❌ Camera access denied or not available:", err);
+    return;
   }
+
+  overlay.width = video.clientWidth;
+  overlay.height = video.clientHeight;
+
+  const model = await blazeface.load();
+
+  async function detectFaces(){
+    if(video.readyState < 2) { requestAnimationFrame(detectFaces); return; }
+    const predictions = await model.estimateFaces(video, false);
+
+    ctx.clearRect(0,0,overlay.width,overlay.height);
+    predictions.forEach(p=>{
+      const [x,y,w,h] = p.topLeft.concat([p.bottomRight[0]-p.topLeft[0], p.bottomRight[1]-p.topLeft[1]]);
+      ctx.strokeStyle='rgba(0,255,255,0.9)';
+      ctx.lineWidth=2;
+      ctx.strokeRect(x,y,w,h);
+    });
+
+    requestAnimationFrame(detectFaces);
+  }
+
+  detectFaces();
 })();
 </script>
 
