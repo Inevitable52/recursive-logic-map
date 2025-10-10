@@ -3020,75 +3020,124 @@ Percy.PartY = {
 
 UI.say("🔧 Percy Parts U/Y (Governance, T-upgrade, V sandbox, W audit, X verifier, Y updater) installed.");
 
-// === Percy Part Z: Visual Intelligence ===
+// === Percy Part Z: Visual Intelligence + Audio/Video Overlay ===
 Percy.PartZ = (function() {
   const PartZ = {};
   let video = null;
   let canvas = null;
   let ctx = null;
-  let faceModelLoaded = false;
+  let faceModel = null;
   let objectModel = null;
 
-  // Initialize video and canvas
-  PartZ.initCamera = async function(containerId="logic-map") {
-    try {
-      video = document.createElement("video");
-      video.style.display = "none";
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      video.srcObject = stream;
-      await video.play();
+  let audioCtx, analyser, dataFreq, dataWave;
 
-      // Canvas overlay
-      canvas = document.createElement("canvas");
-      canvas.style.position = "absolute";
-      canvas.style.top = "0";
-      canvas.style.left = "0";
-      canvas.style.zIndex = "9998";
-      document.getElementById(containerId).appendChild(canvas);
+  // Initialize camera, canvas, and audio
+  PartZ.init = async function(videoId="camera-feed", overlayId="camera-overlay") {
+    try {
+      video = document.getElementById(videoId);
+      canvas = document.getElementById(overlayId);
+
+      if (!canvas) {
+        canvas = document.createElement("canvas");
+        canvas.id = overlayId;
+        canvas.style.position = "absolute";
+        canvas.style.top = video.offsetTop + "px";
+        canvas.style.left = video.offsetLeft + "px";
+        canvas.style.zIndex = "9998";
+        video.parentNode.appendChild(canvas);
+      }
+
       ctx = canvas.getContext("2d");
 
-      window.addEventListener("resize", () => {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-      });
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      // Adjust canvas size
+      function resizeCanvas() {
+        canvas.width = video.videoWidth || video.clientWidth;
+        canvas.height = video.videoHeight || video.clientHeight;
+      }
+      window.addEventListener("resize", resizeCanvas);
 
+      // Camera access
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      video.srcObject = stream;
+      await video.play();
+      resizeCanvas();
+
+      // Audio setup for bars/sinewave
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      dataFreq = new Uint8Array(analyser.frequencyBinCount);
+      dataWave = new Uint8Array(analyser.frequencyBinCount);
+      audioCtx.createMediaStreamSource(stream).connect(analyser);
+
+      // Load models
       await PartZ.loadModels();
-      PartZ.loopDetection();
-    } catch(e) {
-      console.error("Percy Part Z: Camera access failed", e);
+
+      // Start main loop
+      PartZ.loop();
+    } catch (err) {
+      console.error("Percy Part Z initialization failed:", err);
     }
   };
 
-  // Load face-api and TensorFlow object detection models
+  // Load BlazeFace and COCO-SSD
   PartZ.loadModels = async function() {
-    // Face detection
-    await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
-    await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
-    await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
-    faceModelLoaded = true;
-
-    // Object detection
-    objectModel = await cocoSsd.load();
+    faceModel = await blazeface.load();
+    try {
+      objectModel = await cocoSsd.load();
+    } catch(e) {
+      console.warn("Percy Part Z: COCO-SSD not loaded:", e);
+    }
   };
 
-  // Main detection loop
-  PartZ.loopDetection = async function() {
+  // Draw bars and sinewave over canvas
+  function drawAudioVisuals() {
+    if (!analyser) return;
+    analyser.getByteFrequencyData(dataFreq);
+    analyser.getByteTimeDomainData(dataWave);
+
+    const W = canvas.width;
+    const H = canvas.height;
+
+    // Bars
+    const barWidth = W / dataFreq.length;
+    for (let i = 0; i < dataFreq.length; i++) {
+      const barH = dataFreq[i] / 255 * H;
+      ctx.fillStyle = `rgb(${dataFreq[i]}, ${255 - dataFreq[i]}, 255)`;
+      ctx.fillRect(i * barWidth, H - barH, barWidth * 0.6, barH);
+    }
+
+    // Sinewave
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(0,255,255,0.8)';
+    ctx.beginPath();
+    let x = 0, slice = W / dataWave.length;
+    for (let i = 0; i < dataWave.length; i++) {
+      const y = dataWave[i] / 128 * H / 2;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      x += slice;
+    }
+    ctx.stroke();
+  }
+
+  // Main loop for detection + visualizer
+  PartZ.loop = async function() {
     if (!video || !ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Face detection
-    if (faceModelLoaded) {
-      const faces = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
-                                   .withFaceLandmarks().withFaceDescriptors();
-      faces.forEach(f => {
-        const { x, y, width, height } = f.detection.box;
+    if (faceModel) {
+      const returnTensors = false;
+      const predictions = await faceModel.estimateFaces(video, returnTensors);
+      predictions.forEach(pred => {
+        const start = pred.topLeft;
+        const end = pred.bottomRight;
+        const size = [end[0] - start[0], end[1] - start[1]];
         ctx.strokeStyle = "#00ffcc";
         ctx.lineWidth = 2;
-        ctx.strokeRect(x, y, width, height);
+        ctx.strokeRect(start[0], start[1], size[0], size[1]);
       });
-      Percy.onVisualInput?.({faces});
+      Percy.onVisualInput?.({faces: predictions});
     }
 
     // Object detection
@@ -3105,9 +3154,11 @@ Percy.PartZ = (function() {
       Percy.onVisualInput?.({objects: predictions});
     }
 
-    requestAnimationFrame(PartZ.loopDetection);
+    // Draw audio bars + sinewave
+    drawAudioVisuals();
+
+    requestAnimationFrame(PartZ.loop);
   };
 
   return PartZ;
 })();
-
