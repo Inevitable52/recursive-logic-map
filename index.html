@@ -85,7 +85,7 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
 
 <script>
 // === Percy Part Z (Camera + Face Detection + Audio Visualizer) ===
-Percy.PartZ = (function(){
+Percy.PartZ = (function() {
   const PartZ = {};
   const video = document.getElementById('camera-feed');
   const canvas = document.getElementById('camera-overlay');
@@ -94,19 +94,21 @@ Percy.PartZ = (function(){
   let audioCtx, analyser, dataFreq, dataWave;
   let faceModel = null;
 
-  PartZ.init = async function(){
+  // New: track previous face state
+  let prevFaces = 0;
+
+  // Callback placeholder
+  PartZ.onFaceChange = null; // assign from PartT later
+
+  PartZ.init = async function() {
     try {
-      // Camera + mic
       const stream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
       video.srcObject = stream;
       await video.play();
 
-      // Canvas sizing
       function resizeCanvas(){ canvas.width=video.clientWidth; canvas.height=video.clientHeight; }
-      resizeCanvas();
-      window.addEventListener('resize',resizeCanvas);
+      resizeCanvas(); window.addEventListener('resize',resizeCanvas);
 
-      // Audio setup
       audioCtx = new (window.AudioContext||window.webkitAudioContext)();
       analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
@@ -114,25 +116,23 @@ Percy.PartZ = (function(){
       dataWave = new Uint8Array(analyser.frequencyBinCount);
       audioCtx.createMediaStreamSource(stream).connect(analyser);
 
-      // Load BlazeFace
       faceModel = await blazeface.load();
-
       PartZ.loop();
-    } catch(e){ console.error("Percy Part Z init failed:",e); }
+    } catch(e){ console.error("Percy Part Z init failed:", e); }
   };
 
-  function drawAudio(){
-    if(!analyser) return;
-    const W = canvas.width, H = canvas.height;
+  function drawAudio() {
+    const W = canvas.width;
+    const H = canvas.height;
     analyser.getByteFrequencyData(dataFreq);
     analyser.getByteTimeDomainData(dataWave);
 
     // Bars
     const barWidth = W / dataFreq.length;
     for(let i=0;i<dataFreq.length;i++){
-      const barH = dataFreq[i]/255 * H * 0.25;
+      const barH = dataFreq[i]/255 * H * 0.3;
       ctx.fillStyle = `rgb(${dataFreq[i]}, ${255-dataFreq[i]}, 255)`;
-      ctx.fillRect(i*barWidth, H-barH, barWidth*0.6, barH);
+      ctx.fillRect(i*barWidth, H - barH, barWidth*0.6, barH);
     }
 
     // Sinewave
@@ -142,7 +142,7 @@ Percy.PartZ = (function(){
     let x = 0;
     const slice = W / dataWave.length;
     for(let i=0;i<dataWave.length;i++){
-      const y = (dataWave[i]/128 -1)*H*0.12 + H/2;
+      const y = (dataWave[i]/128 - 1) * H * 0.15 + H/2;
       if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
       x += slice;
     }
@@ -154,9 +154,11 @@ Percy.PartZ = (function(){
 
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    // Face detection
+    let faceCount = 0;
     if(faceModel){
       const predictions = await faceModel.estimateFaces(video,false);
+      faceCount = predictions.length;
+
       predictions.forEach(p=>{
         const [x1,y1] = p.topLeft;
         const [x2,y2] = p.bottomRight;
@@ -167,8 +169,13 @@ Percy.PartZ = (function(){
       });
     }
 
-    // Draw audio bars + sinewave
-    drawAudio();
+    if(analyser) drawAudio();
+
+    // Trigger callback if face count changed
+    if(faceCount !== prevFaces && typeof PartZ.onFaceChange === 'function'){
+      PartZ.onFaceChange(faceCount);
+      prevFaces = faceCount;
+    }
 
     requestAnimationFrame(PartZ.loop);
   };
