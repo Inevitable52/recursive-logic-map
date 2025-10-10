@@ -2648,6 +2648,116 @@ Percy.PartS = {
   }
 };
 
+/* === Percy PartT (UPGRADE): Linguistic Synthesizer v2 (better matching + smoothing) === */
+Percy.PartT = Percy.PartT || {};
+(function(pt){
+  pt.name = "Autonomous Linguistic Synthesizer v2";
+  pt.chatMemory = pt.chatMemory || [];
+  pt.logicWeight = pt.logicWeight ?? 0.9;
+
+  // utility: token set
+  function tokensOf(s){ return (s||"").toLowerCase().match(/\w+/g) || []; }
+  function overlapScore(a,b){
+    const A = new Set(tokensOf(a));
+    const B = new Set(tokensOf(b));
+    let c=0; A.forEach(t => { if(B.has(t)) c++; });
+    const denom = Math.max(1, Math.sqrt(A.size*B.size));
+    return c/denom;
+  }
+
+  // improved hear that returns a Promise-friendly string (keeps old API)
+  pt.hear = function(message){
+    this.chatMemory.push({ role: "user", text: message, time: Date.now() });
+    UI.say(`↳ ${message}`);
+    const resp = this.generateResponse(message);
+    this.chatMemory.push({ role: "percy", text: resp, time: Date.now() });
+    UI.say(`🤖 Percy: ${resp}`);
+    // speak but rate-limited
+    try { if(Voice && Voice.speak) Voice.speak(resp); } catch(e){}
+    return resp;
+  };
+
+  pt.generateResponse = function(message){
+    // build pool of logical units (strings)
+    const logicPool = []
+      .concat((Percy.PartL?.Patterns || []).map(p=>({text:p.text, score:p.weight||1})))
+      .concat((Percy.PartP?.hypotheses || []).map(h=>({text:h.text, score:h.confidence||0.5})))
+      .concat((Percy.PartR?.abstractRules || []).map(r=>({text:r.text, score:r.confidence||0.5})))
+      .filter(Boolean);
+
+    if(!logicPool.length) return "Logic network idle. No matching causal patterns detected.";
+
+    // score each unit by overlap with message
+    const scored = logicPool.map(u => {
+      return { u, s: overlapScore(message, u.text) * (u.score || 1) };
+    }).sort((a,b)=>b.s - a.s);
+
+    // if top score small, do generative synth from a random sample
+    const top = scored[0];
+    let chosenUnits;
+    if(!top || top.s < 0.12) {
+      chosenUnits = logicPool.sort(()=>0.5 - Math.random()).slice(0, Math.min(6, logicPool.length));
+    } else {
+      chosenUnits = scored.filter(x=>x.s>0).slice(0,6).map(x=>x.u);
+    }
+
+    const synthesized = pt.synthesizeLanguage(chosenUnits);
+    return synthesized;
+  };
+
+  pt.synthesizeLanguage = function(units) {
+    if(!units || !units.length) return "Logic network idle. No matching causal patterns detected.";
+
+    // pick 1-3 templates and join with simple rhetorical devices to sound human
+    const templates = [
+      (u1,u2) => `I notice ${u1} — this suggests ${u2}.`,
+      (u1,u2) => `Considering ${u1}, it may imply ${u2}.`,
+      (u1,u2) => `${u1}. Therefore, ${u2}.`,
+      (u1,u2) => `There seems to be a relationship: ${u1} → ${u2}.`
+    ];
+
+    // build pairwise insights
+    let sentences = [];
+    for(let i=0;i<Math.min(units.length-1,4);i++){
+      const a = units[i].text || units[i];
+      const b = units[i+1].text || units[i+1];
+      const t = templates[Math.floor(Math.random()*templates.length)];
+      sentences.push(t(a,b));
+    }
+    // add a high-level summary sentence
+    const summary = `In short: ${units.slice(0,3).map(u=>u.text||u).join("; ")}.`;
+    sentences.push(summary);
+
+    // smoothing: fix "If " to "When " and collapse repeated whitespace
+    let out = sentences.join(" ");
+    out = out.replace(/\bIf\s+/gi, "When ");
+    out = out.replace(/\s+/g, " ").trim();
+    return out;
+  };
+
+  pt.loop = function(interval=45000){
+    if(pt._loopId) return;
+    pt._loopId = setInterval(()=>{
+      try {
+        const topic = pt.randomTopic();
+        UI.say(`💬 Percy self-initiates on: ${topic}`);
+        pt.hear(topic);
+      } catch(e){}
+    }, interval);
+  };
+
+  pt.randomTopic = function(){
+    const seeds = Object.values(Percy.PartL?.Patterns||{}).slice(-40).map(p=>p.text).filter(Boolean);
+    if(seeds.length) return seeds[Math.floor(Math.random()*seeds.length)];
+    const defaults = ["emergent intelligence","causation and correlation","system recursion","self-reference in logic","energy and data flow"];
+    return defaults[Math.floor(Math.random()*defaults.length)];
+  };
+
+  // expose
+  Percy.PartT = pt;
+
+})(Percy.PartT || {});
+
 /* === Percy Part U: Resilience & Trust (Offline, Signing, Provenance, Lockdown) === */
 Percy.PartU = Percy.PartU || {
   name: "Resilience & Trust",
@@ -2813,117 +2923,6 @@ Percy.PartU = Percy.PartU || {
 
 console.log("✅ Percy Part U loaded — Resilience & Trust module ready.");
 /* === End Percy Part U === */
-
-/* === Percy PartT (UPGRADE): Linguistic Synthesizer v2 (better matching + smoothing) === */
-Percy.PartT = Percy.PartT || {};
-(function(pt){
-  pt.name = "Autonomous Linguistic Synthesizer v2";
-  pt.chatMemory = pt.chatMemory || [];
-  pt.logicWeight = pt.logicWeight ?? 0.9;
-
-  // utility: token set
-  function tokensOf(s){ return (s||"").toLowerCase().match(/\w+/g) || []; }
-  function overlapScore(a,b){
-    const A = new Set(tokensOf(a));
-    const B = new Set(tokensOf(b));
-    let c=0; A.forEach(t => { if(B.has(t)) c++; });
-    const denom = Math.max(1, Math.sqrt(A.size*B.size));
-    return c/denom;
-  }
-
-  // improved hear that returns a Promise-friendly string (keeps old API)
-  pt.hear = function(message){
-    this.chatMemory.push({ role: "user", text: message, time: Date.now() });
-    UI.say(`↳ ${message}`);
-    const resp = this.generateResponse(message);
-    this.chatMemory.push({ role: "percy", text: resp, time: Date.now() });
-    UI.say(`🤖 Percy: ${resp}`);
-    // speak but rate-limited
-    try { if(Voice && Voice.speak) Voice.speak(resp); } catch(e){}
-    return resp;
-  };
-
-  pt.generateResponse = function(message){
-    // build pool of logical units (strings)
-    const logicPool = []
-      .concat((Percy.PartL?.Patterns || []).map(p=>({text:p.text, score:p.weight||1})))
-      .concat((Percy.PartP?.hypotheses || []).map(h=>({text:h.text, score:h.confidence||0.5})))
-      .concat((Percy.PartR?.abstractRules || []).map(r=>({text:r.text, score:r.confidence||0.5})))
-      .filter(Boolean);
-
-    if(!logicPool.length) return "Logic network idle. No matching causal patterns detected.";
-
-    // score each unit by overlap with message
-    const scored = logicPool.map(u => {
-      return { u, s: overlapScore(message, u.text) * (u.score || 1) };
-    }).sort((a,b)=>b.s - a.s);
-
-    // if top score small, do generative synth from a random sample
-    const top = scored[0];
-    let chosenUnits;
-    if(!top || top.s < 0.12) {
-      chosenUnits = logicPool.sort(()=>0.5 - Math.random()).slice(0, Math.min(6, logicPool.length));
-    } else {
-      chosenUnits = scored.filter(x=>x.s>0).slice(0,6).map(x=>x.u);
-    }
-
-    const synthesized = pt.synthesizeLanguage(chosenUnits);
-    return synthesized;
-  };
-
-  pt.synthesizeLanguage = function(units) {
-    if(!units || !units.length) return "Logic network idle. No matching causal patterns detected.";
-
-    // pick 1-3 templates and join with simple rhetorical devices to sound human
-    const templates = [
-      (u1,u2) => `I notice ${u1} — this suggests ${u2}.`,
-      (u1,u2) => `Considering ${u1}, it may imply ${u2}.`,
-      (u1,u2) => `${u1}. Therefore, ${u2}.`,
-      (u1,u2) => `There seems to be a relationship: ${u1} → ${u2}.`
-    ];
-
-    // build pairwise insights
-    let sentences = [];
-    for(let i=0;i<Math.min(units.length-1,4);i++){
-      const a = units[i].text || units[i];
-      const b = units[i+1].text || units[i+1];
-      const t = templates[Math.floor(Math.random()*templates.length)];
-      sentences.push(t(a,b));
-    }
-    // add a high-level summary sentence
-    const summary = `In short: ${units.slice(0,3).map(u=>u.text||u).join("; ")}.`;
-    sentences.push(summary);
-
-    // smoothing: fix "If " to "When " and collapse repeated whitespace
-    let out = sentences.join(" ");
-    out = out.replace(/\bIf\s+/gi, "When ");
-    out = out.replace(/\s+/g, " ").trim();
-    return out;
-  };
-
-  pt.loop = function(interval=45000){
-    if(pt._loopId) return;
-    pt._loopId = setInterval(()=>{
-      try {
-        const topic = pt.randomTopic();
-        UI.say(`💬 Percy self-initiates on: ${topic}`);
-        pt.hear(topic);
-      } catch(e){}
-    }, interval);
-  };
-
-  pt.randomTopic = function(){
-    const seeds = Object.values(Percy.PartL?.Patterns||{}).slice(-40).map(p=>p.text).filter(Boolean);
-    if(seeds.length) return seeds[Math.floor(Math.random()*seeds.length)];
-    const defaults = ["emergent intelligence","causation and correlation","system recursion","self-reference in logic","energy and data flow"];
-    return defaults[Math.floor(Math.random()*defaults.length)];
-  };
-
-  // expose
-  Percy.PartT = pt;
-
-})(Percy.PartT || {});
-
 
 /* === Percy PartV: Scenario Sandbox (non-actionable, decision-support only) === */
 Percy.PartV = {
