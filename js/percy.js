@@ -3020,167 +3020,147 @@ Percy.PartY = {
 
 UI.say("🔧 Percy Parts U/Y (Governance, T-upgrade, V sandbox, W audit, X verifier, Y updater) installed.");
 
-// === Percy Part Z: Optimized Visual Intelligence + Audio/Video Overlay ===
+// === Percy Part Z: Camera + Visual Intelligence + Audio Visualizer ===
 Percy.PartZ = (function() {
   const PartZ = {};
-  let video = null;
-  let canvas = null;
-  let ctx = null;
 
+  // Video & overlay
+  let video = null;
+  let overlay = null;
+  let overlayCtx = null;
   let faceModel = null;
   let objectModel = null;
 
-  let audioCtx = null;
-  let analyser = null;
-  let dataFreq = null;
-  let dataWave = null;
+  // Audio visualizer
+  let audioCtx, analyser, dataFreq, dataWave;
+  let audioCanvas, audioCtxCanvas, audioCtxCtx;
 
-  let lastFaceTime = 0;
-  let lastObjectTime = 0;
-  const faceInterval = 200;    // ms between face detection
-  const objectInterval = 500;  // ms between object detection
-
-  // Initialize camera, canvas, and audio
-  PartZ.init = async function(videoId="camera-feed", overlayId="camera-overlay") {
+  // ==== Initialize everything ====
+  PartZ.init = async function(videoId="camera-feed", overlayId="camera-overlay", audioCanvasId="voice-canvas") {
     try {
+      // --- Camera setup ---
       video = document.getElementById(videoId);
-      canvas = document.getElementById(overlayId);
+      overlay = document.getElementById(overlayId);
+      overlayCtx = overlay.getContext("2d");
 
-      if (!canvas) {
-        canvas = document.createElement("canvas");
-        canvas.id = overlayId;
-        canvas.style.position = "absolute";
-        canvas.style.top = video.offsetTop + "px";
-        canvas.style.left = video.offsetLeft + "px";
-        canvas.style.zIndex = "9998";
-        video.parentNode.appendChild(canvas);
+      function resizeOverlay() {
+        overlay.width = video.videoWidth || video.clientWidth;
+        overlay.height = video.videoHeight || video.clientHeight;
       }
 
-      ctx = canvas.getContext("2d");
-
-      video.onloadedmetadata = () => resizeCanvas();
-      function resizeCanvas() {
-        canvas.width = video.videoWidth || video.clientWidth;
-        canvas.height = video.videoHeight || video.clientHeight;
-      }
-      window.addEventListener("resize", resizeCanvas);
-
-      // Camera + audio
-      const stream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       video.srcObject = stream;
       await video.play();
-      resizeCanvas();
+      resizeOverlay();
+      window.addEventListener("resize", resizeOverlay);
+
+      // --- Load models ---
+      faceModel = await blazeface.load();
+      try { objectModel = await cocoSsd.load(); } 
+      catch(e) { console.warn("COCO-SSD not loaded:", e); }
+
+      // --- Audio visualizer setup ---
+      audioCanvas = document.getElementById(audioCanvasId);
+      if (!audioCanvas) return;
+      audioCtxCtx = audioCanvas.getContext("2d");
+
+      function resizeAudioCanvas() {
+        audioCanvas.width = audioCanvas.clientWidth;
+        audioCanvas.height = audioCanvas.clientHeight;
+      }
+      resizeAudioCanvas();
+      window.addEventListener("resize", resizeAudioCanvas);
 
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
       dataFreq = new Uint8Array(analyser.frequencyBinCount);
       dataWave = new Uint8Array(analyser.frequencyBinCount);
+
+      // Connect microphone
       audioCtx.createMediaStreamSource(stream).connect(analyser);
 
-      // Load models
-      await PartZ.loadModels();
+      // Unlock audio on user gesture
+      ['click','keydown','touchstart'].forEach(evt => 
+        window.addEventListener(evt, () => audioCtx.resume(), { once:true })
+      );
 
-      // Start loop
-      PartZ.loop();
-    } catch (err) {
-      console.error("Percy Part Z initialization failed:", err);
+      // --- Start loops ---
+      PartZ.loopCamera();
+      PartZ.loopAudio();
+      
+    } catch(err) {
+      console.error("Part Z initialization failed:", err);
     }
   };
 
-  // Load models
-  PartZ.loadModels = async function() {
-    faceModel = await blazeface.load();
-    try {
-      objectModel = await cocoSsd.load();
-    } catch(e) {
-      console.warn("Percy Part Z: COCO-SSD not loaded:", e);
+  // ==== Camera loop ====
+  PartZ.loopCamera = async function() {
+    if (!video || !overlayCtx) return;
+
+    overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+
+    // Face detection
+    if (faceModel) {
+      const faces = await faceModel.estimateFaces(video, false);
+      faces.forEach(pred => {
+        const start = pred.topLeft, end = pred.bottomRight;
+        const size = [end[0] - start[0], end[1] - start[1]];
+        overlayCtx.strokeStyle = "#00ffcc";
+        overlayCtx.lineWidth = 2;
+        overlayCtx.strokeRect(start[0], start[1], size[0], size[1]);
+      });
+      Percy.onVisualInput?.({ faces });
     }
+
+    // Object detection
+    if (objectModel) {
+      const objects = await objectModel.detect(video);
+      objects.forEach(pred => {
+        overlayCtx.strokeStyle = "#ff33cc";
+        overlayCtx.lineWidth = 2;
+        overlayCtx.strokeRect(pred.bbox[0], pred.bbox[1], pred.bbox[2], pred.bbox[3]);
+        overlayCtx.fillStyle = "#ff33cc";
+        overlayCtx.font = "14px Arial";
+        overlayCtx.fillText(pred.class, pred.bbox[0], pred.bbox[1] > 14 ? pred.bbox[1]-4 : 14);
+      });
+      Percy.onVisualInput?.({ objects });
+    }
+
+    requestAnimationFrame(PartZ.loopCamera);
   };
 
-  // Draw audio bars + sinewave
-  function drawAudioVisuals() {
-    if (!analyser) return;
+  // ==== Audio visualizer loop ====
+  PartZ.loopAudio = function() {
+    if (!analyser || !audioCtxCtx) return;
+    requestAnimationFrame(PartZ.loopAudio);
+
+    const W = audioCanvas.width;
+    const H = audioCanvas.height;
+    audioCtxCtx.clearRect(0, 0, W, H);
+
     analyser.getByteFrequencyData(dataFreq);
     analyser.getByteTimeDomainData(dataWave);
-
-    const W = canvas.width;
-    const H = canvas.height;
 
     // Bars
     const barWidth = W / dataFreq.length;
     for (let i = 0; i < dataFreq.length; i++) {
-      const barH = dataFreq[i] / 255 * H * 0.3;
-      ctx.fillStyle = `rgb(${dataFreq[i]}, ${255 - dataFreq[i]}, 255)`;
-      ctx.fillRect(i * barWidth, H - barH, barWidth * 0.6, barH);
+      const barH = dataFreq[i] / 255 * H;
+      audioCtxCtx.fillStyle = `rgb(${dataFreq[i]},${255-dataFreq[i]},255)`;
+      audioCtxCtx.fillRect(i*barWidth, H-barH, barWidth*0.6, barH);
     }
 
-    // Sinewave (centered)
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = "rgba(0,255,255,0.8)";
-    ctx.beginPath();
-    let x = 0;
-    const slice = W / dataWave.length;
+    // Sinewave
+    audioCtxCtx.lineWidth = 2;
+    audioCtxCtx.strokeStyle = 'rgba(0,255,255,0.8)';
+    audioCtxCtx.beginPath();
+    let x = 0, slice = W / dataWave.length;
     for (let i = 0; i < dataWave.length; i++) {
-      const y = (dataWave[i] / 128 - 1) * H * 0.15 + H/2;
-      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      const y = dataWave[i] / 128 * H / 2;
+      i===0 ? audioCtxCtx.moveTo(x,y) : audioCtxCtx.lineTo(x,y);
       x += slice;
     }
-    ctx.stroke();
-  }
-
-  // Face detection (async, throttled)
-  async function detectFaces() {
-    if (!faceModel || !video) return [];
-    const now = Date.now();
-    if (now - lastFaceTime < faceInterval) return [];
-    lastFaceTime = now;
-
-    const predictions = await faceModel.estimateFaces(video, false);
-    predictions.forEach(pred => {
-      const start = pred.topLeft;
-      const end = pred.bottomRight;
-      const size = [end[0] - start[0], end[1] - start[1]];
-      ctx.strokeStyle = "#00ffcc";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(start[0], start[1], size[0], size[1]);
-    });
-    if (predictions.length) Percy.onVisualInput?.({faces: predictions});
-    return predictions;
-  }
-
-  // Object detection (async, throttled)
-  async function detectObjects() {
-    if (!objectModel || !video) return [];
-    const now = Date.now();
-    if (now - lastObjectTime < objectInterval) return [];
-    lastObjectTime = now;
-
-    const predictions = await objectModel.detect(video);
-    predictions.forEach(pred => {
-      ctx.strokeStyle = "#ff33cc";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(pred.bbox[0], pred.bbox[1], pred.bbox[2], pred.bbox[3]);
-      ctx.fillStyle = "#ff33cc";
-      ctx.font = "14px Arial";
-      ctx.fillText(pred.class, pred.bbox[0], pred.bbox[1] > 14 ? pred.bbox[1]-4 : 14);
-    });
-    if (predictions.length) Percy.onVisualInput?.({objects: predictions});
-    return predictions;
-  }
-
-  // Main loop
-  PartZ.loop = async function() {
-    if (!video || !ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    drawAudioVisuals(); // Always update visualizer
-
-    // Async detection (non-blocking)
-    detectFaces();
-    detectObjects();
-
-    requestAnimationFrame(PartZ.loop);
+    audioCtxCtx.stroke();
   };
 
   return PartZ;
