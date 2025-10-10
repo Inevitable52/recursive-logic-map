@@ -79,141 +79,13 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
   </div>
 </div>
 
-<!-- === Ask Percy / Console Script === -->
-<script>
-(function(){
-  const interpreterInput = document.getElementById('interpreter-input'),
-        percyConsole = document.getElementById('percy-console'),
-        askButton = document.getElementById('askPercyButton');
-
-  function appendConsole(text,isUser=false,exec=false){
-    const line=document.createElement('div');
-    line.className='console-line '+(isUser?'ask':'')+(exec?' exec':'' );
-    line.textContent=(isUser?'↳ ':'')+text;
-    percyConsole.appendChild(line);
-    percyConsole.scrollTop = percyConsole.scrollHeight;
-  }
-
-  function runPercyCommand(){
-    const query = interpreterInput.value.trim();
-    if(!query) return;
-    appendConsole(query,true);
-    let response="";
-    if(typeof percyRespond==='function') response=percyRespond(query);
-    else if(window.Percy && typeof Percy.interpret==='function') response=Percy.interpret(query);
-
-    if(response){
-      appendConsole(response,false,false);
-      if(Percy?.speak && !response.includes("Logic network idle")){
-        Percy.speak(response);
-      }
-    }
-    interpreterInput.value='';
-  }
-
-  interpreterInput.addEventListener('keydown',e=>{ if(e.key==='Enter') runPercyCommand(); });
-  askButton.addEventListener('click',runPercyCommand);
-})();
-</script>
-
-<!-- === Exec Logic === -->
-<script>
-(function(){
-  const execInput=document.getElementById('percy-exec-input'),
-        execBtn=document.getElementById('percy-exec-run'),
-        consoleDiv=document.getElementById('percy-console'),
-        toggleBtns=document.querySelectorAll('#exec-toggle button');
-
-  if(!execInput) return;
-  let PercyExecMode="math";
-
-  toggleBtns.forEach(btn=>btn.addEventListener('click',()=>{
-    toggleBtns.forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    PercyExecMode=btn.dataset.mode;
-  }));
-
-  async function handleExecInput(){
-    const query=execInput.value.trim(); if(!query) return; execInput.value="";
-    const userLine=document.createElement("div");
-    userLine.className="console-line ask";
-    userLine.textContent="↳ "+query;
-    consoleDiv.appendChild(userLine);
-
-    let output="";
-    if(PercyExecMode==="math") output = await PercyState.useTool("math", query);
-    else if(PercyExecMode==="java") output = await PercyState.useTool("java", query);
-    else if(PercyExecMode==="tools") output = await PercyState.PartH?.routeInput(query) || "⚠️ Percy Part H not loaded.";
-
-    const percyLine=document.createElement("div"); 
-    percyLine.className="console-line exec"; 
-    percyLine.textContent="🤖 "+output;
-    consoleDiv.appendChild(percyLine);
-    consoleDiv.scrollTop=consoleDiv.scrollHeight;
-  }
-
-  execInput.addEventListener("keydown",async e=>{
-    if(e.key==="Enter"){ e.preventDefault(); await handleExecInput(); }
-  });
-  execBtn.addEventListener("click",handleExecInput);
-})();
-</script>
-
-<!-- === Percy Part T Chat Logic === -->
-<script>
-(function(){
-  const chatInput = document.getElementById('percy-chat-input');
-  const chatSend = document.getElementById('percy-chat-send');
-  const chatMessages = document.getElementById('percy-chat-messages');
-  let percyMemory = [];
-
-  function appendMsg(role, text) {
-    const line = document.createElement('div');
-    line.textContent = `${role}: ${text}`;
-    line.style.margin = '6px 0';
-    line.style.color = role === 'Percy' ? '#7fff7f' : '#d6d8ff';
-    chatMessages.appendChild(line);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  }
-
-  function PercyReply(userText) {
-    let raw = "";
-    if (Percy?.PartT?.hear) raw = Percy.PartT.hear(userText);
-    else if (Percy?.interpret) raw = Percy.interpret(userText);
-    else if (typeof percyRespond === 'function') raw = percyRespond(userText);
-    else raw = "⚙️ Percy core logic not initialized yet.";
-
-    percyMemory.push({ you: userText, percy: raw });
-    if (percyMemory.length > 10) percyMemory.shift();
-    appendMsg('Percy', raw);
-
-    if(Percy?.speak && !raw.includes("Logic network idle")){
-      Percy.speak(raw);
-    }
-  }
-
-  function sendMessage(){
-    const text = chatInput.value.trim();
-    if (!text) return;
-    appendMsg('You', text);
-    chatInput.value = '';
-    PercyReply(text);
-  }
-
-  chatSend.addEventListener('click', sendMessage);
-  chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
-
-  setInterval(() => {
-    if (Percy?.PartT?.loop) Percy.PartT.loop(1000);
-  }, 120000);
-})();
-</script>
-
-<!-- === Camera + TensorFlow + Audio Overlay Part Z Script === -->
+<!-- TensorFlow -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.9/dist/blazeface.min.js"></script>
+
 <script>
-Percy.PartZ = (function() {
+// === Percy Part Z (Camera + Face Detection + Audio Visualizer) ===
+Percy.PartZ = (function(){
   const PartZ = {};
   const video = document.getElementById('camera-feed');
   const canvas = document.getElementById('camera-overlay');
@@ -222,7 +94,7 @@ Percy.PartZ = (function() {
   let audioCtx, analyser, dataFreq, dataWave;
   let faceModel = null;
 
-  PartZ.init = async function() {
+  PartZ.init = async function(){
     try {
       // Camera + mic
       const stream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
@@ -231,7 +103,8 @@ Percy.PartZ = (function() {
 
       // Canvas sizing
       function resizeCanvas(){ canvas.width=video.clientWidth; canvas.height=video.clientHeight; }
-      resizeCanvas(); window.addEventListener('resize',resizeCanvas);
+      resizeCanvas();
+      window.addEventListener('resize',resizeCanvas);
 
       // Audio setup
       audioCtx = new (window.AudioContext||window.webkitAudioContext)();
@@ -241,26 +114,25 @@ Percy.PartZ = (function() {
       dataWave = new Uint8Array(analyser.frequencyBinCount);
       audioCtx.createMediaStreamSource(stream).connect(analyser);
 
-      // BlazeFace
+      // Load BlazeFace
       faceModel = await blazeface.load();
 
       PartZ.loop();
-    } catch(e){ console.error("Percy Part Z init failed:", e); }
+    } catch(e){ console.error("Percy Part Z init failed:",e); }
   };
 
-  function drawAudio() {
-    const W = canvas.width;
-    const H = canvas.height;
-
+  function drawAudio(){
+    if(!analyser) return;
+    const W = canvas.width, H = canvas.height;
     analyser.getByteFrequencyData(dataFreq);
     analyser.getByteTimeDomainData(dataWave);
 
     // Bars
     const barWidth = W / dataFreq.length;
     for(let i=0;i<dataFreq.length;i++){
-      const barH = dataFreq[i]/255 * H * 0.3; // scale down height
+      const barH = dataFreq[i]/255 * H * 0.25;
       ctx.fillStyle = `rgb(${dataFreq[i]}, ${255-dataFreq[i]}, 255)`;
-      ctx.fillRect(i*barWidth, H - barH, barWidth*0.6, barH);
+      ctx.fillRect(i*barWidth, H-barH, barWidth*0.6, barH);
     }
 
     // Sinewave
@@ -270,7 +142,7 @@ Percy.PartZ = (function() {
     let x = 0;
     const slice = W / dataWave.length;
     for(let i=0;i<dataWave.length;i++){
-      const y = (dataWave[i]/128 - 1) * H * 0.15 + H/2; // center and scale
+      const y = (dataWave[i]/128 -1)*H*0.12 + H/2;
       if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
       x += slice;
     }
@@ -296,7 +168,7 @@ Percy.PartZ = (function() {
     }
 
     // Draw audio bars + sinewave
-    if(analyser) drawAudio();
+    drawAudio();
 
     requestAnimationFrame(PartZ.loop);
   };
