@@ -40,10 +40,6 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
   padding:6px 10px; background:#1aff55; color:black; border:none; cursor:pointer;
 }
 
-/* === Voice Visualizer === */
-#voice-visualizer { position:fixed; top:12px; right:12px; width:360px; height:128px; pointer-events:none; display:flex; align-items:center; border-radius:12px; background:linear-gradient(180deg,rgba(7,7,12,0.6),rgba(7,7,12,0.35)); box-shadow:0 6px 24px rgba(0,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.02); border:1px solid rgba(0,255,255,0.1); }
-#voice-canvas { flex:1; width:100%; height:100%; border-radius:8px; background:linear-gradient(180deg,rgba(0,0,0,0.1),rgba(0,0,0,0.05)); }
-
 /* === Camera Feed === */
 #camera-feed { position:fixed; top:150px; right:12px; width:320px; height:240px; border:1px solid #333; border-radius:12px; z-index:9999; }
 #camera-overlay { position:fixed; top:150px; right:12px; width:320px; height:240px; pointer-events:none; z-index:10000; }
@@ -69,9 +65,6 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
 <button id="percy-exec-run">Run Exec</button>
 
 <script src="js/percy.js?v=6.4"></script>
-
-<!-- === Voice Visualizer === -->
-<div id="voice-visualizer"><canvas id="voice-canvas"></canvas></div>
 
 <!-- === Camera Feed === -->
 <video id="camera-feed" autoplay muted></video>
@@ -216,35 +209,51 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
 })();
 </script>
 
-<!-- === Voice Visualizer Script (bars + sine) === -->
+<!-- === Camera + TensorFlow + Audio Overlay Part Z Script === -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.9/dist/blazeface.min.js"></script>
 <script>
-(function(){
-  const canvas=document.getElementById('voice-canvas'); if(!canvas) return;
-  const ctx=canvas.getContext('2d');
-  function resize(){ canvas.width=canvas.clientWidth; canvas.height=canvas.clientHeight; }
-  resize(); window.addEventListener('resize',resize);
+Percy.PartZ = (function() {
+  const PartZ = {};
+  let video = document.getElementById('camera-feed');
+  let canvas = document.getElementById('camera-overlay');
+  let ctx = canvas.getContext('2d');
 
-  let audioCtx,analyser,dataFreq,dataWave;
+  let audioCtx, analyser, dataFreq, dataWave;
+  let faceModel = null;
 
-  async function initAudio(){
-    if(audioCtx) return;
-    try{
-      audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-      analyser=audioCtx.createAnalyser(); analyser.fftSize=256;
-      dataFreq=new Uint8Array(analyser.frequencyBinCount); dataWave=new Uint8Array(analyser.frequencyBinCount);
-      const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+  PartZ.init = async function() {
+    try {
+      // Camera + mic
+      const stream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
+      video.srcObject = stream;
+      await video.play();
+
+      // Canvas sizing
+      function resizeCanvas(){ canvas.width=video.clientWidth; canvas.height=video.clientHeight; }
+      resizeCanvas(); window.addEventListener('resize',resizeCanvas);
+
+      // Audio setup
+      audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize=256;
+      dataFreq=new Uint8Array(analyser.frequencyBinCount);
+      dataWave=new Uint8Array(analyser.frequencyBinCount);
       audioCtx.createMediaStreamSource(stream).connect(analyser);
-      draw();
-    }catch(e){ console.error("🎤 Microphone access denied:",e); }
-  }
 
-  function draw(){
-    requestAnimationFrame(draw); if(!analyser) return;
+      // BlazeFace
+      faceModel = await blazeface.load();
+
+      PartZ.loop();
+    } catch(e){ console.error("Percy Part Z init failed:", e); }
+  };
+
+  function drawAudio(){
+    analyser.getByteFrequencyData(dataFreq);
+    analyser.getByteTimeDomainData(dataWave);
     const W=canvas.width,H=canvas.height;
-    ctx.clearRect(0,0,W,H);
 
     // Bars
-    analyser.getByteFrequencyData(dataFreq);
     const barWidth=W/dataFreq.length;
     for(let i=0;i<dataFreq.length;i++){
       const barH=dataFreq[i]/255*H;
@@ -253,7 +262,6 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
     }
 
     // Sinewave
-    analyser.getByteTimeDomainData(dataWave);
     ctx.lineWidth=2; ctx.strokeStyle='rgba(0,255,255,0.8)'; ctx.beginPath();
     let x=0, slice=W/dataWave.length;
     for(let i=0;i<dataWave.length;i++){
@@ -264,50 +272,33 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
     ctx.stroke();
   }
 
-  ['click','keydown','touchstart'].forEach(evt=>window.addEventListener(evt,initAudio,{once:true,passive:true}));
+  PartZ.loop = async function(){
+    if(video.readyState<2){ requestAnimationFrame(PartZ.loop); return; }
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // Face detection
+    if(faceModel){
+      const predictions = await faceModel.estimateFaces(video,false);
+      predictions.forEach(p=>{
+        const [x1,y1] = p.topLeft;
+        const [x2,y2] = p.bottomRight;
+        const w=x2-x1, h=y2-y1;
+        ctx.strokeStyle='rgba(0,255,255,0.9)'; ctx.lineWidth=2;
+        ctx.strokeRect(x1,y1,w,h);
+      });
+      Percy.onVisualInput?.({faces:predictions});
+    }
+
+    // Audio overlay
+    if(analyser) drawAudio();
+
+    requestAnimationFrame(PartZ.loop);
+  };
+
+  return PartZ;
 })();
-</script>
 
-<!-- === Camera + TensorFlow Part Z Script === -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.9/dist/blazeface.min.js"></script>
-<script>
-(async function initCameraAndDetection() {
-  const video = document.getElementById('camera-feed');
-  const overlay = document.getElementById('camera-overlay');
-  const ctx = overlay.getContext('2d');
-
-  try{
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    video.srcObject = stream;
-    console.log("✅ Camera access granted!");
-  } catch (err) {
-    console.error("❌ Camera access denied or not available:", err);
-    return;
-  }
-
-  overlay.width = video.clientWidth;
-  overlay.height = video.clientHeight;
-
-  const model = await blazeface.load();
-
-  async function detectFaces(){
-    if(video.readyState < 2) { requestAnimationFrame(detectFaces); return; }
-    const predictions = await model.estimateFaces(video, false);
-
-    ctx.clearRect(0,0,overlay.width,overlay.height);
-    predictions.forEach(p=>{
-      const [x,y,w,h] = p.topLeft.concat([p.bottomRight[0]-p.topLeft[0], p.bottomRight[1]-p.topLeft[1]]);
-      ctx.strokeStyle='rgba(0,255,255,0.9)';
-      ctx.lineWidth=2;
-      ctx.strokeRect(x,y,w,h);
-    });
-
-    requestAnimationFrame(detectFaces);
-  }
-
-  detectFaces();
-})();
+Percy.PartZ.init();
 </script>
 
 </body>
