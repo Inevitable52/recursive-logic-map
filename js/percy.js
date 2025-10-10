@@ -3020,16 +3020,25 @@ Percy.PartY = {
 
 UI.say("🔧 Percy Parts U/Y (Governance, T-upgrade, V sandbox, W audit, X verifier, Y updater) installed.");
 
-// === Percy Part Z: Visual Intelligence + Audio/Video Overlay ===
+// === Percy Part Z: Optimized Visual Intelligence + Audio/Video Overlay ===
 Percy.PartZ = (function() {
   const PartZ = {};
   let video = null;
   let canvas = null;
   let ctx = null;
+
   let faceModel = null;
   let objectModel = null;
 
-  let audioCtx, analyser, dataFreq, dataWave;
+  let audioCtx = null;
+  let analyser = null;
+  let dataFreq = null;
+  let dataWave = null;
+
+  let lastFaceTime = 0;
+  let lastObjectTime = 0;
+  const faceInterval = 200;    // ms between face detection
+  const objectInterval = 500;  // ms between object detection
 
   // Initialize camera, canvas, and audio
   PartZ.init = async function(videoId="camera-feed", overlayId="camera-overlay") {
@@ -3049,20 +3058,19 @@ Percy.PartZ = (function() {
 
       ctx = canvas.getContext("2d");
 
-      // Adjust canvas size
+      video.onloadedmetadata = () => resizeCanvas();
       function resizeCanvas() {
         canvas.width = video.videoWidth || video.clientWidth;
         canvas.height = video.videoHeight || video.clientHeight;
       }
       window.addEventListener("resize", resizeCanvas);
 
-      // Camera access
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      // Camera + audio
+      const stream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
       video.srcObject = stream;
       await video.play();
       resizeCanvas();
 
-      // Audio setup for bars/sinewave
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
@@ -3073,14 +3081,14 @@ Percy.PartZ = (function() {
       // Load models
       await PartZ.loadModels();
 
-      // Start main loop
+      // Start loop
       PartZ.loop();
     } catch (err) {
       console.error("Percy Part Z initialization failed:", err);
     }
   };
 
-  // Load BlazeFace and COCO-SSD
+  // Load models
   PartZ.loadModels = async function() {
     faceModel = await blazeface.load();
     try {
@@ -3090,7 +3098,7 @@ Percy.PartZ = (function() {
     }
   };
 
-  // Draw bars and sinewave over canvas
+  // Draw audio bars + sinewave
   function drawAudioVisuals() {
     if (!analyser) return;
     analyser.getByteFrequencyData(dataFreq);
@@ -3102,60 +3110,75 @@ Percy.PartZ = (function() {
     // Bars
     const barWidth = W / dataFreq.length;
     for (let i = 0; i < dataFreq.length; i++) {
-      const barH = dataFreq[i] / 255 * H;
+      const barH = dataFreq[i] / 255 * H * 0.3;
       ctx.fillStyle = `rgb(${dataFreq[i]}, ${255 - dataFreq[i]}, 255)`;
       ctx.fillRect(i * barWidth, H - barH, barWidth * 0.6, barH);
     }
 
-    // Sinewave
+    // Sinewave (centered)
     ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(0,255,255,0.8)';
+    ctx.strokeStyle = "rgba(0,255,255,0.8)";
     ctx.beginPath();
-    let x = 0, slice = W / dataWave.length;
+    let x = 0;
+    const slice = W / dataWave.length;
     for (let i = 0; i < dataWave.length; i++) {
-      const y = dataWave[i] / 128 * H / 2;
+      const y = (dataWave[i] / 128 - 1) * H * 0.15 + H/2;
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
       x += slice;
     }
     ctx.stroke();
   }
 
-  // Main loop for detection + visualizer
+  // Face detection (async, throttled)
+  async function detectFaces() {
+    if (!faceModel || !video) return [];
+    const now = Date.now();
+    if (now - lastFaceTime < faceInterval) return [];
+    lastFaceTime = now;
+
+    const predictions = await faceModel.estimateFaces(video, false);
+    predictions.forEach(pred => {
+      const start = pred.topLeft;
+      const end = pred.bottomRight;
+      const size = [end[0] - start[0], end[1] - start[1]];
+      ctx.strokeStyle = "#00ffcc";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(start[0], start[1], size[0], size[1]);
+    });
+    if (predictions.length) Percy.onVisualInput?.({faces: predictions});
+    return predictions;
+  }
+
+  // Object detection (async, throttled)
+  async function detectObjects() {
+    if (!objectModel || !video) return [];
+    const now = Date.now();
+    if (now - lastObjectTime < objectInterval) return [];
+    lastObjectTime = now;
+
+    const predictions = await objectModel.detect(video);
+    predictions.forEach(pred => {
+      ctx.strokeStyle = "#ff33cc";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(pred.bbox[0], pred.bbox[1], pred.bbox[2], pred.bbox[3]);
+      ctx.fillStyle = "#ff33cc";
+      ctx.font = "14px Arial";
+      ctx.fillText(pred.class, pred.bbox[0], pred.bbox[1] > 14 ? pred.bbox[1]-4 : 14);
+    });
+    if (predictions.length) Percy.onVisualInput?.({objects: predictions});
+    return predictions;
+  }
+
+  // Main loop
   PartZ.loop = async function() {
     if (!video || !ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Face detection
-    if (faceModel) {
-      const returnTensors = false;
-      const predictions = await faceModel.estimateFaces(video, returnTensors);
-      predictions.forEach(pred => {
-        const start = pred.topLeft;
-        const end = pred.bottomRight;
-        const size = [end[0] - start[0], end[1] - start[1]];
-        ctx.strokeStyle = "#00ffcc";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(start[0], start[1], size[0], size[1]);
-      });
-      Percy.onVisualInput?.({faces: predictions});
-    }
+    drawAudioVisuals(); // Always update visualizer
 
-    // Object detection
-    if (objectModel) {
-      const predictions = await objectModel.detect(video);
-      predictions.forEach(pred => {
-        ctx.strokeStyle = "#ff33cc";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(pred.bbox[0], pred.bbox[1], pred.bbox[2], pred.bbox[3]);
-        ctx.fillStyle = "#ff33cc";
-        ctx.font = "14px Arial";
-        ctx.fillText(pred.class, pred.bbox[0], pred.bbox[1] > 14 ? pred.bbox[1]-4 : 14);
-      });
-      Percy.onVisualInput?.({objects: predictions});
-    }
-
-    // Draw audio bars + sinewave
-    drawAudioVisuals();
+    // Async detection (non-blocking)
+    detectFaces();
+    detectObjects();
 
     requestAnimationFrame(PartZ.loop);
   };
