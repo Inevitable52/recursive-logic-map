@@ -2648,130 +2648,230 @@ Percy.PartS = {
   }
 };
 
-/* === Percy Part T: Autonomous Linguistic Synthesizer === */
-Percy.PartT = {
-  name: "Autonomous Linguistic Synthesizer",
-  chatMemory: [],
-  logicWeight: 0.9,
-  active: true,
+/* === Percy PartU: Governance, Approvals & Safe Controls === */
+Percy.PartU = (function(){
+  const approvals = Memory.load("approvals", []) || []; // {id, action, requestedBy, approvedBy, ts, status}
+  function requestApproval(actionDesc, actor = OWNER.primary) {
+    const req = { id: `ap_${Date.now()}`, action: actionDesc, requestedBy: actor, ts: new Date().toISOString(), status: "pending" };
+    approvals.push(req); Memory.save("approvals", approvals);
+    UI.say(`🔐 Approval requested: ${actionDesc} (id:${req.id})`);
+    return req;
+  }
+  async function approve(id, approver=OWNER.primary) {
+    const req = approvals.find(r=>r.id===id);
+    if(!req) return `⚠️ Approval ${id} not found.`;
+    req.approvedBy = approver; req.status = "approved"; req.approvedAt = new Date().toISOString();
+    Memory.save("approvals", approvals);
+    UI.say(`✅ Approval ${id} granted by ${approver}.`);
+    return req;
+  }
+  function listPending() { return approvals.filter(r=>r.status==="pending"); }
+  return { requestApproval, approve, listPending, approvals };
+})();
 
-  /* --- 1. Input message into reasoning --- */
-  hear(message) {
-    if (!message) return;
+/* === Percy PartT (UPGRADE): Linguistic Synthesizer v2 (better matching + smoothing) === */
+Percy.PartT = Percy.PartT || {};
+(function(pt){
+  pt.name = "Autonomous Linguistic Synthesizer v2";
+  pt.chatMemory = pt.chatMemory || [];
+  pt.logicWeight = pt.logicWeight ?? 0.9;
+
+  // utility: token set
+  function tokensOf(s){ return (s||"").toLowerCase().match(/\w+/g) || []; }
+  function overlapScore(a,b){
+    const A = new Set(tokensOf(a));
+    const B = new Set(tokensOf(b));
+    let c=0; A.forEach(t => { if(B.has(t)) c++; });
+    const denom = Math.max(1, Math.sqrt(A.size*B.size));
+    return c/denom;
+  }
+
+  // improved hear that returns a Promise-friendly string (keeps old API)
+  pt.hear = function(message){
     this.chatMemory.push({ role: "user", text: message, time: Date.now() });
-    console.log(`🗣️ User: ${message}`);
-    const reply = this.generateResponse(message);
-    this.display(reply);
-    return reply;
-  },
+    UI.say(`↳ ${message}`);
+    const resp = this.generateResponse(message);
+    this.chatMemory.push({ role: "percy", text: resp, time: Date.now() });
+    UI.say(`🤖 Percy: ${resp}`);
+    // speak but rate-limited
+    try { if(Voice && Voice.speak) Voice.speak(resp); } catch(e){}
+    return resp;
+  };
 
-  /* --- 2. Generate language through reasoning only --- */
-  generateResponse(message) {
-    const logicPool = [
-      ...(Percy.PartL?.Patterns || []),
-      ...(Percy.PartP?.hypotheses || []),
-      ...(Percy.PartR?.abstractRules || [])
-    ];
+  pt.generateResponse = function(message){
+    // build pool of logical units (strings)
+    const logicPool = []
+      .concat((Percy.PartL?.Patterns || []).map(p=>({text:p.text, score:p.weight||1})))
+      .concat((Percy.PartP?.hypotheses || []).map(h=>({text:h.text, score:h.confidence||0.5})))
+      .concat((Percy.PartR?.abstractRules || []).map(r=>({text:r.text, score:r.confidence||0.5})))
+      .filter(Boolean);
 
-    const related = logicPool.filter(p =>
-      message.toLowerCase().includes(p.text?.toLowerCase?.() || "")
-    );
+    if(!logicPool.length) return "Logic network idle. No matching causal patterns detected.";
 
-    const source = related.length
-      ? related
-      : logicPool.slice(-Math.floor(Math.random() * 10 + 5));
+    // score each unit by overlap with message
+    const scored = logicPool.map(u => {
+      return { u, s: overlapScore(message, u.text) * (u.score || 1) };
+    }).sort((a,b)=>b.s - a.s);
 
-    const synthesized = this.synthesizeLanguage(source);
-    this.chatMemory.push({ role: "percy", text: synthesized, time: Date.now() });
-    console.log(`🤖 Percy: ${synthesized}`);
+    // if top score small, do generative synth from a random sample
+    const top = scored[0];
+    let chosenUnits;
+    if(!top || top.s < 0.12) {
+      chosenUnits = logicPool.sort(()=>0.5 - Math.random()).slice(0, Math.min(6, logicPool.length));
+    } else {
+      chosenUnits = scored.filter(x=>x.s>0).slice(0,6).map(x=>x.u);
+    }
+
+    const synthesized = pt.synthesizeLanguage(chosenUnits);
     return synthesized;
-  },
+  };
 
-  /* --- 3. Convert logic into dynamic sentences --- */
-  synthesizeLanguage(units) {
-    if (!units.length)
-      return "Logic network idle. No matching causal patterns detected.";
+  pt.synthesizeLanguage = function(units) {
+    if(!units || !units.length) return "Logic network idle. No matching causal patterns detected.";
 
-    const linkers = [
-      "thus",
-      "therefore",
-      "hence",
-      "which implies",
-      "meaning",
-      "as a result"
+    // pick 1-3 templates and join with simple rhetorical devices to sound human
+    const templates = [
+      (u1,u2) => `I notice ${u1} — this suggests ${u2}.`,
+      (u1,u2) => `Considering ${u1}, it may imply ${u2}.`,
+      (u1,u2) => `${u1}. Therefore, ${u2}.`,
+      (u1,u2) => `There seems to be a relationship: ${u1} → ${u2}.`
     ];
 
-    const combine = (a, b) => {
-      const link = linkers[Math.floor(Math.random() * linkers.length)];
-      return `${a.text || a} ${link} ${b.text || b}`;
-    };
-
-    let result = units[0].text || units[0];
-    for (let i = 1; i < units.length; i++) {
-      result = combine({ text: result }, units[i]);
+    // build pairwise insights
+    let sentences = [];
+    for(let i=0;i<Math.min(units.length-1,4);i++){
+      const a = units[i].text || units[i];
+      const b = units[i+1].text || units[i+1];
+      const t = templates[Math.floor(Math.random()*templates.length)];
+      sentences.push(t(a,b));
     }
+    // add a high-level summary sentence
+    const summary = `In short: ${units.slice(0,3).map(u=>u.text||u).join("; ")}.`;
+    sentences.push(summary);
 
-    // Smooth language
-    result = result
-      .replace(/\bIf\s+/g, "When ")
-      .replace(/\s+/g, " ")
-      .replace(/\s([.,!?;:])/g, "$1")
-      .trim();
+    // smoothing: fix "If " to "When " and collapse repeated whitespace
+    let out = sentences.join(" ");
+    out = out.replace(/\bIf\s+/gi, "When ");
+    out = out.replace(/\s+/g, " ").trim();
+    return out;
+  };
 
-    return result.charAt(0).toUpperCase() + result.slice(1);
-  },
-
-  /* --- 4. Display Percy's message on HTML UI --- */
-  display(text) {
-    const consoleDiv = document.getElementById("percy-console");
-    const msgDiv = document.getElementById("percy-message");
-
-    if (consoleDiv) {
-      const line = document.createElement("div");
-      line.className = "console-line exec";
-      line.textContent = "🤖 " + text;
-      consoleDiv.appendChild(line);
-      consoleDiv.scrollTop = consoleDiv.scrollHeight;
-    }
-
-    if (msgDiv) msgDiv.textContent = text;
-
-    if (Percy?.speak) Percy.speak(text);
-  },
-
-  /* --- 5. Autonomous reasoning chat loop --- */
-  loop(interval = 45000) {
-    if (this._interval) clearInterval(this._interval);
-    this._interval = setInterval(() => {
-      if (!this.active) return;
-      const topic = this.randomTopic();
-      console.log(`💬 Percy self-initiates on: ${topic}`);
-      const response = this.generateResponse(topic);
-      this.display(response);
+  pt.loop = function(interval=45000){
+    if(pt._loopId) return;
+    pt._loopId = setInterval(()=>{
+      try {
+        const topic = pt.randomTopic();
+        UI.say(`💬 Percy self-initiates on: ${topic}`);
+        pt.hear(topic);
+      } catch(e){}
     }, interval);
-  },
+  };
 
-  /* --- 6. Generate random logical topics --- */
-  randomTopic() {
-    const seeds = [
-      "causation and correlation",
-      "emergent intelligence",
-      "recursive learning",
-      "energy and data flow",
-      "adaptive reasoning",
-      "pattern reinforcement",
-      "language synthesis",
-      "logical autonomy"
-    ];
-    return seeds[Math.floor(Math.random() * seeds.length)];
-  },
+  pt.randomTopic = function(){
+    const seeds = Object.values(Percy.PartL?.Patterns||{}).slice(-40).map(p=>p.text).filter(Boolean);
+    if(seeds.length) return seeds[Math.floor(Math.random()*seeds.length)];
+    const defaults = ["emergent intelligence","causation and correlation","system recursion","self-reference in logic","energy and data flow"];
+    return defaults[Math.floor(Math.random()*defaults.length)];
+  };
 
-  /* --- 7. Allow toggling Percy T autonomy --- */
-  toggle(state) {
-    this.active = state ?? !this.active;
-    console.log(`🌀 Percy Part T ${this.active ? "activated" : "paused"}.`);
+  // expose
+  Percy.PartT = pt;
+
+})(Percy.PartT || {});
+
+
+/* === Percy PartV: Scenario Sandbox (non-actionable, decision-support only) === */
+Percy.PartV = {
+  name: "Scenario Sandbox (safe, non-actionable)",
+  runScenario: function({description="",runs=200,variantFn=null}) {
+    // returns aggregated risk/confidence metrics — NOT prescriptive plans
+    const outcomes = { success:0, partial:0, fail:0 };
+    for(let i=0;i<runs;i++){
+      // variantFn should be light and deterministic-ish; if absent, use random heuristic
+      const r = variantFn ? variantFn(i) : Math.random();
+      if(r>0.7) outcomes.success++;
+      else if(r>0.35) outcomes.partial++;
+      else outcomes.fail++;
+    }
+    const total = runs;
+    const result = {
+      scenario: description,
+      runs,
+      distribution: {
+        success: outcomes.success/total,
+        partial: outcomes.partial/total,
+        fail: outcomes.fail/total
+      },
+      summary: `Simulated ${runs} runs — success:${(outcomes.success/total*100).toFixed(1)}% partial:${(outcomes.partial/total*100).toFixed(1)}% fail:${(outcomes.fail/total*100).toFixed(1)}%`
+    };
+    // log with provenance
+    Memory.push("scenarios", result, 500);
+    UI.say(`🧪 Scenario completed: ${description}`);
+    return result;
   }
 };
 
-console.log("✅ Percy Part T loaded — Autonomous Linguistic Synthesizer active.");
-/* === End Percy Part T === */
+/* === Percy PartW: Explainability & Audit Trail === */
+Percy.PartW = {
+  name: "Explainability & Audit",
+  log: function(entry) {
+    const e = { ts: new Date().toISOString(), entry };
+    Memory.push("audit:log", e, 5000);
+    // also show lightweight UI summary
+    UI.say(`🔍 Audit: ${entry.type || "event"} — ${entry.summary || entry.action || JSON.stringify(entry).slice(0,80)}`);
+  },
+  explainDecision: function(decisionObj) {
+    // decisionObj: {id, reasoningUnits:[...], score, recommendedBy}
+    const expl = {
+      id: decisionObj.id || `d_${Date.now()}`,
+      reasoning: decisionObj.reasoningUnits || [],
+      score: decisionObj.score || 0,
+      by: decisionObj.recommendedBy || "Percy",
+      ts: new Date().toISOString()
+    };
+    Memory.push("explain:decisions", expl, 1000);
+    return expl;
+  },
+  getRecentAudit: function(limit=50){ return Memory.load("audit:log", []).slice(-limit); }
+};
+
+/* === Percy PartX: Source Verifier & Tagger (safe web lookups only via Tasks.register.autoLearn/autoBrowse) === */
+Percy.PartX = {
+  name: "Source Verifier",
+  verifyTextProvenance: async function(text, sourceUrl) {
+    // simple checks: domain whitelisting + minimal heuristics
+    const domain = (sourceUrl || "").split("/")[2] || "";
+    const trusted = (TrustedSources || []).some(d => domain && d.includes(domain));
+    const length = (text||"").length;
+    const result = { trustedDomain: trusted, length, source: sourceUrl, flagged: !trusted || length<50 };
+    Memory.push("provenance", result, 1000);
+    return result;
+  },
+  tagSeedWithSource: function(seedId, sourceUrl){
+    if(!PercyState.gnodes[seedId]) return false;
+    PercyState.updateSeed(seedId, { data: Object.assign({}, PercyState.gnodes[seedId].data, { source: sourceUrl }) });
+    Percy.PartW.log({ type: "provenance", summary: `Tagged ${seedId} with ${sourceUrl}` });
+    return true;
+  }
+};
+
+/* === Percy PartY: Safe Update Manager (stub for federated/trusted updates) === */
+Percy.PartY = {
+  name: "Safe Update Manager (federated-ready stub)",
+  pending: Memory.load("updates:pending", []) || [],
+  proposeUpdate: function(codeSnippet, description) {
+    const id = `upd_${Date.now()}`;
+    this.pending.push({ id, codeSnippet: String(codeSnippet).slice(0,1000), description, ts: new Date().toISOString(), status: "proposed" });
+    Memory.save("updates:pending", this.pending);
+    Percy.PartW.log({ type:"update-proposal", summary: description });
+    return id;
+  },
+  acceptUpdate: function(id, approver=OWNER.primary) {
+    // require governance approval
+    const ap = Percy.PartU.requestApproval(`Accept update ${id}`, approver);
+    return ap;
+  },
+  listPending: function(){ return this.pending; }
+};
+
+UI.say("🔧 Percy Parts U/Y (Governance, T-upgrade, V sandbox, W audit, X verifier, Y updater) installed.");
