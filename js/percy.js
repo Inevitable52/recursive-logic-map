@@ -2648,26 +2648,171 @@ Percy.PartS = {
   }
 };
 
-/* === Percy PartU: Governance, Approvals & Safe Controls === */
-Percy.PartU = (function(){
-  const approvals = Memory.load("approvals", []) || []; // {id, action, requestedBy, approvedBy, ts, status}
-  function requestApproval(actionDesc, actor = OWNER.primary) {
-    const req = { id: `ap_${Date.now()}`, action: actionDesc, requestedBy: actor, ts: new Date().toISOString(), status: "pending" };
-    approvals.push(req); Memory.save("approvals", approvals);
-    UI.say(`🔐 Approval requested: ${actionDesc} (id:${req.id})`);
-    return req;
+/* === Percy Part U: Resilience & Trust (Offline, Signing, Provenance, Lockdown) === */
+Percy.PartU = Percy.PartU || {
+  name: "Resilience & Trust",
+  offline: false,
+  lockdown: false,
+  ownerId: OWNER.primary || "owner",
+  keyJwkPrivKeyStorageKey: "percy:ownerPrivJWK",
+  keyJwkPubKeyStorageKey: "percy:ownerPubJWK",
+
+  /* 1. Init keys (load or generate) */
+  init: async function() {
+    // Try load JWK keys from localStorage, else generate
+    try {
+      const priv = localStorage.getItem(this.keyJwkPrivKeyStorageKey);
+      const pub = localStorage.getItem(this.keyJwkPubKeyStorageKey);
+      if (priv && pub) {
+        this._privJwk = JSON.parse(priv);
+        this._pubJwk = JSON.parse(pub);
+        UI.say("🔐 Percy Part U: Owner keys loaded.");
+      } else if (window.crypto && crypto.subtle) {
+        const kp = await crypto.subtle.generateKey(
+          { name: "ECDSA", namedCurve: "P-256" },
+          true,
+          ["sign","verify"]
+        );
+        const privJwk = await crypto.subtle.exportKey("jwk", kp.privateKey);
+        const pubJwk = await crypto.subtle.exportKey("jwk", kp.publicKey);
+        localStorage.setItem(this.keyJwkPrivKeyStorageKey, JSON.stringify(privJwk));
+        localStorage.setItem(this.keyJwkPubKeyStorageKey, JSON.stringify(pubJwk));
+        this._privJwk = privJwk; this._pubJwk = pubJwk;
+        UI.say("🔐 Percy Part U: New owner keys generated and stored.");
+      } else {
+        UI.say("⚠️ Percy Part U: crypto.subtle not available; signing disabled.");
+      }
+    } catch (e) {
+      console.error("PartU.init error:", e);
+      UI.say("⚠️ Percy Part U initialization error.");
+    }
+  },
+
+  /* 2. Sign a seed (attach signature + provenance) */
+  signSeed: async function(seedId) {
+    try {
+      if (!this._privJwk) { UI.say("⚠️ No signing key available."); return null; }
+      const seed = PercyState.gnodes?.[seedId];
+      if (!seed) { UI.say(`⚠️ Seed ${seedId} not found.`); return null; }
+      const data = new TextEncoder().encode(seed.message || "");
+      const privKey = await crypto.subtle.importKey("jwk", this._privJwk, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
+      const sig = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, privKey, data);
+      const b64 = btoa(String.fromCharCode(...new Uint8Array(sig)));
+      seed.signature = b64;
+      seed.signedBy = this.ownerId;
+      seed.signedAt = new Date().toISOString();
+      Memory.save("gnodes", PercyState.gnodes);
+      UI.say(`🔏 Seed ${seedId} signed by ${this.ownerId}.`);
+      return b64;
+    } catch (e) { console.error(e); UI.say("⚠️ signSeed failed."); return null; }
+  },
+
+  /* 3. Verify a seed's signature */
+  verifySeed: async function(seedId) {
+    try {
+      if (!this._pubJwk) { UI.say("⚠️ No public key available."); return false; }
+      const seed = PercyState.gnodes?.[seedId];
+      if (!seed || !seed.signature) return false;
+      const data = new TextEncoder().encode(seed.message || "");
+      const pubKey = await crypto.subtle.importKey("jwk", this._pubJwk, { name: "ECDSA", namedCurve: "P-256" }, false, ["verify"]);
+      const sigBuf = Uint8Array.from(atob(seed.signature), c => c.charCodeAt(0));
+      const ok = await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, pubKey, sigBuf, data);
+      UI.say(ok ? `✅ Seed ${seedId} signature valid.` : `❌ Seed ${seedId} signature invalid.`);
+      return ok;
+    } catch (e) { console.error(e); return false; }
+  },
+
+  /* 4. Sign all seeds (useful before export) */
+  signAllSeeds: async function() {
+    const ids = Object.keys(PercyState.gnodes || {});
+    for (const id of ids) {
+      try { await this.signSeed(id); } catch(e){ console.warn("signAllSeeds:", e); }
+    }
+    UI.say(`🔐 Part U: Signed ${ids.length} seeds (best-effort).`);
+  },
+
+  /* 5. Export seeds (signed) */
+  exportSeeds: function() {
+    try {
+      const payload = { exportedAt: new Date().toISOString(), owner: this.ownerId, gnodes: PercyState.gnodes || {} };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      UI.say("📤 Percy seeds ready for download.");
+      return url; // caller can use: window.open(url) or create link
+    } catch (e) { console.error(e); UI.say("⚠️ exportSeeds failed."); return null; }
+  },
+
+  /* 6. Import seeds (validate signatures if available) */
+  importSeeds: async function(jsonString, opts = { verify: true }) {
+    try {
+      const data = JSON.parse(jsonString);
+      const incoming = data.gnodes || {};
+      let merged = 0, invalid = 0;
+      for (const [id, seed] of Object.entries(incoming)) {
+        // if verify requested and signature exists, verify
+        if (opts.verify && seed.signature && this._pubJwk) {
+          const ok = await (async () => {
+            const pubKey = await crypto.subtle.importKey("jwk", this._pubJwk, { name: "ECDSA", namedCurve: "P-256" }, false, ["verify"]);
+            const sigBuf = Uint8Array.from(atob(seed.signature), c => c.charCodeAt(0));
+            const ok2 = await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, pubKey, sigBuf, new TextEncoder().encode(seed.message || ""));
+            return ok2;
+          })();
+          if (!ok) { invalid++; continue; }
+        }
+        PercyState.gnodes[id] = seed;
+        merged++;
+      }
+      Memory.save("gnodes", PercyState.gnodes);
+      UI.say(`📥 Imported seeds: ${merged}. Invalid signatures skipped: ${invalid}.`);
+      refreshNodes?.();
+      return { merged, invalid };
+    } catch (e) { console.error(e); UI.say("⚠️ importSeeds failed."); return null; }
+  },
+
+  /* 7. Offline & Lockdown controls */
+  enableOfflineMode: function() {
+    this.offline = true;
+    // disable external learning & browsing
+    Tasks.register.autoLearn = async ()=> UI.say("⚠️ offline: autoLearn disabled.");
+    Tasks.register.autoBrowse = async ()=> UI.say("⚠️ offline: autoBrowse disabled.");
+    UI.say("✋ Percy offline mode enabled. No external fetches will run.");
+  },
+
+  disableOfflineMode: function() {
+    this.offline = false;
+    UI.say("↪ Percy offline mode disabled. External features restored (owner confirmation may be required).");
+    // You should rebind Tasks.register.autoLearn/autoBrowse to original implementations if you store them elsewhere.
+  },
+
+  emergencyLockdown: function() {
+    this.lockdown = true;
+    Autonomy.stop?.();
+    // block Tasks.step and clear queue (persisted)
+    Tasks.queue = [];
+    Memory.save("tasks:queue", Tasks.queue);
+    UI.say("🛑 EMERGENCY: Percy lockdown engaged. Autonomy halted and task queue cleared.");
+  },
+
+  releaseLockdown: function() {
+    if (!this.lockdown) return UI.say("⚠️ Not in lockdown.");
+    this.lockdown = false;
+    UI.say("🔓 Lockdown released. Autonomy remains stopped until owner restarts it manually.");
+  },
+
+  /* 8. Attach provenance to a response (return both text + provenance) */
+  withProvenance: function(responseText, sourceIds=[]) {
+    const sources = (sourceIds.length ? sourceIds : Object.keys(PercyState.gnodes || {}).slice(-6)).map(id => {
+      const s = PercyState.gnodes?.[id] || {};
+      return { id, text: s.message?.slice(0,200) ?? "", type: s.type ?? "seed" };
+    });
+    return { text: responseText, provenance: { timestamp: new Date().toISOString(), sources } };
   }
-  async function approve(id, approver=OWNER.primary) {
-    const req = approvals.find(r=>r.id===id);
-    if(!req) return `⚠️ Approval ${id} not found.`;
-    req.approvedBy = approver; req.status = "approved"; req.approvedAt = new Date().toISOString();
-    Memory.save("approvals", approvals);
-    UI.say(`✅ Approval ${id} granted by ${approver}.`);
-    return req;
-  }
-  function listPending() { return approvals.filter(r=>r.status==="pending"); }
-  return { requestApproval, approve, listPending, approvals };
-})();
+};
+
+(async()=>{ await Percy.PartU.init?.(); })();
+
+console.log("✅ Percy Part U loaded — Resilience & Trust module ready.");
+/* === End Percy Part U === */
 
 /* === Percy PartT (UPGRADE): Linguistic Synthesizer v2 (better matching + smoothing) === */
 Percy.PartT = Percy.PartT || {};
