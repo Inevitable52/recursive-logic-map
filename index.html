@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -26,6 +26,21 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
 #exec-toggle { position:fixed; top:50px; left:220px; z-index:9999; }
 #exec-toggle button { padding:4px 12px; margin-right:6px; border:none; border-radius:6px; cursor:pointer; background:#333; color:white; }
 #exec-toggle button.active { background:#1aff55; color:black; }
+
+/* === Percy Chat Box === */
+#percy-chat-box {
+  position:fixed; bottom:50px; right:12px; width:320px; height:400px;
+  background:rgba(0,0,0,0.75); border:1px solid #333; border-radius:12px;
+  display:flex; flex-direction:column; overflow:hidden; font-family:monospace;
+  z-index:9999;
+}
+#percy-chat-messages { flex:1; padding:8px; overflow-y:auto; }
+#percy-chat-input {
+  flex:1; padding:6px; border:none; background:#111; color:white;
+}
+#percy-chat-send {
+  padding:6px 10px; background:#1aff55; color:black; border:none; cursor:pointer;
+}
 </style>
 </head>
 <body>
@@ -51,6 +66,16 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
 
 <div id="voice-visualizer"><canvas id="voice-canvas"></canvas></div>
 
+<!-- === Percy Chat Box === -->
+<div id="percy-chat-box">
+  <div id="percy-chat-messages"></div>
+  <div style="display:flex; border-top:1px solid #333;">
+    <input id="percy-chat-input" type="text" placeholder="Talk to Percy...">
+    <button id="percy-chat-send">Send</button>
+  </div>
+</div>
+
+<!-- === Existing Console Script === -->
 <script>
 (function(){
   const interpreterInput = document.getElementById('interpreter-input'),
@@ -84,6 +109,7 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
 })();
 </script>
 
+<!-- === Exec Logic === -->
 <script>
 (function(){
   const execInput=document.getElementById('percy-exec-input'),
@@ -133,6 +159,7 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
 })();
 </script>
 
+<!-- === Voice Visualizer === -->
 <script>
 (function(){
   const canvas=document.getElementById('voice-canvas'); if(!canvas) return;
@@ -172,6 +199,53 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
   }
 
   ['click','keydown','touchstart'].forEach(evt=>window.addEventListener(evt,initAudio,{once:true,passive:true}));
+})();
+</script>
+
+<!-- === Percy Part T Chat Logic === -->
+<script>
+(function(){
+  const chatInput = document.getElementById('percy-chat-input');
+  const chatSend = document.getElementById('percy-chat-send');
+  const chatMessages = document.getElementById('percy-chat-messages');
+  let percyMemory = [];
+
+  function appendMsg(role, text) {
+    const line = document.createElement('div');
+    line.textContent = `${role}: ${text}`;
+    line.style.margin = '6px 0';
+    line.style.color = role === 'Percy' ? '#7fff7f' : '#d6d8ff';
+    chatMessages.appendChild(line);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  function PercyReply(userText) {
+    let raw = "";
+    if (Percy?.PartT?.hear) raw = Percy.PartT.hear(userText);
+    else if (Percy?.interpret) raw = Percy.interpret(userText);
+    else if (typeof percyRespond === 'function') raw = percyRespond(userText);
+    else raw = "⚙️ Percy core logic not initialized yet.";
+
+    percyMemory.push({ you: userText, percy: raw });
+    if (percyMemory.length > 10) percyMemory.shift();
+    appendMsg('Percy', raw);
+  }
+
+  function sendMessage(){
+    const text = chatInput.value.trim();
+    if (!text) return;
+    appendMsg('You', text);
+    chatInput.value = '';
+    PercyReply(text);
+  }
+
+  chatSend.addEventListener('click', sendMessage);
+  chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+
+  // Optional self-loop for autonomous thoughts
+  setInterval(() => {
+    if (Percy?.PartT?.loop) Percy.PartT.loop(1000);
+  }, 120000);
 })();
 </script>
 
