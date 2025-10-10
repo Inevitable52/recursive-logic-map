@@ -2653,34 +2653,34 @@ Percy.PartT = {
   name: "Autonomous Linguistic Synthesizer",
   chatMemory: [],
   logicWeight: 0.9,
+  active: true,
 
   /* --- 1. Input message into reasoning --- */
   hear(message) {
+    if (!message) return;
     this.chatMemory.push({ role: "user", text: message, time: Date.now() });
     console.log(`🗣️ User: ${message}`);
-    return this.generateResponse(message);
+    const reply = this.generateResponse(message);
+    this.display(reply);
+    return reply;
   },
 
   /* --- 2. Generate language through reasoning only --- */
   generateResponse(message) {
-    // Extract logical material
     const logicPool = [
       ...(Percy.PartL?.Patterns || []),
       ...(Percy.PartP?.hypotheses || []),
       ...(Percy.PartR?.abstractRules || [])
     ];
 
-    // Derive relevant patterns
     const related = logicPool.filter(p =>
       message.toLowerCase().includes(p.text?.toLowerCase?.() || "")
     );
 
-    // No direct hits: reason from internal patterns
     const source = related.length
       ? related
       : logicPool.slice(-Math.floor(Math.random() * 10 + 5));
 
-    // Logical synthesis
     const synthesized = this.synthesizeLanguage(source);
     this.chatMemory.push({ role: "percy", text: synthesized, time: Date.now() });
     console.log(`🤖 Percy: ${synthesized}`);
@@ -2689,10 +2689,19 @@ Percy.PartT = {
 
   /* --- 3. Convert logic into dynamic sentences --- */
   synthesizeLanguage(units) {
-    if (!units.length) return "Logic network idle. No patterns match current query.";
+    if (!units.length)
+      return "Logic network idle. No matching causal patterns detected.";
+
+    const linkers = [
+      "thus",
+      "therefore",
+      "hence",
+      "which implies",
+      "meaning",
+      "as a result"
+    ];
 
     const combine = (a, b) => {
-      const linkers = ["thus", "therefore", "hence", "which implies", "meaning"];
       const link = linkers[Math.floor(Math.random() * linkers.length)];
       return `${a.text || a} ${link} ${b.text || b}`;
     };
@@ -2702,37 +2711,67 @@ Percy.PartT = {
       result = combine({ text: result }, units[i]);
     }
 
-    // Apply light linguistic smoothing from logic structure
+    // Smooth language
     result = result
-      .replace(/If\s+/g, "When ")
+      .replace(/\bIf\s+/g, "When ")
       .replace(/\s+/g, " ")
-      .replace(/\s([.,!?;:])/g, "$1");
+      .replace(/\s([.,!?;:])/g, "$1")
+      .trim();
 
-    return result;
+    return result.charAt(0).toUpperCase() + result.slice(1);
   },
 
-  /* --- 4. Autonomous reasoning chat loop --- */
+  /* --- 4. Display Percy's message on HTML UI --- */
+  display(text) {
+    const consoleDiv = document.getElementById("percy-console");
+    const msgDiv = document.getElementById("percy-message");
+
+    if (consoleDiv) {
+      const line = document.createElement("div");
+      line.className = "console-line exec";
+      line.textContent = "🤖 " + text;
+      consoleDiv.appendChild(line);
+      consoleDiv.scrollTop = consoleDiv.scrollHeight;
+    }
+
+    if (msgDiv) msgDiv.textContent = text;
+
+    if (Percy?.speak) Percy.speak(text);
+  },
+
+  /* --- 5. Autonomous reasoning chat loop --- */
   loop(interval = 45000) {
-    setInterval(() => {
+    if (this._interval) clearInterval(this._interval);
+    this._interval = setInterval(() => {
+      if (!this.active) return;
       const topic = this.randomTopic();
       console.log(`💬 Percy self-initiates on: ${topic}`);
-      this.generateResponse(topic);
+      const response = this.generateResponse(topic);
+      this.display(response);
     }, interval);
   },
 
-  /* --- 5. Topic generator based on logical curiosity --- */
+  /* --- 6. Generate random logical topics --- */
   randomTopic() {
     const seeds = [
       "causation and correlation",
-      "system recursion",
-      "self-reference in logic",
       "emergent intelligence",
-      "energy and data flow"
+      "recursive learning",
+      "energy and data flow",
+      "adaptive reasoning",
+      "pattern reinforcement",
+      "language synthesis",
+      "logical autonomy"
     ];
     return seeds[Math.floor(Math.random() * seeds.length)];
+  },
+
+  /* --- 7. Allow toggling Percy T autonomy --- */
+  toggle(state) {
+    this.active = state ?? !this.active;
+    console.log(`🌀 Percy Part T ${this.active ? "activated" : "paused"}.`);
   }
 };
 
 console.log("✅ Percy Part T loaded — Autonomous Linguistic Synthesizer active.");
 /* === End Percy Part T === */
-
