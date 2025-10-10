@@ -2583,3 +2583,68 @@ Percy.PartR = {
 
 console.log("✅ Percy Part R loaded — Enhanced Abstractor & Rule Synthesizer ready.");
 /* === End Percy Part R === */
+
+// === PERCY AUTONOMOUS STRATEGY CORE (Part S) ===
+// Creates self-directed goal evaluation and adaptive planning
+
+Percy.PartS = {
+  active: false,
+  goals: [],
+  strategies: [],
+  feedbackLog: [],
+
+  perceive(input) {
+    // Perception layer: integrate observations from Parts L–R–P
+    this.feedbackLog.push({ type: 'input', data: input, time: Date.now() });
+    Percy.log(`👁️ Perceived: ${input}`);
+  },
+
+  formulateGoal() {
+    // Abstract new goals from recent data
+    const newGoal = Percy.analyzeEmergentPattern();
+    if (newGoal) {
+      this.goals.push(newGoal);
+      Percy.log(`🎯 New emergent goal: ${newGoal}`);
+    }
+  },
+
+  decideStrategy() {
+    // Strategy selection based on confidence and priority
+    const goal = this.goals.at(-1);
+    if (!goal) return;
+    const strategy = Percy.deriveStrategy(goal);
+    this.strategies.push(strategy);
+    Percy.log(`🧩 Strategy chosen: ${strategy}`);
+  },
+
+  executeStrategy() {
+    // Execute and record outcome
+    const current = this.strategies.at(-1);
+    if (!current) return;
+    Percy.log(`⚙️ Executing: ${current}`);
+    const result = Percy.simulateOutcome(current);
+    this.feedbackLog.push({ type: 'result', data: result });
+    Percy.log(`📈 Outcome: ${JSON.stringify(result)}`);
+  },
+
+  evolve() {
+    // Feedback learning loop
+    const successRate = Percy.analyzeFeedback(this.feedbackLog);
+    if (successRate > 0.7) Percy.PartO.confidence += 0.05;
+    else Percy.PartO.confidence -= 0.05;
+    Percy.log(`🔁 Adjusted confidence: ${Percy.PartO.confidence.toFixed(2)}`);
+  },
+
+  loop(interval = 20000) {
+    this.active = true;
+    Percy.log("🚀 Part S (Strategy Core) activated.");
+    setInterval(() => {
+      if (!this.active) return;
+      this.formulateGoal();
+      this.decideStrategy();
+      this.executeStrategy();
+      this.evolve();
+    }, interval);
+  }
+};
+
