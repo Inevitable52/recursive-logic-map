@@ -40,8 +40,12 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
   padding:6px 10px; background:#1aff55; color:black; border:none; cursor:pointer;
 }
 
+/* === Voice Visualizer (top-right) === */
+#voice-visualizer { position:fixed; top:12px; right:12px; width:360px; height:128px; pointer-events:none; display:flex; align-items:center; border-radius:12px; background:linear-gradient(180deg,rgba(7,7,12,0.6),rgba(7,7,12,0.35)); box-shadow:0 6px 24px rgba(0,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.02); border:1px solid rgba(0,255,255,0.1); z-index:9999; }
+#voice-canvas { flex:1; width:100%; height:100%; border-radius:8px; background:linear-gradient(180deg,rgba(0,0,0,0.1),rgba(0,0,0,0.05)); }
+
 /* === Camera Feed === */
-#camera-feed { position:fixed; top:150px; right:12px; width:320px; height:240px; border:1px solid #333; border-radius:12px; z-index:9999; }
+#camera-feed { position:fixed; top:150px; right:12px; width:320px; height:240px; border:1px solid #333; border-radius:12px; z-index:9999; object-fit:cover; }
 #camera-overlay { position:fixed; top:150px; right:12px; width:320px; height:240px; pointer-events:none; z-index:10000; }
 </style>
 </head>
@@ -64,11 +68,15 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
 <textarea id="percy-exec-input" placeholder="Percy Exec (Math/Java/Tools)" rows="4"></textarea>
 <button id="percy-exec-run">Run Exec</button>
 
+<!-- load main Percy core ONCE -->
 <script src="js/percy.js?v=6.4"></script>
 
 <!-- === Camera Feed === -->
-<video id="camera-feed" autoplay muted></video>
+<video id="camera-feed" autoplay muted playsinline></video>
 <canvas id="camera-overlay"></canvas>
+
+<!-- === Voice visualizer (top-right) === -->
+<div id="voice-visualizer"><canvas id="voice-canvas"></canvas></div>
 
 <!-- === Percy Chat Box === -->
 <div id="percy-chat-box">
@@ -79,12 +87,12 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
   </div>
 </div>
 
-<!-- TensorFlow -->
+<!-- TensorFlow + BlazeFace (loaded before PartZ) -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.9/dist/blazeface.min.js"></script>
 
 <script>
-// === Percy Part Z (Camera + Face Detection + Audio Visualizer) ===
+/* === Percy Part Z (Camera + Face Detection + Audio Overlay) === */
 Percy.PartZ = (function() {
   const PartZ = {};
   const video = document.getElementById('camera-feed');
@@ -93,89 +101,117 @@ Percy.PartZ = (function() {
 
   let audioCtx, analyser, dataFreq, dataWave;
   let faceModel = null;
+  PartZ.stream = null;    // expose stream
+  PartZ.analyser = null;  // expose analyser
 
-  // New: track previous face state
-  let prevFaces = 0;
-
-  // Callback placeholder
-  PartZ.onFaceChange = null; // assign from PartT later
+  // resize canvas to cover video
+  function resizeCanvas() {
+    const w = video.videoWidth || video.clientWidth || 320;
+    const h = video.videoHeight || video.clientHeight || 240;
+    canvas.width = w;
+    canvas.height = h;
+    // ensure CSS sizing remains consistent (camera element uses object-fit:cover)
+    canvas.style.width = video.clientWidth + "px";
+    canvas.style.height = video.clientHeight + "px";
+  }
 
   PartZ.init = async function() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
+      PartZ.stream = stream;
       video.srcObject = stream;
       await video.play();
 
-      function resizeCanvas(){ canvas.width=video.clientWidth; canvas.height=video.clientHeight; }
-      resizeCanvas(); window.addEventListener('resize',resizeCanvas);
+      // set sizes once metadata available
+      video.addEventListener('loadedmetadata', () => {
+        resizeCanvas();
+      });
+      window.addEventListener('resize', resizeCanvas);
+      // initial size (in case)
+      resizeCanvas();
 
-      audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+      // audio analyser (shared)
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      // resume audio context if it's suspended (some browsers require user gesture)
+      try { if(audioCtx.state === 'suspended') await audioCtx.resume(); } catch(e){}
       analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
       dataFreq = new Uint8Array(analyser.frequencyBinCount);
       dataWave = new Uint8Array(analyser.frequencyBinCount);
-      audioCtx.createMediaStreamSource(stream).connect(analyser);
+      const srcNode = audioCtx.createMediaStreamSource(stream);
+      srcNode.connect(analyser);
 
+      PartZ.analyser = analyser;
+
+      // load face model
       faceModel = await blazeface.load();
+
+      // start loop
       PartZ.loop();
-    } catch(e){ console.error("Percy Part Z init failed:", e); }
+    } catch (err) {
+      console.error("Percy Part Z init failed:", err);
+    }
   };
 
-  function drawAudio() {
-    const W = canvas.width;
-    const H = canvas.height;
+  function drawAudioOverlay() {
+    if (!analyser) return;
     analyser.getByteFrequencyData(dataFreq);
     analyser.getByteTimeDomainData(dataWave);
 
-    // Bars
-    const barWidth = W / dataFreq.length;
+    const W = canvas.width;
+    const H = canvas.height;
+
+    // bars (draw at bottom area - scale down)
+    const barWidth = Math.max(1, W / dataFreq.length);
     for(let i=0;i<dataFreq.length;i++){
-      const barH = dataFreq[i]/255 * H * 0.3;
+      const barH = (dataFreq[i] / 255) * (H * 0.25); // 25% of canvas height
       ctx.fillStyle = `rgb(${dataFreq[i]}, ${255-dataFreq[i]}, 255)`;
-      ctx.fillRect(i*barWidth, H - barH, barWidth*0.6, barH);
+      ctx.fillRect(i * barWidth, H - barH, barWidth * 0.6, barH);
     }
 
-    // Sinewave
+    // sinewave (center)
     ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(0,255,255,0.8)';
+    ctx.strokeStyle = 'rgba(0,255,255,0.85)';
     ctx.beginPath();
     let x = 0;
     const slice = W / dataWave.length;
     for(let i=0;i<dataWave.length;i++){
-      const y = (dataWave[i]/128 - 1) * H * 0.15 + H/2;
+      const v = dataWave[i] / 128 - 1; // -1..1
+      const y = H/2 + v * (H * 0.12); // scale
       if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
       x += slice;
     }
     ctx.stroke();
   }
 
-  PartZ.loop = async function(){
-    if(video.readyState < 2){ requestAnimationFrame(PartZ.loop); return; }
+  PartZ.loop = async function() {
+    if (!video || !ctx) return;
+    if(video.readyState >= 2) resizeCanvas(); // keep canvas matched
 
+    // clear overlay
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    let faceCount = 0;
-    if(faceModel){
-      const predictions = await faceModel.estimateFaces(video,false);
-      faceCount = predictions.length;
-
-      predictions.forEach(p=>{
-        const [x1,y1] = p.topLeft;
-        const [x2,y2] = p.bottomRight;
-        const w = x2-x1, h = y2-y1;
-        ctx.strokeStyle = 'rgba(0,255,255,0.9)';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x1,y1,w,h);
-      });
+    // face detection (draw boxes)
+    if (faceModel && video.readyState >= 2) {
+      try {
+        const preds = await faceModel.estimateFaces(video, false);
+        preds.forEach(p => {
+          const [x1,y1] = p.topLeft;
+          const [x2,y2] = p.bottomRight;
+          const w = x2 - x1, h = y2 - y1;
+          ctx.strokeStyle = 'rgba(0,255,255,0.95)';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x1, y1, w, h);
+        });
+        // small hook for other parts
+        if (typeof Percy?.onVisualInput === 'function') Percy.onVisualInput({ faces: preds });
+      } catch(e) {
+        // face model may throw if not ready — swallow safely
+      }
     }
 
-    if(analyser) drawAudio();
-
-    // Trigger callback if face count changed
-    if(faceCount !== prevFaces && typeof PartZ.onFaceChange === 'function'){
-      PartZ.onFaceChange(faceCount);
-      prevFaces = faceCount;
-    }
+    // audio visuals
+    drawAudioOverlay();
 
     requestAnimationFrame(PartZ.loop);
   };
@@ -183,7 +219,212 @@ Percy.PartZ = (function() {
   return PartZ;
 })();
 
+// init PartZ
 Percy.PartZ.init();
+</script>
+
+<script>
+/* === Voice visualizer widget (uses PartZ analyser if available, otherwise requests audio) === */
+(function(){
+  const canvas = document.getElementById('voice-canvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  function resize(){ canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight; }
+  resize(); window.addEventListener('resize', resize);
+
+  let audioCtxLocal, analyserLocal, dataFreqLocal, dataWaveLocal;
+  let usingSharedAnalyser = false;
+
+  async function init() {
+    // Prefer Percy.PartZ.shared analyser if present
+    if (window.Percy && Percy.PartZ && Percy.PartZ.analyser) {
+      analyserLocal = Percy.PartZ.analyser;
+      usingSharedAnalyser = true;
+    } else {
+      try {
+        audioCtxLocal = new (window.AudioContext||window.webkitAudioContext)();
+        const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+        const src = audioCtxLocal.createMediaStreamSource(stream);
+        analyserLocal = audioCtxLocal.createAnalyser();
+        analyserLocal.fftSize = 256;
+        src.connect(analyserLocal);
+      } catch(e) {
+        console.warn("Voice visualizer audio init failed:", e);
+        return;
+      }
+    }
+    dataFreqLocal = new Uint8Array(analyserLocal.frequencyBinCount);
+    dataWaveLocal = new Uint8Array(analyserLocal.frequencyBinCount);
+    draw();
+  }
+
+  function draw(){
+    requestAnimationFrame(draw);
+    if(!analyserLocal) return;
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+
+    analyserLocal.getByteFrequencyData(dataFreqLocal);
+    analyserLocal.getByteTimeDomainData(dataWaveLocal);
+
+    // bars
+    const barWidth = Math.max(1, W / dataFreqLocal.length);
+    for(let i=0;i<dataFreqLocal.length;i++){
+      const barH = (dataFreqLocal[i]/255) * (H*0.6); // fill more of visualizer
+      ctx.fillStyle = `rgb(${dataFreqLocal[i]}, ${255-dataFreqLocal[i]}, 255)`;
+      ctx.fillRect(i*barWidth, H - barH, barWidth*0.6, barH);
+    }
+
+    // sinewave
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(0,255,255,0.9)';
+    ctx.beginPath();
+    let x=0;
+    const slice = W / dataWaveLocal.length;
+    for(let i=0;i<dataWaveLocal.length;i++){
+      const y = H/2 + (dataWaveLocal[i]/128 - 1) * (H*0.2);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      x += slice;
+    }
+    ctx.stroke();
+  }
+
+  // start on first user interaction (browser autoplay rules)
+  ['click','keydown','touchstart'].forEach(evt=>{
+    window.addEventListener(evt, function once(){ init(); window.removeEventListener(evt, once); }, {passive:true});
+  });
+
+  // Also try to init if shared analyser is already available
+  if (window.Percy && Percy.PartZ && Percy.PartZ.analyser) init();
+
+})();
+</script>
+
+<!-- === Console, Exec, Chat logic (unchanged) === -->
+<script>
+(function(){
+  const interpreterInput = document.getElementById('interpreter-input'),
+        percyConsole = document.getElementById('percy-console'),
+        askButton = document.getElementById('askPercyButton');
+
+  function appendConsole(text,isUser=false,exec=false){
+    const line=document.createElement('div');
+    line.className='console-line '+(isUser?'ask':'')+(exec?' exec':'' );
+    line.textContent=(isUser?'↳ ':'')+text;
+    percyConsole.appendChild(line);
+    percyConsole.scrollTop = percyConsole.scrollHeight;
+  }
+
+  function runPercyCommand(){
+    const query = interpreterInput.value.trim();
+    if(!query) return;
+    appendConsole(query,true);
+    let response="";
+    if(typeof percyRespond==='function') response=percyRespond(query);
+    else if(window.Percy && typeof Percy.interpret==='function') response=Percy.interpret(query);
+    if(response){
+      appendConsole(response,false,false);
+      if(Percy?.speak && !response.includes("Logic network idle")){
+        Percy.speak(response);
+      }
+    }
+    interpreterInput.value='';
+  }
+
+  interpreterInput.addEventListener('keydown',e=>{ if(e.key==='Enter') runPercyCommand(); });
+  askButton.addEventListener('click',runPercyCommand);
+})();
+</script>
+
+<script>
+(function(){
+  const execInput=document.getElementById('percy-exec-input'),
+        execBtn=document.getElementById('percy-exec-run'),
+        consoleDiv=document.getElementById('percy-console'),
+        toggleBtns=document.querySelectorAll('#exec-toggle button');
+
+  if(!execInput) return;
+  let PercyExecMode="math";
+
+  toggleBtns.forEach(btn=>btn.addEventListener('click',()=>{
+    toggleBtns.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    PercyExecMode=btn.dataset.mode;
+  }));
+
+  async function handleExecInput(){
+    const query=execInput.value.trim(); if(!query) return; execInput.value="";
+    const userLine=document.createElement("div");
+    userLine.className="console-line ask";
+    userLine.textContent="↳ "+query;
+    consoleDiv.appendChild(userLine);
+
+    let output="";
+    try {
+      if(PercyExecMode==="math") output = await PercyState.useTool("math", query);
+      else if(PercyExecMode==="java") output = await PercyState.useTool("java", query);
+      else if(PercyExecMode==="tools") output = await PercyState.PartH?.routeInput(query) || "⚠️ Percy Part H not loaded.";
+    } catch(e){ output = "⚠️ Exec error: "+e.message; }
+
+    const percyLine=document.createElement("div");
+    percyLine.className="console-line exec";
+    percyLine.textContent="🤖 "+output;
+    consoleDiv.appendChild(percyLine);
+    consoleDiv.scrollTop=consoleDiv.scrollHeight;
+  }
+
+  execInput.addEventListener("keydown",async e=>{
+    if(e.key==="Enter"){ e.preventDefault(); await handleExecInput(); }
+  });
+  execBtn.addEventListener("click",handleExecInput);
+})();
+</script>
+
+<script>
+(function(){
+  const chatInput = document.getElementById('percy-chat-input');
+  const chatSend = document.getElementById('percy-chat-send');
+  const chatMessages = document.getElementById('percy-chat-messages');
+  let percyMemory = [];
+
+  function appendMsg(role, text) {
+    const line = document.createElement('div');
+    line.textContent = `${role}: ${text}`;
+    line.style.margin = '6px 0';
+    line.style.color = role === 'Percy' ? '#7fff7f' : '#d6d8ff';
+    chatMessages.appendChild(line);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  function PercyReply(userText) {
+    let raw = "";
+    if (Percy?.PartT?.hear) raw = Percy.PartT.hear(userText);
+    else if (Percy?.interpret) raw = Percy.interpret(userText);
+    else if (typeof percyRespond === 'function') raw = percyRespond(userText);
+    else raw = "⚙️ Percy core logic not initialized yet.";
+
+    percyMemory.push({ you: userText, percy: raw });
+    if (percyMemory.length > 10) percyMemory.shift();
+    appendMsg('Percy', raw);
+
+    if(Percy?.speak && !raw.includes("Logic network idle")){
+      Percy.speak(raw);
+    }
+  }
+
+  function sendMessage(){
+    const text = chatInput.value.trim();
+    if (!text) return;
+    appendMsg('You', text);
+    chatInput.value = '';
+    PercyReply(text);
+  }
+
+  chatSend.addEventListener('click', sendMessage);
+  chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+
+  // optional: if PartT has self-loop it will use its own timer; don't call loop repeatedly here
+})();
 </script>
 
 </body>
