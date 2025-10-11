@@ -68,6 +68,30 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
 <textarea id="percy-exec-input" placeholder="Percy Exec (Math/Java/Tools)" rows="4"></textarea>
 <button id="percy-exec-run">Run Exec</button>
 
+  <!-- TensorFlow core + BlazeFace global definitions -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
+<script>
+  // ensure global tf (TensorFlow) is available before loading BlazeFace
+  window.tf = window.tf || tf;
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.9/dist/blazeface.min.js"></script>
+<script>
+  // safety check: make sure blazeface global loads before Percy uses it
+  window.blazefaceReady = false;
+  (async () => {
+    try {
+      if (window.blazeface) {
+        console.log("✅ BlazeFace library detected.");
+        window.blazefaceReady = true;
+      } else {
+        console.error("⚠️ BlazeFace not detected yet.");
+      }
+    } catch (err) {
+      console.error("Error verifying BlazeFace:", err);
+    }
+  })();
+</script>
+
 <!-- load main Percy core ONCE -->
 <script src="js/percy.js?v=6.4"></script>
 
@@ -86,10 +110,6 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
     <button id="percy-chat-send">Send</button>
   </div>
 </div>
-
-<!-- TensorFlow + BlazeFace (loaded before PartZ) -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.9/dist/blazeface.min.js"></script>
 
 <script>
 /* === Percy Part Z (Camera + Face Detection + Audio + Sinewave/Bars Overlay) === */
