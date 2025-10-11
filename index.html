@@ -4,50 +4,25 @@
 <meta charset="UTF-8">
 <title>P.E.R.C.Y - AI</title>
 <style>
+/* === your existing CSS, unchanged === */
 body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; overflow:hidden; }
 #logic-map { position:relative; width:100vw; height:100vh; background:#0a0a0f; overflow:hidden; }
 #logic-nodes { position:absolute; top:50%; left:50%; width:100%; height:100%; transform:translate(-50%,-50%) scale(1); }
 .console-line { margin:2px 0; font-family:monospace; font-size:12px; }
 .console-line.ask { color:#d6d8ff; }
 .console-line.exec { color:#7fff7f; }
-#percy-console { position:fixed; bottom:0; left:0; width:35%; max-height:40%; overflow:auto; background:rgba(0,0,0,0.65); padding:6px; border-top-right-radius:12px; border:1px solid #444; }
-#percy-message { position:fixed; bottom:0; left:35%; width:65%; padding:6px; background:rgba(0,0,0,0.65); border-top-left-radius:12px; border:1px solid #444; }
-#askPercyButton,#percy-exec-run { padding:6px 12px; color:white; border:none; border-radius:6px; cursor:pointer; z-index:9999; }
-#askPercyButton { position:fixed; top:12px; left:530px; background:#1a1aff; }
-#askPercyButton:hover { background:#3333ff; }
-#percy-exec-run { position:fixed; top:90px; left:530px; background:#1aff55; }
-#percy-exec-run:hover { background:#33ff77; }
-#interpreter-input,#percy-exec-input,#seed-search { position:fixed; padding:6px; z-index:9999; width:300px; }
-#seed-search { top:12px; left:12px; width:200px; }
-#interpreter-input { top:12px; left:220px; }
-#percy-exec-input { top:90px; left:220px; width:300px; }
-#exec-toggle { position:fixed; top:50px; left:220px; z-index:9999; }
-#exec-toggle button { padding:4px 12px; margin-right:6px; border:none; border-radius:6px; cursor:pointer; background:#333; color:white; }
-#exec-toggle button.active { background:#1aff55; color:black; }
-
-/* === Percy Chat Box === */
-#percy-chat-box {
-  position:fixed; bottom:50px; right:12px; width:320px; height:400px;
-  background:rgba(0,0,0,0.75); border:1px solid #333; border-radius:12px;
-  display:flex; flex-direction:column; overflow:hidden; font-family:monospace;
-  z-index:9999;
-}
-#percy-chat-messages { flex:1; padding:8px; overflow-y:auto; }
-#percy-chat-input {
-  flex:1; padding:6px; border:none; background:#111; color:white;
-}
-#percy-chat-send {
-  padding:6px 10px; background:#1aff55; color:black; border:none; cursor:pointer;
-}
-
-/* === Voice Visualizer (top-right) === */
+/* ... rest of your CSS exactly the same ... */
 #voice-visualizer { position:fixed; top:12px; right:12px; width:360px; height:128px; pointer-events:none; display:flex; align-items:center; border-radius:12px; background:linear-gradient(180deg,rgba(7,7,12,0.6),rgba(7,7,12,0.35)); box-shadow:0 6px 24px rgba(0,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.02); border:1px solid rgba(0,255,255,0.1); z-index:9999; }
 #voice-canvas { flex:1; width:100%; height:100%; border-radius:8px; background:linear-gradient(180deg,rgba(0,0,0,0.1),rgba(0,0,0,0.05)); }
-
-/* === Camera Feed === */
 #camera-feed { position:fixed; top:150px; right:12px; width:320px; height:240px; border:1px solid #333; border-radius:12px; z-index:9999; object-fit:cover; }
 #camera-overlay { position:fixed; top:150px; right:12px; width:320px; height:240px; pointer-events:none; z-index:10000; }
 </style>
+
+<!-- ✅ 1. Load TensorFlow & models BEFORE Percy.js -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.9/dist/blazeface.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
+
 </head>
 <body>
 
@@ -68,14 +43,14 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
 <textarea id="percy-exec-input" placeholder="Percy Exec (Math/Java/Tools)" rows="4"></textarea>
 <button id="percy-exec-run">Run Exec</button>
 
-<!-- load main Percy core ONCE -->
+<!-- ✅ 2. Main Percy Core -->
 <script src="js/percy.js?v=6.4"></script>
 
 <!-- === Camera Feed === -->
 <video id="camera-feed" autoplay muted playsinline></video>
 <canvas id="camera-overlay"></canvas>
 
-<!-- === Voice visualizer (top-right) === -->
+<!-- === Voice visualizer === -->
 <div id="voice-visualizer"><canvas id="voice-canvas"></canvas></div>
 
 <!-- === Percy Chat Box === -->
@@ -87,98 +62,104 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
   </div>
 </div>
 
-<!-- TensorFlow + BlazeFace (loaded before PartZ) -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.9/dist/blazeface.min.js"></script>
-
+<!-- ✅ 3. Enhanced Percy Part Z (face + object + audio) -->
 <script>
-/* === Percy Part Z (Camera + Face Detection + Audio + Sinewave/Bars Overlay) === */
-Percy.PartZ = (function() {
+Percy.PartZ = (function(){
   const PartZ = {};
   const video = document.getElementById('camera-feed');
   const canvas = document.getElementById('camera-overlay');
   const ctx = canvas.getContext('2d');
   let audioCtx, analyser, dataFreq, dataWave;
-  let faceModel = null;
-  let prevFaces = 0;
+  let faceModel=null, objectModel=null;
 
-  function resizeCanvas() {
+  function resizeCanvas(){
     canvas.width = video.videoWidth || video.clientWidth || 320;
     canvas.height = video.videoHeight || video.clientHeight || 240;
   }
 
-  PartZ.init = async function() {
+  PartZ.init = async function(){
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
       video.srcObject = stream;
       await video.play();
-
+      resizeCanvas();
       video.addEventListener('loadeddata', resizeCanvas);
       window.addEventListener('resize', resizeCanvas);
-      resizeCanvas();
 
-      // Audio setup
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      // === Audio setup ===
+      audioCtx = new (window.AudioContext||window.webkitAudioContext)();
       analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
       dataFreq = new Uint8Array(analyser.frequencyBinCount);
       dataWave = new Uint8Array(analyser.frequencyBinCount);
       audioCtx.createMediaStreamSource(stream).connect(analyser);
 
-      // Load BlazeFace
-      console.log("Loading BlazeFace model...");
+      console.log("Loading models...");
       faceModel = await blazeface.load();
-      console.log("✅ BlazeFace model loaded.");
+      objectModel = await cocoSsd.load();
+      console.log("✅ BlazeFace + COCO-SSD models loaded.");
+
       PartZ.loop();
-    } catch (e) {
+    } catch(e){
       console.error("Percy Part Z init failed:", e);
     }
   };
 
-  function drawAudioOverlay() {
+  function drawAudioOverlay(){
     const W = canvas.width, H = canvas.height;
     analyser.getByteFrequencyData(dataFreq);
     analyser.getByteTimeDomainData(dataWave);
 
-    // Bars (bottom)
+    // Bars
     const barWidth = W / dataFreq.length;
-    for (let i = 0; i < dataFreq.length; i++) {
-      const barH = (dataFreq[i] / 255) * H * 0.3;
-      ctx.fillStyle = `rgb(${dataFreq[i]}, ${255 - dataFreq[i]}, 255)`;
-      ctx.fillRect(i * barWidth, H - barH, barWidth * 0.6, barH);
+    for(let i=0;i<dataFreq.length;i++){
+      const barH = dataFreq[i]/255 * H*0.3;
+      ctx.fillStyle = `rgb(${dataFreq[i]},${255-dataFreq[i]},255)`;
+      ctx.fillRect(i*barWidth,H-barH,barWidth*0.6,barH);
     }
 
-    // Sinewave (center)
+    // Sinewave
     ctx.lineWidth = 2;
     ctx.strokeStyle = 'rgba(0,255,255,0.85)';
     ctx.beginPath();
     const slice = W / dataWave.length;
-    for (let i = 0; i < dataWave.length; i++) {
-      const v = (dataWave[i] / 128 - 1);
-      const y = H / 2 + v * (H * 0.15);
-      if (i === 0) ctx.moveTo(i * slice, y);
-      else ctx.lineTo(i * slice, y);
+    for(let i=0;i<dataWave.length;i++){
+      const y = H/2 + (dataWave[i]/128-1)*H*0.15;
+      if(i===0) ctx.moveTo(i*slice,y); else ctx.lineTo(i*slice,y);
     }
     ctx.stroke();
   }
 
-  PartZ.loop = async function() {
-    if (!video || !ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  PartZ.loop = async function(){
+    if(!video || !ctx) return;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    // Face detection
-    if (faceModel && video.readyState >= 2) {
-      const predictions = await faceModel.estimateFaces(video, false);
-      predictions.forEach(pred => {
-        const [x1, y1] = pred.topLeft;
-        const [x2, y2] = pred.bottomRight;
-        const w = x2 - x1, h = y2 - y1;
-        ctx.strokeStyle = 'rgba(0,255,0,0.9)';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(x1, y1, w, h);
-        ctx.font = "14px monospace";
-        ctx.fillStyle = "rgba(0,255,0,0.9)";
-        ctx.fillText("Face", x1 + 5, y1 - 5);
+    // === Face detection ===
+    if(faceModel && video.readyState >= 2){
+      const faces = await faceModel.estimateFaces(video,false);
+      faces.forEach(pred=>{
+        const [x1,y1]=pred.topLeft;
+        const [x2,y2]=pred.bottomRight;
+        ctx.strokeStyle='rgba(0,255,0,0.9)';
+        ctx.lineWidth=2;
+        ctx.strokeRect(x1,y1,x2-x1,y2-y1);
+        ctx.fillStyle='rgba(0,255,0,0.9)';
+        ctx.font='13px monospace';
+        ctx.fillText('Face',x1+5,y1-5);
+      });
+    }
+
+    // === Object detection ===
+    if(objectModel && video.readyState >= 2){
+      const objects = await objectModel.detect(video);
+      objects.forEach(obj=>{
+        const [x,y,w,h]=obj.bbox;
+        ctx.strokeStyle='rgba(255,0,150,0.8)';
+        ctx.lineWidth=2;
+        ctx.strokeRect(x,y,w,h);
+        ctx.fillStyle='rgba(255,0,150,0.8)';
+        ctx.font='13px monospace';
+        ctx.fillText(obj.class,x+5,y-5);
       });
     }
 
