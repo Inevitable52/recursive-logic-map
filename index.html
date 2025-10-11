@@ -92,134 +92,102 @@ body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; ove
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.9/dist/blazeface.min.js"></script>
 
 <script>
-/* === Percy Part Z (Camera + Face Detection + Audio Overlay) === */
+/* === Percy Part Z (Camera + Face Detection + Audio + Sinewave/Bars Overlay) === */
 Percy.PartZ = (function() {
   const PartZ = {};
   const video = document.getElementById('camera-feed');
   const canvas = document.getElementById('camera-overlay');
   const ctx = canvas.getContext('2d');
-
   let audioCtx, analyser, dataFreq, dataWave;
   let faceModel = null;
-  PartZ.stream = null;    // expose stream
-  PartZ.analyser = null;  // expose analyser
+  let prevFaces = 0;
 
-  // resize canvas to cover video
   function resizeCanvas() {
-    const w = video.videoWidth || video.clientWidth || 320;
-    const h = video.videoHeight || video.clientHeight || 240;
-    canvas.width = w;
-    canvas.height = h;
-    // ensure CSS sizing remains consistent (camera element uses object-fit:cover)
-    canvas.style.width = video.clientWidth + "px";
-    canvas.style.height = video.clientHeight + "px";
+    canvas.width = video.videoWidth || video.clientWidth || 320;
+    canvas.height = video.videoHeight || video.clientHeight || 240;
   }
 
   PartZ.init = async function() {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
-      PartZ.stream = stream;
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       video.srcObject = stream;
       await video.play();
 
-      // set sizes once metadata available
-      video.addEventListener('loadedmetadata', () => {
-        resizeCanvas();
-      });
+      video.addEventListener('loadeddata', resizeCanvas);
       window.addEventListener('resize', resizeCanvas);
-      // initial size (in case)
       resizeCanvas();
 
-      // audio analyser (shared)
+      // Audio setup
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      // resume audio context if it's suspended (some browsers require user gesture)
-      try { if(audioCtx.state === 'suspended') await audioCtx.resume(); } catch(e){}
       analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
       dataFreq = new Uint8Array(analyser.frequencyBinCount);
       dataWave = new Uint8Array(analyser.frequencyBinCount);
-      const srcNode = audioCtx.createMediaStreamSource(stream);
-      srcNode.connect(analyser);
+      audioCtx.createMediaStreamSource(stream).connect(analyser);
 
-      PartZ.analyser = analyser;
-
-      // load face model
+      // Load BlazeFace
+      console.log("Loading BlazeFace model...");
       faceModel = await blazeface.load();
-
-      // start loop
+      console.log("✅ BlazeFace model loaded.");
       PartZ.loop();
-    } catch (err) {
-      console.error("Percy Part Z init failed:", err);
+    } catch (e) {
+      console.error("Percy Part Z init failed:", e);
     }
   };
 
   function drawAudioOverlay() {
-    if (!analyser) return;
+    const W = canvas.width, H = canvas.height;
     analyser.getByteFrequencyData(dataFreq);
     analyser.getByteTimeDomainData(dataWave);
 
-    const W = canvas.width;
-    const H = canvas.height;
-
-    // bars (draw at bottom area - scale down)
-    const barWidth = Math.max(1, W / dataFreq.length);
-    for(let i=0;i<dataFreq.length;i++){
-      const barH = (dataFreq[i] / 255) * (H * 0.25); // 25% of canvas height
-      ctx.fillStyle = `rgb(${dataFreq[i]}, ${255-dataFreq[i]}, 255)`;
+    // Bars (bottom)
+    const barWidth = W / dataFreq.length;
+    for (let i = 0; i < dataFreq.length; i++) {
+      const barH = (dataFreq[i] / 255) * H * 0.3;
+      ctx.fillStyle = `rgb(${dataFreq[i]}, ${255 - dataFreq[i]}, 255)`;
       ctx.fillRect(i * barWidth, H - barH, barWidth * 0.6, barH);
     }
 
-    // sinewave (center)
+    // Sinewave (center)
     ctx.lineWidth = 2;
     ctx.strokeStyle = 'rgba(0,255,255,0.85)';
     ctx.beginPath();
-    let x = 0;
     const slice = W / dataWave.length;
-    for(let i=0;i<dataWave.length;i++){
-      const v = dataWave[i] / 128 - 1; // -1..1
-      const y = H/2 + v * (H * 0.12); // scale
-      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-      x += slice;
+    for (let i = 0; i < dataWave.length; i++) {
+      const v = (dataWave[i] / 128 - 1);
+      const y = H / 2 + v * (H * 0.15);
+      if (i === 0) ctx.moveTo(i * slice, y);
+      else ctx.lineTo(i * slice, y);
     }
     ctx.stroke();
   }
 
   PartZ.loop = async function() {
     if (!video || !ctx) return;
-    if(video.readyState >= 2) resizeCanvas(); // keep canvas matched
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // clear overlay
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    // face detection (draw boxes)
+    // Face detection
     if (faceModel && video.readyState >= 2) {
-      try {
-        const preds = await faceModel.estimateFaces(video, false);
-        preds.forEach(p => {
-          const [x1,y1] = p.topLeft;
-          const [x2,y2] = p.bottomRight;
-          const w = x2 - x1, h = y2 - y1;
-          ctx.strokeStyle = 'rgba(0,255,255,0.95)';
-          ctx.lineWidth = 2;
-          ctx.strokeRect(x1, y1, w, h);
-        });
-        // small hook for other parts
-        if (typeof Percy?.onVisualInput === 'function') Percy.onVisualInput({ faces: preds });
-      } catch(e) {
-        // face model may throw if not ready — swallow safely
-      }
+      const predictions = await faceModel.estimateFaces(video, false);
+      predictions.forEach(pred => {
+        const [x1, y1] = pred.topLeft;
+        const [x2, y2] = pred.bottomRight;
+        const w = x2 - x1, h = y2 - y1;
+        ctx.strokeStyle = 'rgba(0,255,0,0.9)';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x1, y1, w, h);
+        ctx.font = "14px monospace";
+        ctx.fillStyle = "rgba(0,255,0,0.9)";
+        ctx.fillText("Face", x1 + 5, y1 - 5);
+      });
     }
 
-    // audio visuals
     drawAudioOverlay();
-
     requestAnimationFrame(PartZ.loop);
   };
 
   return PartZ;
 })();
-
-// init PartZ
 Percy.PartZ.init();
 </script>
 
