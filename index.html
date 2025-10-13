@@ -70,21 +70,19 @@
   </div>
 </div>
 
-<!-- Load TensorFlow.js and MediaPipe FaceMesh -->
+<!-- Load TensorFlow + Coco-SSD -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2"></script>
 
 <!-- Percy core -->
 <script src="js/percy.js?v=6.4"></script>
 
-<!-- === Percy.PartZ + ASI integrated === -->
 <script>
 Percy.PartZ = (function(){
-  const PartZ={};
-  const video=document.getElementById('camera-feed');
-  const overlay=document.getElementById('camera-overlay');
-  const overlayCtx=overlay.getContext('2d');
+  const PartZ = {};
+  const video = document.getElementById('camera-feed');
+  const overlay = document.getElementById('camera-overlay');
+  const overlayCtx = overlay.getContext('2d');
   let analyser=null, audioCtx=null, dataFreq=null, dataWave=null;
   PartZ.analyser=null;
 
@@ -97,44 +95,52 @@ Percy.PartZ = (function(){
   }
 
   async function initModels(){
-    // MediaPipe FaceMesh
-    const faceMesh = new FaceMesh({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`});
-    faceMesh.setOptions({maxNumFaces:1, refineLandmarks:true, minDetectionConfidence:0.5});
-    faceMesh.onResults(results=>{
+    // ✅ Load Coco-SSD (Object Detection)
+    console.log("🔍 Loading TensorFlow Coco-SSD...");
+    const cocoModel = await cocoSsd.load();
+    console.log("✅ Coco-SSD model loaded");
+
+    async function detectFrame(){
+      const predictions = await cocoModel.detect(video);
       overlayCtx.clearRect(0,0,overlay.width,overlay.height);
-      if(results.multiFaceLandmarks && results.multiFaceLandmarks.length>0){
-        results.multiFaceLandmarks.forEach(face=>{
-          face.forEach(p=>{
-            const x=p.x*overlay.width;
-            const y=p.y*overlay.height;
-            overlayCtx.fillStyle='rgba(0,255,0,0.7)';
-            overlayCtx.fillRect(x-1,y-1,2,2);
-          });
-        });
-        if(typeof Percy?.onVisualInput==='function') Percy.onVisualInput({faces:results.multiFaceLandmarks});
+
+      // Draw object boxes
+      predictions.forEach(p=>{
+        overlayCtx.strokeStyle = 'rgba(0,255,255,0.8)';
+        overlayCtx.lineWidth = 2;
+        overlayCtx.strokeRect(p.bbox[0], p.bbox[1], p.bbox[2], p.bbox[3]);
+        overlayCtx.fillStyle = 'rgba(0,255,255,0.4)';
+        overlayCtx.font = '12px monospace';
+        overlayCtx.fillText(`${p.class} (${Math.round(p.score*100)}%)`, p.bbox[0]+4, p.bbox[1]+12);
+      });
+
+      // Send object data to Percy logic
+      if(predictions.length>0 && typeof Percy?.onVisualInput==='function'){
+        Percy.onVisualInput({objects:predictions});
       }
-    });
-    const camera = new Camera(video,{
-      onFrame: async ()=>{ await faceMesh.send({image:video}); },
-      width: 320, height: 240
-    });
-    camera.start();
+
+      requestAnimationFrame(detectFrame);
+    }
+
+    detectFrame();
   }
 
   PartZ.init=async function(){
     try{
-      const stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+      const stream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
       video.srcObject=stream; await video.play();
       video.addEventListener('loadedmetadata',setOverlaySize);
-      window.addEventListener('resize',setOverlaySize); setOverlaySize();
+      window.addEventListener('resize',setOverlaySize);
+      setOverlaySize();
 
-      audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+      // Audio visualizer setup
+      audioCtx = new (window.AudioContext||window.webkitAudioContext)();
       ['click','keydown','touchstart'].forEach(evt=>{
-        const handler=async ()=>{ try{ if(audioCtx.state==='suspended') await audioCtx.resume(); }catch(e){} window.removeEventListener(evt,handler); };
+        const handler=async()=>{ try{ if(audioCtx.state==='suspended') await audioCtx.resume(); }catch(e){} window.removeEventListener(evt,handler); };
         window.addEventListener(evt,handler,{passive:true});
       });
 
-      analyser=audioCtx.createAnalyser();
+      analyser = audioCtx.createAnalyser();
       analyser.fftSize=256;
       dataFreq=new Uint8Array(analyser.frequencyBinCount);
       dataWave=new Uint8Array(analyser.frequencyBinCount);
@@ -158,16 +164,6 @@ Percy.PartZ = (function(){
       overlayCtx.fillStyle=`rgb(${dataFreq[i]},${255-dataFreq[i]},255)`;
       overlayCtx.fillRect(i*barWidth,H-barH,barWidth*0.6,barH);
     }
-    overlayCtx.lineWidth=2;
-    overlayCtx.strokeStyle='rgba(0,255,255,0.85)';
-    overlayCtx.beginPath();
-    const slice=W/dataWave.length;
-    for(let i=0;i<dataWave.length;i++){
-      const v=dataWave[i]/128-1;
-      const y=H/2+v*(H*0.12);
-      if(i===0) overlayCtx.moveTo(i*slice,y); else overlayCtx.lineTo(i*slice,y);
-    }
-    overlayCtx.stroke();
   }
 
   async function loop(){
@@ -178,8 +174,8 @@ Percy.PartZ = (function(){
   return PartZ;
 })();
 
-/* === Percy.ASI: integrated === */
-Percy.ASI=(function(){
+/* === Percy.ASI integration === */
+Percy.ASI = (function(){
   const ASI={taskQueue:[],running:false};
   ASI.addTask=function(task){ if(!task||typeof task.exec!=='function') throw new Error('Task requires exec()'); ASI.taskQueue.push(task); };
   ASI.runNext=async function(){
@@ -190,21 +186,24 @@ Percy.ASI=(function(){
     try{ const res=await task.exec(); if(typeof task.onComplete==='function') task.onComplete(res); }catch(e){ console.error('ASI task error',e);}
     ASI.running=false; setTimeout(ASI.runNext,0);
   };
-  ASI.loop=function(){ setTimeout(ASI.loop,100); ASI.runNext(); }; ASI.loop();
+  ASI.loop=function(){ setTimeout(ASI.loop,100); ASI.runNext(); };
+  ASI.loop();
   ASI.init=function(){ console.log('✅ Percy.ASI initialized'); };
   return ASI;
 })();
 
-/* === PartZ -> ASI hooks === */
-Percy.onVisualInput = Percy.onVisualInput||function(data){
-  if(data.faces&&data.faces.length>0){
-    Percy.ASI.addTask({exec:async()=>{ console.log('👁️ ASI sees faces:',data.faces.length); return data.faces.length; }});
+/* === Hook vision + audio to ASI === */
+Percy.onVisualInput = Percy.onVisualInput || function(data){
+  if(data.objects && data.objects.length>0){
+    Percy.ASI.addTask({
+      exec: async()=>{ console.log('🟦 Objects detected:', data.objects.map(o=>o.class).join(', ')); return data.objects.length; }
+    });
   }
 };
-const audioLoop=()=>{ const analyser=Percy.PartZ.analyser; if(analyser){ const data=new Uint8Array(analyser.frequencyBinCount); analyser.getByteFrequencyData(data); const avg=data.reduce((a,b)=>a+b,0)/data.length; if(avg>30) Percy.ASI.addTask({exec:async()=>{ console.log('🔊 ASI audio spike',avg); return avg; }});} requestAnimationFrame(audioLoop); };
-audioLoop();
 
-window.addEventListener('load',()=>{ try{ Percy.PartZ.init(); Percy.ASI.init(); }catch(e){console.error(e);} });
+window.addEventListener('load',()=>{ 
+  try{ Percy.PartZ.init(); Percy.ASI.init(); }catch(e){ console.error(e); } 
+});
 </script>
 
 <!-- === Voice visualizer === -->
