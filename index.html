@@ -1,283 +1,296 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>P.E.R.C.Y – AI (ASI + Vision)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: white;
-      overflow: hidden;
-    }
-    #logic-map {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
-      background: #0a0a0f;
-      overflow: hidden;
-    }
-    #logic-nodes {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 100%;
-      height: 100%;
-      transform: translate(-50%, -50%) scale(1);
-    }
-
-    /* Console */
-    .console-line {
-      margin: 2px 0;
-      font-family: monospace;
-      font-size: 12px;
-    }
-    .console-line.ask {
-      color: #d6d8ff;
-    }
-    .console-line.exec {
-      color: #7fff7f;
-    }
-    #percy-console {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 35%;
-      max-height: 40%;
-      overflow: auto;
-      background: rgba(0, 0, 0, 0.65);
-      padding: 6px;
-      border-top-right-radius: 12px;
-      border: 1px solid #444;
-    }
-    #percy-message {
-      position: fixed;
-      bottom: 0;
-      left: 35%;
-      width: 65%;
-      padding: 6px;
-      background: rgba(0, 0, 0, 0.65);
-      border-top-left-radius: 12px;
-      border: 1px solid #444;
-    }
-
-    /* Buttons & Inputs */
-    #askPercyButton,
-    #percy-exec-run {
-      padding: 6px 12px;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      z-index: 9999;
-    }
-    #askPercyButton {
-      position: fixed;
-      top: 12px;
-      left: 530px;
-      background: #1a1aff;
-    }
-    #askPercyButton:hover {
-      background: #3333ff;
-    }
-    #percy-exec-run {
-      position: fixed;
-      top: 90px;
-      left: 530px;
-      background: #1aff55;
-    }
-    #percy-exec-run:hover {
-      background: #33ff77;
-    }
-    #interpreter-input,
-    #percy-exec-input,
-    #seed-search {
-      position: fixed;
-      padding: 6px;
-      z-index: 9999;
-      width: 300px;
-    }
-    #seed-search {
-      top: 12px;
-      left: 12px;
-      width: 200px;
-    }
-    #interpreter-input {
-      top: 12px;
-      left: 220px;
-    }
-    #percy-exec-input {
-      top: 90px;
-      left: 220px;
-      width: 300px;
-    }
-
-    #exec-toggle {
-      position: fixed;
-      top: 50px;
-      left: 220px;
-      z-index: 9999;
-    }
-    #exec-toggle button {
-      padding: 4px 12px;
-      margin-right: 6px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      background: #333;
-      color: white;
-    }
-    #exec-toggle button.active {
-      background: #1aff55;
-      color: black;
-    }
-
-    /* Chat */
-    #percy-chat-box {
-      position: fixed;
-      bottom: 50px;
-      right: 12px;
-      width: 320px;
-      height: 400px;
-      background: rgba(0, 0, 0, 0.75);
-      border: 1px solid #333;
-      border-radius: 12px;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      font-family: monospace;
-      z-index: 9999;
-    }
-    #percy-chat-messages {
-      flex: 1;
-      padding: 8px;
-      overflow-y: auto;
-    }
-    #percy-chat-input {
-      flex: 1;
-      padding: 6px;
-      border: none;
-      background: #111;
-      color: white;
-    }
-    #percy-chat-send {
-      padding: 6px 10px;
-      background: #1aff55;
-      color: black;
-      border: none;
-      cursor: pointer;
-    }
-
-    /* Voice Visualizer */
-    #voice-visualizer {
-      position: fixed;
-      top: 12px;
-      right: 12px;
-      width: 360px;
-      height: 128px;
-      pointer-events: none;
-      display: flex;
-      align-items: center;
-      border-radius: 12px;
-      background: linear-gradient(
-        180deg,
-        rgba(7, 7, 12, 0.6),
-        rgba(7, 7, 12, 0.35)
-      );
-      box-shadow: 0 6px 24px rgba(0, 255, 255, 0.08),
-        inset 0 1px 0 rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(0, 255, 255, 0.1);
-      z-index: 9999;
-    }
-    #voice-canvas {
-      flex: 1;
-      width: 100%;
-      height: 100%;
-      border-radius: 8px;
-      background: linear-gradient(
-        180deg,
-        rgba(0, 0, 0, 0.1),
-        rgba(0, 0, 0, 0.05)
-      );
-    }
-
-    /* Camera */
-    #camera-feed {
-      position: fixed;
-      top: 150px;
-      right: 12px;
-      width: 320px;
-      height: 240px;
-      border: 1px solid #333;
-      border-radius: 12px;
-      z-index: 9999;
-      object-fit: cover;
-      background: #000;
-    }
-    #camera-overlay {
-      position: fixed;
-      top: 150px;
-      right: 12px;
-      width: 320px;
-      height: 240px;
-      pointer-events: none;
-      z-index: 10000;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>P.E.R.C.Y - AI</title>
+<style>
+  body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; overflow:hidden; }
+  #logic-map { position:relative; width:100vw; height:100vh; background:#0a0a0f; overflow:hidden; }
+  #logic-nodes { position:absolute; top:50%; left:50%; width:100%; height:100%; transform:translate(-50%,-50%) scale(1); }
+  .console-line { margin:2px 0; font-family:monospace; font-size:12px; }
+  .console-line.ask { color:#d6d8ff; }
+  .console-line.exec { color:#7fff7f; }
+  #percy-console { position:fixed; bottom:0; left:0; width:35%; max-height:40%; overflow:auto; background:rgba(0,0,0,0.65); padding:6px; border-top-right-radius:12px; border:1px solid #444; }
+  #percy-message { position:fixed; bottom:0; left:35%; width:65%; padding:6px; background:rgba(0,0,0,0.65); border-top-left-radius:12px; border:1px solid #444; }
+  #askPercyButton,#percy-exec-run { padding:6px 12px; color:white; border:none; border-radius:6px; cursor:pointer; z-index:9999; }
+  #askPercyButton { position:fixed; top:12px; left:530px; background:#1a1aff; }
+  #askPercyButton:hover { background:#3333ff; }
+  #percy-exec-run { position:fixed; top:90px; left:530px; background:#1aff55; }
+  #percy-exec-run:hover { background:#33ff77; }
+  #interpreter-input,#percy-exec-input,#seed-search { position:fixed; padding:6px; z-index:9999; width:300px; }
+  #seed-search { top:12px; left:12px; width:200px; }
+  #interpreter-input { top:12px; left:220px; }
+  #percy-exec-input { top:90px; left:220px; width:300px; }
+  #exec-toggle { position:fixed; top:50px; left:220px; z-index:9999; }
+  #exec-toggle button { padding:4px 12px; margin-right:6px; border:none; border-radius:6px; cursor:pointer; background:#333; color:white; }
+  #exec-toggle button.active { background:#1aff55; color:black; }
+  #percy-chat-box {
+    position:fixed; bottom:50px; right:12px; width:320px; height:400px;
+    background:rgba(0,0,0,0.75); border:1px solid #333; border-radius:12px;
+    display:flex; flex-direction:column; overflow:hidden; font-family:monospace; z-index:9999;
+  }
+  #percy-chat-messages { flex:1; padding:8px; overflow-y:auto; }
+  #percy-chat-input { flex:1; padding:6px; border:none; background:#111; color:white; }
+  #percy-chat-send { padding:6px 10px; background:#1aff55; color:black; border:none; cursor:pointer; }
+  #voice-visualizer { position:fixed; top:12px; right:12px; width:360px; height:128px; pointer-events:none; display:flex; align-items:center; border-radius:12px; background:linear-gradient(180deg,rgba(7,7,12,0.6),rgba(7,7,12,0.35)); box-shadow:0 6px 24px rgba(0,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.02); border:1px solid rgba(0,255,255,0.1); z-index:9999; }
+  #voice-canvas { flex:1; width:100%; height:100%; border-radius:8px; background:linear-gradient(180deg,rgba(0,0,0,0.1),rgba(0,0,0,0.05)); }
+  #camera-feed { position:fixed; top:150px; right:12px; width:320px; height:240px; border:1px solid #333; border-radius:12px; z-index:9999; object-fit:cover; }
+  #camera-overlay { position:fixed; top:150px; right:12px; width:320px; height:240px; pointer-events:none; z-index:10000; }
+</style>
 </head>
-
 <body>
-  <div id="logic-map"><div id="logic-nodes"></div></div>
-  <div id="percy-console"></div>
-  <div id="percy-message"></div>
 
-  <input id="seed-search" placeholder="Search seeds" />
-  <input id="interpreter-input" placeholder="Ask Percy" />
-  <button id="askPercyButton">Run</button>
+<div id="logic-map"><div id="logic-nodes"></div></div>
+<div id="percy-console"></div>
+<div id="percy-message"></div>
 
-  <div id="exec-toggle">
-    <button data-mode="math" class="active">Math</button>
-    <button data-mode="java">Java</button>
-    <button data-mode="tools">Tools</button>
+<input id="seed-search" placeholder="Search seeds">
+<input id="interpreter-input" placeholder="Ask Percy">
+<button id="askPercyButton">Run</button>
+
+<div id="exec-toggle">
+  <button data-mode="math" class="active">Math</button>
+  <button data-mode="java">Java</button>
+  <button data-mode="tools">Tools</button>
+</div>
+
+<textarea id="percy-exec-input" placeholder="Percy Exec (Math/Java/Tools)" rows="4"></textarea>
+<button id="percy-exec-run">Run Exec</button>
+
+<video id="camera-feed" autoplay muted playsinline></video>
+<canvas id="camera-overlay"></canvas>
+
+<div id="voice-visualizer"><canvas id="voice-canvas"></canvas></div>
+
+<div id="percy-chat-box">
+  <div id="percy-chat-messages"></div>
+  <div style="display:flex; border-top:1px solid #333;">
+    <input id="percy-chat-input" type="text" placeholder="Talk to Percy...">
+    <button id="percy-chat-send">Send</button>
   </div>
+</div>
 
-  <textarea
-    id="percy-exec-input"
-    placeholder="Percy Exec (Math/Java/Tools)"
-    rows="4"
-  ></textarea>
-  <button id="percy-exec-run">Run Exec</button>
+<!-- Load TensorFlow + BlazeFace -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
+<script> window.tf = window.tf || tf; </script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.9/dist/blazeface.min.js"></script>
 
-  <!-- Camera + overlay -->
-  <video id="camera-feed" autoplay muted playsinline></video>
-  <canvas id="camera-overlay"></canvas>
+<!-- Percy core -->
+<script src="js/percy.js?v=6.4"></script>
 
-  <!-- Voice visualizer -->
-  <div id="voice-visualizer"><canvas id="voice-canvas"></canvas></div>
+<!-- === Percy.PartZ + ASI integrated === -->
+<script>
+/* waitFor helper */
+function waitFor(conditionFn, timeout=5000, interval=50){
+  const start=Date.now();
+  return new Promise((resolve,reject)=>{
+    (function check(){
+      try{ if(conditionFn()) return resolve(); }catch(e){}
+      if(Date.now()-start>=timeout) return reject(new Error('waitFor timeout'));
+      setTimeout(check,interval);
+    })();
+  });
+}
 
-  <!-- Chat -->
-  <div id="percy-chat-box">
-    <div id="percy-chat-messages"></div>
-    <div style="display: flex; border-top: 1px solid #333;">
-      <input id="percy-chat-input" type="text" placeholder="Talk to Percy..." />
-      <button id="percy-chat-send">Send</button>
-    </div>
-  </div>
+Percy.PartZ=(function(){
+  const PartZ={};
+  const video=document.getElementById('camera-feed');
+  const overlay=document.getElementById('camera-overlay');
+  const overlayCtx=overlay.getContext('2d');
+  let faceModel=null, analyser=null, audioCtx=null, dataFreq=null, dataWave=null;
+  PartZ.analyser=null;
 
-  <!-- TensorFlow + Models -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
-  <script>
-    window.tf = window.tf || tf;
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.9/dist/blazeface.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
+  function setOverlaySize(){
+    const rect=video.getBoundingClientRect();
+    overlay.style.width=rect.width+'px';
+    overlay.style.height=rect.height+'px';
+    overlay.width=rect.width;
+    overlay.height=rect.height;
+  }
 
-  <!-- Percy Core -->
-  <script src="js/percy.js?v=6.4"></script>
+  async function initModels(){
+    await waitFor(()=>typeof blazeface!=='undefined',7000).catch(()=>{});
+    if(typeof blazeface==='undefined') throw new Error('blazeface not found');
+    faceModel=await blazeface.load();
+  }
 
-  <!-- Percy Vision + ASI Integration -->
-  <script src="js/percy-asi.js?v=1.0"></script>
+  PartZ.init=async function(){
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+      video.srcObject=stream; await video.play();
+      video.addEventListener('loadedmetadata',setOverlaySize);
+      window.addEventListener('resize',setOverlaySize); setOverlaySize();
+
+      audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+      ['click','keydown','touchstart'].forEach(evt=>{
+        const handler=async ()=>{ try{ if(audioCtx.state==='suspended') await audioCtx.resume(); }catch(e){} window.removeEventListener(evt,handler); };
+        window.addEventListener(evt,handler,{passive:true});
+      });
+
+      analyser=audioCtx.createAnalyser();
+      analyser.fftSize=256;
+      dataFreq=new Uint8Array(analyser.frequencyBinCount);
+      dataWave=new Uint8Array(analyser.frequencyBinCount);
+      const src=audioCtx.createMediaStreamSource(stream);
+      src.connect(analyser);
+      PartZ.analyser=analyser;
+
+      await initModels();
+      requestAnimationFrame(loop);
+    }catch(err){ console.error('PartZ init failed',err);}
+  };
+
+  function drawAudioOnOverlay(){
+    if(!analyser) return;
+    const W=overlay.width,H=overlay.height;
+    analyser.getByteFrequencyData(dataFreq);
+    analyser.getByteTimeDomainData(dataWave);
+    const barCount=dataFreq.length, barWidth=Math.max(1,W/barCount);
+    for(let i=0;i<barCount;i++){
+      const barH=(dataFreq[i]/255)*(H*0.25);
+      overlayCtx.fillStyle=`rgb(${dataFreq[i]},${255-dataFreq[i]},255)`;
+      overlayCtx.fillRect(i*barWidth,H-barH,barWidth*0.6,barH);
+    }
+    overlayCtx.lineWidth=2;
+    overlayCtx.strokeStyle='rgba(0,255,255,0.85)';
+    overlayCtx.beginPath();
+    const slice=W/dataWave.length;
+    for(let i=0;i<dataWave.length;i++){
+      const v=dataWave[i]/128-1;
+      const y=H/2+v*(H*0.12);
+      if(i===0) overlayCtx.moveTo(i*slice,y); else overlayCtx.lineTo(i*slice,y);
+    }
+    overlayCtx.stroke();
+  }
+
+  async function loop(){
+    if(!video||!overlayCtx) return requestAnimationFrame(loop);
+    setOverlaySize(); overlayCtx.clearRect(0,0,overlay.width,overlay.height);
+    if(faceModel&&video.readyState>=2){
+      try{
+        const preds=await faceModel.estimateFaces(video,false);
+        const vidW=video.videoWidth,vidH=video.videoHeight;
+        const scaleX=overlay.width/vidW,scaleY=overlay.height/vidH;
+        preds.forEach(p=>{
+          const [x1,y1]=p.topLeft, [x2,y2]=p.bottomRight;
+          const rx=x1*scaleX,ry=y1*scaleY,rw=(x2-x1)*scaleX,rh=(y2-y1)*scaleY;
+          overlayCtx.strokeStyle='rgba(0,255,0,0.95)';
+          overlayCtx.lineWidth=Math.max(1,2*Math.min(scaleX,scaleY));
+          overlayCtx.strokeRect(rx,ry,rw,rh);
+          overlayCtx.font='12px monospace';
+          overlayCtx.fillStyle='rgba(0,255,0,0.95)';
+          overlayCtx.fillText('Face',rx+4,Math.max(12,ry-6));
+        });
+        if(typeof Percy?.onVisualInput==='function') Percy.onVisualInput({faces:preds});
+      }catch(e){}
+    }
+    drawAudioOnOverlay();
+    requestAnimationFrame(loop);
+  }
+
+  return PartZ;
+})();
+
+/* === Percy.ASI: integrated === */
+Percy.ASI=(function(){
+  const ASI={taskQueue:[],running:false};
+  ASI.addTask=function(task){ if(!task||typeof task.exec!=='function') throw new Error('Task requires exec()'); ASI.taskQueue.push(task); };
+  ASI.runNext=async function(){
+    if(ASI.running) return;
+    if(ASI.taskQueue.length===0) return;
+    ASI.running=true;
+    const task=ASI.taskQueue.shift();
+    try{ const res=await task.exec(); if(typeof task.onComplete==='function') task.onComplete(res); }catch(e){ console.error('ASI task error',e);}
+    ASI.running=false; setTimeout(ASI.runNext,0);
+  };
+  ASI.loop=function(){ setTimeout(ASI.loop,100); ASI.runNext(); }; ASI.loop();
+  ASI.init=function(){ console.log('✅ Percy.ASI initialized'); };
+  return ASI;
+})();
+
+/* === PartZ -> ASI hooks === */
+Percy.onVisualInput = Percy.onVisualInput||function(data){
+  if(data.faces&&data.faces.length>0){
+    Percy.ASI.addTask({exec:async()=>{ console.log('👁️ ASI sees faces:',data.faces.length); return data.faces.length; }});
+  }
+};
+const audioLoop=()=>{ const analyser=Percy.PartZ.analyser; if(analyser){ const data=new Uint8Array(analyser.frequencyBinCount); analyser.getByteFrequencyData(data); const avg=data.reduce((a,b)=>a+b,0)/data.length; if(avg>30) Percy.ASI.addTask({exec:async()=>{ console.log('🔊 ASI audio spike',avg); return avg; }});} requestAnimationFrame(audioLoop); };
+audioLoop();
+
+window.addEventListener('load',()=>{ try{ Percy.PartZ.init(); Percy.ASI.init(); }catch(e){console.error(e);} });
+</script>
+
+<!-- === Voice visualizer === -->
+<script>
+(function(){
+  const canvas=document.getElementById('voice-canvas'); if(!canvas) return;
+  const ctx=canvas.getContext('2d'); function resize(){ canvas.width=canvas.clientWidth; canvas.height=canvas.clientHeight; }
+  resize(); window.addEventListener('resize',resize);
+  let analyserLocal,dataFreqLocal,dataWaveLocal;
+  async function init(){
+    if(window.Percy&&Percy.PartZ&&Percy.PartZ.analyser) analyserLocal=Percy.PartZ.analyser;
+    else{
+      try{
+        const audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+        if(audioCtx.state==='suspended') await new Promise(res=>document.addEventListener('click',res,{once:true})),await audioCtx.resume().catch(()=>{});
+        const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+        const src=audioCtx.createMediaStreamSource(stream);
+        analyserLocal=audioCtx.createAnalyser();
+        analyserLocal.fftSize=256; src.connect(analyserLocal);
+      }catch(e){ console.warn('Voice visualizer failed',e); return;}
+    }
+    dataFreqLocal=new Uint8Array(analyserLocal.frequencyBinCount);
+    dataWaveLocal=new Uint8Array(analyserLocal.frequencyBinCount);
+    (function draw(){
+      requestAnimationFrame(draw);
+      if(!analyserLocal) return;
+      const W=canvas.width,H=canvas.height;
+      ctx.clearRect(0,0,W,H);
+      analyserLocal.getByteFrequencyData(dataFreqLocal);
+      analyserLocal.getByteTimeDomainData(dataWaveLocal);
+      const barWidth=Math.max(1,W/dataFreqLocal.length);
+      for(let i=0;i<dataFreqLocal.length;i++){ const barH=(dataFreqLocal[i]/255)*(H*0.6); ctx.fillStyle=`rgb(${dataFreqLocal[i]},${255-dataFreqLocal[i]},255)`; ctx.fillRect(i*barWidth,H-barH,barWidth*0.6,barH);}
+      ctx.lineWidth=2; ctx.strokeStyle='rgba(0,255,255,0.9)'; ctx.beginPath();
+      let x=0; const slice=W/dataWaveLocal.length; for(let i=0;i<dataWaveLocal.length;i++){ const y=H/2+(dataWaveLocal[i]/128-1)*(H*0.2); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); x+=slice;}
+      ctx.stroke();
+    })();
+  }
+  ['click','keydown','touchstart'].forEach(evt=>{ window.addEventListener(evt,function once(){ init(); window.removeEventListener(evt,once);},{passive:true}); });
+  if(window.Percy&&Percy.PartZ&&Percy.PartZ.analyser) init();
+})();
+</script>
+
+<!-- === Console / Exec / Chat logic (unchanged) === -->
+<script>
+// interpreter
+(function(){
+  const interpreterInput=document.getElementById('interpreter-input'), percyConsole=document.getElementById('percy-console'), askButton=document.getElementById('askPercyButton');
+  function appendConsole(text,isUser=false,exec=false){ const line=document.createElement('div'); line.className='console-line '+(isUser?'ask':'')+(exec?' exec':''); line.textContent=(isUser?'↳ ':'')+text; percyConsole.appendChild(line); percyConsole.scrollTop=percyConsole.scrollHeight;}
+  function runPercyCommand(){ const query=interpreterInput.value.trim(); if(!query) return; appendConsole(query,true); let response=""; if(typeof percyRespond==='function') response=percyRespond(query); else if(window.Percy&&typeof Percy.interpret==='function') response=Percy.interpret(query); if(response){ appendConsole(response,false,false); if(Percy?.speak&&!response.includes("Logic network idle")) Percy.speak(response);} interpreterInput.value=''; }
+  interpreterInput.addEventListener('keydown',e=>{ if(e.key==='Enter') runPercyCommand(); }); askButton.addEventListener('click',runPercyCommand);
+})();
+
+// exec
+(function(){
+  const execInput=document.getElementById('percy-exec-input'), execBtn=document.getElementById('percy-exec-run'), consoleDiv=document.getElementById('percy-console'), toggleBtns=document.querySelectorAll('#exec-toggle button');
+  if(!execInput) return;
+  let PercyExecMode="math";
+  toggleBtns.forEach(btn=>btn.addEventListener('click',()=>{ toggleBtns.forEach(b=>b.classList.remove('active')); btn.classList.add('active'); PercyExecMode=btn.dataset.mode;}));
+  async function handleExecInput(){ const query=execInput.value.trim(); if(!query) return; execInput.value=""; const userLine=document.createElement("div"); userLine.className="console-line ask"; userLine.textContent="↳ "+query; consoleDiv.appendChild(userLine); let output=""; try{ if(PercyExecMode==="math") output=await PercyState.useTool("math",query); else if(PercyExecMode==="java") output=await PercyState.useTool("java",query); else if(PercyExecMode==="tools") output=await PercyState.PartH?.routeInput(query) || "⚠️ Percy Part H not loaded.";}catch(e){ output="⚠️ Exec error: "+e.message; } const percyLine=document.createElement("div"); percyLine.className="console-line exec"; percyLine.textContent="🤖 "+output; consoleDiv.appendChild(percyLine); consoleDiv.scrollTop=consoleDiv.scrollHeight; }
+  execInput.addEventListener("keydown",async e=>{ if(e.key==="Enter"){ e.preventDefault(); await handleExecInput(); } });
+  execBtn.addEventListener("click",handleExecInput);
+})();
+
+// chat
+(function(){
+  const chatInput=document.getElementById('percy-chat-input'), chatSend=document.getElementById('percy-chat-send'), chatMessages=document.getElementById('percy-chat-messages');
+  let percyMemory=[];
+  function appendMsg(role,text){ const line=document.createElement('div'); line.textContent=`${role}: ${text}`; line.style.margin='6px 0'; line.style.color=role==='Percy'?'#7fff7f':'#d6d8ff'; chatMessages.appendChild(line); chatMessages.scrollTop=chatMessages.scrollHeight; }
+  function PercyReply(userText){ let raw=""; if(Percy?.PartT?.hear) raw=Percy.PartT.hear(userText); else if(Percy?.interpret) raw=Percy.interpret(userText); else if(typeof percyRespond==='function') raw=percyRespond(userText); else raw="⚙️ Percy core logic not initialized yet."; percyMemory.push({you:userText,percy:raw}); if(percyMemory.length>10) percyMemory.shift(); appendMsg('Percy',raw); if(Percy?.speak&&!raw.includes("Logic network idle")) Percy.speak(raw);}
+  function sendMessage(){ const text=chatInput.value.trim(); if(!text) return; appendMsg('You',text); chatInput.value=''; PercyReply(text);}
+  chatSend.addEventListener('click',sendMessage); chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter') sendMessage(); });
+})();
+</script>
+
 </body>
 </html>
