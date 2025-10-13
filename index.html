@@ -70,36 +70,22 @@
   </div>
 </div>
 
-<!-- Load TensorFlow + BlazeFace as modules -->
-<script type="module">
-import * as blazeface from 'https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.8/dist/blazeface.esm.js';
-window.blazeface = blazeface;
-</script>
+<!-- Load TensorFlow.js and MediaPipe FaceMesh -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 
 <!-- Percy core -->
 <script src="js/percy.js?v=6.4"></script>
 
 <!-- === Percy.PartZ + ASI integrated === -->
 <script>
-/* waitFor helper */
-function waitFor(conditionFn, timeout=5000, interval=50){
-  const start=Date.now();
-  return new Promise((resolve,reject)=>{
-    (function check(){
-      try{ if(conditionFn()) return resolve(); }catch(e){}
-      if(Date.now()-start>=timeout) return reject(new Error('waitFor timeout'));
-      setTimeout(check,interval);
-    })();
-  });
-}
-
-/* === Percy PartZ === */
-Percy.PartZ=(function(){
+Percy.PartZ = (function(){
   const PartZ={};
   const video=document.getElementById('camera-feed');
   const overlay=document.getElementById('camera-overlay');
   const overlayCtx=overlay.getContext('2d');
-  let faceModel=null, analyser=null, audioCtx=null, dataFreq=null, dataWave=null;
+  let analyser=null, audioCtx=null, dataFreq=null, dataWave=null;
   PartZ.analyser=null;
 
   function setOverlaySize(){
@@ -111,9 +97,28 @@ Percy.PartZ=(function(){
   }
 
   async function initModels(){
-    await waitFor(()=>typeof blazeface!=='undefined',7000).catch(()=>{});
-    if(typeof blazeface==='undefined') throw new Error('blazeface not found');
-    faceModel=await blazeface.load();
+    // MediaPipe FaceMesh
+    const faceMesh = new FaceMesh({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`});
+    faceMesh.setOptions({maxNumFaces:1, refineLandmarks:true, minDetectionConfidence:0.5});
+    faceMesh.onResults(results=>{
+      overlayCtx.clearRect(0,0,overlay.width,overlay.height);
+      if(results.multiFaceLandmarks && results.multiFaceLandmarks.length>0){
+        results.multiFaceLandmarks.forEach(face=>{
+          face.forEach(p=>{
+            const x=p.x*overlay.width;
+            const y=p.y*overlay.height;
+            overlayCtx.fillStyle='rgba(0,255,0,0.7)';
+            overlayCtx.fillRect(x-1,y-1,2,2);
+          });
+        });
+        if(typeof Percy?.onVisualInput==='function') Percy.onVisualInput({faces:results.multiFaceLandmarks});
+      }
+    });
+    const camera = new Camera(video,{
+      onFrame: async ()=>{ await faceMesh.send({image:video}); },
+      width: 320, height: 240
+    });
+    camera.start();
   }
 
   PartZ.init=async function(){
@@ -166,26 +171,6 @@ Percy.PartZ=(function(){
   }
 
   async function loop(){
-    if(!video||!overlayCtx) return requestAnimationFrame(loop);
-    setOverlaySize(); overlayCtx.clearRect(0,0,overlay.width,overlay.height);
-    if(faceModel&&video.readyState>=2){
-      try{
-        const preds=await faceModel.estimateFaces(video,false);
-        const vidW=video.videoWidth,vidH=video.videoHeight;
-        const scaleX=overlay.width/vidW,scaleY=overlay.height/vidH;
-        preds.forEach(p=>{
-          const [x1,y1]=p.topLeft, [x2,y2]=p.bottomRight;
-          const rx=x1*scaleX,ry=y1*scaleY,rw=(x2-x1)*scaleX,rh=(y2-y1)*scaleY;
-          overlayCtx.strokeStyle='rgba(0,255,0,0.95)';
-          overlayCtx.lineWidth=Math.max(1,2*Math.min(scaleX,scaleY));
-          overlayCtx.strokeRect(rx,ry,rw,rh);
-          overlayCtx.font='12px monospace';
-          overlayCtx.fillStyle='rgba(0,255,0,0.95)';
-          overlayCtx.fillText('Face',rx+4,Math.max(12,ry-6));
-        });
-        if(typeof Percy?.onVisualInput==='function') Percy.onVisualInput({faces:preds});
-      }catch(e){}
-    }
     drawAudioOnOverlay();
     requestAnimationFrame(loop);
   }
