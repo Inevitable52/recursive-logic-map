@@ -70,9 +70,45 @@
   </div>
 </div>
 
-<!-- Load TensorFlow + BlazeFace -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.1.0/dist/blazeface.min.js"></script>
+<!-- Load TensorFlow + BlazeFace as modules (Option A) -->
+<script type="module">
+  import * as tf from 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js';
+  import * as blazeface from 'https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.1.7/dist/blazeface.esm.js';
+
+  // Wrap original PartZ.init to use module BlazeFace
+  const originalInit = Percy.PartZ?.init;
+  Percy.PartZ.init = async function(){
+    const video = document.getElementById('camera-feed');
+    const overlay = document.getElementById('camera-overlay');
+    const overlayCtx = overlay.getContext('2d');
+
+    function setOverlaySize(){
+      const rect = video.getBoundingClientRect();
+      overlay.style.width = rect.width+'px';
+      overlay.style.height = rect.height+'px';
+      overlay.width = rect.width;
+      overlay.height = rect.height;
+    }
+
+    try{
+      const stream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
+      video.srcObject = stream;
+      await video.play();
+
+      video.addEventListener('loadedmetadata', setOverlaySize);
+      window.addEventListener('resize', setOverlaySize);
+      setOverlaySize();
+
+      Percy.PartZ.faceModel = await blazeface.load();
+      console.log('✅ BlazeFace module loaded', Percy.PartZ.faceModel);
+
+      if(typeof originalInit === 'function') originalInit();
+
+    } catch(err){
+      console.error('PartZ init failed', err);
+    }
+  };
+</script>
 
 <!-- Percy core -->
 <script src="js/percy.js?v=6.4"></script>
