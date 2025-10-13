@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>P.E.R.C.Y - AI</title>
+<meta charset="utf-8" />
+<title>P.E.R.C.Y - AI (ASI + Vision)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
   body { margin:0; font-family:Arial,sans-serif; background:#111; color:white; overflow:hidden; }
   #logic-map { position:relative; width:100vw; height:100vh; background:#0a0a0f; overflow:hidden; }
@@ -24,6 +25,7 @@
   #exec-toggle { position:fixed; top:50px; left:220px; z-index:9999; }
   #exec-toggle button { padding:4px 12px; margin-right:6px; border:none; border-radius:6px; cursor:pointer; background:#333; color:white; }
   #exec-toggle button.active { background:#1aff55; color:black; }
+
   #percy-chat-box {
     position:fixed; bottom:50px; right:12px; width:320px; height:400px;
     background:rgba(0,0,0,0.75); border:1px solid #333; border-radius:12px;
@@ -32,9 +34,12 @@
   #percy-chat-messages { flex:1; padding:8px; overflow-y:auto; }
   #percy-chat-input { flex:1; padding:6px; border:none; background:#111; color:white; }
   #percy-chat-send { padding:6px 10px; background:#1aff55; color:black; border:none; cursor:pointer; }
+
   #voice-visualizer { position:fixed; top:12px; right:12px; width:360px; height:128px; pointer-events:none; display:flex; align-items:center; border-radius:12px; background:linear-gradient(180deg,rgba(7,7,12,0.6),rgba(7,7,12,0.35)); box-shadow:0 6px 24px rgba(0,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.02); border:1px solid rgba(0,255,255,0.1); z-index:9999; }
   #voice-canvas { flex:1; width:100%; height:100%; border-radius:8px; background:linear-gradient(180deg,rgba(0,0,0,0.1),rgba(0,0,0,0.05)); }
-  #camera-feed { position:fixed; top:150px; right:12px; width:320px; height:240px; border:1px solid #333; border-radius:12px; z-index:9999; object-fit:cover; }
+
+  /* Camera */
+  #camera-feed { position:fixed; top:150px; right:12px; width:320px; height:240px; border:1px solid #333; border-radius:12px; z-index:9999; object-fit:cover; background:#000; }
   #camera-overlay { position:fixed; top:150px; right:12px; width:320px; height:240px; pointer-events:none; z-index:10000; }
 </style>
 </head>
@@ -44,8 +49,8 @@
 <div id="percy-console"></div>
 <div id="percy-message"></div>
 
-<input id="seed-search" placeholder="Search seeds">
-<input id="interpreter-input" placeholder="Ask Percy">
+<input id="seed-search" placeholder="Search seeds" />
+<input id="interpreter-input" placeholder="Ask Percy" />
 <button id="askPercyButton">Run</button>
 
 <div id="exec-toggle">
@@ -57,32 +62,35 @@
 <textarea id="percy-exec-input" placeholder="Percy Exec (Math/Java/Tools)" rows="4"></textarea>
 <button id="percy-exec-run">Run Exec</button>
 
+<!-- Camera + overlay -->
 <video id="camera-feed" autoplay muted playsinline></video>
 <canvas id="camera-overlay"></canvas>
 
+<!-- Voice visualizer -->
 <div id="voice-visualizer"><canvas id="voice-canvas"></canvas></div>
 
+<!-- Chat -->
 <div id="percy-chat-box">
   <div id="percy-chat-messages"></div>
   <div style="display:flex; border-top:1px solid #333;">
-    <input id="percy-chat-input" type="text" placeholder="Talk to Percy...">
+    <input id="percy-chat-input" type="text" placeholder="Talk to Percy..." />
     <button id="percy-chat-send">Send</button>
   </div>
 </div>
 
-<!-- Load TensorFlow + BlazeFace -->
+<!-- Load TF + models (BlazeFace + COCO-SSD) -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
 <script> window.tf = window.tf || tf; </script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.9/dist/blazeface.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2"></script>
-  
-<!-- Percy core -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
+
+<!-- Your existing Percy core (keeps current Parts A...Z) -->
 <script src="js/percy.js?v=6.4"></script>
 
-<!-- === Percy.PartZ + ASI integrated === -->
+<!-- === Integrated Percy.PartZ (faces + objects) + Percy.ASI (task queue) === -->
 <script>
-/* waitFor helper */
-function waitFor(conditionFn, timeout=5000, interval=50){
+/* Lightweight waitFor helper */
+function waitFor(conditionFn, timeout=7000, interval=50){
   const start=Date.now();
   return new Promise((resolve,reject)=>{
     (function check(){
@@ -93,203 +101,522 @@ function waitFor(conditionFn, timeout=5000, interval=50){
   });
 }
 
-Percy.PartZ=(function(){
-  const PartZ={};
-  const video=document.getElementById('camera-feed');
-  const overlay=document.getElementById('camera-overlay');
-  const overlayCtx=overlay.getContext('2d');
-  let faceModel=null, analyser=null, audioCtx=null, dataFreq=null, dataWave=null;
-  PartZ.analyser=null;
+/* ===== Percy.PartZ: Vision + Audio (face + object detection) ===== */
+Percy.PartZ = Percy.PartZ || (function(){
+  const PZ = {};
+  const video = document.getElementById('camera-feed');
+  const overlay = document.getElementById('camera-overlay');
+  const overlayCtx = overlay.getContext('2d');
+
+  let faceModel = null;
+  let objectModel = null;
+  let audioCtx = null;
+  let analyser = null;
+  let dataFreq = null;
+  let dataWave = null;
+
+  PZ.analyser = null;
+  PZ.ready = false;
+  PZ.modelsLoaded = false;
 
   function setOverlaySize(){
-    const rect=video.getBoundingClientRect();
-    overlay.style.width=rect.width+'px';
-    overlay.style.height=rect.height+'px';
-    overlay.width=rect.width;
-    overlay.height=rect.height;
+    try {
+      const rect = video.getBoundingClientRect();
+      overlay.style.width = rect.width + 'px';
+      overlay.style.height = rect.height + 'px';
+      overlay.width = Math.max(1, Math.floor(rect.width));
+      overlay.height = Math.max(1, Math.floor(rect.height));
+    } catch(e){}
   }
 
   async function initModels(){
-    await waitFor(()=>typeof blazeface!=='undefined',7000).catch(()=>{});
-    if(typeof blazeface==='undefined') throw new Error('blazeface not found');
-    faceModel=await blazeface.load();
+    // wait for libs to be available
+    await waitFor(()=>typeof blazeface !== 'undefined' && typeof cocoSsd !== 'undefined', 10000).catch(()=>{});
+    if(typeof blazeface === 'undefined') throw new Error('blazeface not found');
+    if(typeof cocoSsd === 'undefined') throw new Error('cocoSsd not found');
+
+    // load models in parallel
+    const [fmod, omod] = await Promise.all([ blazeface.load(), cocoSsd.load() ]);
+    faceModel = fmod;
+    objectModel = omod;
+    PZ.modelsLoaded = true;
+    console.log('✅ PartZ: BlazeFace & COCO-SSD loaded');
   }
 
-  PartZ.init=async function(){
-    try{
-      const stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
-      video.srcObject=stream; await video.play();
-      video.addEventListener('loadedmetadata',setOverlaySize);
-      window.addEventListener('resize',setOverlaySize); setOverlaySize();
+  PZ.init = async function({ preferFPS=5, modelTimeout=12000 } = {}) {
+    try {
+      // request media (video + audio)
+      const stream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
+      video.srcObject = stream;
+      await video.play();
 
-      audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+      // size handling
+      video.addEventListener('loadedmetadata', setOverlaySize);
+      window.addEventListener('resize', setOverlaySize);
+      setOverlaySize();
+
+      // audio analyser
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      // resume on first gesture
       ['click','keydown','touchstart'].forEach(evt=>{
-        const handler=async ()=>{ try{ if(audioCtx.state==='suspended') await audioCtx.resume(); }catch(e){} window.removeEventListener(evt,handler); };
-        window.addEventListener(evt,handler,{passive:true});
+        const handler = async ()=>{ try{ if(audioCtx.state === 'suspended') await audioCtx.resume(); }catch(e){} window.removeEventListener(evt, handler); };
+        window.addEventListener(evt, handler, { passive:true });
       });
 
-      analyser=audioCtx.createAnalyser();
-      analyser.fftSize=256;
-      dataFreq=new Uint8Array(analyser.frequencyBinCount);
-      dataWave=new Uint8Array(analyser.frequencyBinCount);
-      const src=audioCtx.createMediaStreamSource(stream);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      dataFreq = new Uint8Array(analyser.frequencyBinCount);
+      dataWave = new Uint8Array(analyser.frequencyBinCount);
+      const src = audioCtx.createMediaStreamSource(stream);
       src.connect(analyser);
-      PartZ.analyser=analyser;
+      PZ.analyser = analyser;
 
-      await initModels();
-      requestAnimationFrame(loop);
-    }catch(err){ console.error('PartZ init failed',err);}
+      // Try to load models, but don't block rendering forever
+      try {
+        await Promise.race([ initModels(), new Promise((_, rej) => setTimeout(()=>rej(new Error('model load timeout')), modelTimeout)) ]);
+        PZ.ready = true;
+      } catch (err) {
+        console.warn('⚠️ PartZ model load failed or timed out:', err);
+        PZ.ready = false; // still keep audio active
+      }
+
+      // start render loop (non-blocking)
+      PZ._lastDetect = 0;
+      PZ._detectIntervalMs = Math.max(100, Math.floor(1000 / preferFPS)); // default 5 FPS => 200ms
+      requestAnimationFrame(PZ._loop);
+      console.log('🔉 PartZ initialized (audio + video stream). Models ready:', PZ.modelsLoaded);
+      return true;
+    } catch (err) {
+      console.error('❌ PartZ.init failed:', err);
+      throw err;
+    }
   };
 
   function drawAudioOnOverlay(){
     if(!analyser) return;
-    const W=overlay.width,H=overlay.height;
+    const W = overlay.width, H = overlay.height;
     analyser.getByteFrequencyData(dataFreq);
     analyser.getByteTimeDomainData(dataWave);
-    const barCount=dataFreq.length, barWidth=Math.max(1,W/barCount);
+
+    // bars (bottom)
+    const barCount = dataFreq.length;
+    const barWidth = Math.max(1, W / barCount);
     for(let i=0;i<barCount;i++){
-      const barH=(dataFreq[i]/255)*(H*0.25);
-      overlayCtx.fillStyle=`rgb(${dataFreq[i]},${255-dataFreq[i]},255)`;
-      overlayCtx.fillRect(i*barWidth,H-barH,barWidth*0.6,barH);
+      const barH = (dataFreq[i] / 255) * (H * 0.22);
+      overlayCtx.fillStyle = `rgb(${dataFreq[i]}, ${255 - dataFreq[i]}, 255)`;
+      overlayCtx.fillRect(i * barWidth, H - barH, barWidth * 0.6, barH);
     }
-    overlayCtx.lineWidth=2;
-    overlayCtx.strokeStyle='rgba(0,255,255,0.85)';
+
+    // sinewave (center)
+    overlayCtx.lineWidth = 2;
+    overlayCtx.strokeStyle = 'rgba(0,255,255,0.85)';
     overlayCtx.beginPath();
-    const slice=W/dataWave.length;
-    for(let i=0;i<dataWave.length;i++){
-      const v=dataWave[i]/128-1;
-      const y=H/2+v*(H*0.12);
-      if(i===0) overlayCtx.moveTo(i*slice,y); else overlayCtx.lineTo(i*slice,y);
+    const slice = W / dataWave.length;
+    for(let i=0, x=0; i<dataWave.length; i++, x+=slice){
+      const v = (dataWave[i] / 128) - 1; // -1..1
+      const y = H/2 + v * (H * 0.12);
+      if(i===0) overlayCtx.moveTo(x,y); else overlayCtx.lineTo(x,y);
     }
     overlayCtx.stroke();
   }
 
-  async function loop(){
-    if(!video||!overlayCtx) return requestAnimationFrame(loop);
-    setOverlaySize(); overlayCtx.clearRect(0,0,overlay.width,overlay.height);
-    if(faceModel&&video.readyState>=2){
-      try{
-        const preds=await faceModel.estimateFaces(video,false);
-        const vidW=video.videoWidth,vidH=video.videoHeight;
-        const scaleX=overlay.width/vidW,scaleY=overlay.height/vidH;
-        preds.forEach(p=>{
-          const [x1,y1]=p.topLeft, [x2,y2]=p.bottomRight;
-          const rx=x1*scaleX,ry=y1*scaleY,rw=(x2-x1)*scaleX,rh=(y2-y1)*scaleY;
-          overlayCtx.strokeStyle='rgba(0,255,0,0.95)';
-          overlayCtx.lineWidth=Math.max(1,2*Math.min(scaleX,scaleY));
-          overlayCtx.strokeRect(rx,ry,rw,rh);
-          overlayCtx.font='12px monospace';
-          overlayCtx.fillStyle='rgba(0,255,0,0.95)';
-          overlayCtx.fillText('Face',rx+4,Math.max(12,ry-6));
-        });
-        if(typeof Percy?.onVisualInput==='function') Percy.onVisualInput({faces:preds});
-      }catch(e){}
-    }
-    drawAudioOnOverlay();
-    requestAnimationFrame(loop);
-  }
+  PZ._loop = async function(){
+    try {
+      if(!video || !overlayCtx) { requestAnimationFrame(PZ._loop); return; }
+      setOverlaySize();
+      overlayCtx.clearRect(0,0,overlay.width,overlay.height);
 
-  return PartZ;
+      const now = performance.now();
+      const shouldDetect = (now - (PZ._lastDetect || 0)) >= (PZ._detectIntervalMs || 200);
+
+      // async detection throttled
+      if(shouldDetect && PZ.modelsLoaded && video.readyState >= 2){
+        PZ._lastDetect = now;
+        // run face + object detection in parallel
+        try {
+          const [faces, objects] = await Promise.all([
+            (async ()=>{ try { return await faceModel.estimateFaces(video, false); } catch(e){ console.warn('faceModel error',e); return []; } })(),
+            (async ()=>{ try { return await objectModel.detect(video); } catch(e){ console.warn('objectModel error',e); return []; } })()
+          ]);
+
+          // scale factors from intrinsic video pixels -> overlay pixels
+          const vidW = video.videoWidth || 1;
+          const vidH = video.videoHeight || 1;
+          const scaleX = overlay.width / vidW;
+          const scaleY = overlay.height / vidH;
+
+          // draw faces
+          if(Array.isArray(faces) && faces.length){
+            faces.forEach((p, idx) => {
+              // topLeft & bottomRight are arrays [x,y]
+              const tl = p.topLeft || [0,0];
+              const br = p.bottomRight || [0,0];
+              const x = tl[0] * scaleX;
+              const y = tl[1] * scaleY;
+              const w = (br[0] - tl[0]) * scaleX;
+              const h = (br[1] - tl[1]) * scaleY;
+              overlayCtx.strokeStyle = 'rgba(0,255,128,0.95)';
+              overlayCtx.lineWidth = Math.max(1, 2 * Math.min(scaleX, scaleY));
+              overlayCtx.strokeRect(x, y, w, h);
+              overlayCtx.font = `${12 + Math.round(Math.min(overlay.width, overlay.height)/220)}px monospace`;
+              overlayCtx.fillStyle = 'rgba(0,255,128,0.95)';
+              overlayCtx.fillText(`Face ${idx+1}`, x + 6, Math.max(14, y - 6));
+            });
+          }
+
+          // draw objects
+          if(Array.isArray(objects) && objects.length){
+            objects.forEach(o=>{
+              const [x0,y0,w0,h0] = o.bbox;
+              const x = x0 * scaleX, y = y0 * scaleY, w = w0 * scaleX, h = h0 * scaleY;
+              overlayCtx.strokeStyle = 'rgba(255,200,0,0.95)';
+              overlayCtx.lineWidth = Math.max(1, Math.round(2 * Math.min(scaleX, scaleY)));
+              overlayCtx.strokeRect(x, y, w, h);
+              overlayCtx.font = `${11 + Math.round(Math.min(overlay.width, overlay.height)/260)}px monospace`;
+              overlayCtx.fillStyle = 'rgba(255,200,0,0.95)';
+              const label = `${o.class} ${(o.score*100).toFixed(1)}%`;
+              overlayCtx.fillText(label, x + 6, y > 12 ? y - 6 : y + 12);
+            });
+          }
+
+          // forward visual input to Percy
+          try { if(typeof Percy?.onVisualInput === 'function') Percy.onVisualInput({ faces: faces || [], objects: objects || [] }); } catch(e){}
+
+        } catch(e){
+          console.warn('PartZ detection exception:', e);
+        }
+      } else if(shouldDetect && !PZ.modelsLoaded && video.readyState >= 2){
+        // models not ready: draw only audio visuals (already below)
+      }
+
+      // draw audio visuals always (non-blocking)
+      drawAudioOnOverlay();
+
+    } catch(e){
+      console.warn('PartZ loop error:', e);
+    } finally {
+      requestAnimationFrame(PZ._loop);
+    }
+  };
+
+  // small helper to test if at least one model loaded successfully
+  PZ.ensureModels = async function(){
+    if(PZ.modelsLoaded) return true;
+    try {
+      await initModels();
+      PZ.modelsLoaded = true;
+      PZ.ready = true;
+      return true;
+    } catch(e){
+      console.warn('ensureModels failed:', e);
+      return false;
+    }
+  };
+
+  return PZ;
 })();
 
-/* === Percy.ASI: integrated === */
-Percy.ASI=(function(){
-  const ASI={taskQueue:[],running:false};
-  ASI.addTask=function(task){ if(!task||typeof task.exec!=='function') throw new Error('Task requires exec()'); ASI.taskQueue.push(task); };
-  ASI.runNext=async function(){
-    if(ASI.running) return;
-    if(ASI.taskQueue.length===0) return;
-    ASI.running=true;
-    const task=ASI.taskQueue.shift();
-    try{ const res=await task.exec(); if(typeof task.onComplete==='function') task.onComplete(res); }catch(e){ console.error('ASI task error',e);}
-    ASI.running=false; setTimeout(ASI.runNext,0);
+/* ===== Percy.ASI: simple async task queue & hooks ===== */
+Percy.ASI = Percy.ASI || (function(){
+  const ASI = { taskQueue: [], running: false, metrics: { processed:0 } };
+
+  ASI.addTask = function(task){
+    if(!task || typeof task.exec !== 'function') {
+      console.warn('ASI.addTask: invalid task', task);
+      return;
+    }
+    // de-duplicate by simple JSON fingerprint optionally
+    try {
+      const key = task._key ?? (task.type ? `${task.type}:${JSON.stringify(task.params||{})}` : null);
+      if(key) {
+        // if same key exists, drop duplicate (lightweight)
+        if(ASI.taskQueue.some(t=>t._key && t._key === key)) return;
+        task._key = key;
+      }
+    } catch(e){}
+    ASI.taskQueue.push(task);
   };
-  ASI.loop=function(){ setTimeout(ASI.loop,100); ASI.runNext(); }; ASI.loop();
-  ASI.init=function(){ console.log('✅ Percy.ASI initialized'); };
+
+  ASI.runNext = async function(){
+    if(ASI.running) return;
+    if(ASI.taskQueue.length === 0) return;
+    ASI.running = true;
+    const task = ASI.taskQueue.shift();
+    try {
+      const res = await task.exec();
+      ASI.metrics.processed++;
+      if(typeof task.onComplete === 'function') try { task.onComplete(res); } catch(e){ console.warn('onComplete error', e); }
+    } catch (err) {
+      console.error('ASI task error:', err);
+    } finally {
+      ASI.running = false;
+      // schedule immediate next but avoid stack recursion
+      setTimeout(ASI.runNext, 0);
+    }
+  };
+
+  ASI.loop = function(){
+    setInterval(()=>ASI.runNext(), 120); // poll every 120ms for new tasks
+  };
+
+  ASI.init = function(){
+    ASI.loop();
+    console.log('✅ Percy.ASI initialized');
+  };
+
   return ASI;
 })();
 
-/* === PartZ -> ASI hooks === */
-Percy.onVisualInput = Percy.onVisualInput||function(data){
-  if(data.faces&&data.faces.length>0){
-    Percy.ASI.addTask({exec:async()=>{ console.log('👁️ ASI sees faces:',data.faces.length); return data.faces.length; }});
-  }
-};
-const audioLoop=()=>{ const analyser=Percy.PartZ.analyser; if(analyser){ const data=new Uint8Array(analyser.frequencyBinCount); analyser.getByteFrequencyData(data); const avg=data.reduce((a,b)=>a+b,0)/data.length; if(avg>30) Percy.ASI.addTask({exec:async()=>{ console.log('🔊 ASI audio spike',avg); return avg; }});} requestAnimationFrame(audioLoop); };
-audioLoop();
-
-window.addEventListener('load',()=>{ try{ Percy.PartZ.init(); Percy.ASI.init(); }catch(e){console.error(e);} });
-</script>
-
-<!-- === Voice visualizer === -->
-<script>
-(function(){
-  const canvas=document.getElementById('voice-canvas'); if(!canvas) return;
-  const ctx=canvas.getContext('2d'); function resize(){ canvas.width=canvas.clientWidth; canvas.height=canvas.clientHeight; }
-  resize(); window.addEventListener('resize',resize);
-  let analyserLocal,dataFreqLocal,dataWaveLocal;
-  async function init(){
-    if(window.Percy&&Percy.PartZ&&Percy.PartZ.analyser) analyserLocal=Percy.PartZ.analyser;
-    else{
-      try{
-        const audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-        if(audioCtx.state==='suspended') await new Promise(res=>document.addEventListener('click',res,{once:true})),await audioCtx.resume().catch(()=>{});
-        const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-        const src=audioCtx.createMediaStreamSource(stream);
-        analyserLocal=audioCtx.createAnalyser();
-        analyserLocal.fftSize=256; src.connect(analyserLocal);
-      }catch(e){ console.warn('Voice visualizer failed',e); return;}
+/* ===== wire PartZ -> ASI triggers (audio spikes, visual events) ===== */
+Percy.onVisualInput = Percy.onVisualInput || function(data){
+  try {
+    if(data.faces && data.faces.length > 0) {
+      Percy.ASI.addTask({
+        type: 'face-seen',
+        params: { count: data.faces.length },
+        exec: async ()=> {
+          console.log('👁️ ASI sees faces:', data.faces.length);
+          // small learning hook: push a seed if PercyState exists
+          try { if(typeof PercyState?.createSeed === 'function') PercyState.createSeed(`Detected ${data.faces.length} face(s)`, 'sensor', {source:'camera'}); } catch(e){}
+          return data.faces.length;
+        }
+      });
     }
-    dataFreqLocal=new Uint8Array(analyserLocal.frequencyBinCount);
-    dataWaveLocal=new Uint8Array(analyserLocal.frequencyBinCount);
+    if(data.objects && data.objects.length > 0) {
+      Percy.ASI.addTask({
+        type: 'object-seen',
+        params: { items: data.objects.slice(0,6).map(o=>o.class) },
+        exec: async ()=> {
+          console.log('📦 ASI sees objects:', data.objects.map(o=>o.class).slice(0,6));
+          try { if(typeof PercyState?.createSeed === 'function') PercyState.createSeed(`Objects: ${data.objects.slice(0,6).map(o=>o.class).join(', ')}`, 'sensor', {source:'camera'}); } catch(e){}
+          return data.objects;
+        }
+      });
+    }
+  } catch(e){ console.warn('onVisualInput error', e); }
+};
+
+// audio loop for spikes
+(function audioToASI(){
+  function loop() {
+    try {
+      const analyser = Percy.PartZ?.analyser || null;
+      if(analyser){
+        const data = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(data);
+        const avg = data.reduce((a,b)=>a+b,0)/data.length;
+        // threshold (tunable)
+        if(avg > 30) {
+          Percy.ASI.addTask({
+            type: 'audio-spike',
+            params: { avg },
+            exec: async ()=> {
+              console.log('🔊 ASI audio spike', avg);
+              try { if(typeof PercyState?.createSeed === 'function') PercyState.createSeed(`Audio spike ${Math.round(avg)}`, 'sensor', {source:'mic'}); } catch(e){}
+              return avg;
+            }
+          });
+        }
+      }
+    } catch(e){ console.warn('audioToASI error', e); }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+
+/* ===== Boot sequence: init PartZ then ASI then ensure models loaded ===== */
+window.addEventListener('load', async ()=>{
+  try {
+    // start PartZ (camera + audio). don't crash if user denies camera; catch and show message.
+    try {
+      await Percy.PartZ.init({ preferFPS: 6, modelTimeout: 15000 });
+    } catch (err) {
+      console.warn('PartZ failed to init (camera/models). Audio-only may still run if mic allowed.', err);
+    }
+
+    // start ASI
+    Percy.ASI.init();
+
+    // attempt to ensure models later (non-blocking)
+    try {
+      const ok = await Percy.PartZ.ensureModels();
+      if(ok) console.log('🔍 Vision models loaded and active.');
+      else console.warn('⚠️ Vision models not loaded; running in audio-only / partial mode.');
+    } catch (e){
+      console.warn('PartZ ensureModels error:', e);
+    }
+
+  } catch(e){
+    console.error('Boot error:', e);
+  }
+});
+
+/* ===== Voice visualizer widget (reuses Percy.PartZ.analyser) ===== */
+(function(){
+  const canvas = document.getElementById('voice-canvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  function resize(){ canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight; }
+  resize(); window.addEventListener('resize', resize);
+
+  let analyserLocal, dataFreqLocal, dataWaveLocal;
+  async function init(){
+    if(window.Percy && Percy.PartZ && Percy.PartZ.analyser) analyserLocal = Percy.PartZ.analyser;
+    else {
+      try {
+        const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+        if(audioCtx.state === 'suspended') await new Promise(res=>document.addEventListener('click',res,{once:true})), await audioCtx.resume().catch(()=>{});
+        const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+        const src = audioCtx.createMediaStreamSource(stream);
+        analyserLocal = audioCtx.createAnalyser();
+        analyserLocal.fftSize = 256;
+        src.connect(analyserLocal);
+      } catch(e){ console.warn('Voice visualizer fallback init failed', e); return; }
+    }
+    dataFreqLocal = new Uint8Array(analyserLocal.frequencyBinCount);
+    dataWaveLocal = new Uint8Array(analyserLocal.frequencyBinCount);
+
     (function draw(){
       requestAnimationFrame(draw);
       if(!analyserLocal) return;
-      const W=canvas.width,H=canvas.height;
+      const W = canvas.width, H = canvas.height;
       ctx.clearRect(0,0,W,H);
       analyserLocal.getByteFrequencyData(dataFreqLocal);
       analyserLocal.getByteTimeDomainData(dataWaveLocal);
-      const barWidth=Math.max(1,W/dataFreqLocal.length);
-      for(let i=0;i<dataFreqLocal.length;i++){ const barH=(dataFreqLocal[i]/255)*(H*0.6); ctx.fillStyle=`rgb(${dataFreqLocal[i]},${255-dataFreqLocal[i]},255)`; ctx.fillRect(i*barWidth,H-barH,barWidth*0.6,barH);}
-      ctx.lineWidth=2; ctx.strokeStyle='rgba(0,255,255,0.9)'; ctx.beginPath();
-      let x=0; const slice=W/dataWaveLocal.length; for(let i=0;i<dataWaveLocal.length;i++){ const y=H/2+(dataWaveLocal[i]/128-1)*(H*0.2); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); x+=slice;}
+      const barWidth = Math.max(1, W / dataFreqLocal.length);
+      for(let i=0;i<dataFreqLocal.length;i++){
+        const barH = (dataFreqLocal[i]/255) * (H * 0.6);
+        ctx.fillStyle = `rgb(${dataFreqLocal[i]}, ${255-dataFreqLocal[i]}, 255)`;
+        ctx.fillRect(i*barWidth, H - barH, barWidth*0.6, barH);
+      }
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(0,255,255,0.9)';
+      ctx.beginPath();
+      let x=0; const slice = W/dataWaveLocal.length;
+      for(let i=0;i<dataWaveLocal.length;i++){
+        const y = H/2 + (dataWaveLocal[i]/128 - 1) * (H * 0.2);
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        x += slice;
+      }
       ctx.stroke();
     })();
   }
-  ['click','keydown','touchstart'].forEach(evt=>{ window.addEventListener(evt,function once(){ init(); window.removeEventListener(evt,once);},{passive:true}); });
-  if(window.Percy&&Percy.PartZ&&Percy.PartZ.analyser) init();
-})();
-</script>
 
-<!-- === Console / Exec / Chat logic (unchanged) === -->
-<script>
-// interpreter
-(function(){
-  const interpreterInput=document.getElementById('interpreter-input'), percyConsole=document.getElementById('percy-console'), askButton=document.getElementById('askPercyButton');
-  function appendConsole(text,isUser=false,exec=false){ const line=document.createElement('div'); line.className='console-line '+(isUser?'ask':'')+(exec?' exec':''); line.textContent=(isUser?'↳ ':'')+text; percyConsole.appendChild(line); percyConsole.scrollTop=percyConsole.scrollHeight;}
-  function runPercyCommand(){ const query=interpreterInput.value.trim(); if(!query) return; appendConsole(query,true); let response=""; if(typeof percyRespond==='function') response=percyRespond(query); else if(window.Percy&&typeof Percy.interpret==='function') response=Percy.interpret(query); if(response){ appendConsole(response,false,false); if(Percy?.speak&&!response.includes("Logic network idle")) Percy.speak(response);} interpreterInput.value=''; }
-  interpreterInput.addEventListener('keydown',e=>{ if(e.key==='Enter') runPercyCommand(); }); askButton.addEventListener('click',runPercyCommand);
+  ['click','keydown','touchstart'].forEach(evt=>{
+    window.addEventListener(evt, function once(){ init(); window.removeEventListener(evt, once); }, { passive:true });
+  });
+
+  // If models already created, init now
+  if(window.Percy && Percy.PartZ && Percy.PartZ.analyser) init();
 })();
 
-// exec
+/* ===== UI: console, exec, chat (keeps in-page behavior) ===== */
 (function(){
-  const execInput=document.getElementById('percy-exec-input'), execBtn=document.getElementById('percy-exec-run'), consoleDiv=document.getElementById('percy-console'), toggleBtns=document.querySelectorAll('#exec-toggle button');
+  // interpreter console hook
+  const interpreterInput = document.getElementById('interpreter-input'),
+        percyConsole = document.getElementById('percy-console'),
+        askButton = document.getElementById('askPercyButton');
+
+  function appendConsole(text, isUser=false, exec=false){
+    const line = document.createElement('div');
+    line.className = 'console-line ' + (isUser ? 'ask' : '') + (exec ? ' exec' : '');
+    line.textContent = (isUser ? '↳ ' : '') + text;
+    percyConsole.appendChild(line);
+    percyConsole.scrollTop = percyConsole.scrollHeight;
+  }
+
+  async function runPercyCommand(){
+    const query = interpreterInput.value.trim();
+    if(!query) return;
+    appendConsole(query, true);
+    let response = '';
+    try {
+      if(typeof percyRespond === 'function') response = await percyRespond(query);
+      else if(window.Percy && typeof Percy.interpret === 'function') response = await Percy.interpret(query);
+      else response = "⚠️ Percy core not loaded yet.";
+    } catch(e){
+      response = "⚠️ Error running Percy command: " + e.message;
+    }
+    appendConsole(response || "(no response)");
+    try { if(Percy?.speak && response && !response.includes("Logic network idle")) Percy.speak(response); } catch(e){}
+    interpreterInput.value = '';
+  }
+
+  interpreterInput.addEventListener('keydown', e => { if(e.key === 'Enter') runPercyCommand(); });
+  askButton.addEventListener('click', runPercyCommand);
+})();
+
+(function(){
+  const execInput = document.getElementById('percy-exec-input'),
+        execBtn = document.getElementById('percy-exec-run'),
+        consoleDiv = document.getElementById('percy-console'),
+        toggleBtns = document.querySelectorAll('#exec-toggle button');
+
   if(!execInput) return;
-  let PercyExecMode="math";
-  toggleBtns.forEach(btn=>btn.addEventListener('click',()=>{ toggleBtns.forEach(b=>b.classList.remove('active')); btn.classList.add('active'); PercyExecMode=btn.dataset.mode;}));
-  async function handleExecInput(){ const query=execInput.value.trim(); if(!query) return; execInput.value=""; const userLine=document.createElement("div"); userLine.className="console-line ask"; userLine.textContent="↳ "+query; consoleDiv.appendChild(userLine); let output=""; try{ if(PercyExecMode==="math") output=await PercyState.useTool("math",query); else if(PercyExecMode==="java") output=await PercyState.useTool("java",query); else if(PercyExecMode==="tools") output=await PercyState.PartH?.routeInput(query) || "⚠️ Percy Part H not loaded.";}catch(e){ output="⚠️ Exec error: "+e.message; } const percyLine=document.createElement("div"); percyLine.className="console-line exec"; percyLine.textContent="🤖 "+output; consoleDiv.appendChild(percyLine); consoleDiv.scrollTop=consoleDiv.scrollHeight; }
-  execInput.addEventListener("keydown",async e=>{ if(e.key==="Enter"){ e.preventDefault(); await handleExecInput(); } });
-  execBtn.addEventListener("click",handleExecInput);
+  let PercyExecMode = "math";
+  toggleBtns.forEach(btn=>btn.addEventListener('click', ()=>{
+    toggleBtns.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    PercyExecMode = btn.dataset.mode;
+  }));
+
+  async function handleExecInput(){
+    const query = execInput.value.trim(); if(!query) return; execInput.value='';
+    const userLine = document.createElement('div'); userLine.className='console-line ask'; userLine.textContent='↳ '+query; consoleDiv.appendChild(userLine);
+    let output = '';
+    try {
+      if(PercyExecMode === "math") output = await PercyState.useTool("math", query);
+      else if(PercyExecMode === "java") output = await PercyState.useTool("java", query);
+      else if(PercyExecMode === "tools") output = await PercyState.PartH?.routeInput(query) || "⚠️ Percy Part H not loaded.";
+    } catch(e) { output = "⚠️ Exec error: "+e.message; }
+    const percyLine = document.createElement('div'); percyLine.className='console-line exec'; percyLine.textContent='🤖 '+output; consoleDiv.appendChild(percyLine); consoleDiv.scrollTop = consoleDiv.scrollHeight;
+  }
+
+  execInput.addEventListener('keydown', async e => { if(e.key === 'Enter'){ e.preventDefault(); await handleExecInput(); } });
+  execBtn.addEventListener('click', handleExecInput);
 })();
 
-// chat
 (function(){
-  const chatInput=document.getElementById('percy-chat-input'), chatSend=document.getElementById('percy-chat-send'), chatMessages=document.getElementById('percy-chat-messages');
-  let percyMemory=[];
-  function appendMsg(role,text){ const line=document.createElement('div'); line.textContent=`${role}: ${text}`; line.style.margin='6px 0'; line.style.color=role==='Percy'?'#7fff7f':'#d6d8ff'; chatMessages.appendChild(line); chatMessages.scrollTop=chatMessages.scrollHeight; }
-  function PercyReply(userText){ let raw=""; if(Percy?.PartT?.hear) raw=Percy.PartT.hear(userText); else if(Percy?.interpret) raw=Percy.interpret(userText); else if(typeof percyRespond==='function') raw=percyRespond(userText); else raw="⚙️ Percy core logic not initialized yet."; percyMemory.push({you:userText,percy:raw}); if(percyMemory.length>10) percyMemory.shift(); appendMsg('Percy',raw); if(Percy?.speak&&!raw.includes("Logic network idle")) Percy.speak(raw);}
-  function sendMessage(){ const text=chatInput.value.trim(); if(!text) return; appendMsg('You',text); chatInput.value=''; PercyReply(text);}
-  chatSend.addEventListener('click',sendMessage); chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter') sendMessage(); });
+  const chatInput = document.getElementById('percy-chat-input'),
+        chatSend = document.getElementById('percy-chat-send'),
+        chatMessages = document.getElementById('percy-chat-messages');
+  let percyMemory = [];
+
+  function appendMsg(role, text){
+    const line = document.createElement('div');
+    line.textContent = `${role}: ${text}`;
+    line.style.margin = '6px 0';
+    line.style.color = role === 'Percy' ? '#7fff7f' : '#d6d8ff';
+    chatMessages.appendChild(line);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  function PercyReply(userText){
+    let raw = "";
+    try {
+      if(Percy?.PartT?.hear) raw = Percy.PartT.hear(userText);
+      else if(Percy?.interpret) raw = Percy.interpret(userText);
+      else if(typeof percyRespond === 'function') raw = percyRespond(userText);
+      else raw = "⚙️ Percy core logic not initialized yet.";
+    } catch(e){
+      raw = "⚠️ Percy responded with error: " + e.message;
+    }
+    percyMemory.push({ you: userText, percy: raw });
+    if(percyMemory.length > 20) percyMemory.shift();
+    appendMsg('Percy', raw);
+    try { if(Percy?.speak && raw && !raw.includes("Logic network idle")) Percy.speak(raw); } catch(e){}
+  }
+
+  function sendMessage(){
+    const text = chatInput.value.trim();
+    if(!text) return;
+    appendMsg('You', text);
+    chatInput.value = '';
+    PercyReply(text);
+  }
+
+  chatSend.addEventListener('click', sendMessage);
+  chatInput.addEventListener('keydown', e => { if(e.key === 'Enter') sendMessage(); });
 })();
 </script>
 
