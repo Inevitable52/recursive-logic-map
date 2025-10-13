@@ -8,20 +8,6 @@
   <!-- ✅ Percy Core -->
   <script src="js/percy.js?v=6.4"></script>
 
-  <!-- ✅ Optional: load PartZ separately if it’s not inside percy.js -->
-  <script>
-    (function loadPartZ() {
-      if (!window.Percy || !Percy.PartZ) {
-        const script = document.createElement('script');
-        script.src = 'js/percy.partz.js?v=1.0';
-        script.onload = () => console.log('✅ Percy PartZ loaded dynamically.');
-        document.head.appendChild(script);
-      } else {
-        console.log('ℹ️ Percy.PartZ already included in percy.js');
-      }
-    })();
-  </script>
-
   <!-- ✅ Percy ASI loader (auto-init) -->
   <script>
     (function loadASI() {
@@ -48,7 +34,7 @@
     })();
   </script>
 
-  <!-- ✅ Optional: TensorFlow models for face/object detection -->
+  <!-- ✅ TensorFlow models for face/object detection -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2"></script>
@@ -65,13 +51,17 @@
   <canvas id="voice-canvas" width="480" height="120" style="display:block; margin-top:12px;"></canvas>
 
   <script>
-    // Initialize Percy vision once DOM is ready
+    // Initialize Percy.ASI vision once DOM is ready
     window.addEventListener('load', async () => {
       try {
-        await Percy.PartZ.init('camera-feed', 'camera-overlay', 'voice-canvas');
-        console.log('🎥 Percy PartZ initialized (camera + audio)');
+        if (Percy?.ASI?.parts?.PartZ && Percy.ASI.parts.PartZ.init) {
+          await Percy.ASI.parts.PartZ.init('camera-feed', 'camera-overlay', 'voice-canvas');
+          console.log('🎥 Percy.ASI PartZ initialized (camera + audio)');
+        } else {
+          console.warn('⚠️ Percy.ASI PartZ not found — ensure it’s defined in percy.js or percy-asi.js');
+        }
       } catch (err) {
-        console.error('PartZ init failed:', err);
+        console.error('ASI vision init failed:', err);
       }
     });
   </script>
