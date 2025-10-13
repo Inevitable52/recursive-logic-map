@@ -182,3 +182,43 @@ body {
     background: transparent;
     filter: drop-shadow(0 0 8px #0ff) drop-shadow(0 0 16px magenta);
 }
+
+/* === PercyCam (Face/Object Vision Feed) === */
+#percyCam {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 480px;           /* increased from small box */
+    height: 360px;          /* 16:9 ratio */
+    border-radius: 16px;
+    border: 2px solid #00ffff;
+    box-shadow:
+        0 0 12px #00ffff,
+        0 0 24px #00ffff,
+        0 0 36px #ff00ff;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 1200;
+    object-fit: cover;
+    transition: all 0.3s ease-in-out;
+}
+
+/* Hover Zoom for Style */
+#percyCam:hover {
+    transform: scale(1.05);
+    box-shadow:
+        0 0 18px #00ffff,
+        0 0 36px #00ffff,
+        0 0 54px #ff00ff;
+}
+
+/* Fullscreen Mode Toggle (optional) */
+#percyCam.fullscreen {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
+    z-index: 2000;
+}
