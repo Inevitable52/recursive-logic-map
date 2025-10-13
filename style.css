@@ -202,6 +202,18 @@ body {
     transition: all 0.3s ease-in-out;
 }
 
+/* Move Puppeteer Control away from PercyCam */
+#puppeteer-control {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 320px;
+    background: rgba(0, 0, 0, 0.75);
+    border-radius: 12px;
+    padding: 8px;
+    z-index: 1300; /* below camera */
+}
+
 /* Hover Zoom for Style */
 #percyCam:hover {
     transform: scale(1.05);
