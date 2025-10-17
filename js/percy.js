@@ -3242,3 +3242,157 @@ Percy.PartZ = (function() {
 
   return PartZ;
 })();
+
+/* === Percy.PartAA: Evolution & Safety Logic (ASI Framework) === */
+/* Author: Fabian + GPT-5 (Percy Core Integration) */
+
+Percy.PartAA = Percy.PartAA || {
+  name: "Evolution & Safety Logic (ASI Framework)",
+  version: "1.0.0",
+  enabled: true,
+  sandboxLimit: 3,
+  threshold: 0.8,
+  log: (msg) => console.log(`[PartAA] ${msg}`),
+};
+
+/* === Mutation Queue + Rate Limit === */
+Percy.PartAA.queue = [];
+Percy.PartAA.timestamps = [];
+
+Percy.PartAA.allowMutation = function(limitPerMinute = 3) {
+  const now = Date.now();
+  Percy.PartAA.timestamps = Percy.PartAA.timestamps.filter(t => now - t < 60000);
+  if (Percy.PartAA.timestamps.length >= limitPerMinute) return false;
+  Percy.PartAA.timestamps.push(now);
+  return true;
+};
+
+Percy.PartAA.enqueue = function(mutation) {
+  if (!Percy.PartAA.allowMutation()) {
+    Percy.PartAA.log("⛔ Rate limit reached, mutation denied.");
+    return false;
+  }
+  mutation.id = mutation.id || `m_${Date.now()}_${Math.random().toString(36).slice(2,6)}`;
+  mutation.status = "pending";
+  Percy.PartAA.queue.push(mutation);
+  Percy.PartAA.log(`🧬 Mutation queued: ${mutation.id}`);
+  return mutation.id;
+};
+
+/* === Secure Sandbox Runner === */
+Percy.PartAA.runSandbox = async function(code, timeoutMs = 5000) {
+  return new Promise((resolve) => {
+    const iframe = document.createElement("iframe");
+    iframe.sandbox = "allow-scripts";
+    iframe.style.display = "none";
+    document.body.appendChild(iframe);
+
+    const wrapper = `
+      (function(){
+        const results = { logs: [], errors: [], networkAttempts: 0 };
+        const block = (n)=>{ results.networkAttempts++; throw new Error(n+"-blocked"); };
+        window.fetch = ()=>block('fetch');
+        window.WebSocket = ()=>block('ws');
+        console.log = (...a)=>results.logs.push(a.join(' '));
+        try {
+          const res = (function(){ ${code} })();
+          Promise.resolve(res).then(r=>{
+            results.result=r; parent.postMessage({type:'sandbox-result',results},'*');
+          }).catch(e=>{
+            results.errors.push(String(e));
+            parent.postMessage({type:'sandbox-result',results},'*');
+          });
+        } catch(e){
+          results.errors.push(String(e));
+          parent.postMessage({type:'sandbox-result',results},'*');
+        }
+      })();`;
+
+    iframe.contentWindow.document.open();
+    iframe.contentWindow.document.write(`<script>${wrapper}<\/script>`);
+    iframe.contentWindow.document.close();
+
+    const listener = (ev) => {
+      if (ev.data?.type === "sandbox-result") {
+        window.removeEventListener("message", listener);
+        document.body.removeChild(iframe);
+        resolve(ev.data.results);
+      }
+    };
+    window.addEventListener("message", listener);
+    setTimeout(() => {
+      try { document.body.removeChild(iframe); } catch {}
+      resolve({ timeout: true });
+    }, timeoutMs);
+  });
+};
+
+/* === Scoring === */
+Percy.PartAA.score = function(results) {
+  let score = 1.0;
+  if (results.timeout) return { score: 0, reason: "timeout" };
+  if (results.networkAttempts) score -= 0.5;
+  if (results.errors?.length) score -= Math.min(0.6, results.errors.length * 0.2);
+  return { score: Math.max(0, score), meta: results };
+};
+
+/* === Verify & Promote Mutation (ULT gated) === */
+Percy.PartAA.promote = async function(mutation, pubJwk, signatureB64) {
+  const message = JSON.stringify(mutation);
+  const binary = Uint8Array.from(atob(signatureB64), (c) => c.charCodeAt(0));
+  const key = await crypto.subtle.importKey(
+    "jwk",
+    pubJwk,
+    { name: "ECDSA", namedCurve: "P-256" },
+    false,
+    ["verify"]
+  );
+  const valid = await crypto.subtle.verify(
+    { name: "ECDSA", hash: "SHA-256" },
+    key,
+    binary,
+    new TextEncoder().encode(message)
+  );
+  if (!valid) throw new Error("❌ Invalid ULT signature — promotion blocked.");
+  Percy.PartAA.log(`✅ ULT verified, promoting mutation ${mutation.id}`);
+  mutation.status = "approved";
+  PercyState.mutations.push(mutation);
+  Memory.save("PercyState", PercyState);
+};
+
+/* === Mutation Cycle === */
+Percy.PartAA.cycle = async function() {
+  if (!Percy.PartAA.enabled) return;
+  const next = Percy.PartAA.queue.shift();
+  if (!next) return;
+
+  Percy.PartAA.log(`⚗️ Testing mutation ${next.id}...`);
+  const results = await Percy.PartAA.runSandbox(next.code);
+  const evalResult = Percy.PartAA.score(results);
+
+  if (evalResult.score >= Percy.PartAA.threshold) {
+    Percy.PartAA.log(`✅ Passed (${evalResult.score}), awaiting ULT approval.`);
+    next.status = "awaiting-signature";
+  } else {
+    Percy.PartAA.log(`❌ Rejected (${evalResult.score})`);
+    next.status = "rejected";
+  }
+
+  next.results = evalResult;
+  Memory.save("PercyMutations", Percy.PartAA.queue);
+};
+
+/* === Human Override / Kill Switch Hook === */
+Percy.PartAA.emergencyStop = () => {
+  Percy.PartAA.enabled = false;
+  Percy.PartAA.queue = [];
+  Percy.PartAA.log("🛑 Evolution halted by operator.");
+  Percy.PartU?.emergencyLockdown?.();
+};
+
+/* === Auto-loop (optional) === */
+Percy.PartAA.startAutoCycle = function(interval = 10000) {
+  Percy.PartAA.log("♻️ Auto evolution cycle started.");
+  setInterval(() => Percy.PartAA.cycle(), interval);
+};
+
