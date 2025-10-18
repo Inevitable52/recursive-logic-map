@@ -3260,7 +3260,7 @@ Percy.PartAA = Percy.PartAA || {
   // Safely test mutations in same origin
   async runMutation(m) {
     try {
-      const fn = new Function("PercyState", "UI", "Tasks", "Memory", code);
+      const fn = new Function("PercyState", "UI", "Tasks", "Memory", m.code);
       fn(PercyState, UI, Tasks, Memory);
       this.log(`⚗️ Mutation ${m.id} executed successfully.`);
     } catch (e) {
@@ -3284,12 +3284,19 @@ Percy.PartAA = Percy.PartAA || {
   },
 
   stopAutoCycle() {
-    if (this.auto) { clearInterval(this.auto); this.auto = null; this.log("⏹ Auto evolution stopped."); }
+    if (this.auto) {
+      clearInterval(this.auto);
+      this.auto = null;
+      this.log("⏹ Auto evolution stopped.");
+    }
   }
 };
 
 // Optional: begin evolution automatically at startup
 setTimeout(() => {
-  Percy.PartAA.enqueue({ code: "console.log('Evolving safely with PartAA bridge.');" });
+  Percy.PartAA.enqueue({
+    code: "console.log('Evolving safely with PartAA bridge.');",
+    note: "startup self-check"
+  });
   Percy.PartAA.startAutoCycle(5000);
 }, 6000);
