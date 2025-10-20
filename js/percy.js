@@ -2738,7 +2738,8 @@ Percy.PartS = {
       Percy.log?.("🛑 Part S stopped.");
     }
   }
-};
+};console.log("✅ Percy Part S loaded — Autonomous Strategy Core + Reward System ready.");
+/* === End Percy Part S === */
 
 /* === Percy Part T (UPGRADE): Linguistic Synthesizer v2 + Hook Integration === */
 Percy.PartT = Percy.PartT || {};
