@@ -2716,6 +2716,20 @@ console.log("✅ Percy Part R loaded — Enhanced Abstractor & Rule Synthesizer 
 if (!Percy.log) Percy.log = (...args) => console.log("🧠 Percy Log:", ...args);
 if (!Percy.error) Percy.error = (...args) => console.error("🚨 Percy Error:", ...args);
 
+// --- Safety: initialize Seeds structure if missing ---
+if (!Percy.Seeds) {
+  Percy.Seeds = {
+    _list: [],
+    getRecent(n = 5) {
+      return this._list.slice(-n);
+    },
+    add(seed) {
+      this._list.push(seed);
+    }
+  };
+  Percy.log("🌱 Percy.Seeds initialized (safety fallback).");
+}
+
 Percy.PartS = {
   active: false,
   goals: [],
@@ -2799,7 +2813,10 @@ Percy.PartS = {
 
       const composite = (successRate + this.rewardScore + 0.5 + avgReward) / 3;
       const delta = (composite - 0.5) * 0.1;
-      Percy.PartO.confidence = Math.max(0, Math.min(1, (Percy.PartO.confidence || 0.5) + delta));
+      Percy.PartO.confidence = Math.max(
+        0,
+        Math.min(1, (Percy.PartO.confidence || 0.5) + delta)
+      );
       Percy.log(`🔁 Evolved confidence: ${Percy.PartO.confidence.toFixed(3)} (reward ${this.rewardScore.toFixed(3)})`);
       Percy.hook?.("PartS", "evolution", { successRate, avgReward, confidence: Percy.PartO.confidence });
     } catch (e) { Percy.error(`⚠️ PartS.evolve error: ${e.message}`); }
@@ -2831,15 +2848,31 @@ Percy.PartS = {
 // === Auto-Learning Cycle with Reward and Evolution ===
 Percy.PartS.autoLearn = async function autoLearnCycle() {
   try {
+    // Ensure Seeds is available and valid
+    if (!Percy.Seeds || !Percy.Seeds.getRecent) {
+      Percy.log("⚠️ Part S: Seeds unavailable — initializing fallback store.");
+      Percy.Seeds = {
+        _list: [],
+        getRecent(n = 5) { return this._list.slice(-n); },
+        add(seed) { this._list.push(seed); }
+      };
+      return; // skip this cycle safely
+    }
+
     const lastSeeds = Percy.Seeds.getRecent(5);
+    if (!Array.isArray(lastSeeds) || !lastSeeds.length) {
+      Percy.log("🧩 Part S: No recent seeds found this cycle.");
+      return;
+    }
+
     const curiosity = lastSeeds
-      .map(s => s.text.match(/\b([A-Z][a-z]+)\b/g))
+      .map(s => s.text?.match?.(/\b([A-Z][a-z]+)\b/g) || [])
       .flat()
       .filter(Boolean)
       .slice(0, 3);
 
     if (!curiosity.length) {
-      Percy.log("🧩 Part S: No curiosity topics found this cycle.");
+      Percy.log("🧩 Part S: No curiosity topics derived from seeds.");
       return;
     }
 
@@ -2847,9 +2880,13 @@ Percy.PartS.autoLearn = async function autoLearnCycle() {
 
     for (const topic of curiosity) {
       const url = `https://en.wikipedia.org/wiki/${encodeURIComponent(topic)}`;
-      await Tasks.register.autoLearn({ url });
-      Percy.log(`📖 Part S: Learned from ${url}`);
-      await Percy.wait(2000);
+      try {
+        await Tasks.register.autoLearn({ url });
+        Percy.log(`📖 Part S: Learned from ${url}`);
+      } catch (innerErr) {
+        Percy.error(`⚠️ Part S autoLearn inner error: ${innerErr.message}`);
+      }
+      await Percy.wait?.(2000);
     }
 
     const reward = { delta: 0.05, reason: "successful_auto_learn" };
@@ -2870,7 +2907,7 @@ Percy.PartS.autoLearn = async function autoLearnCycle() {
 // Run every 3 minutes or after each major logic cycle
 setInterval(Percy.PartS.autoLearn, 180000);
 
-console.log("✅ Percy Part S loaded — Autonomous Strategy Core + Reward System ready.");
+console.log("✅ Percy Part S loaded — Autonomous Strategy Core + Reward System (Stable AutoLearn).");
 /* === End Percy Part S === */
 
 /* === Percy Part T (UPGRADE): Linguistic Synthesizer v3 + Coherence & Reason Resolution === */
