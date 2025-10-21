@@ -2730,6 +2730,42 @@ if (!Percy.Seeds) {
   Percy.log("🌱 Percy.Seeds initialized (safety fallback).");
 }
 
+// --- Safety: ensure PercyState structures exist to prevent null object errors ---
+if (!PercyState) PercyState = {};
+if (!PercyState.currentThought) PercyState.currentThought = {};
+if (!PercyState.memory) PercyState.memory = {};
+
+PercyState.generateThought = function() {
+  try {
+    if (!this.currentThought || typeof this.currentThought !== "object") {
+      this.currentThought = {};
+      Percy.log?.("⚠️ PercyState.generateThought: initialized empty thought object");
+      return;
+    }
+    const keys = Object.keys(this.currentThought);
+    if (!keys.length) Percy.log?.("💭 No active thought keys yet.");
+    // Continue with generation logic...
+  } catch (err) {
+    Percy.error?.("⚠️ PercyState.generateThought error:", err);
+  }
+};
+
+PercyState.introspect = function() {
+  try {
+    if (!this.memory || typeof this.memory !== "object") {
+      this.memory = {};
+      Percy.log?.("⚠️ PercyState.introspect: initialized empty memory object");
+      return;
+    }
+    const keys = Object.keys(this.memory);
+    if (!keys.length) Percy.log?.("🧩 No memory records yet.");
+    // Continue with introspection logic...
+  } catch (err) {
+    Percy.error?.("⚠️ PercyState.introspect error:", err);
+  }
+};
+
+// === Core Autonomous Strategy Logic ===
 Percy.PartS = {
   active: false,
   goals: [],
@@ -2907,7 +2943,7 @@ Percy.PartS.autoLearn = async function autoLearnCycle() {
 // Run every 3 minutes or after each major logic cycle
 setInterval(Percy.PartS.autoLearn, 180000);
 
-console.log("✅ Percy Part S loaded — Autonomous Strategy Core + Reward System (Stable AutoLearn).");
+console.log("✅ Percy Part S loaded — Autonomous Strategy Core + Reward System (Safe Memory + Stable AutoLearn).");
 /* === End Percy Part S === */
 
 /* === Percy Part T (UPGRADE): Linguistic Synthesizer v3 + Coherence & Reason Resolution === */
