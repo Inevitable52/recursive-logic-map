@@ -2712,6 +2712,10 @@ console.log("✅ Percy Part R loaded — Enhanced Abstractor & Rule Synthesizer 
 // === PERCY AUTONOMOUS STRATEGY CORE (Part S) ===
 // Self-directed goal evaluation, adaptive planning, and reward-based evolution
 
+// --- Safety layer for logging ---
+if (!Percy.log) Percy.log = (...args) => console.log("🧠 Percy Log:", ...args);
+if (!Percy.error) Percy.error = (...args) => console.error("🚨 Percy Error:", ...args);
+
 Percy.PartS = {
   active: false,
   goals: [],
@@ -2724,9 +2728,9 @@ Percy.PartS = {
   perceive(input) {
     try {
       this.feedbackLog.push({ type: "input", data: input, time: Date.now() });
-      Percy.log?.(`👁️ Perceived: ${input}`);
+      Percy.log(`👁️ Perceived: ${input}`);
       Percy.hook?.("PartS", "perception", { input });
-    } catch (e) { Percy.log?.(`⚠️ PartS.perceive error: ${e.message}`); }
+    } catch (e) { Percy.error(`⚠️ PartS.perceive error: ${e.message}`); }
   },
 
   formulateGoal() {
@@ -2734,10 +2738,10 @@ Percy.PartS = {
       const newGoal = Percy.analyzeEmergentPattern?.();
       if (newGoal) {
         this.goals.push(newGoal);
-        Percy.log?.(`🎯 New emergent goal: ${newGoal}`);
+        Percy.log(`🎯 New emergent goal: ${newGoal}`);
         Percy.hook?.("PartS", "goalFormulated", { goal: newGoal });
       }
-    } catch (e) { Percy.log?.(`⚠️ PartS.formulateGoal error: ${e.message}`); }
+    } catch (e) { Percy.error(`⚠️ PartS.formulateGoal error: ${e.message}`); }
   },
 
   decideStrategy() {
@@ -2747,33 +2751,32 @@ Percy.PartS = {
       const strategy = Percy.deriveStrategy?.(goal);
       if (strategy) {
         this.strategies.push(strategy);
-        Percy.log?.(`🧩 Strategy chosen: ${strategy}`);
+        Percy.log(`🧩 Strategy chosen: ${strategy}`);
         Percy.hook?.("PartS", "strategyChosen", { goal, strategy });
       }
-    } catch (e) { Percy.log?.(`⚠️ PartS.decideStrategy error: ${e.message}`); }
+    } catch (e) { Percy.error(`⚠️ PartS.decideStrategy error: ${e.message}`); }
   },
 
   executeStrategy() {
     try {
       const current = this.strategies.at(-1);
       if (!current) return;
-      Percy.log?.(`⚙️ Executing: ${current}`);
+      Percy.log(`⚙️ Executing: ${current}`);
       const result = Percy.simulateOutcome?.(current);
       this.feedbackLog.push({ type: "result", data: result, time: Date.now() });
-      Percy.log?.(`📈 Outcome: ${JSON.stringify(result)}`);
+      Percy.log(`📈 Outcome: ${JSON.stringify(result)}`);
 
       // --- Reward evaluation ---
       const reward = this.assignReward(result);
       this.rewardScore = Math.max(0, Math.min(1, this.rewardScore + reward.delta));
       this.rewardHistory.push({ ...reward, time: Date.now() });
-      Percy.log?.(`🏆 Reward delta: ${reward.delta.toFixed(3)} → Score: ${this.rewardScore.toFixed(3)}`);
+      Percy.log(`🏆 Reward delta: ${reward.delta.toFixed(3)} → Score: ${this.rewardScore.toFixed(3)}`);
       Percy.hook?.("PartS", "rewardUpdate", reward);
 
-    } catch (e) { Percy.log?.(`⚠️ PartS.executeStrategy error: ${e.message}`); }
+    } catch (e) { Percy.error(`⚠️ PartS.executeStrategy error: ${e.message}`); }
   },
 
   assignReward(result) {
-    // Calculate reward delta based on result’s properties
     let delta = 0;
     if (!result) return { delta: -0.02, reason: "no_result" };
 
@@ -2783,30 +2786,29 @@ Percy.PartS = {
     if (result.error) delta -= 0.05;
     if (result.feedback && result.feedback.includes("contradiction")) delta -= 0.04;
 
-    // Normalize range and bias slightly toward stability
     delta = Math.max(-0.1, Math.min(0.1, delta));
     return { delta, reason: "evaluated_result", result };
   },
 
   evolve() {
     try {
-      // Compute success rate as combination of reward and feedback trend
       const successRate = Percy.analyzeFeedback?.(this.feedbackLog) ?? 0.5;
       const avgReward = this.rewardHistory.slice(-10)
-        .reduce((a,r)=>a+(r.delta||0),0)/Math.max(1, Math.min(10, this.rewardHistory.length));
+        .reduce((a, r) => a + (r.delta || 0), 0) /
+        Math.max(1, Math.min(10, this.rewardHistory.length));
 
       const composite = (successRate + this.rewardScore + 0.5 + avgReward) / 3;
-      const delta = (composite - 0.5) * 0.1; // subtle learning adjustment
+      const delta = (composite - 0.5) * 0.1;
       Percy.PartO.confidence = Math.max(0, Math.min(1, (Percy.PartO.confidence || 0.5) + delta));
-      Percy.log?.(`🔁 Evolved confidence: ${Percy.PartO.confidence.toFixed(3)} (reward ${this.rewardScore.toFixed(3)})`);
+      Percy.log(`🔁 Evolved confidence: ${Percy.PartO.confidence.toFixed(3)} (reward ${this.rewardScore.toFixed(3)})`);
       Percy.hook?.("PartS", "evolution", { successRate, avgReward, confidence: Percy.PartO.confidence });
-    } catch (e) { Percy.log?.(`⚠️ PartS.evolve error: ${e.message}`); }
+    } catch (e) { Percy.error(`⚠️ PartS.evolve error: ${e.message}`); }
   },
 
   loop(interval = 20000) {
     if (this._loopId) return;
     this.active = true;
-    Percy.log?.("🚀 Part S (Strategy Core + Reward System) activated.");
+    Percy.log("🚀 Part S (Strategy Core + Reward System) activated.");
     this._loopId = setInterval(() => {
       if (!this.active) return;
       this.formulateGoal();
@@ -2821,7 +2823,7 @@ Percy.PartS = {
     if (this._loopId) {
       clearInterval(this._loopId);
       this._loopId = null;
-      Percy.log?.("🛑 Part S stopped.");
+      Percy.log("🛑 Part S stopped.");
     }
   }
 };
@@ -2829,7 +2831,6 @@ Percy.PartS = {
 // === Auto-Learning Cycle with Reward and Evolution ===
 Percy.PartS.autoLearn = async function autoLearnCycle() {
   try {
-    // Step 1: Identify curiosity topics
     const lastSeeds = Percy.Seeds.getRecent(5);
     const curiosity = lastSeeds
       .map(s => s.text.match(/\b([A-Z][a-z]+)\b/g))
@@ -2844,25 +2845,21 @@ Percy.PartS.autoLearn = async function autoLearnCycle() {
 
     Percy.log("🌐 Part S: Auto-learning from topics:", curiosity.join(", "));
 
-    // Step 2: Build Wikipedia URLs automatically and learn
     for (const topic of curiosity) {
       const url = `https://en.wikipedia.org/wiki/${encodeURIComponent(topic)}`;
       await Tasks.register.autoLearn({ url });
       Percy.log(`📖 Part S: Learned from ${url}`);
-      await Percy.wait(2000); // prevent overload or rapid requests
+      await Percy.wait(2000);
     }
 
-    // Step 3: Reward for successful learning
     const reward = { delta: 0.05, reason: "successful_auto_learn" };
     Percy.PartS.rewardScore = Math.min(1, (Percy.PartS.rewardScore || 0.5) + reward.delta);
     Percy.PartS.rewardHistory.push({ ...reward, time: Date.now() });
     Percy.log(`🏅 Part S: Knowledge reward applied (+${reward.delta.toFixed(3)}) → Score: ${Percy.PartS.rewardScore.toFixed(3)}`);
 
-    // Step 4: Evolve confidence slightly after learning
     Percy.PartO.confidence = Math.min(1, (Percy.PartO.confidence || 0.5) + 0.02);
     Percy.log(`🧬 Part S: Confidence evolved to ${Percy.PartO.confidence.toFixed(3)}`);
 
-    // Step 5: Trigger adaptive improvement
     Percy.PartS.evolve?.();
 
   } catch (err) {
