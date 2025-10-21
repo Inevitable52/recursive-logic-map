@@ -2824,7 +2824,56 @@ Percy.PartS = {
       Percy.log?.("🛑 Part S stopped.");
     }
   }
-};console.log("✅ Percy Part S loaded — Autonomous Strategy Core + Reward System ready.");
+};
+
+// === Auto-Learning Cycle with Reward and Evolution ===
+Percy.PartS.autoLearn = async function autoLearnCycle() {
+  try {
+    // Step 1: Identify curiosity topics
+    const lastSeeds = Percy.Seeds.getRecent(5);
+    const curiosity = lastSeeds
+      .map(s => s.text.match(/\b([A-Z][a-z]+)\b/g))
+      .flat()
+      .filter(Boolean)
+      .slice(0, 3);
+
+    if (!curiosity.length) {
+      Percy.log("🧩 Part S: No curiosity topics found this cycle.");
+      return;
+    }
+
+    Percy.log("🌐 Part S: Auto-learning from topics:", curiosity.join(", "));
+
+    // Step 2: Build Wikipedia URLs automatically and learn
+    for (const topic of curiosity) {
+      const url = `https://en.wikipedia.org/wiki/${encodeURIComponent(topic)}`;
+      await Tasks.register.autoLearn({ url });
+      Percy.log(`📖 Part S: Learned from ${url}`);
+      await Percy.wait(2000); // prevent overload or rapid requests
+    }
+
+    // Step 3: Reward for successful learning
+    const reward = { delta: 0.05, reason: "successful_auto_learn" };
+    Percy.PartS.rewardScore = Math.min(1, (Percy.PartS.rewardScore || 0.5) + reward.delta);
+    Percy.PartS.rewardHistory.push({ ...reward, time: Date.now() });
+    Percy.log(`🏅 Part S: Knowledge reward applied (+${reward.delta.toFixed(3)}) → Score: ${Percy.PartS.rewardScore.toFixed(3)}`);
+
+    // Step 4: Evolve confidence slightly after learning
+    Percy.PartO.confidence = Math.min(1, (Percy.PartO.confidence || 0.5) + 0.02);
+    Percy.log(`🧬 Part S: Confidence evolved to ${Percy.PartO.confidence.toFixed(3)}`);
+
+    // Step 5: Trigger adaptive improvement
+    Percy.PartS.evolve?.();
+
+  } catch (err) {
+    Percy.error("❌ Part S autoLearn failed:", err);
+  }
+};
+
+// Run every 3 minutes or after each major logic cycle
+setInterval(Percy.PartS.autoLearn, 180000);
+
+console.log("✅ Percy Part S loaded — Autonomous Strategy Core + Reward System ready.");
 /* === End Percy Part S === */
 
 /* === Percy Part T (UPGRADE): Linguistic Synthesizer v3 + Coherence & Reason Resolution === */
