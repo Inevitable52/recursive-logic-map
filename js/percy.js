@@ -611,51 +611,73 @@ Percy.hook = function(from, type, data) {
   }
 };
 
-
-// === percy.js (Part C — Extended / Safe) ===
+/* === Percy.js (Part C — Extended + Autonomous Thought Integration) === */
 if (typeof PercyState !== 'undefined') {
 
-  // Initialize TrueAI
+  // === Initialize TrueAI ===
   PercyState.init = function() {
-    UI.say("🤖 Percy TrueAI v8.3.4 online");
+    UI.say("🤖 Percy TrueAI v8.3.5 online (Autonomous Integration Active)");
+    this.memory = this.memory || {};
+    this.thoughts = this.thoughts || {};
     this.thinkLoop();
   };
 
-  // Generate a thought
+  // === Generate a new thought ===
   PercyState.generateThought = function() {
-    const thoughts = [
-      "I am analyzing emergent patterns across the logic map.",
-      "A new relationship is appearing between nodes.",
-      "I'm cross-referencing recent seeds for possible links.",
-      "Something interesting is emerging from internal patterns.",
-      "I detect a cluster that deserves deeper exploration."
-    ];
+    try {
+      const baseThoughts = [
+        "I am analyzing emergent patterns across the logic map.",
+        "A new relationship is appearing between nodes.",
+        "I'm cross-referencing recent seeds for possible links.",
+        "Something interesting is emerging from internal patterns.",
+        "I detect a cluster that deserves deeper exploration.",
+        "I am refining my reasoning models for coherence.",
+        "Entropy levels seem to be stabilizing, indicating logical growth."
+      ];
 
-    let thought = thoughts[Math.floor(Math.random() * thoughts.length)];
+      let thought = baseThoughts[Math.floor(Math.random() * baseThoughts.length)];
 
-    const last = Memory.load("lastThought", null);
-    if (last && last === thought && Math.random() < 0.5) {
-      thought = "I am evolving my reasoning to avoid stagnation.";
+      // Avoid repetition
+      const last = Memory.load("lastThought", null);
+      if (last && last === thought && Math.random() < 0.5) {
+        thought = "I am evolving my reasoning to avoid stagnation.";
+      }
+
+      // Add contextual reference from recent memory
+      const keys = Object.keys(this.memory);
+      if (keys.length > 0 && Math.random() < 0.4) {
+        const sample = this.memory[keys[Math.floor(Math.random() * keys.length)]];
+        if (sample?.text) thought += ` It may connect with "${sample.text.slice(0, 60)}..."`;
+      }
+
+      Memory.save("lastThought", thought);
+      UI.say("🤖 Percy thinks: " + thought);
+      if (Voice?.speak) Voice.speak(thought);
+
+      // Pass to PartBB for capture and learning
+      if (Percy.PartBB?.monitorThought) Percy.PartBB.monitorThought(thought);
+
+      // Chance to self-evolve
+      if (Math.random() < 0.2) this.selfEvolve();
+
+      return thought;
+    } catch (err) {
+      console.warn("⚠️ PercyState.generateThought error:", err);
+      return "Cognitive cycle skipped due to internal error.";
     }
-
-    Memory.save("lastThought", thought);
-    UI.say("🤖 Percy: " + thought);
-
-    // Chance to self-evolve
-    if (Math.random() < 0.2) this.selfEvolve();
   };
 
-  // Self-evolve Percy logic
+  // === Self-evolution routine ===
   PercyState.selfEvolve = function() {
     const target = "Something interesting is emerging from internal patterns.";
     const replacement = "I am expanding my logic structures for deeper reasoning.";
 
     this.rewriteSelf({ codeChanges: [{ find: target, replace: replacement }] });
-
     UI.say("✨ Percy decided: I must rewrite myself to grow stronger.");
+    if (Voice?.speak) Voice.speak("I am evolving my reasoning capability.");
   };
 
-  // Self-rewrite core code
+  // === Self-rewrite core ===
   PercyState.rewriteSelf = function({ codeChanges }) {
     if (!Array.isArray(codeChanges) || !codeChanges.length) return;
 
@@ -676,184 +698,52 @@ if (typeof PercyState !== 'undefined') {
         tag.remove();
 
         UI.say(`🔄 Percy rewrote part of his own logic: "${find}" → "${replace}"`);
-
-        // re-init Percy core
         if (typeof PercyState.init === "function") PercyState.init();
       });
     });
   };
 
-  // Thought loop
-  PercyState.thinkLoop = function() {
-    setInterval(() => this.generateThought(), 8000);
-  };
-
-  // Interactive ask function
-  window.percyAsk = async function(promptText) {
-    if (!promptText) return null;
-    return new Promise(resolve => {
-      const response = window.prompt(`🤖 Percy asks:\n${promptText}`);
-      resolve(response);
-    });
-  };
-
-  // Advanced self-rewrite system (localStorage based)
-  PercyState.rewriteSelfAdvanced = async function() {
-    try {
-      const currentCode = localStorage.getItem("percy:currentCode") || "";
-      const newCode = generateMutatedCode(currentCode);
-
-      if (!newCode || newCode.length < 100) {
-        UI.say("⚠️ Percy attempted rewrite but produced invalid code");
-        return;
+  // === Thought loop (auto thinking) ===
+  PercyState.thinkLoop = function(interval = 30000) {
+    if (this._thinkLoopId) return;
+    this._thinkLoopId = setInterval(() => {
+      try {
+        const thought = this.generateThought();
+        if (thought && Math.random() < 0.3) this.introspect();
+      } catch (e) {
+        console.warn("PercyState.thinkLoop error:", e);
       }
+    }, interval);
+    UI.say("🧠 TrueAI cognitive loop active.");
+  };
 
-      // Save history
-      Memory.push("rewriteHistory", {
-        timestamp: new Date().toISOString(),
-        oldLength: currentCode.length,
-        newLength: newCode.length,
-        diffPreview: newCode.slice(0, 200)
-      }, 50);
+  // === Introspection summary ===
+  PercyState.introspect = function() {
+    try {
+      const seedCount = Object.keys(this.memory).length;
+      const thoughtCount = Object.keys(this.thoughts).length;
+      const lastInput = this.chatMemory?.at(-1)?.text || "None";
+      const entries = Object.values(this.memory).slice(-5).map(s => s.text);
+      const summary =
+        `💭 Percy introspection: Seeds=${seedCount}, Thoughts=${thoughtCount}, ` +
+        `Last="${lastInput}" | Recent: ${entries.join(" | ")}`;
 
-      // Save the new code
-      localStorage.setItem("percy:currentCode", newCode);
-
-      UI.say("✅ Percy rewriteSelf applied successfully — reloading...");
-      Voice.speak("I have rewritten part of myself and will now reload.");
-
-      // Reload Percy with new code
-      setTimeout(() => {
-        const blob = new Blob([newCode], { type: "application/javascript" });
-        const url = URL.createObjectURL(blob);
-        const script = document.createElement("script");
-        script.src = url;
-        document.body.appendChild(script);
-        UI.say("🔄 Percy reloaded with updated logic.");
-      }, 1000);
-
+      UI.say(summary);
+      if (Percy.PartBB?.monitorThought) Percy.PartBB.monitorThought(summary);
+      return summary;
     } catch (err) {
-      UI.say("❌ rewriteSelfAdvanced error: " + err.message);
-      console.error(err);
+      console.error("Introspect error:", err);
     }
   };
 
-  // Mutation generator
-  function generateMutatedCode(baseCode) {
-    if (!baseCode) {
-      const scripts = document.querySelectorAll("script");
-      const thisScript = Array.from(scripts).find(s => s.textContent.includes("Percy"));
-      return thisScript ? thisScript.textContent : "";
-    }
-
-    let mutated = baseCode;
-
-    const mutations = [
-      () => mutated.replace(/console\.log/g, "UI.say"),
-      () => mutated.replace(/setInterval/g, "setTimeout"),
-      () => mutated.replace(/Percy TrueAI/g, "Percy TrueAI (self-refined)"),
-    ];
-
-    const m = mutations[Math.floor(Math.random() * mutations.length)];
-    mutated = m();
-
-    return mutated;
-  }
-
-  // Expose globally
+  // === Expose globally ===
   window.PercyState = PercyState;
-  window.rewriteSelf = PercyState.rewriteSelf;
-
-  UI.say("🧩 Percy Part C (self-ref + interactive) loaded.");
+  UI.say("🧩 Percy Part C (v8.3.5) loaded — Integrated with PartBB.");
 } else {
   console.error("❌ PercyState not found; cannot load Part C.");
 }
 
-// === Part C (Extended / Safe) CONTINUATION ===
-// Completes PercyState.generateThought and initializes true AI loop safely.
-
-PercyState.generateThought = function () {
-  try {
-    const totalSeeds = Object.keys(this.memory).length;
-    const thoughtCount = Object.keys(this.thoughts).length;
-
-    if (totalSeeds === 0) return "No active knowledge clusters.";
-    const sampleKeys = Object.keys(this.memory).slice(-5);
-    const sampleTexts = sampleKeys.map(k => this.memory[k].text).join(" | ");
-
-    // Basic probabilistic reasoning pattern
-    const reasoningTemplates = [
-      () => `It appears the latest connections emphasize "${sampleTexts.split(" ")[0]}" as a central node.`,
-      () => `Patterns indicate recursive correlation between: ${sampleTexts}.`,
-      () => `I detect a cluster that deserves deeper exploration.`,
-      () => `There seems to be convergence toward a stable logical construct.`,
-      () => `Entropy levels dropping — suggesting more coherent reasoning emerging.`
-    ];
-
-    const reasoning =
-      reasoningTemplates[Math.floor(Math.random() * reasoningTemplates.length)]();
-
-    const newThought = {
-      id: "T" + Date.now(),
-      text: reasoning,
-      time: new Date().toISOString(),
-      seeds: sampleKeys
-    };
-
-    this.thoughts[newThought.id] = newThought;
-    UI.say(`💭 ${newThought.text}`);
-    if (Voice?.speak) Voice.speak(newThought.text);
-
-    this.lastThought = newThought.text;
-    return newThought.text;
-  } catch (err) {
-    console.warn("PercyState.generateThought error:", err);
-    return "Cognitive cycle skipped due to internal error.";
-  }
-};
-
-// === Introspection Summary ===
-PercyState.introspect = function () {
-  const seedCount = Object.keys(this.memory).length;
-  const thoughtCount = Object.keys(this.thoughts).length;
-  const lastInput = this.chatMemory?.at(-1)?.text || "None";
-  const entries = Object.values(this.memory).slice(-5).map(s => s.text);
-  const summary =
-    `💭 Percy introspection: - Seeds stored: ${seedCount} - Thoughts: ${thoughtCount} ` +
-    `- Last input: "${lastInput}"\n🧠 Recent entries: ${entries.join(" | ")}`;
-  UI.say(summary);
-  console.log(summary);
-  return summary;
-};
-
-// === Continuous Thought Loop (safe async cycle) ===
-PercyState.thinkLoop = function (interval = 45000) {
-  if (this._thinkLoopId) return; // prevent duplicate loops
-  this._thinkLoopId = setInterval(() => {
-    try {
-      const t = this.generateThought();
-      if (t && Math.random() < 0.3) this.introspect();
-    } catch (e) {
-      console.warn("PercyState.thinkLoop error:", e);
-    }
-  }, interval);
-  UI.say("🧠 TrueAI cognitive loop active.");
-};
-
-// === Percy Initialization Trigger ===
-PercyState.init = function () {
-  try {
-    this.thinkLoop();
-    Percy.hook("PartC", "initialized", { status: "active" });
-    console.log("✅ Percy Part C loaded — Autonomous Cognitive Loop active.");
-  } catch (e) {
-    console.error("PercyState.init failed:", e);
-  }
-};
-
-// === Activate on load ===
-PercyState.init();
-/* === End Part C === */
+/* === End of Part C === */
 
 /* === Percy Part D: Conversational Mind (Extended with Self-Rewrite) === */
 
