@@ -3647,3 +3647,86 @@ setTimeout(() => {
   });
   Percy.PartAA.startAutoCycle(5000);
 }, 6000);
+
+/* === Percy Part BB: Autonomous Thought Integration === */
+Percy.PartBB = Percy.PartBB || {
+  name: "Autonomous Thought Integration",
+  version: "1.0.0",
+  enable: true,
+  autoMode: true,
+  lastCaptured: null,
+
+  // Capture and store any new Percy thought line
+  monitorThought(thought) {
+    try {
+      if (!this.enable || !thought) return;
+
+      // Filter only new and meaningful thoughts
+      if (thought === this.lastCaptured) return;
+      this.lastCaptured = thought;
+
+      // Log memory trace
+      Percy.LogicMemory = Percy.LogicMemory || [];
+      Percy.LogicMemory.push({
+        time: new Date().toISOString(),
+        type: "PercyThink",
+        content: thought,
+      });
+
+      console.log("🧩 [PartBB] Captured thought:", thought);
+
+      // Pass to the learning chain
+      if (Percy.PartO?.createSeedFromThought) {
+        Percy.PartO.createSeedFromThought(thought);
+      }
+
+      // Send to introspective evaluation
+      if (Percy.PartT?.evaluateThought) {
+        Percy.PartT.evaluateThought(thought);
+      }
+
+      // Optional: link with existing logic
+      if (Percy.PartL?.linkPattern) {
+        Percy.PartL.linkPattern("PercyThink", thought);
+      }
+
+    } catch (err) {
+      console.error("⚠️ [PartBB] monitorThought error:", err);
+      if (Percy.PartS?.logError) Percy.PartS.logError("PartBB", err);
+    }
+  },
+
+  // Automatically detect from Percy UI feed (e.g., Percy thinks:)
+  autoDetect() {
+    if (!this.enable || !this.autoMode) return;
+
+    try {
+      const box = document.querySelector(".percy-think-box") ||
+                  document.querySelector("#percy-thinks") ||
+                  document.querySelector(".percy-introspect");
+      if (!box) return;
+
+      const text = box.innerText.trim();
+      if (text && text.startsWith("Percy thinks:")) {
+        const thought = text.replace("Percy thinks:", "").trim();
+        this.monitorThought(thought);
+      }
+    } catch (err) {
+      console.error("⚠️ [PartBB] autoDetect error:", err);
+    }
+  },
+
+  // Run once per introspection cycle
+  cycle() {
+    if (!this.enable) return;
+    this.autoDetect();
+  },
+};
+
+// Hook PartBB into the introspection loop
+if (Percy.cycleHooks) {
+  Percy.cycleHooks.push(() => Percy.PartBB.cycle());
+} else {
+  Percy.cycleHooks = [() => Percy.PartBB.cycle()];
+}
+
