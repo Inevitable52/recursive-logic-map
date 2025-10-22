@@ -3648,10 +3648,10 @@ setTimeout(() => {
   Percy.PartAA.startAutoCycle(5000);
 }, 6000);
 
-/* === Percy Part BB: Autonomous Thought Integration === */
+/* === Percy Part BB: Autonomous Thought Integration + Context Expansion === */
 Percy.PartBB = Percy.PartBB || {
-  name: "Autonomous Thought Integration",
-  version: "1.0.0",
+  name: "Autonomous Thought Integration + Context Expansion",
+  version: "1.1.0",
   enable: true,
   autoMode: true,
   lastCaptured: null,
@@ -3665,15 +3665,23 @@ Percy.PartBB = Percy.PartBB || {
       if (thought === this.lastCaptured) return;
       this.lastCaptured = thought;
 
+      // Generate a context enrichment line
+      const contextLine = this.generateContext(thought);
+
       // Log memory trace
       Percy.LogicMemory = Percy.LogicMemory || [];
       Percy.LogicMemory.push({
         time: new Date().toISOString(),
         type: "PercyThink",
         content: thought,
+        context: contextLine,
       });
 
       console.log("🧩 [PartBB] Captured thought:", thought);
+      console.log("🧠 [PartBB] Context generated:", contextLine);
+
+      // === Inject contextual line directly under Percy thinks in the UI ===
+      this.displayContextInUI(contextLine);
 
       // Pass to the learning chain
       if (Percy.PartO?.createSeedFromThought) {
@@ -3693,6 +3701,45 @@ Percy.PartBB = Percy.PartBB || {
     } catch (err) {
       console.error("⚠️ [PartBB] monitorThought error:", err);
       if (Percy.PartS?.logError) Percy.PartS.logError("PartBB", err);
+    }
+  },
+
+  // Simple contextual reasoning generator
+  generateContext(thought) {
+    const prefixes = [
+      "In relation to previous reasoning,",
+      "Considering prior logic,",
+      "From a reflective standpoint,",
+      "This may align with earlier deduction that",
+      "Following internal association,"
+    ];
+    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+    return `${prefix} "${thought}" expands Percy's reasoning context.`;
+  },
+
+  // Display context line in the UI under Percy thinks
+  displayContextInUI(contextLine) {
+    try {
+      const thinkBox = document.querySelector(".percy-think-box") ||
+                       document.querySelector("#percy-thinks") ||
+                       document.querySelector(".percy-introspect");
+      if (!thinkBox) return;
+
+      // Remove any previous context line to prevent stacking
+      const oldContext = thinkBox.querySelector(".percy-context-line");
+      if (oldContext) oldContext.remove();
+
+      // Create and style new context element
+      const contextEl = document.createElement("div");
+      contextEl.className = "percy-context-line";
+      contextEl.innerText = `🧠 Context: ${contextLine}`;
+      contextEl.style.fontSize = "0.9em";
+      contextEl.style.color = "#9aa0a6";
+      contextEl.style.marginTop = "2px";
+
+      thinkBox.appendChild(contextEl);
+    } catch (err) {
+      console.error("⚠️ [PartBB] displayContextInUI error:", err);
     }
   },
 
@@ -3730,3 +3777,4 @@ if (Percy.cycleHooks) {
   Percy.cycleHooks = [() => Percy.PartBB.cycle()];
 }
 
+console.log("✅ [PartBB] Context Expansion module loaded.");
