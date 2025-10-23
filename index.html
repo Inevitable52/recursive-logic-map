@@ -105,7 +105,8 @@
 <!-- Load TensorFlow + Coco-SSD -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"></script>
+  
 <!-- Percy core -->
 <script src="js/percy.js?v=6.4"></script>
 
@@ -127,35 +128,56 @@ Percy.PartZ = (function(){
   }
 
   async function initModels(){
-    // ✅ Load Coco-SSD (Object Detection)
-    console.log("🔍 Loading TensorFlow Coco-SSD...");
-    const cocoModel = await cocoSsd.load();
-    console.log("✅ Coco-SSD model loaded");
+  console.log("🔍 Loading TensorFlow Coco-SSD...");
+  const cocoModel = await cocoSsd.load();
+  console.log("✅ Coco-SSD model loaded");
 
-    async function detectFrame(){
-      const predictions = await cocoModel.detect(video);
-      overlayCtx.clearRect(0,0,overlay.width,overlay.height);
+  // 🔍 Load BlazeFace (Face Detection)
+  console.log("🔍 Loading BlazeFace...");
+  const blazefaceModel = await blazeface.load();
+  console.log("✅ BlazeFace model loaded");
 
-      // Draw object boxes
-      predictions.forEach(p=>{
-        overlayCtx.strokeStyle = 'rgba(0,255,255,0.8)';
-        overlayCtx.lineWidth = 2;
-        overlayCtx.strokeRect(p.bbox[0], p.bbox[1], p.bbox[2], p.bbox[3]);
-        overlayCtx.fillStyle = 'rgba(0,255,255,0.4)';
-        overlayCtx.font = '12px monospace';
-        overlayCtx.fillText(`${p.class} (${Math.round(p.score*100)}%)`, p.bbox[0]+4, p.bbox[1]+12);
-      });
+  async function detectFrame(){
+    const [predictions, faces] = await Promise.all([
+      cocoModel.detect(video),
+      blazefaceModel.estimateFaces(video, false)
+    ]);
 
-      // Send object data to Percy logic
-      if(predictions.length>0 && typeof Percy?.onVisualInput==='function'){
-        Percy.onVisualInput({objects:predictions});
-      }
+    overlayCtx.clearRect(0,0,overlay.width,overlay.height);
 
-      requestAnimationFrame(detectFrame);
+    // === Object boxes ===
+    predictions.forEach(p=>{
+      overlayCtx.strokeStyle = 'rgba(0,255,255,0.8)';
+      overlayCtx.lineWidth = 2;
+      overlayCtx.strokeRect(p.bbox[0], p.bbox[1], p.bbox[2], p.bbox[3]);
+      overlayCtx.fillStyle = 'rgba(0,255,255,0.4)';
+      overlayCtx.font = '12px monospace';
+      overlayCtx.fillText(`${p.class} (${Math.round(p.score*100)}%)`, p.bbox[0]+4, p.bbox[1]+12);
+    });
+
+    // === Face boxes ===
+    faces.forEach(f=>{
+      const topLeft = f.topLeft;
+      const bottomRight = f.bottomRight;
+      const width = bottomRight[0] - topLeft[0];
+      const height = bottomRight[1] - topLeft[1];
+      overlayCtx.strokeStyle = 'rgba(255,0,255,0.9)';
+      overlayCtx.lineWidth = 2;
+      overlayCtx.strokeRect(topLeft[0], topLeft[1], width, height);
+      overlayCtx.fillStyle = 'rgba(255,0,255,0.3)';
+      overlayCtx.fillText('Face', topLeft[0]+4, topLeft[1]+12);
+    });
+
+    // === Send data to Percy logic ===
+    if ((predictions.length>0 || faces.length>0) && typeof Percy?.onVisualInput==='function'){
+      Percy.onVisualInput({objects:predictions, faces:faces});
     }
 
-    detectFrame();
+    requestAnimationFrame(detectFrame);
   }
+
+  detectFrame();
+}
 
   PartZ.init=async function(){
     try{
