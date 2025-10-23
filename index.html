@@ -121,79 +121,77 @@ Percy.PartZ = (function(){
 
   function setOverlaySize(){
     const rect=video.getBoundingClientRect();
-    overlay.style.width=rect.width+'px';
-    overlay.style.height=rect.height+'px';
     overlay.width=rect.width;
     overlay.height=rect.height;
   }
 
   async function initModels(){
-  console.log("🔍 Loading TensorFlow Coco-SSD...");
-  const cocoModel = await cocoSsd.load();
-  console.log("✅ Coco-SSD model loaded");
-
-  // 🔍 Load BlazeFace (Face Detection)
-  console.log("🔍 Loading BlazeFace...");
-  const blazefaceModel = await blazeface.load();
-  console.log("✅ BlazeFace model loaded");
-
-  async function detectFrame(){
-    const [predictions, faces] = await Promise.all([
-      cocoModel.detect(video),
-      blazefaceModel.estimateFaces(video, false)
+    console.log("🔍 Loading TensorFlow Coco-SSD & BlazeFace...");
+    const [cocoModel, blazefaceModel] = await Promise.all([
+      cocoSsd.load(),
+      blazeface.load()
     ]);
+    console.log("✅ Models loaded (Coco-SSD + BlazeFace)");
 
-    overlayCtx.clearRect(0,0,overlay.width,overlay.height);
+    async function detectFrame(){
+      if (video.readyState < 2) {
+        requestAnimationFrame(detectFrame);
+        return;
+      }
 
-    // === Object boxes ===
-    predictions.forEach(p=>{
-      overlayCtx.strokeStyle = 'rgba(0,255,255,0.8)';
-      overlayCtx.lineWidth = 2;
-      overlayCtx.strokeRect(p.bbox[0], p.bbox[1], p.bbox[2], p.bbox[3]);
-      overlayCtx.fillStyle = 'rgba(0,255,255,0.4)';
-      overlayCtx.font = '12px monospace';
-      overlayCtx.fillText(`${p.class} (${Math.round(p.score*100)}%)`, p.bbox[0]+4, p.bbox[1]+12);
-    });
+      await tf.nextFrame();
+      const [predictions, faces] = await Promise.all([
+        cocoModel.detect(video),
+        blazefaceModel.estimateFaces(video, false)
+      ]);
 
-    // === Face boxes ===
-    faces.forEach(f=>{
-      const topLeft = f.topLeft;
-      const bottomRight = f.bottomRight;
-      const width = bottomRight[0] - topLeft[0];
-      const height = bottomRight[1] - topLeft[1];
-      overlayCtx.strokeStyle = 'rgba(255,0,255,0.9)';
-      overlayCtx.lineWidth = 2;
-      overlayCtx.strokeRect(topLeft[0], topLeft[1], width, height);
-      overlayCtx.fillStyle = 'rgba(255,0,255,0.3)';
-      overlayCtx.fillText('Face', topLeft[0]+4, topLeft[1]+12);
-    });
+      overlayCtx.clearRect(0,0,overlay.width,overlay.height);
 
-    // === Send data to Percy logic ===
-    if ((predictions.length>0 || faces.length>0) && typeof Percy?.onVisualInput==='function'){
-      Percy.onVisualInput({objects:predictions, faces:faces});
+      // === Object boxes ===
+      for (const p of predictions) {
+        overlayCtx.strokeStyle = 'rgba(0,255,255,0.8)';
+        overlayCtx.lineWidth = 2;
+        overlayCtx.strokeRect(p.bbox[0], p.bbox[1], p.bbox[2], p.bbox[3]);
+        overlayCtx.fillStyle = 'rgba(0,255,255,0.4)';
+        overlayCtx.font = '12px monospace';
+        overlayCtx.fillText(`${p.class} (${Math.round(p.score*100)}%)`, p.bbox[0]+4, p.bbox[1]+12);
+      }
+
+      // === Face boxes ===
+      for (const f of faces) {
+        const [x1,y1] = f.topLeft;
+        const [x2,y2] = f.bottomRight;
+        const width = x2 - x1;
+        const height = y2 - y1;
+        overlayCtx.strokeStyle = 'rgba(255,0,255,0.9)';
+        overlayCtx.lineWidth = 2;
+        overlayCtx.strokeRect(x1, y1, width, height);
+        overlayCtx.fillStyle = 'rgba(255,0,255,0.3)';
+        overlayCtx.fillText('Face', x1 + 4, y1 + 12);
+      }
+
+      // === Send combined data to Percy logic ===
+      if ((predictions.length>0 || faces.length>0) && typeof Percy?.onVisualInput==='function'){
+        Percy.onVisualInput({objects:predictions, faces:faces});
+      }
+
+      requestAnimationFrame(detectFrame);
     }
 
-    requestAnimationFrame(detectFrame);
+    detectFrame();
   }
 
-  detectFrame();
-}
-
-  PartZ.init=async function(){
-    try{
+  PartZ.init = async function(){
+    try {
       const stream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
-      video.srcObject=stream; await video.play();
-      video.addEventListener('loadedmetadata',setOverlaySize);
-      window.addEventListener('resize',setOverlaySize);
+      video.srcObject = stream;
+      await video.play();
+      video.addEventListener('loadedmetadata', setOverlaySize);
+      window.addEventListener('resize', setOverlaySize);
       setOverlaySize();
 
-      // Audio visualizer setup
+      // Audio visualizer
       audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-      ['click','keydown','touchstart'].forEach(evt=>{
-        const handler=async()=>{ try{ if(audioCtx.state==='suspended') await audioCtx.resume(); }catch(e){} window.removeEventListener(evt,handler); };
-        window.addEventListener(evt,handler,{passive:true});
-      });
-
       analyser = audioCtx.createAnalyser();
       analyser.fftSize=256;
       dataFreq=new Uint8Array(analyser.frequencyBinCount);
@@ -204,14 +202,15 @@ Percy.PartZ = (function(){
 
       await initModels();
       requestAnimationFrame(loop);
-    }catch(err){ console.error('PartZ init failed',err);}
+    } catch(err) {
+      console.error('PartZ init failed', err);
+    }
   };
 
   function drawAudioOnOverlay(){
     if(!analyser) return;
     const W=overlay.width,H=overlay.height;
     analyser.getByteFrequencyData(dataFreq);
-    analyser.getByteTimeDomainData(dataWave);
     const barCount=dataFreq.length, barWidth=Math.max(1,W/barCount);
     for(let i=0;i<barCount;i++){
       const barH=(dataFreq[i]/255)*(H*0.25);
@@ -227,6 +226,11 @@ Percy.PartZ = (function(){
 
   return PartZ;
 })();
+
+window.addEventListener('load',()=>{ 
+  try{ Percy.PartZ.init(); }catch(e){ console.error(e); } 
+});
+</script>
 
 /* === Percy.ASI integration === */
 Percy.ASI = (function(){
