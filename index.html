@@ -278,35 +278,133 @@ window.addEventListener('load',()=>{
 })();
 </script>
 
-<!-- === Console / Exec / Chat logic (unchanged) === -->
+<!-- === Console / Exec / Chat logic (updated exec section) === -->
 <script>
 // interpreter
 (function(){
-  const interpreterInput=document.getElementById('interpreter-input'), percyConsole=document.getElementById('percy-console'), askButton=document.getElementById('askPercyButton');
-  function appendConsole(text,isUser=false,exec=false){ const line=document.createElement('div'); line.className='console-line '+(isUser?'ask':'')+(exec?' exec':''); line.textContent=(isUser?'↳ ':'')+text; percyConsole.appendChild(line); percyConsole.scrollTop=percyConsole.scrollHeight;}
-  function runPercyCommand(){ const query=interpreterInput.value.trim(); if(!query) return; appendConsole(query,true); let response=""; if(typeof percyRespond==='function') response=percyRespond(query); else if(window.Percy&&typeof Percy.interpret==='function') response=Percy.interpret(query); if(response){ appendConsole(response,false,false); if(Percy?.speak&&!response.includes("Logic network idle")) Percy.speak(response);} interpreterInput.value=''; }
-  interpreterInput.addEventListener('keydown',e=>{ if(e.key==='Enter') runPercyCommand(); }); askButton.addEventListener('click',runPercyCommand);
+  const interpreterInput=document.getElementById('interpreter-input'),
+        percyConsole=document.getElementById('percy-console'),
+        askButton=document.getElementById('askPercyButton');
+
+  function appendConsole(text,isUser=false,exec=false){
+    const line=document.createElement('div');
+    line.className='console-line '+(isUser?'ask':'')+(exec?' exec':'');
+    line.textContent=(isUser?'↳ ':'')+text;
+    percyConsole.appendChild(line);
+    percyConsole.scrollTop=percyConsole.scrollHeight;
+  }
+
+  function runPercyCommand(){
+    const query=interpreterInput.value.trim();
+    if(!query) return;
+    appendConsole(query,true);
+    let response="";
+    if(typeof percyRespond==='function') response=percyRespond(query);
+    else if(window.Percy&&typeof Percy.interpret==='function') response=Percy.interpret(query);
+    if(response){
+      appendConsole(response,false,false);
+      if(Percy?.speak&&!response.includes("Logic network idle")) Percy.speak(response);
+    }
+    interpreterInput.value='';
+  }
+
+  interpreterInput.addEventListener('keydown',e=>{ if(e.key==='Enter') runPercyCommand(); });
+  askButton.addEventListener('click',runPercyCommand);
 })();
 
-// exec
+// exec (updated to run all modes at once)
 (function(){
-  const execInput=document.getElementById('percy-exec-input'), execBtn=document.getElementById('percy-exec-run'), consoleDiv=document.getElementById('percy-console'), toggleBtns=document.querySelectorAll('#exec-toggle button');
+  const execInput=document.getElementById('percy-exec-input'),
+        execBtn=document.getElementById('percy-exec-run'),
+        consoleDiv=document.getElementById('percy-console'),
+        toggleBtns=document.querySelectorAll('#exec-toggle button');
   if(!execInput) return;
-  let PercyExecMode="math";
-  toggleBtns.forEach(btn=>btn.addEventListener('click',()=>{ toggleBtns.forEach(b=>b.classList.remove('active')); btn.classList.add('active'); PercyExecMode=btn.dataset.mode;}));
-  async function handleExecInput(){ const query=execInput.value.trim(); if(!query) return; execInput.value=""; const userLine=document.createElement("div"); userLine.className="console-line ask"; userLine.textContent="↳ "+query; consoleDiv.appendChild(userLine); let output=""; try{ if(PercyExecMode==="math") output=await PercyState.useTool("math",query); else if(PercyExecMode==="java") output=await PercyState.useTool("java",query); else if(PercyExecMode==="tools") output=await PercyState.PartH?.routeInput(query) || "⚠️ Percy Part H not loaded.";}catch(e){ output="⚠️ Exec error: "+e.message; } const percyLine=document.createElement("div"); percyLine.className="console-line exec"; percyLine.textContent="🤖 "+output; consoleDiv.appendChild(percyLine); consoleDiv.scrollTop=consoleDiv.scrollHeight; }
-  execInput.addEventListener("keydown",async e=>{ if(e.key==="Enter"){ e.preventDefault(); await handleExecInput(); } });
+
+  // keep toggle visuals only
+  toggleBtns.forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      toggleBtns.forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  async function handleExecInput(){
+    const query=execInput.value.trim();
+    if(!query) return;
+    execInput.value="";
+
+    const userLine=document.createElement("div");
+    userLine.className="console-line ask";
+    userLine.textContent="↳ "+query;
+    consoleDiv.appendChild(userLine);
+
+    let results=[];
+
+    try {
+      // Run Math + Java + Tools all at once
+      const [mathRes, javaRes, toolsRes] = await Promise.all([
+        PercyState.useTool ? PercyState.useTool("math", query) : null,
+        PercyState.useTool ? PercyState.useTool("java", query) : null,
+        PercyState.PartH?.routeInput ? PercyState.PartH.routeInput(query) : null
+      ]);
+
+      if(mathRes){ results.push("🧮 Math: "+mathRes); document.querySelector('[data-mode="math"]').classList.add('active'); }
+      if(javaRes){ results.push("☕ Java: "+javaRes); document.querySelector('[data-mode="java"]').classList.add('active'); }
+      if(toolsRes){ results.push("🛠️ Tools: "+toolsRes); document.querySelector('[data-mode="tools"]').classList.add('active'); }
+
+      if(results.length===0)
+        results.push("⚙️ No response from Percy modes.");
+    } catch(e){
+      results.push("⚠️ Exec error: "+e.message);
+    }
+
+    const percyLine=document.createElement("div");
+    percyLine.className="console-line exec";
+    percyLine.textContent="🤖 "+results.join(" | ");
+    consoleDiv.appendChild(percyLine);
+    consoleDiv.scrollTop=consoleDiv.scrollHeight;
+  }
+
+  execInput.addEventListener("keydown",async e=>{
+    if(e.key==="Enter"){ e.preventDefault(); await handleExecInput(); }
+  });
   execBtn.addEventListener("click",handleExecInput);
 })();
 
 // chat
 (function(){
-  const chatInput=document.getElementById('percy-chat-input'), chatSend=document.getElementById('percy-chat-send'), chatMessages=document.getElementById('percy-chat-messages');
+  const chatInput=document.getElementById('percy-chat-input'),
+        chatSend=document.getElementById('percy-chat-send'),
+        chatMessages=document.getElementById('percy-chat-messages');
   let percyMemory=[];
-  function appendMsg(role,text){ const line=document.createElement('div'); line.textContent=`${role}: ${text}`; line.style.margin='6px 0'; line.style.color=role==='Percy'?'#7fff7f':'#d6d8ff'; chatMessages.appendChild(line); chatMessages.scrollTop=chatMessages.scrollHeight; }
-  function PercyReply(userText){ let raw=""; if(Percy?.PartT?.hear) raw=Percy.PartT.hear(userText); else if(Percy?.interpret) raw=Percy.interpret(userText); else if(typeof percyRespond==='function') raw=percyRespond(userText); else raw="⚙️ Percy core logic not initialized yet."; percyMemory.push({you:userText,percy:raw}); if(percyMemory.length>10) percyMemory.shift(); appendMsg('Percy',raw); if(Percy?.speak&&!raw.includes("Logic network idle")) Percy.speak(raw);}
-  function sendMessage(){ const text=chatInput.value.trim(); if(!text) return; appendMsg('You',text); chatInput.value=''; PercyReply(text);}
-  chatSend.addEventListener('click',sendMessage); chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter') sendMessage(); });
+  function appendMsg(role,text){
+    const line=document.createElement('div');
+    line.textContent=`${role}: ${text}`;
+    line.style.margin='6px 0';
+    line.style.color=role==='Percy'?'#7fff7f':'#d6d8ff';
+    chatMessages.appendChild(line);
+    chatMessages.scrollTop=chatMessages.scrollHeight;
+  }
+  function PercyReply(userText){
+    let raw="";
+    if(Percy?.PartT?.hear) raw=Percy.PartT.hear(userText);
+    else if(Percy?.interpret) raw=Percy.interpret(userText);
+    else if(typeof percyRespond==='function') raw=percyRespond(userText);
+    else raw="⚙️ Percy core logic not initialized yet.";
+    percyMemory.push({you:userText,percy:raw});
+    if(percyMemory.length>10) percyMemory.shift();
+    appendMsg('Percy',raw);
+    if(Percy?.speak&&!raw.includes("Logic network idle")) Percy.speak(raw);
+  }
+  function sendMessage(){
+    const text=chatInput.value.trim();
+    if(!text) return;
+    appendMsg('You',text);
+    chatInput.value='';
+    PercyReply(text);
+  }
+  chatSend.addEventListener('click',sendMessage);
+  chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter') sendMessage(); });
 })();
 </script>
 
