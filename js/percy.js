@@ -3257,48 +3257,40 @@ Percy.PartY = {
 
 UI.say("🔧 Percy Parts U/Y (Governance, T-upgrade, V sandbox, W audit, X verifier, Y updater) installed.");
 
-// === Percy Part Z: Camera + Visual Intelligence + Audio Visualizer + ASI Integration (Simultaneous Mode) ===
+// === Percy Part Z: Camera + Visual Intelligence + Audio Visualizer + ASI Integration (Simultaneous Mode, Enhanced Precision) ===
 Percy.PartZ = (function() {
   const PartZ = {};
 
-  // Video & overlay
-  let video = null;
-  let overlay = null;
-  let overlayCtx = null;
-  let faceModel = null;
-  let objectModel = null;
+  // --- Video & Overlay ---
+  let video = null, overlay = null, overlayCtx = null;
+  let faceModel = null, objectModel = null;
 
-  // Audio visualizer
+  // --- Audio Visualizer ---
   let audioCtx, analyser, dataFreq, dataWave;
   let audioCanvas, audioCtxCtx;
 
-  // internal state
-  let lastResizeAt = 0;
-  const detectInterval = 150; // ms
+  // --- Internal State ---
+  const detectInterval = 120; // faster cycle
   let lastDetect = 0;
+  const smoothFactor = 0.4; // how much previous frame influences next (0.3–0.5 = stable)
+  let prevFaces = [];
 
   PartZ.showOverlay = true;
 
-  function toArray(v) {
-    if (!v) return v;
-    if (Array.isArray(v)) return v;
-    if (v.length !== undefined) return Array.from(v);
-    return [v];
-  }
-
   function syncOverlaySize() {
     if (!video || !overlay) return;
-    const vw = video.videoWidth || video.clientWidth || 320;
-    const vh = video.videoHeight || video.clientHeight || 240;
+    const vw = video.videoWidth || 320;
+    const vh = video.videoHeight || 240;
     if (overlay.width !== vw || overlay.height !== vh) {
       overlay.width = vw;
       overlay.height = vh;
-      overlay.style.width = video.clientWidth + "px";
-      overlay.style.height = video.clientHeight + "px";
+      overlay.style.width = `${video.clientWidth}px`;
+      overlay.style.height = `${video.clientHeight}px`;
     }
   }
 
-  // ==== Initialize everything ====
+  function lerp(a, b, t) { return a + (b - a) * t; }
+
   PartZ.init = async function(videoId="camera-feed", overlayId="camera-overlay", audioCanvasId="voice-canvas") {
     try {
       // --- Camera setup ---
@@ -3311,35 +3303,32 @@ Percy.PartZ = (function() {
         overlay.style.position = "fixed";
         overlay.style.top = "150px";
         overlay.style.left = "12px";
+        overlay.style.pointerEvents = "none";
         document.body.appendChild(overlay);
       }
       overlayCtx = overlay.getContext("2d");
+      overlayCtx.shadowColor = "rgba(0,255,255,0.6)";
+      overlayCtx.shadowBlur = 10;
 
       const stream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
       video.srcObject = stream;
       video.playsInline = true;
       await video.play();
 
-      video.addEventListener('loadedmetadata', syncOverlaySize, { once: true });
-      window.addEventListener("resize", () => {
-        const now = Date.now();
-        if (now - lastResizeAt > 80) { syncOverlaySize(); lastResizeAt = now; }
-      });
+      syncOverlaySize();
+      window.addEventListener("resize", syncOverlaySize);
 
       // --- Load models ---
       if (typeof blazeface !== 'undefined') faceModel = await blazeface.load();
       if (typeof cocoSsd !== 'undefined') objectModel = await cocoSsd.load().catch(e => console.warn("COCO-SSD not loaded:", e));
 
-      // --- Audio visualizer ---
+      // --- Audio visualizer setup ---
       audioCanvas = document.getElementById(audioCanvasId);
       if (audioCanvas) {
         audioCtxCtx = audioCanvas.getContext("2d");
-        function resizeAudioCanvas() {
-          audioCanvas.width = audioCanvas.clientWidth;
-          audioCanvas.height = audioCanvas.clientHeight;
-        }
-        resizeAudioCanvas();
-        window.addEventListener("resize", resizeAudioCanvas);
+        const resize = ()=>{ audioCanvas.width=audioCanvas.clientWidth; audioCanvas.height=audioCanvas.clientHeight; };
+        resize();
+        window.addEventListener("resize", resize);
       }
 
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -3350,33 +3339,30 @@ Percy.PartZ = (function() {
       const srcNode = audioCtx.createMediaStreamSource(stream);
       srcNode.connect(analyser);
 
+      // Unmute by user interaction
       ['click','keydown','touchstart'].forEach(evt=>{
-        const handler = async () => {
+        const handler = async ()=>{
           try{ if(audioCtx.state==='suspended') await audioCtx.resume(); }catch(e){}
           window.removeEventListener(evt, handler);
         };
         window.addEventListener(evt, handler, {passive:true});
       });
 
-      // Start loops
+      PartZ.stream = stream;
+      PartZ.analyser = analyser;
+
       PartZ.loopCamera();
       PartZ.loopAudio();
 
-      PartZ.analyser = analyser;
-      PartZ.stream = stream;
+      if (window.Percy?.ASI) Percy.ASI.addPart?.('PartZ', PartZ);
 
-      // Register with ASI automatically
-      if (window.Percy?.ASI) {
-        Percy.ASI.addPart && Percy.ASI.addPart('PartZ', PartZ);
-      }
-
-      console.log("✅ Percy PartZ initialized | faceModel:", !!faceModel, "| objectModel:", !!objectModel);
+      console.log("✅ Percy PartZ initialized (Enhanced Mode)");
     } catch(err) {
       console.error("PartZ initialization failed:", err);
     }
   };
 
-  // ==== Camera loop (Simultaneous Face + Object Detection) ====
+  // === Face + Object Detection (Simultaneous + Stabilized) ===
   PartZ.loopCamera = async function() {
     requestAnimationFrame(PartZ.loopCamera);
     if (!video || !overlayCtx || !PartZ.showOverlay) return;
@@ -3388,101 +3374,101 @@ Percy.PartZ = (function() {
     syncOverlaySize();
     overlayCtx.clearRect(0,0,overlay.width,overlay.height);
 
-    overlayCtx.font = "16px monospace";
-    overlayCtx.fillStyle = "rgba(255,255,0,0.9)";
-    overlayCtx.fillText("Detecting (faces + objects)...", 8, 18);
-
     let faces = [], objs = [];
-    let faceCount = 0;
-
     try {
-      // Run both models simultaneously on the same frame
       const [faceResults, objectResults] = await Promise.all([
         faceModel ? faceModel.estimateFaces(video, false) : Promise.resolve([]),
         objectModel ? objectModel.detect(video) : Promise.resolve([])
       ]);
-
       faces = faceResults || [];
       objs = objectResults || [];
-
-      // Draw faces
-      if (faces.length) {
-        faceCount = faces.length;
-        faces.forEach((p, idx) => {
-          const [x1,y1]=toArray(p.topLeft)||[0,0];
-          const [x2,y2]=toArray(p.bottomRight)||[0,0];
-          const w=x2-x1, h=y2-y1;
-          overlayCtx.strokeStyle='rgba(0,255,170,0.95)';
-          overlayCtx.lineWidth = Math.max(2, Math.round(overlay.width/320));
-          overlayCtx.strokeRect(x1,y1,w,h);
-
-          overlayCtx.fillStyle='rgba(0,255,170,0.95)';
-          overlayCtx.font=`${12+Math.round(overlay.width/320)}px monospace`;
-          overlayCtx.fillText(`Face ${idx+1}`, x1+6, Math.max(14,y1+12));
-        });
-      }
-
-      // Draw objects
-      if (objs.length) {
-        objs.forEach(o => {
-          const [bx,by,bw,bh]=o.bbox;
-          overlayCtx.strokeStyle='rgba(255,50,200,0.9)';
-          overlayCtx.lineWidth = Math.max(2, Math.round(overlay.width/320));
-          overlayCtx.strokeRect(bx,by,bw,bh);
-
-          overlayCtx.fillStyle='rgba(255,50,200,0.95)';
-          overlayCtx.font=`${12+Math.round(overlay.width/320)}px monospace`;
-          overlayCtx.fillText(o.class||o.label||"obj", bx+6, Math.max(14, by+12));
-        });
-      }
-
-    } catch (err) {
-      console.warn("Detection error:", err);
+    } catch (e) {
+      console.warn("Detection error:", e);
+      return;
     }
 
-    overlayCtx.fillStyle = "rgba(255,255,0,0.9)";
-    overlayCtx.fillText(`Detected faces: ${faceCount} | objects: ${objs.length}`, 8, overlay.height-12);
+    // === Smooth face tracking ===
+    if (prevFaces.length === faces.length) {
+      faces = faces.map((f, i) => {
+        const prev = prevFaces[i];
+        const [x1,y1]=f.topLeft, [x2,y2]=f.bottomRight;
+        const [px1,py1]=prev.topLeft, [px2,py2]=prev.bottomRight;
+        f.topLeft=[lerp(px1,x1,smoothFactor), lerp(py1,y1,smoothFactor)];
+        f.bottomRight=[lerp(px2,x2,smoothFactor), lerp(py2,y2,smoothFactor)];
+        return f;
+      });
+    }
+    prevFaces = faces.map(f=>({...f}));
 
-    try { Percy.onVisualInput?.({faces: faceCount, objects: objs.length}); } catch(e){}
+    // === Draw faces ===
+    faces.forEach((p, i)=>{
+      const [x1,y1]=p.topLeft, [x2,y2]=p.bottomRight;
+      const w=x2-x1, h=y2-y1;
+      const cx=x1+w/2, cy=y1+h/2; // center for green dot
+
+      overlayCtx.strokeStyle='rgba(0,255,170,0.95)';
+      overlayCtx.lineWidth=Math.max(2,Math.round(overlay.width/320));
+      overlayCtx.strokeRect(x1,y1,w,h);
+
+      // Face label
+      overlayCtx.fillStyle='rgba(0,255,170,0.95)';
+      overlayCtx.font=`${12+Math.round(overlay.width/320)}px monospace`;
+      overlayCtx.fillText(`Face ${i+1}`, x1+6, Math.max(14,y1+14));
+
+      // Center green dot
+      overlayCtx.beginPath();
+      overlayCtx.arc(cx, cy, 4, 0, Math.PI*2);
+      overlayCtx.fillStyle='rgba(0,255,0,0.95)';
+      overlayCtx.fill();
+    });
+
+    // === Draw objects ===
+    objs.forEach(o=>{
+      const [bx,by,bw,bh]=o.bbox;
+      overlayCtx.strokeStyle='rgba(255,50,200,0.9)';
+      overlayCtx.lineWidth=Math.max(2,Math.round(overlay.width/320));
+      overlayCtx.strokeRect(bx,by,bw,bh);
+      overlayCtx.fillStyle='rgba(255,50,200,0.95)';
+      overlayCtx.font=`${12+Math.round(overlay.width/320)}px monospace`;
+      overlayCtx.fillText(o.class||o.label||"object", bx+6, Math.max(14, by+14));
+    });
+
+    // Status text
+    overlayCtx.fillStyle="rgba(255,255,0,0.9)";
+    overlayCtx.fillText(`Faces: ${faces.length} | Objects: ${objs.length}`, 8, overlay.height-10);
+
+    try { Percy.onVisualInput?.({faces:faces.length, objects:objs.length}); } catch(e){}
   };
 
-  // ==== Audio visualizer loop ====
+  // === Audio Visualizer ===
   PartZ.loopAudio = function() {
     requestAnimationFrame(PartZ.loopAudio);
     if (!analyser || !audioCtxCtx || !audioCanvas) return;
-
     analyser.getByteFrequencyData(dataFreq);
     analyser.getByteTimeDomainData(dataWave);
-
-    const W = audioCanvas.width;
-    const H = audioCanvas.height;
+    const W=audioCanvas.width, H=audioCanvas.height;
     audioCtxCtx.clearRect(0,0,W,H);
-
-    const barWidth = Math.max(1, W/dataFreq.length);
+    const barW=Math.max(1,W/dataFreq.length);
     for(let i=0;i<dataFreq.length;i++){
-      const barH = (dataFreq[i]/255)*(H*0.28);
-      audioCtxCtx.fillStyle = `rgb(${dataFreq[i]},${255-dataFreq[i]},255)`;
-      audioCtxCtx.fillRect(i*barWidth, H-barH, barWidth*0.6, barH);
+      const barH=(dataFreq[i]/255)*(H*0.3);
+      audioCtxCtx.fillStyle=`rgb(${dataFreq[i]},${255-dataFreq[i]},255)`;
+      audioCtxCtx.fillRect(i*barW,H-barH,barW*0.7,barH);
     }
-
-    audioCtxCtx.lineWidth=2;
-    audioCtxCtx.strokeStyle='rgba(0,255,255,0.9)';
     audioCtxCtx.beginPath();
-    let x=0;
-    const slice=W/dataWave.length;
+    let x=0, slice=W/dataWave.length;
     for(let i=0;i<dataWave.length;i++){
       const v=(dataWave[i]/128)-1;
-      const y=H/2 + v*(H*0.12);
+      const y=H/2+v*(H*0.15);
       if(i===0) audioCtxCtx.moveTo(x,y); else audioCtxCtx.lineTo(x,y);
       x+=slice;
     }
+    audioCtxCtx.strokeStyle='rgba(0,255,255,0.9)';
+    audioCtxCtx.lineWidth=2;
     audioCtxCtx.stroke();
 
-    // Push audio spike events to ASI
-    if (Percy?.ASI && analyser) {
-      const avg = dataFreq.reduce((a,b)=>a+b,0)/dataFreq.length;
-      if (avg>30) Percy.ASI.addTask({exec: async()=>{ console.log("🔊 ASI audio spike",avg); return avg; }});
-    }
+    // Spike event to ASI
+    const avg = dataFreq.reduce((a,b)=>a+b,0)/dataFreq.length;
+    if (avg>35 && Percy?.ASI) Percy.ASI.addTask?.({exec:async()=>avg});
   };
 
   return PartZ;
