@@ -3257,7 +3257,7 @@ Percy.PartY = {
 
 UI.say("🔧 Percy Parts U/Y (Governance, T-upgrade, V sandbox, W audit, X verifier, Y updater) installed.");
 
-// === Percy Part Z: Camera + Visual Intelligence + Audio Visualizer + ASI Integration ===
+// === Percy Part Z: Camera + Visual Intelligence + Audio Visualizer + ASI Integration (Simultaneous Mode) ===
 Percy.PartZ = (function() {
   const PartZ = {};
 
@@ -3274,9 +3274,8 @@ Percy.PartZ = (function() {
 
   // internal state
   let lastResizeAt = 0;
-  let lastFaceDetect = 0;
-  let lastObjectDetect = 0;
   const detectInterval = 150; // ms
+  let lastDetect = 0;
 
   PartZ.showOverlay = true;
 
@@ -3352,7 +3351,10 @@ Percy.PartZ = (function() {
       srcNode.connect(analyser);
 
       ['click','keydown','touchstart'].forEach(evt=>{
-        const handler = async () => { try{ if(audioCtx.state==='suspended') await audioCtx.resume(); }catch(e){} window.removeEventListener(evt, handler); };
+        const handler = async () => {
+          try{ if(audioCtx.state==='suspended') await audioCtx.resume(); }catch(e){}
+          window.removeEventListener(evt, handler);
+        };
         window.addEventListener(evt, handler, {passive:true});
       });
 
@@ -3374,68 +3376,74 @@ Percy.PartZ = (function() {
     }
   };
 
-  // ==== Camera loop ====
+  // ==== Camera loop (Simultaneous Face + Object Detection) ====
   PartZ.loopCamera = async function() {
     requestAnimationFrame(PartZ.loopCamera);
     if (!video || !overlayCtx || !PartZ.showOverlay) return;
+
+    const now = Date.now();
+    if (now - lastDetect < detectInterval) return;
+    lastDetect = now;
 
     syncOverlaySize();
     overlayCtx.clearRect(0,0,overlay.width,overlay.height);
 
     overlayCtx.font = "16px monospace";
     overlayCtx.fillStyle = "rgba(255,255,0,0.9)";
-    overlayCtx.fillText("Detecting...", 8, 18);
+    overlayCtx.fillText("Detecting (faces + objects)...", 8, 18);
 
-    const now = Date.now();
+    let faces = [], objs = [];
     let faceCount = 0;
 
-    // Face detection
-    if (faceModel && video.readyState>=2 && now-lastFaceDetect>detectInterval) {
-      lastFaceDetect = now;
-      try {
-        const preds = await faceModel.estimateFaces(video, false);
-        if (preds && preds.length) {
-          faceCount = preds.length;
-          preds.forEach((p, idx)=>{
-            const [x1,y1]=toArray(p.topLeft)||[0,0];
-            const [x2,y2]=toArray(p.bottomRight)||[0,0];
-            const w=x2-x1, h=y2-y1;
-            overlayCtx.strokeStyle='rgba(0,255,170,0.95)';
-            overlayCtx.lineWidth = Math.max(2, Math.round(overlay.width/320));
-            overlayCtx.strokeRect(x1,y1,w,h);
+    try {
+      // Run both models simultaneously on the same frame
+      const [faceResults, objectResults] = await Promise.all([
+        faceModel ? faceModel.estimateFaces(video, false) : Promise.resolve([]),
+        objectModel ? objectModel.detect(video) : Promise.resolve([])
+      ]);
 
-            overlayCtx.fillStyle='rgba(0,255,170,0.95)';
-            overlayCtx.font=`${12+Math.round(overlay.width/320)}px monospace`;
-            overlayCtx.fillText(`Face ${idx+1}`, x1+6, Math.max(14,y1+12));
-          });
-        }
-      } catch(e){ console.warn("Face detection error:", e); }
-    }
+      faces = faceResults || [];
+      objs = objectResults || [];
 
-    // Object detection
-    if (objectModel && video.readyState>=2 && now-lastObjectDetect>detectInterval) {
-      lastObjectDetect = now;
-      try {
-        const objs = await objectModel.detect(video);
-        if (objs && objs.length) {
-          objs.forEach(o=>{
-            const [bx,by,bw,bh]=o.bbox;
-            overlayCtx.strokeStyle='rgba(255,50,200,0.9)';
-            overlayCtx.lineWidth = Math.max(2, Math.round(overlay.width/320));
-            overlayCtx.strokeRect(bx,by,bw,bh);
+      // Draw faces
+      if (faces.length) {
+        faceCount = faces.length;
+        faces.forEach((p, idx) => {
+          const [x1,y1]=toArray(p.topLeft)||[0,0];
+          const [x2,y2]=toArray(p.bottomRight)||[0,0];
+          const w=x2-x1, h=y2-y1;
+          overlayCtx.strokeStyle='rgba(0,255,170,0.95)';
+          overlayCtx.lineWidth = Math.max(2, Math.round(overlay.width/320));
+          overlayCtx.strokeRect(x1,y1,w,h);
 
-            overlayCtx.fillStyle='rgba(255,50,200,0.95)';
-            overlayCtx.font=`${12+Math.round(overlay.width/320)}px monospace`;
-            overlayCtx.fillText(o.class||o.label||"obj", bx+6, Math.max(14, by+12));
-          });
-        }
-      } catch(e){ console.warn("Object detection error:", e); }
+          overlayCtx.fillStyle='rgba(0,255,170,0.95)';
+          overlayCtx.font=`${12+Math.round(overlay.width/320)}px monospace`;
+          overlayCtx.fillText(`Face ${idx+1}`, x1+6, Math.max(14,y1+12));
+        });
+      }
+
+      // Draw objects
+      if (objs.length) {
+        objs.forEach(o => {
+          const [bx,by,bw,bh]=o.bbox;
+          overlayCtx.strokeStyle='rgba(255,50,200,0.9)';
+          overlayCtx.lineWidth = Math.max(2, Math.round(overlay.width/320));
+          overlayCtx.strokeRect(bx,by,bw,bh);
+
+          overlayCtx.fillStyle='rgba(255,50,200,0.95)';
+          overlayCtx.font=`${12+Math.round(overlay.width/320)}px monospace`;
+          overlayCtx.fillText(o.class||o.label||"obj", bx+6, Math.max(14, by+12));
+        });
+      }
+
+    } catch (err) {
+      console.warn("Detection error:", err);
     }
 
     overlayCtx.fillStyle = "rgba(255,255,0,0.9)";
-    overlayCtx.fillText(`Detected faces: ${faceCount}`, 8, overlay.height-12);
+    overlayCtx.fillText(`Detected faces: ${faceCount} | objects: ${objs.length}`, 8, overlay.height-12);
 
-    try { Percy.onVisualInput?.({faces: faceCount}); } catch(e){}
+    try { Percy.onVisualInput?.({faces: faceCount, objects: objs.length}); } catch(e){}
   };
 
   // ==== Audio visualizer loop ====
@@ -3473,7 +3481,7 @@ Percy.PartZ = (function() {
     // Push audio spike events to ASI
     if (Percy?.ASI && analyser) {
       const avg = dataFreq.reduce((a,b)=>a+b,0)/dataFreq.length;
-      if (avg>30) Percy.ASI.addTask({exec: async()=>{ console.log("🔊 ASI audio spike",avg); return avg;}});
+      if (avg>30) Percy.ASI.addTask({exec: async()=>{ console.log("🔊 ASI audio spike",avg); return avg; }});
     }
   };
 
