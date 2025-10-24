@@ -392,31 +392,34 @@
           console.log('🧮 Exec result:', result);
         } 
         else if(mode === 'java') {
-          appendConsole('⚙️ Sending Java code to Percy...', 'exec');
-          if(window.Percy?.exec){
-            const res = await Percy.exec('java', q);
-            appendConsole('🤖 ' + (res || 'Java executed successfully.'), 'exec');
-          } 
-          else if(window.PercyState?.useTool){
-            const res = await PercyState.useTool('java', q);
-            appendConsole('🤖 ' + (res || 'Java tool executed.'), 'exec');
-          } 
-          else {
-            appendConsole('⚠️ No Java executor available.', 'exec');
-          }
-        } 
-        else if(mode === 'tools') {
-          appendConsole('⚙️ Running tool mode...', 'exec');
-          if(window.PercyState?.useTool){
-            const res = await PercyState.useTool('tools', q);
-            appendConsole('🤖 ' + (res || 'Tool executed.'), 'exec');
-          } else {
-            appendConsole('⚠️ No tool executor available.', 'exec');
-          }
-        }
-      } catch(err){
-        appendConsole('⚠️ Exec error: ' + err.message, 'exec');
-      }
+  const javaCode = q.replace(/^java\s*/i, "").trim();
+  appendConsole("☕ Java execution request received.", "exec");
+
+  if (!javaCode) {
+    appendConsole("⚠️ No Java code detected. Please enter Java code after 'java'.", "exec");
+    return;
+  }
+
+  appendConsole("☕ Executing Java code...", "exec");
+
+  try {
+    if (window.PercyState?.useTool) {
+      const res = await PercyState.useTool("java", javaCode);
+      appendConsole("✅ Java Tool executed successfully.", "exec");
+      if (res?.output) appendConsole(res.output, "exec");
+      else appendConsole("⚠️ No output returned from Java tool.", "exec");
+    } else if (window.Percy?.exec) {
+      const res = await Percy.exec("java", javaCode);
+      appendConsole("✅ Java executed successfully.", "exec");
+      if (res) appendConsole(res, "exec");
+    } else {
+      appendConsole("🤖 ⚠️ Percy Puppeteer or Java executor unavailable.", "exec");
+    }
+  } catch (err) {
+    console.error("Java Tool error:", err);
+    appendConsole("⚠️ Java Tool internal error: " + err.message, "exec");
+  }
+}
 
       execInput.value = '';
     }
