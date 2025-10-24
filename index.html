@@ -378,38 +378,44 @@
       return Function('"use strict"; return (' + sanitized + ')')();
     }
 
-    async function handleExec(){
+        async function handleExec(){
       const q = execInput.value.trim();
       if(!q) return;
       appendConsole('↳ ' + q, 'ask');
 
-      // Basic math mode quick handling
       const mode = document.querySelector('#exec-toggle button.active')?.dataset?.mode || 'math';
-      if(mode === 'math'){
-        try {
+
+      try {
+        if(mode === 'math'){
           const result = safeEvalMath(q);
           appendConsole('🧮 Math: ' + String(result), 'exec');
           console.log('🧮 Exec result:', result);
-        } catch(err){
-          appendConsole('⚠️ Math error: ' + err.message, 'exec');
-        }
-      } else {
-        // fallback behavior — try PercyState or Percy.PartH if available
-        try {
-          let responses = [];
-          if(window.PercyState?.useTool) {
-            const res = await PercyState.useTool(mode, q);
-            responses.push(res);
+        } 
+        else if(mode === 'java') {
+          appendConsole('⚙️ Sending Java code to Percy...', 'exec');
+          if(window.Percy?.exec){
+            const res = await Percy.exec('java', q);
+            appendConsole('🤖 ' + (res || 'Java executed successfully.'), 'exec');
+          } 
+          else if(window.PercyState?.useTool){
+            const res = await PercyState.useTool('java', q);
+            appendConsole('🤖 ' + (res || 'Java tool executed.'), 'exec');
+          } 
+          else {
+            appendConsole('⚠️ No Java executor available.', 'exec');
           }
-          if(window.Percy?.PartH?.routeInput) {
-            const res2 = await Percy.PartH.routeInput(q);
-            responses.push(res2);
+        } 
+        else if(mode === 'tools') {
+          appendConsole('⚙️ Running tool mode...', 'exec');
+          if(window.PercyState?.useTool){
+            const res = await PercyState.useTool('tools', q);
+            appendConsole('🤖 ' + (res || 'Tool executed.'), 'exec');
+          } else {
+            appendConsole('⚠️ No tool executor available.', 'exec');
           }
-          if(responses.length) appendConsole('🤖 ' + responses.join(' | '), 'exec');
-          else appendConsole('⚙️ No response from Percy modes.', 'exec');
-        } catch(e){
-          appendConsole('⚠️ Exec error: ' + (e.message||e), 'exec');
         }
+      } catch(err){
+        appendConsole('⚠️ Exec error: ' + err.message, 'exec');
       }
 
       execInput.value = '';
