@@ -3663,17 +3663,17 @@ if (Percy.cycleHooks) {
 
 console.log("✅ [PartBB] Context Expansion module loaded.");
 
-/* === Percy PartCC: Programming-Aware RL & Adaptive Code Feedback === */
+/* === Percy PartCC: Autonomous Code Evolution & RL === */
 Percy.PartCC = Percy.PartCC || {
-  name: "Programming-Aware Reinforcement Learning & Adaptive Feedback",
-  version: "2.0.0",
-  experienceMemory: [],       // Stores past observations, actions, code snippets, and outcomes
-  codeMemory: [],             // Tracks code snippets, lessons, and high-reward mutations
-  rewardHistory: [],          // Tracks rewards for learning signals
-  learningRate: 0.15,         // Weight for updating policies
-  explorationRate: 0.25,      // Probability to explore new actions or code mutations
-  maxMemory: 1000,            // Limit of stored experiences
-  maxCodeMemory: 200,         // Limit of stored code snippets
+  name: "Autonomous Code Evolution & Programming-Aware RL",
+  version: "3.0.0",
+  experienceMemory: [],
+  codeMemory: [],
+  rewardHistory: [],
+  learningRate: 0.15,
+  explorationRate: 0.25,
+  maxMemory: 1000,
+  maxCodeMemory: 200,
 
   /* --- Ingest lessons from PartB --- */
   ingestPartBLessons: function(partBMemory) {
@@ -3687,30 +3687,24 @@ Percy.PartCC = Percy.PartCC || {
     UI.say(`📘 PartCC: Ingested ${partBMemory.length} lessons from PartB.`);
   },
 
-  /* --- Store code snippet with metadata --- */
   storeCode: function(code, source = "manual") {
     if (!code) return;
     this.codeMemory.push({ code, source, timestamp: Date.now(), reward: 0 });
-    if (this.codeMemory.length > this.maxCodeMemory)
-      this.codeMemory.shift();
+    if (this.codeMemory.length > this.maxCodeMemory) this.codeMemory.shift();
   },
 
-  /* --- Store experience (state, action, code, reward, nextState) --- */
   storeExperience: function(state, action, code, reward, nextState) {
     this.experienceMemory.push({ state, action, code, reward, nextState, ts: Date.now() });
     this.rewardHistory.push(reward);
-    if (this.experienceMemory.length > this.maxMemory) 
-      this.experienceMemory.shift();
+    if (this.experienceMemory.length > this.maxMemory) this.experienceMemory.shift();
     if (code) this.storeCode(code, "experience");
   },
 
-  /* --- Choose action or code mutation based on RL policy --- */
   chooseAction: function(possibleActions, state) {
     if (!possibleActions?.length) return null;
     if (Math.random() < this.explorationRate) {
-      return possibleActions[Math.floor(Math.random() * possibleActions.length)]; // explore
+      return possibleActions[Math.floor(Math.random() * possibleActions.length)];
     } else {
-      // exploit: choose action with highest historical reward
       const scores = possibleActions.map(a => {
         const matches = this.experienceMemory.filter(e => e.state === state && e.action === a);
         const avgReward = matches.length ? matches.reduce((s,r)=>s+r.reward,0)/matches.length : 0;
@@ -3721,7 +3715,6 @@ Percy.PartCC = Percy.PartCC || {
     }
   },
 
-  /* --- Apply reward to experiences and code snippets --- */
   applyReward: function(state, action, reward) {
     this.experienceMemory.forEach(e => {
       if (e.state === state && e.action === action) {
@@ -3732,13 +3725,11 @@ Percy.PartCC = Percy.PartCC || {
     this.rewardHistory.push(reward);
   },
 
-  /* --- Update reward of code snippet in memory --- */
   updateCodeReward: function(code, reward) {
     const entry = this.codeMemory.find(c => c.code === code);
     if (entry) entry.reward = (entry.reward || 0) * (1 - this.learningRate) + reward * this.learningRate;
   },
 
-  /* --- Evaluate action or code against expected outcome --- */
   evaluateAction: function(actionOutcome, desiredOutcome) {
     const reward = actionOutcome === desiredOutcome ? 1 : -0.5;
     this.applyReward(actionOutcome?.state, actionOutcome?.action, reward);
@@ -3746,52 +3737,65 @@ Percy.PartCC = Percy.PartCC || {
     return reward;
   },
 
-  /* --- Propose code mutations based on high-reward experiences --- */
+  /* --- Propose high-reward code mutations --- */
   proposeCodeMutations: function() {
     if (!Percy.PartAA) return;
     const topExperiences = this.experienceMemory
       .filter(e => e.reward > 0 && e.code)
       .sort((a,b)=>b.reward-a.reward)
       .slice(0,5);
-
     topExperiences.forEach(exp => {
       Percy.PartAA.enqueue({
         code: exp.code,
         note: `Mutation from high-reward experience at ${new Date(exp.ts).toISOString()}`
       });
     });
-
     UI.say(`🧬 PartCC: Proposed ${topExperiences.length} code mutations to PartAA.`);
   },
 
-  /* --- Cycle: ingest lessons, propose mutations, reinforce learning --- */
-  cycle: function() {
-    // ingest PartB lessons automatically
-    if (Percy.PartB?.LogicMemory) this.ingestPartBLessons(Percy.PartB.LogicMemory);
+  /* --- Autonomous code generation --- */
+  generateNewCode: function() {
+    if (!Percy.PartAA) return;
+    const basePatterns = this.codeMemory
+      .filter(c => c.reward > 0)
+      .map(c => c.code)
+      .slice(-5); // take last 5 high-reward snippets
 
-    // propose code mutations to PartAA based on RL
-    this.proposeCodeMutations();
+    const newCode = basePatterns.map(code => {
+      // simple mutation + recombination
+      let mutated = code.split("").sort(() => Math.random() - 0.5).join("");
+      return `// Generated code snippet\n${mutated}`;
+    }).join("\n\n");
+
+    if (newCode) {
+      Percy.PartAA.enqueue({ code: newCode, note: "Autonomously generated new code structure" });
+      UI.say("🛠 PartCC: Generated and queued new autonomous code structures.");
+    }
   },
 
-  /* --- Continuous RL loop --- */
+  cycle: function() {
+    if (Percy.PartB?.LogicMemory) this.ingestPartBLessons(Percy.PartB.LogicMemory);
+    this.proposeCodeMutations();
+    this.generateNewCode();
+  },
+
   startLoop: function(interval = 6000) {
     if (this._loop) clearInterval(this._loop);
     this._loop = setInterval(() => this.cycle(), interval);
-    UI.say(`♻️ PartCC: Programming-aware RL loop started (every ${interval/1000}s).`);
+    UI.say(`♻️ PartCC: Autonomous RL & code evolution loop started (every ${interval/1000}s).`);
   },
 
   stopLoop: function() {
     if (this._loop) clearInterval(this._loop);
     this._loop = null;
-    UI.say("⏹ PartCC: Programming-aware RL loop stopped.");
+    UI.say("⏹ PartCC: Autonomous RL & code evolution loop stopped.");
   },
 };
 
-// Hook PartCC into Percy cycles
 if (Percy.cycleHooks) {
   Percy.cycleHooks.push(() => Percy.PartCC.cycle());
 } else {
   Percy.cycleHooks = [() => Percy.PartCC.cycle()];
 }
 
-console.log("✅ Percy PartCC (Programming-Aware RL + Adaptive Feedback) loaded.");
+console.log("✅ Percy PartCC (Autonomous Code Evolution + RL) loaded.");
