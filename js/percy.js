@@ -3662,3 +3662,117 @@ if (Percy.cycleHooks) {
 }
 
 console.log("✅ [PartBB] Context Expansion module loaded.");
+
+/* === Percy PartCC: Reinforcement Learning & Adaptive Feedback === */
+Percy.PartCC = Percy.PartCC || {
+  name: "Reinforcement Learning & Adaptive Feedback",
+  version: "1.0.0",
+  experienceMemory: [],    // Stores past observations, actions, and outcomes
+  rewardHistory: [],      // Tracks rewards for learning signals
+  learningRate: 0.15,     // Weight for updating policies
+  explorationRate: 0.25,  // Probability to explore new actions
+  maxMemory: 500,         // Limit of stored experiences
+
+  // Capture lessons from PartB (Percy learns patterns, programming logic, insights)
+  ingestPartBLessons: function(partBMemory) {
+    if (!partBMemory?.length) return;
+    partBMemory.forEach(thought => {
+      this.experienceMemory.push({ type: "partB", content: thought, timestamp: Date.now() });
+    });
+    if (this.experienceMemory.length > this.maxMemory)
+      this.experienceMemory.splice(0, this.experienceMemory.length - this.maxMemory);
+    UI.say(`📘 PartCC: Ingested ${partBMemory.length} lessons from PartB.`);
+  },
+
+  // Store experience (state, action, reward, nextState)
+  storeExperience: function(state, action, reward, nextState) {
+    this.experienceMemory.push({ state, action, reward, nextState, ts: Date.now() });
+    this.rewardHistory.push(reward);
+    if (this.experienceMemory.length > this.maxMemory) 
+      this.experienceMemory.shift();
+  },
+
+  // Choose an action based on RL policy (epsilon-greedy)
+  chooseAction: function(possibleActions, state) {
+    if (!possibleActions || !possibleActions.length) return null;
+    if (Math.random() < this.explorationRate) {
+      return possibleActions[Math.floor(Math.random() * possibleActions.length)]; // explore
+    } else {
+      // exploit: choose action with highest historical reward
+      const scores = possibleActions.map(a => {
+        const matches = this.experienceMemory.filter(e => e.state === state && e.action === a);
+        const avgReward = matches.length ? matches.reduce((s,r)=>s+r.reward,0)/matches.length : 0;
+        return { action: a, score: avgReward };
+      });
+      scores.sort((a,b)=>b.score-a.score);
+      return scores[0].action;
+    }
+  },
+
+  // Update experience with reward feedback (reinforcement)
+  applyReward: function(state, action, reward) {
+    this.experienceMemory.forEach(e => {
+      if (e.state === state && e.action === action) {
+        e.reward = (e.reward || 0) * (1 - this.learningRate) + reward * this.learningRate;
+      }
+    });
+    this.rewardHistory.push(reward);
+  },
+
+  // Evaluate Percy’s thought/action against feedback
+  evaluateAction: function(actionOutcome, desiredOutcome) {
+    const reward = actionOutcome === desiredOutcome ? 1 : -0.5;
+    this.applyReward(actionOutcome?.state, actionOutcome?.action, reward);
+    UI.say(`🎯 PartCC: Applied reward ${reward} for action "${actionOutcome?.action}"`);
+    return reward;
+  },
+
+  // Integrate with PartAA evolution: suggest safe mutations based on learned rewards
+  proposeMutationFromRL: function() {
+    if (!Percy.PartAA) return;
+    const highRewardExperiences = this.experienceMemory
+      .filter(e => e.reward > 0)
+      .slice(-5);
+
+    highRewardExperiences.forEach(exp => {
+      Percy.PartAA.enqueue({
+        code: exp.action || "console.log('No-op')",
+        note: `Derived from RL high-reward experience at ${new Date(exp.ts).toISOString()}`
+      });
+    });
+
+    UI.say(`🧬 PartCC: Proposed ${highRewardExperiences.length} mutations to PartAA based on RL.`);
+  },
+
+  // Cycle: review recent experiences, optionally trigger evolution
+  cycle: function() {
+    // ingest PartB lessons automatically
+    if (Percy.PartB?.LogicMemory) this.ingestPartBLessons(Percy.PartB.LogicMemory);
+
+    // propose mutations based on RL
+    this.proposeMutationFromRL();
+  },
+
+  // Start continuous RL loop
+  startLoop: function(interval = 6000) {
+    if (this._loop) clearInterval(this._loop);
+    this._loop = setInterval(() => this.cycle(), interval);
+    UI.say(`♻️ PartCC: Reinforcement learning loop started (every ${interval/1000}s).`);
+  },
+
+  stopLoop: function() {
+    if (this._loop) clearInterval(this._loop);
+    this._loop = null;
+    UI.say("⏹ PartCC: Reinforcement learning loop stopped.");
+  },
+};
+
+// Hook PartCC into Percy cycles if available
+if (Percy.cycleHooks) {
+  Percy.cycleHooks.push(() => Percy.PartCC.cycle());
+} else {
+  Percy.cycleHooks = [() => Percy.PartCC.cycle()];
+}
+
+console.log("✅ Percy PartCC loaded — Reinforcement Learning + Adaptive Feedback ready.");
+
