@@ -143,84 +143,67 @@
     }
 
     /* detection loop */
-    async function detectLoop(){
-      if(!video || video.readyState < 2 || !overlayCtx) {
-        requestAnimationFrame(detectLoop);
-        return;
-      }
+    async function detect(){
+  if(video.readyState < 2){ requestAnimationFrame(detect); return; }
 
-      const now = performance.now();
-      if(now - lastDetectAt < minDetectInterval){
-        requestAnimationFrame(detectLoop);
-        return;
-      }
-      lastDetectAt = now;
+  const [objects, faces] = await Promise.all([
+    cocoModel.detect(video),
+    faceModel.estimateFaces(video, false)
+  ]);
 
-      // ensure overlay size matches video intrinsic px
-      resizeOverlayToVideo();
-      overlayCtx.clearRect(0,0,overlay.width,overlay.height);
+  overlayCtx.clearRect(0,0,overlay.width,overlay.height);
 
-      // Use nextFrame to let TF breathe
-      await tf.nextFrame();
+  const scaleX = overlay.width / video.videoWidth;
+  const scaleY = overlay.height / video.videoHeight;
 
-      try {
-        const [objs, faces] = await Promise.all([
-          cocoModel ? cocoModel.detect(video) : Promise.resolve([]),
-          faceModel ? faceModel.estimateFaces(video, false) : Promise.resolve([])
-        ]);
+  // Object detection boxes
+  for(const obj of objects){
+    const [x,y,w,h] = obj.bbox;
+    const bx = x * scaleX, by = y * scaleY, bw = w * scaleX, bh = h * scaleY;
 
-        // draw objects
-        for(const o of objs){
-          const [x,y,w,h] = o.bbox;
-          overlayCtx.strokeStyle = 'rgba(0,255,255,0.9)';
-          overlayCtx.lineWidth = Math.max(2, Math.round(overlay.width/320));
-          overlayCtx.strokeRect(x,y,w,h);
-          overlayCtx.fillStyle = 'rgba(0,255,255,0.45)';
-          overlayCtx.font = `${12+Math.round(overlay.width/400)}px monospace`;
-          overlayCtx.fillText(`${o.class} (${Math.round(o.score*100)}%)`, x+6, y+12);
-        }
-        if(objs.length) console.log('🟦 Objects detected:', objs.map(o=>o.class).join(', '));
+    overlayCtx.strokeStyle = 'rgba(0,255,255,0.9)';
+    overlayCtx.lineWidth = 2;
+    overlayCtx.strokeRect(bx, by, bw, bh);
+    overlayCtx.fillStyle = 'rgba(0,255,255,0.5)';
+    overlayCtx.font = '12px monospace';
+    overlayCtx.fillText(`${obj.class} (${Math.round(obj.score*100)}%)`, bx+4, by+12);
+    console.log(`🟦 Object: ${obj.class} (${Math.round(obj.score*100)}%)`);
+  }
 
-        // draw faces + center dot
-        for(let i=0;i<faces.length;i++){
-          const f = faces[i];
-          const tl = f.topLeft; const br = f.bottomRight;
-          const x1 = tl[0], y1 = tl[1], x2 = br[0], y2 = br[1];
-          const w = x2 - x1, h = y2 - y1;
-          const cx = x1 + w/2, cy = y1 + h/2;
+  // Face detection boxes
+  for(const face of faces){
+    const [x1, y1] = face.topLeft;
+    const [x2, y2] = face.bottomRight;
+    const w = (x2 - x1) * scaleX;
+    const h = (y2 - y1) * scaleY;
+    const fx = x1 * scaleX, fy = y1 * scaleY;
+    const cx = fx + w / 2, cy = fy + h / 2;
 
-          // neon stroke
-          overlayCtx.save();
-          overlayCtx.lineWidth = Math.max(2, Math.round(overlay.width/320));
-          overlayCtx.shadowColor = '#ff00ff';
-          overlayCtx.shadowBlur = 10;
-          overlayCtx.strokeStyle = 'rgba(255,0,255,0.95)';
-          overlayCtx.strokeRect(x1, y1, w, h);
-          overlayCtx.restore();
+    overlayCtx.strokeStyle = 'rgba(255,0,255,0.9)';
+    overlayCtx.lineWidth = 2;
+    overlayCtx.shadowColor = '#ff00ff';
+    overlayCtx.shadowBlur = 12;
+    overlayCtx.strokeRect(fx, fy, w, h);
+    overlayCtx.shadowBlur = 0;
 
-          overlayCtx.fillStyle = 'rgba(255,0,255,0.3)';
-          overlayCtx.font = `${12+Math.round(overlay.width/400)}px monospace`;
-          overlayCtx.fillText(`Face ${i+1}`, x1+6, y1+12);
+    overlayCtx.fillStyle = 'rgba(255,0,255,0.3)';
+    overlayCtx.font = '12px monospace';
+    overlayCtx.fillText('Face', fx + 4, fy + 12);
 
-          // center dot
-          overlayCtx.beginPath();
-          overlayCtx.arc(cx, cy, Math.max(2, Math.round(overlay.width/240)), 0, Math.PI*2);
-          overlayCtx.fillStyle = '#00ff88';
-          overlayCtx.fill();
+    overlayCtx.beginPath();
+    overlayCtx.arc(cx, cy, 3, 0, 2 * Math.PI);
+    overlayCtx.fillStyle = '#00ff66';
+    overlayCtx.fill();
 
-          console.log(`🎯 Face ${i+1} center at (${Math.round(cx)},${Math.round(cy)})`);
-        }
+    console.log(`🎯 Face detected at (${Math.round(cx)},${Math.round(cy)})`);
+  }
 
-        // notify Percy logic
-        if(typeof Percy.onVisualInput === 'function'){
-          try { Percy.onVisualInput({ objects: objs, faces: faces }); } catch(e) { console.warn(e); }
-        }
-      } catch(err){
-        console.warn('Detection error', err);
-      }
+  if(typeof Percy.onVisualInput === 'function'){
+    Percy.onVisualInput({objects, faces});
+  }
 
-      requestAnimationFrame(detectLoop);
-    }
+  requestAnimationFrame(detect);
+}
 
     /* audio visualizer combined -> sine + bars */
     function startAudioVisualizer(canvas){
@@ -289,7 +272,7 @@
 
         // init models and loops
         await initModels();
-        detectLoop();
+        detect();
 
         // voice visualizer attach
         const vc = document.getElementById('voice-canvas');
