@@ -124,6 +124,15 @@ Percy.PartZ = (function(){
     overlay.width=rect.width;
     overlay.height=rect.height;
   }
+  
+overlayCtx.setTransform(
+  overlay.width / video.videoWidth,
+  0,
+  0,
+  overlay.height / video.videoHeight,
+  0,
+  0
+);
 
   async function initModels(){
     console.log("🔍 Loading TensorFlow Coco-SSD & BlazeFace...");
@@ -157,18 +166,39 @@ Percy.PartZ = (function(){
         overlayCtx.fillText(`${p.class} (${Math.round(p.score*100)}%)`, p.bbox[0]+4, p.bbox[1]+12);
       }
 
-      // === Face boxes ===
-      for (const f of faces) {
-        const [x1,y1] = f.topLeft;
-        const [x2,y2] = f.bottomRight;
-        const width = x2 - x1;
-        const height = y2 - y1;
-        overlayCtx.strokeStyle = 'rgba(255,0,255,0.9)';
-        overlayCtx.lineWidth = 2;
-        overlayCtx.strokeRect(x1, y1, width, height);
-        overlayCtx.fillStyle = 'rgba(255,0,255,0.3)';
-        overlayCtx.fillText('Face', x1 + 4, y1 + 12);
-      }
+      // === Face boxes (with alignment + green center dot + debug) ===
+for (const f of faces) {
+  const [x1, y1] = f.topLeft;
+  const [x2, y2] = f.bottomRight;
+  const width = x2 - x1;
+  const height = y2 - y1;
+  const cx = x1 + width / 2;
+  const cy = y1 + height / 2;
+
+  overlayCtx.strokeStyle = 'rgba(255,0,255,0.9)';
+  overlayCtx.lineWidth = 2;
+  overlayCtx.strokeRect(x1, y1, width, height);
+
+  // Neon overlay
+  overlayCtx.shadowColor = '#ff00ff';
+  overlayCtx.shadowBlur = 12;
+  overlayCtx.strokeRect(x1, y1, width, height);
+  overlayCtx.shadowBlur = 0;
+
+  // Face label
+  overlayCtx.fillStyle = 'rgba(255,0,255,0.3)';
+  overlayCtx.font = '12px monospace';
+  overlayCtx.fillText('Face', x1 + 4, y1 + 12);
+
+  // Center dot
+  overlayCtx.beginPath();
+  overlayCtx.arc(cx, cy, 3, 0, 2 * Math.PI);
+  overlayCtx.fillStyle = '#00ff66';
+  overlayCtx.fill();
+
+  // Debug to console
+  console.log(`🎯 Face detected at (${Math.round(cx)}, ${Math.round(cy)})`);
+}
 
       // === Send combined data to Percy logic ===
       if ((predictions.length>0 || faces.length>0) && typeof Percy?.onVisualInput==='function'){
