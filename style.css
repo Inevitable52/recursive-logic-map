@@ -235,3 +235,51 @@ body {
     box-shadow: none;
     z-index: 2000;
 }
+
+/* === Talk to Percy Chat Box Position Fix === */
+#percy-chat-box {
+    position: fixed;
+    bottom: 20px;              /* vertical offset from bottom */
+    left: 20px;                /* horizontal offset from left edge */
+    width: 340px;              /* adjust width as desired */
+    background: rgba(0, 0, 0, 0.75);
+    border-radius: 10px;
+    box-shadow: 0 0 12px #00ffff, 0 0 24px #ff00ff;
+    z-index: 1250;             /* below puppeteer control but above background */
+    color: #fff;
+    overflow: hidden;
+    backdrop-filter: blur(6px);
+}
+
+/* Chat messages area */
+#percy-chat-messages {
+    max-height: 160px;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+/* Input and button styling */
+#percy-chat-input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: none;
+    padding: 6px;
+    border-radius: 6px;
+    outline: none;
+}
+
+#percy-chat-send {
+    margin-left: 6px;
+    background: linear-gradient(to right, #00ffff, #ff00ff);
+    color: black;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+#percy-chat-send:hover {
+    filter: brightness(1.2);
+}
