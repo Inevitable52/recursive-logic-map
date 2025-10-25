@@ -205,8 +205,8 @@ body {
 /* Move Puppeteer Control away from PercyCam */
 #puppeteer-control {
     position: fixed;
-    bottom: 20px;
-    left: 50%;
+    bottom: 100px; /* lifts it higher to avoid the Talk to Percy box */
+    left: 50%;     /* centers horizontally */
     transform: translateX(-50%);
     width: 320px;
     background: rgba(0, 0, 0, 0.75);
