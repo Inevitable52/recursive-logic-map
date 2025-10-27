@@ -235,3 +235,32 @@ body {
     box-shadow: none;
     z-index: 2000;
 }
+
+/* === Percy Chat Box Fixed Center-Bottom === */
+#chat-box {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 340px;            /* adjust width as needed */
+  height: 420px;           /* adjust height if you want more compact look */
+  background: rgba(20, 20, 30, 0.85);
+  border: 1px solid #0ff;
+  border-radius: 14px;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+  z-index: 9999;
+}
+
+#percy-chat-box {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    width: 340px;
+    background: rgba(0, 0, 0, 0.75);
+    border-radius: 10px;
+    box-shadow: 0 0 12px #00ffff, 0 0 24px #ff00ff;
+    z-index: 1350; /* 👈 higher than Puppeteer (1300) */
+    color: #fff;
+    overflow: hidden;
+    backdrop-filter: blur(6px);
+}
