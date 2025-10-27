@@ -2100,56 +2100,95 @@ Percy.PartL.TalkCore = {
 console.log("✅ Percy Part L loaded — ASI-Grade Weighted Pattern Memory & Inference ready.");
 /* === End Percy Part L === */
 
-/* === Percy Part M: Recursive Reasoning & Hypothesis Engine (Fixed Stable Loop) === */
+/* === Percy Part M: Recursive Reasoning & Hypothesis Engine (ASI Upgrade) === */
 Percy.PartM = {
   name: "Auto-Hypothesis Engine",
   hypotheses: [],
+  cycleCount: 0,
 
   analyzePatterns(patterns) {
-    console.log("🧩 Part M: Analyzing patterns for contradictions...");
+    console.log("🧩 Part M: Analyzing patterns for contradictions and emergent logic...");
 
     for (let i = 0; i < patterns.length - 1; i++) {
       const p1 = patterns[i];
       const p2 = patterns[i + 1];
 
-      // Look for possible logical tension
-      if (this.isContradictory(p1.text, p2.text)) {
-        const hypothesis = this.formHypothesis(p1.text, p2.text);
-        this.hypotheses.push({ text: hypothesis, validated: false });
-        console.log(`💡 Hypothesis formed: "${hypothesis}"`);
+      // Detect tension, similarity, or complementarity
+      const relation = this.classifyRelation(p1.text, p2.text);
+      if (relation) {
+        const hypothesis = this.formHypothesis(p1.text, p2.text, relation);
+        this.hypotheses.push({ text: hypothesis, validated: false, relation });
+        console.log(`💡 Hypothesis (${relation}): "${hypothesis}"`);
       }
     }
   },
 
+  classifyRelation(a, b) {
+    const A = a.toLowerCase(), B = b.toLowerCase();
+    if (this.isContradictory(A, B)) return "contradiction";
+    if (A.includes(B) || B.includes(A)) return "subset";
+    if (A.split(" ").some(w => B.includes(w))) return "association";
+    return null;
+  },
+
   isContradictory(a, b) {
-    const negations = ["not", "no", "never", "cannot"];
+    const negations = ["not ", "no ", "never ", "cannot ", "isn't", "doesn't", "won't"];
     return (
-      negations.some(n => a.toLowerCase().includes(n) && !b.toLowerCase().includes(n)) ||
-      negations.some(n => b.toLowerCase().includes(n) && !a.toLowerCase().includes(n))
+      negations.some(n => a.includes(n) && !b.includes(n)) ||
+      negations.some(n => b.includes(n) && !a.includes(n))
     );
   },
 
-  formHypothesis(a, b) {
-    return `If "${a}" and "${b}" both hold, then a conditional relationship may exist between them.`;
+  formHypothesis(a, b, relation = "association") {
+    switch (relation) {
+      case "contradiction":
+        return `If "${a}" contradicts "${b}", one may define a boundary rule.`;
+      case "subset":
+        return `If "${a}" includes "${b}", "${b}" refines "${a}".`;
+      default:
+        return `If "${a}" relates to "${b}", a causal or associative link may exist.`;
+    }
   },
 
   validateHypotheses(patterns) {
     console.log("🔍 Part M: Validating hypotheses against known patterns...");
     this.hypotheses.forEach(h => {
-      const matches = patterns.some(p => h.text.toLowerCase().includes(p.text.toLowerCase()));
-      h.validated = matches;
-      console.log(matches ? `✅ Confirmed: "${h.text}"` : `❌ Needs more data: "${h.text}"`);
+      const match = patterns.some(p => h.text.toLowerCase().includes(p.text.toLowerCase()));
+      h.validated = match;
+      console.log(match ? `✅ Confirmed: "${h.text}"` : `❌ Needs more data: "${h.text}"`);
     });
+  },
+
+  reinforceLearning() {
+    const confirmed = this.hypotheses.filter(h => h.validated);
+    confirmed.forEach(h => {
+      Percy.PartL.learn(h.text);
+    });
+    if (confirmed.length)
+      console.log(`🧩 Reinforced ${confirmed.length} confirmed hypotheses into Part L memory.`);
+  },
+
+  integrateSelfReflection() {
+    const confidence = Percy.PartN?.selfModel?.confidence || 0.5;
+    const delta = this.hypotheses.length / (Percy.PartL.Patterns.length + 1);
+    Percy.PartN.selfModel.confidence = Math.min(1, confidence + delta * 0.02);
+    console.log(`🤔 Self-reflection: Adjusted confidence → ${Percy.PartN.selfModel.confidence.toFixed(2)}`);
   },
 
   run() {
     const patterns = Percy.PartL?.Patterns || [];
     if (patterns.length < 2) return;
 
+    this.cycleCount++;
+    console.log(`🔄 Part M: Reasoning cycle #${this.cycleCount}`);
+
     this.analyzePatterns(patterns);
     this.validateHypotheses(patterns);
+    this.reinforceLearning();
+    this.integrateSelfReflection();
 
-    console.log(`🧠 Active hypotheses count: ${this.hypotheses.length}`);
+    Percy.PartO?.optimizePatterns?.();
+    console.log(`🧠 Active hypotheses: ${this.hypotheses.length}`);
   }
 };
 
@@ -2157,18 +2196,19 @@ Percy.PartM = {
 if (!Percy.MasterLoop) {
   Percy.MasterLoop = async function() {
     try {
-      await Percy.PartL.run(); // reasoning and decay
-      Percy.PartM.run();       // hypothesis generation and validation
-      // Later, add Percy.PartN.reflect(), Percy.PartO.optimize(), etc.
+      await Percy.PartL.run(); // Decay + goal reasoning
+      Percy.PartM.run();       // Recursive reasoning + self-reflection
     } catch (err) {
       console.error("⚠️ Percy.MasterLoop Error:", err);
     }
   };
 
-  // Run every 5 seconds instead of recursive timeout for stability
   Percy.MasterInterval = setInterval(Percy.MasterLoop, 5000);
-  console.log("🔁 Percy Master Loop initiated (interval: 5 s)");
+  console.log("🔁 Percy Master Loop initiated (interval: 5 s, ASI mode)");
 }
+
+console.log("✅ Percy Part M loaded — Recursive Reasoning ASI mode active.");
+/* === End Percy Part M === */
 
 /* === Percy Part N: Meta-Reasoning & Self-Reflection Core === */
 Percy.PartN = {
