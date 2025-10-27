@@ -33,13 +33,53 @@
   /* voice visualizer */
   #voice-visualizer{position:fixed;top:12px;right:12px;width:360px;height:128px;border-radius:12px;background:linear-gradient(180deg,rgba(7,7,12,0.6),rgba(7,7,12,0.35));box-shadow:0 6px 24px rgba(0,255,255,0.06);border:1px solid rgba(0,255,255,0.08);z-index:9999;display:flex;align-items:center;justify-content:center}
   #voice-canvas{width:100%;height:100%;border-radius:8px;background:transparent}
+  /* puppeteer + chat area (center-bottom) */
+  #puppeteer-control{
+    position:fixed;
+    bottom:20px;
+    left:50%;
+    transform:translateX(-220px); /* place to the left of center */
+    width:420px;
+    max-width:46vw;
+    background:rgba(0,0,0,0.8);
+    border-radius:12px;
+    padding:10px;
+    border:1px solid rgba(255,255,255,0.06);
+    box-shadow: 0 6px 30px rgba(0,0,0,0.6), 0 0 18px var(--neon-a);
+    z-index:1300;
+    color:#e8eefc;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  #puppeteer-control .title{font-family:monospace;font-size:13px;opacity:0.9}
   /* chat */
-  #percy-chat-box{position:fixed;bottom:50px;right:12px;width:320px;height:400px;background:rgba(0,0,0,0.75);border-radius:12px;border:1px solid #222;display:flex;flex-direction:column;z-index:9999}
+  #percy-chat-box{
+    position:fixed;
+    bottom:20px;
+    left:50%;
+    transform:translateX(40px); /* sit just right of puppeteer-control */
+    width:340px;
+    height:400px;
+    background:rgba(0,0,0,0.75);
+    border-radius:12px;
+    border:1px solid #222;
+    display:flex;
+    flex-direction:column;
+    z-index:1350;
+    box-shadow:0 8px 30px rgba(0,0,0,0.6), 0 0 18px var(--neon-b);
+  }
   #percy-chat-messages{flex:1;padding:8px;overflow:auto}
   #percy-chat-input{flex:1;padding:6px;border:0;background:#111;color:#fff}
-  #percy-chat-send{padding:6px 10px;border:0;background:var(--accent);color:#000;cursor:pointer}
+  #percy-chat-send{padding:6px 10px;border:0;background:var(--accent);color:#000;cursor:pointer;border-radius:6px}
   /* small responsive */
-  @media (max-width:900px){ #camera-feed{width:360px;height:270px} #camera-overlay{width:360px;height:270px} }
+  @media (max-width:900px){
+    #camera-feed{width:360px;height:270px}
+    #camera-overlay{width:360px;height:270px}
+    /* stack puppeteer + chat vertically on small screens */
+    #puppeteer-control{ transform: translateX(-50%); left:50%; width:320px; bottom:140px; }
+    #percy-chat-box{ transform: translateX(-50%); left:50%; bottom:20px; width:320px; }
+  }
 </style>
 </head>
 <body>
@@ -69,7 +109,12 @@
   <!-- voice visualizer -->
   <div id="voice-visualizer"><canvas id="voice-canvas"></canvas></div>
 
-  <!-- chat -->
+  <!-- CENTER-BOTTOM: Puppeteer control (added) -->
+  <div id="puppeteer-control" role="region" aria-label="Puppeteer control">
+    <div class="title">☕ Puppeteer</div>
+  </div>
+
+  <!-- chat (now positioned to the right of puppeteer-control) -->
   <div id="percy-chat-box">
     <div id="percy-chat-messages"></div>
     <div style="display:flex;border-top:1px solid #222;padding:6px;">
@@ -87,6 +132,7 @@
   <script src="js/percy.js?v=6.4"></script>
 
   <script>
+  
   /* =====================================================
      PartZ — Camera, vision models, audio visualizer, ASI
      ===================================================== */
