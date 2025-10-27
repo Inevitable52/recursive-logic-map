@@ -1,4 +1,4 @@
-/* === Percy Phase 8.3.3 CSS (Futuristic Neon Glow Edition) === */
+/* === Percy Phase 8.3.3 CSS (Futuristic Neon Glow Edition - Corrected) === */
 
 body {
     margin: 0;
@@ -218,22 +218,23 @@ body {
 /* === Puppeteer Control Panel === */
 #puppeteer-control {
     position: fixed;
-    bottom: 100px; /* higher to avoid chat box overlap */
-    left: 50%;
-    transform: translateX(-50%);
+    bottom: 100px;
+    left: 45%;
+    transform: translateX(-45%);
     width: 320px;
     background: rgba(0, 0, 0, 0.75);
     border-radius: 12px;
     padding: 8px;
+    box-shadow: 0 0 12px #00ffff, 0 0 24px #ff00ff;
     z-index: 1300;
 }
 
-/* === Talk to Percy Chat Box (Unified) === */
+/* === Talk to Percy Chat Box (Unified - fixed center-bottom next to Puppeteer) === */
 #percy-chat-box {
     position: fixed;
     bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 55%;
+    transform: translateX(-45%);
     width: 340px;
     background: rgba(0, 0, 0, 0.75);
     border-radius: 10px;
