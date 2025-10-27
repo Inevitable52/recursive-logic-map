@@ -2068,12 +2068,12 @@ Percy.PartL.TalkCore = {
 console.log("✅ Percy Part L loaded — Weighted Pattern Memory & Autonomous Inference ready.");
 /* === End Percy Part L === */
 
-/* === Percy Part M: Recursive Reasoning & Hypothesis Engine === */
+/* === Percy Part M: Recursive Reasoning & Hypothesis Engine (Fixed Stable Loop) === */
 Percy.PartM = {
   name: "Auto-Hypothesis Engine",
   hypotheses: [],
-  
-  analyzePatterns: function(patterns) {
+
+  analyzePatterns(patterns) {
     console.log("🧩 Part M: Analyzing patterns for contradictions...");
 
     for (let i = 0; i < patterns.length - 1; i++) {
@@ -2089,8 +2089,7 @@ Percy.PartM = {
     }
   },
 
-  isContradictory: function(a, b) {
-    // Simple contradiction check for demonstration
+  isContradictory(a, b) {
     const negations = ["not", "no", "never", "cannot"];
     return (
       negations.some(n => a.toLowerCase().includes(n) && !b.toLowerCase().includes(n)) ||
@@ -2098,11 +2097,11 @@ Percy.PartM = {
     );
   },
 
-  formHypothesis: function(a, b) {
+  formHypothesis(a, b) {
     return `If "${a}" and "${b}" both hold, then a conditional relationship may exist between them.`;
   },
 
-  validateHypotheses: function(patterns) {
+  validateHypotheses(patterns) {
     console.log("🔍 Part M: Validating hypotheses against known patterns...");
     this.hypotheses.forEach(h => {
       const matches = patterns.some(p => h.text.toLowerCase().includes(p.text.toLowerCase()));
@@ -2111,9 +2110,9 @@ Percy.PartM = {
     });
   },
 
-  run: function() {
-    const patterns = Percy.PartL.Patterns;
-    if (!patterns || patterns.length < 2) return;
+  run() {
+    const patterns = Percy.PartL?.Patterns || [];
+    if (patterns.length < 2) return;
 
     this.analyzePatterns(patterns);
     this.validateHypotheses(patterns);
@@ -2122,14 +2121,22 @@ Percy.PartM = {
   }
 };
 
-// Example integration loop
-Percy.loop = async function() {
-  await Percy.PartL.run(); // reasoning and decay
-  Percy.PartM.run(); // hypothesis generation
-  setTimeout(Percy.loop, 2000);
-};
+/* === Unified Stable Loop Integration === */
+if (!Percy.MasterLoop) {
+  Percy.MasterLoop = async function() {
+    try {
+      await Percy.PartL.run(); // reasoning and decay
+      Percy.PartM.run();       // hypothesis generation and validation
+      // Later, add Percy.PartN.reflect(), Percy.PartO.optimize(), etc.
+    } catch (err) {
+      console.error("⚠️ Percy.MasterLoop Error:", err);
+    }
+  };
 
-Percy.loop();
+  // Run every 5 seconds instead of recursive timeout for stability
+  Percy.MasterInterval = setInterval(Percy.MasterLoop, 5000);
+  console.log("🔁 Percy Master Loop initiated (interval: 5 s)");
+}
 
 /* === Percy Part N: Meta-Reasoning & Self-Reflection Core === */
 Percy.PartN = {
@@ -2242,13 +2249,15 @@ Percy.PartN = {
 console.log("✅ Percy Part N loaded — Meta-Reasoning & Self-Reflection Core ready.");
 /* === End Percy Part N === */
 
-/* === Percy Part O: Adaptive Self-Optimization === */
+/* === Percy Part O: Adaptive Self-Optimization (Fixed + Active Feedback) === */
 Percy.PartO = {};
 
 // Link to Part L (patterns) and Part N (self-model)
 Percy.PartO.optimizePatterns = function() {
-  const confidence = Percy.PartN.SelfModel?.confidence || 0.5; // default baseline
+  const confidence = Percy.PartN?.selfModel?.confidence ?? 0.5;
   console.log(`🔧 Part O: Optimizing patterns based on confidence ${confidence.toFixed(2)}`);
+
+  if (!Percy.PartL?.Patterns) return console.warn("⚠️ PartO: No patterns found in PartL");
 
   Percy.PartL.Patterns.forEach(p => {
     // If confidence is low, decay unreliable patterns faster
@@ -2256,11 +2265,21 @@ Percy.PartO.optimizePatterns = function() {
     p.weight *= (1 - 0.01 * decayMultiplier);
 
     // If confidence is high, reinforce useful patterns
-    if (confidence > 0.8) p.weight += 0.05;
+    if (confidence > 0.8 && p.active) p.weight += 0.05;
 
-    // Keep patterns with minimal weight
-    if (p.weight < 0.05) p.weight = 0;
+    // Keep weights normalized
+    p.weight = Math.max(0, Math.min(p.weight, 1));
   });
+
+  // Feedback into logic map
+  if (typeof Percy.PartL.updateNetwork === "function") {
+    Percy.PartL.updateNetwork(Percy.PartL.Patterns);
+  }
+
+  // Update self-model’s learning confidence slightly upward each cycle
+  if (Percy.PartN?.selfModel) {
+    Percy.PartN.selfModel.confidence = Math.min(1, confidence + 0.01);
+  }
 
   // 🔗 Hook: emit update after optimization cycle
   const s = {
