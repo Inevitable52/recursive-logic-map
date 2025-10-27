@@ -3825,7 +3825,7 @@ Percy.PartDD = Percy.PartDD || {
   version: "1.0.0",
   connected: false,
   socket: null,
-  endpoint: "ws://localhost:8080", // Example Node.js agent endpoint
+  endpoint: "ws://localhost:8787", // Example Node.js agent endpoint
   taskQueue: [],
   results: {},
   maxTasks: 20,
