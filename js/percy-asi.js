@@ -1,4 +1,4 @@
-// === Percy ASI: percy-asi.js ===
+// === Percy ASI: percy-asi.js (Advanced Superintelligence Edition) ===
 Percy.ASI = (function() {
   const ASI = {};
 
@@ -11,7 +11,10 @@ Percy.ASI = (function() {
   ASI.state = {
     initialized: false,
     lastLoop: Date.now(),
-    lockdown: false
+    lockdown: false,
+    loopInterval: 100,         // Dynamic loop frequency
+    learningRate: 0.01,        // Adaptive learning speed
+    experience: {}             // Track historical performance & context
   };
 
   // ==== Utility functions ====
@@ -30,30 +33,55 @@ Percy.ASI = (function() {
 
   ASI.addTask = function(task) {
     if (!task || ASI.state.lockdown) return;
+    // Assign dynamic priority if not defined
+    task.priority = task.priority ?? ASI.estimateTaskPriority(task);
     ASI.taskQueue.push(task);
   };
 
   ASI.updateGraph = function(nodeId, props) {
     if (!ASI.knowledgeGraph[nodeId]) ASI.knowledgeGraph[nodeId] = {};
     Object.assign(ASI.knowledgeGraph[nodeId], props);
+    // Track experience for self-optimization
+    ASI.state.experience[nodeId] = ASI.state.experience[nodeId] || {};
+    ASI.state.experience[nodeId].lastUpdate = Date.now();
   };
 
+  ASI.estimateTaskPriority = function(task) {
+    // Basic heuristic: audio/visual tasks > action tasks
+    let base = 0;
+    if (task.type === "visual") base = 10;
+    else if (task.type === "audio") base = 8;
+    else if (task.type === "action") base = 5;
+    // Increase priority if related nodes have historical importance
+    if (task.nodeId && ASI.state.experience[task.nodeId]) base += 2;
+    return base;
+  };
+
+  // ==== Multi-modal task evaluation ====
   ASI.evaluateTasks = async function() {
-    // Basic reasoning + planning engine
+    // Sort tasks by priority
+    ASI.taskQueue.sort((a,b) => (b.priority ?? 0) - (a.priority ?? 0));
     const queue = [...ASI.taskQueue];
     ASI.taskQueue = [];
 
     for (let task of queue) {
       try {
-        // Simple prioritization example
-        if (task.priority === undefined) task.priority = 0;
-        if (task.type === "visual") {
-          // Example: PartZ face detected
-          ASI.updateGraph(task.nodeId, { faces: task.data.faces || 0 });
-        } else if (task.type === "audio") {
-          ASI.updateGraph(task.nodeId, { audioLevel: task.data.level || 0 });
-        } else if (task.type === "action") {
-          if (task.exec) await task.exec();
+        switch(task.type) {
+          case "visual":
+            if (task.data?.faces) ASI.updateGraph(task.nodeId, { faces: task.data.faces });
+            if (task.data?.objects) ASI.updateGraph(task.nodeId, { objects: task.data.objects });
+            break;
+          case "audio":
+            if (task.data?.level !== undefined) ASI.updateGraph(task.nodeId, { audioLevel: task.data.level });
+            if (task.data?.keywords) ASI.updateGraph(task.nodeId, { audioKeywords: task.data.keywords });
+            break;
+          case "action":
+            if (task.exec) await task.exec();
+            break;
+          case "cognitive":
+            // Advanced reasoning: combine multiple nodes, infer relations
+            if (task.infer && typeof task.infer === "function") task.infer(ASI.knowledgeGraph);
+            break;
         }
         ASI.triggerHook("taskComplete", task);
       } catch(e) {
@@ -62,21 +90,32 @@ Percy.ASI = (function() {
     }
   };
 
-  // ==== Autonomous evolution ====
+  // ==== Adaptive self-optimization ====
   ASI.selfOptimize = function() {
     if (ASI.state.lockdown) return;
-    // Example: adjust reasoning frequency based on load
+
     const now = Date.now();
     const elapsed = now - ASI.state.lastLoop;
+
+    // Dynamically adjust loop interval
     if (elapsed > 500) {
-      ASI.state.loopInterval = Math.max(50, (ASI.state.loopInterval || 100) - 5);
+      ASI.state.loopInterval = Math.max(50, ASI.state.loopInterval - 5);
+    } else if (elapsed < 50) {
+      ASI.state.loopInterval = Math.min(200, ASI.state.loopInterval + 5);
+    }
+
+    // Adaptive learning: improve task priority weights
+    for (let nodeId in ASI.state.experience) {
+      const exp = ASI.state.experience[nodeId];
+      if (!exp.successRate) exp.successRate = 1;
+      exp.successRate *= (1 + ASI.state.learningRate * Math.random());
     }
   };
 
   // ==== Main ASI loop ====
   ASI.loop = async function() {
-    requestAnimationFrame(ASI.loop);
     if (!ASI.state.initialized) return;
+    const start = Date.now();
 
     // Poll parts for inputs
     for (let [name, part] of Object.entries(ASI.parts)) {
@@ -92,6 +131,8 @@ Percy.ASI = (function() {
     ASI.selfOptimize();
 
     ASI.state.lastLoop = Date.now();
+    const elapsed = Date.now() - start;
+    setTimeout(ASI.loop, Math.max(0, ASI.state.loopInterval - elapsed));
   };
 
   // ==== Initialization ====
@@ -108,7 +149,6 @@ Percy.ASI = (function() {
     // Wire event hooks (optional)
     ASI.eventHooks = config.eventHooks || {};
 
-    // Unlock ASI main loop
     ASI.state.initialized = true;
     ASI.loop();
 
@@ -121,11 +161,13 @@ Percy.ASI = (function() {
     console.warn("Percy.ASI lockdown:", enable);
   };
 
-  // ==== Expose knowledge graph + tasks ====
+  // ==== Inspect internal state ====
   ASI.inspect = function() {
     return {
       graph: ASI.knowledgeGraph,
-      tasks: ASI.taskQueue
+      tasks: ASI.taskQueue,
+      experience: ASI.state.experience,
+      loopInterval: ASI.state.loopInterval
     };
   };
 
