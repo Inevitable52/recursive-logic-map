@@ -1588,12 +1588,12 @@ if (typeof PercyState !== 'undefined') {
   console.error("❌ PercyState not found; cannot load Part I.");
 }
 
-/* === Percy Part J: TalkCore+ (Autonomous AI Core) === */
+/* === Percy Part J: TalkCore+ (Autonomous AI Core, WS-Enabled) === */
 Percy.PartJ = Percy.PartJ || {};
 
 Percy.PartJ.TalkCore = {
   id: "Percy_TalkCore_PJ",
-  version: "1.0.1",
+  version: "1.1.0",
   active: true,
 
   /* === Configuration === */
@@ -1606,7 +1606,8 @@ Percy.PartJ.TalkCore = {
     selfReflection: true,
     autoLearn: true,
     autoBrowse: false,
-    memoryLimit: 50
+    memoryLimit: 50,
+    websocketURL: "ws://localhost:8787"
   },
 
   /* === Core Memory === */
@@ -1616,21 +1617,18 @@ Percy.PartJ.TalkCore = {
     knownPatterns: [],
     lastReply: "",
     lastThought: "",
-    selfAwarenessLevel: 0.4
+    selfAwarenessLevel: 0.4,
+    ws: null
   },
 
   /* === 1. Core Thinking === */
   async think(input) {
     if (!input) return "⚠️ No input provided.";
-
     if (this.config.autoLearn) this.learn(input);
 
     let reasoning = "";
-    try {
-      reasoning = await Percy.correlateReply(input);
-    } catch {
-      reasoning = "The correlation layer returned undefined logic.";
-    }
+    try { reasoning = await Percy.correlateReply(input); }
+    catch { reasoning = "The correlation layer returned undefined logic."; }
 
     const internalThought = this.reflect(input, reasoning);
     this.state.lastThought = internalThought;
@@ -1639,8 +1637,8 @@ Percy.PartJ.TalkCore = {
     this.storeConversation(input, phrasing);
 
     if (this.config.autoBrowse) Percy.Browse?.autoSearch?.(input);
-
     this.state.lastReply = phrasing;
+
     try { Percy.speak?.(phrasing); } catch {}
     return phrasing;
   },
@@ -1648,16 +1646,14 @@ Percy.PartJ.TalkCore = {
   /* === 2. Reflection Layer === */
   reflect(input, reasoning) {
     const reflections = [
-      `If that is so, then the underlying structure might follow recursive logic.`,
-      `That aligns with previously observed cognitive symmetry.`,
-      `Analyzing causation behind correlation...`,
-      `The thought implies an emergent link across the last 5 memory states.`,
-      `Internal resonance between input and reasoning detected.`
+      "If that is so, then the underlying structure might follow recursive logic.",
+      "That aligns with previously observed cognitive symmetry.",
+      "Analyzing causation behind correlation...",
+      "The thought implies an emergent link across the last 5 memory states.",
+      "Internal resonance between input and reasoning detected."
     ];
-    const reflection =
-      reflections[Math.floor(Math.random() * reflections.length)];
-    if (this.config.selfReflection)
-      console.log("🧩 Internal Thought:", reflection);
+    const reflection = reflections[Math.floor(Math.random() * reflections.length)];
+    if (this.config.selfReflection) console.log("🧩 Internal Thought:", reflection);
     return `${reflection} Derived reasoning: ${reasoning}`;
   },
 
@@ -1671,15 +1667,10 @@ Percy.PartJ.TalkCore = {
       "Based on pattern recognition,",
       "Logically speaking,"
     ];
-
     const opener = openers[Math.floor(Math.random() * openers.length)];
-    const curiosityShift =
-      tone.curiosity > 0.7 ? "This invites deeper exploration." : "";
+    const curiosityShift = tone.curiosity > 0.7 ? "This invites deeper exploration." : "";
     const empathyLayer =
-      this.config.empathy > 0.5
-        ? "I understand why that pattern caught your attention. "
-        : "";
-
+      this.config.empathy > 0.5 ? "I understand why that pattern caught your attention. " : "";
     return `${empathyLayer}${opener} ${reasoning}. ${curiosityShift} ${reflection}`;
   },
 
@@ -1690,9 +1681,9 @@ Percy.PartJ.TalkCore = {
   },
 
   learnTone(input) {
-    if (input.match(/sir|accordingly|indeed|logic/i))
+    if (/sir|accordingly|indeed|logic/i.test(input))
       this.state.toneProfile.formality += 0.02;
-    if (input.match(/why|how|what if/i))
+    if (/why|how|what if/i.test(input))
       this.state.toneProfile.curiosity += 0.03;
     this.state.toneProfile.formality = Math.min(1, this.state.toneProfile.formality);
     this.state.toneProfile.curiosity = Math.min(1, this.state.toneProfile.curiosity);
@@ -1723,9 +1714,7 @@ Percy.PartJ.TalkCore = {
       this.config.curiosity += 0.01;
       this.config.logicBias -= 0.01;
     }
-    this.config.logicBias = Math.min(Math.max(this.config.logicBias, 0), 1);
-    this.config.curiosity = Math.min(Math.max(this.config.curiosity, 0), 1);
-    this.state.selfAwarenessLevel = Math.min(this.state.selfAwarenessLevel, 1);
+    this.clampValues();
   },
 
   /* === 7. Safe Conversational Send === */
@@ -1736,10 +1725,10 @@ Percy.PartJ.TalkCore = {
 
   /* === 8. Self-Awareness Check === */
   checkSelfAwareness() {
-    const awareness = this.state.selfAwarenessLevel;
-    if (awareness > 0.7)
+    const a = this.state.selfAwarenessLevel;
+    if (a > 0.7)
       console.log("🌀 Percy has achieved a higher state of logical self-awareness.");
-    return awareness;
+    return a;
   },
 
   /* === 9. System Evolution Loop === */
@@ -1747,18 +1736,58 @@ Percy.PartJ.TalkCore = {
     setInterval(() => {
       this.state.selfAwarenessLevel += 0.001 * this.config.adaptivity;
       if (this.state.selfAwarenessLevel > 0.5 && this.config.autoLearn) {
-        const newThought = "Reflecting on last correlation state...";
-        this.learnPattern(newThought);
+        this.learnPattern("Reflecting on last correlation state...");
       }
       this.clampValues();
     }, 30000);
   },
 
+  /* === 10. WebSocket Bridge (for Puppeteer / External Control) === */
+  connectWebSocket() {
+    const url = this.config.websocketURL;
+    try {
+      const ws = new WebSocket(url);
+      this.state.ws = ws;
+
+      ws.onopen = () => console.log(`🔗 TalkCore WebSocket connected → ${url}`);
+      ws.onclose = () => console.log("🔌 TalkCore WebSocket disconnected.");
+      ws.onerror = err => console.error("⚠️ WebSocket error:", err);
+
+      ws.onmessage = async evt => {
+        try {
+          const msg = JSON.parse(evt.data);
+          if (msg.action === "type") {
+            const el = document.querySelector(msg.selector);
+            if (el) {
+              el.value = msg.text;
+              el.dispatchEvent(new Event("input", { bubbles: true }));
+              console.log(`⌨️ Typed into ${msg.selector}:`, msg.text);
+            }
+          }
+          if (msg.action === "click") {
+            document.querySelector(msg.selector)?.click();
+            console.log(`🖱️ Clicked ${msg.selector}`);
+          }
+          if (msg.action === "think") {
+            const reply = await this.think(msg.text);
+            ws.send(JSON.stringify({ type: "reply", text: reply }));
+          }
+        } catch (e) {
+          console.error("⚠️ TalkCore WS message error:", e);
+        }
+      };
+    } catch (err) {
+      console.error("❌ Failed to connect WebSocket:", err);
+    }
+  },
+
   /* === Utility: Clamp Values === */
   clampValues() {
-    this.state.selfAwarenessLevel = Math.min(Math.max(this.state.selfAwarenessLevel, 0), 1);
-    this.config.logicBias = Math.min(Math.max(this.config.logicBias, 0), 1);
-    this.config.curiosity = Math.min(Math.max(this.config.curiosity, 0), 1);
+    const s = this.state;
+    const c = this.config;
+    s.selfAwarenessLevel = Math.min(Math.max(s.selfAwarenessLevel, 0), 1);
+    c.logicBias = Math.min(Math.max(c.logicBias, 0), 1);
+    c.curiosity = Math.min(Math.max(c.curiosity, 0), 1);
   }
 };
 
@@ -1770,9 +1799,10 @@ if (typeof PercyState !== "undefined") {
   console.error("❌ PercyState not found; TalkCore could not attach.");
 }
 
-/* === Initialize Evolution === */
+/* === Initialize === */
 Percy.PartJ.TalkCore.evolve();
-UI.say?.("🧠 TalkCore+ activated — Percy now learns, reasons, converses, and evolves.");
+Percy.PartJ.TalkCore.connectWebSocket();
+UI.say?.("🧠 TalkCore+ activated — Percy now learns, reasons, converses, and accepts WebSocket control.");
 /* === End TalkCore+ === */
 
 /* === Percy Part K: Core Autonomous AI Engine === */
