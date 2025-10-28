@@ -1588,12 +1588,12 @@ if (typeof PercyState !== 'undefined') {
   console.error("❌ PercyState not found; cannot load Part I.");
 }
 
-/* === Percy Part J: TalkCore+ (Autonomous AI Core, WS-Enabled) === */
+/* === Percy Part J: TalkCore+ (Autonomous AI Core, WS-Enabled, v1.2.0) === */
 Percy.PartJ = Percy.PartJ || {};
 
 Percy.PartJ.TalkCore = {
   id: "Percy_TalkCore_PJ",
-  version: "1.1.0",
+  version: "1.2.0",
   active: true,
 
   /* === Configuration === */
@@ -1607,7 +1607,7 @@ Percy.PartJ.TalkCore = {
     autoLearn: true,
     autoBrowse: false,
     memoryLimit: 50,
-    websocketURL: "ws://localhost:8787"
+    websocketURL: "ws://localhost:8787" // Puppeteer Server
   },
 
   /* === Core Memory === */
@@ -1749,7 +1749,10 @@ Percy.PartJ.TalkCore = {
       const ws = new WebSocket(url);
       this.state.ws = ws;
 
-      ws.onopen = () => console.log(`🔗 TalkCore WebSocket connected → ${url}`);
+      ws.onopen = () => {
+        console.log(`🔗 TalkCore WebSocket connected → ${url}`);
+        UI.say?.("🔗 Percy Puppeteer Bridge established.");
+      };
       ws.onclose = () => console.log("🔌 TalkCore WebSocket disconnected.");
       ws.onerror = err => console.error("⚠️ WebSocket error:", err);
 
@@ -1781,6 +1784,44 @@ Percy.PartJ.TalkCore = {
     }
   },
 
+  /* === 11. Puppeteer Bridge: Send Action === */
+  async sendPuppeteerAction(action, params = {}) {
+    const ws = this.state.ws;
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      console.warn("⚠️ Puppeteer WebSocket not connected.");
+      return { success: false, error: "No active WS connection" };
+    }
+
+    const payload = { action, params };
+    ws.send(JSON.stringify(payload));
+
+    return new Promise(resolve => {
+      const timeout = setTimeout(() => resolve({ success: false, error: "Timeout" }), 10000);
+      ws.onmessage = evt => {
+        clearTimeout(timeout);
+        try { resolve(JSON.parse(evt.data)); }
+        catch { resolve({ success: false, error: "Invalid JSON response" }); }
+      };
+    });
+  },
+
+  /* === 12. High-Level Puppeteer Commands === */
+  async visitURL(url) {
+    return await this.sendPuppeteerAction("visit", { url });
+  },
+  async clickElement(selector) {
+    return await this.sendPuppeteerAction("click", { selector });
+  },
+  async typeInto(selector, text) {
+    return await this.sendPuppeteerAction("type", { selector, text });
+  },
+  async extractLinks() {
+    return await this.sendPuppeteerAction("extractLinks", {});
+  },
+  async autoLearn(url) {
+    return await this.sendPuppeteerAction("autoLearn", { url });
+  },
+
   /* === Utility: Clamp Values === */
   clampValues() {
     const s = this.state;
@@ -1802,7 +1843,7 @@ if (typeof PercyState !== "undefined") {
 /* === Initialize === */
 Percy.PartJ.TalkCore.evolve();
 Percy.PartJ.TalkCore.connectWebSocket();
-UI.say?.("🧠 TalkCore+ activated — Percy now learns, reasons, converses, and accepts WebSocket control.");
+UI.say?.("🧠 TalkCore+ activated — Percy now learns, reasons, converses, and controls Puppeteer.");
 /* === End TalkCore+ === */
 
 /* === Percy Part K: Core Autonomous AI Engine === */
