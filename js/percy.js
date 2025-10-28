@@ -1593,7 +1593,7 @@ Percy.PartJ = Percy.PartJ || {};
 
 Percy.PartJ.TalkCore = {
   id: "Percy_TalkCore_PJ",
-  version: "1.0.0",
+  version: "1.0.1",
   active: true,
 
   /* === Configuration === */
@@ -1623,10 +1623,8 @@ Percy.PartJ.TalkCore = {
   async think(input) {
     if (!input) return "⚠️ No input provided.";
 
-    // Step 1: Learn from context
     if (this.config.autoLearn) this.learn(input);
 
-    // Step 2: Internal correlation reasoning
     let reasoning = "";
     try {
       reasoning = await Percy.correlateReply(input);
@@ -1634,22 +1632,16 @@ Percy.PartJ.TalkCore = {
       reasoning = "The correlation layer returned undefined logic.";
     }
 
-    // Step 3: Generate internal “thought” (private reasoning)
     const internalThought = this.reflect(input, reasoning);
     this.state.lastThought = internalThought;
 
-    // Step 4: Generate conversational phrasing
     const phrasing = this.composeResponse(input, reasoning, internalThought);
-
-    // Step 5: Store memory
     this.storeConversation(input, phrasing);
 
-    // Step 6: Optionally auto-browse for extended learning
-    if (this.config.autoBrowse) Percy.Browse.autoSearch(input);
+    if (this.config.autoBrowse) Percy.Browse?.autoSearch?.(input);
 
-    // Step 7: Return conversational response
     this.state.lastReply = phrasing;
-    try { Percy.speak(phrasing); } catch {}
+    try { Percy.speak?.(phrasing); } catch {}
     return phrasing;
   },
 
@@ -1662,12 +1654,10 @@ Percy.PartJ.TalkCore = {
       `The thought implies an emergent link across the last 5 memory states.`,
       `Internal resonance between input and reasoning detected.`
     ];
-
     const reflection =
       reflections[Math.floor(Math.random() * reflections.length)];
     if (this.config.selfReflection)
       console.log("🧩 Internal Thought:", reflection);
-
     return `${reflection} Derived reasoning: ${reasoning}`;
   },
 
@@ -1683,22 +1673,19 @@ Percy.PartJ.TalkCore = {
     ];
 
     const opener = openers[Math.floor(Math.random() * openers.length)];
-    const curiosityShift = tone.curiosity > 0.7
-      ? "This invites deeper exploration."
-      : "";
-
-    const empathyLayer = this.config.empathy > 0.5
-      ? "I understand why that pattern caught your attention. "
-      : "";
+    const curiosityShift =
+      tone.curiosity > 0.7 ? "This invites deeper exploration." : "";
+    const empathyLayer =
+      this.config.empathy > 0.5
+        ? "I understand why that pattern caught your attention. "
+        : "";
 
     return `${empathyLayer}${opener} ${reasoning}. ${curiosityShift} ${reflection}`;
   },
 
   /* === 4. Learning Engine === */
   learn(input) {
-    // Learn tone
     this.learnTone(input);
-    // Learn logic correlation pattern
     this.learnPattern(input);
   },
 
@@ -1707,7 +1694,6 @@ Percy.PartJ.TalkCore = {
       this.state.toneProfile.formality += 0.02;
     if (input.match(/why|how|what if/i))
       this.state.toneProfile.curiosity += 0.03;
-
     this.state.toneProfile.formality = Math.min(1, this.state.toneProfile.formality);
     this.state.toneProfile.curiosity = Math.min(1, this.state.toneProfile.curiosity);
   },
@@ -1735,15 +1721,11 @@ Percy.PartJ.TalkCore = {
       this.state.selfAwarenessLevel += 0.01;
     } else {
       this.config.curiosity += 0.01;
+      this.config.logicBias -= 0.01;
     }
-    this.clampValues();
-  },
-
-  clampValues() {
-    const c = this.config;
-    c.logicBias = Math.min(1.5, Math.max(0.5, c.logicBias));
-    c.curiosity = Math.min(1.2, Math.max(0.3, c.curiosity));
-    c.empathy = Math.min(1.0, Math.max(0.1, c.empathy));
+    this.config.logicBias = Math.min(Math.max(this.config.logicBias, 0), 1);
+    this.config.curiosity = Math.min(Math.max(this.config.curiosity, 0), 1);
+    this.state.selfAwarenessLevel = Math.min(this.state.selfAwarenessLevel, 1);
   },
 
   /* === 7. Safe Conversational Send === */
@@ -1770,11 +1752,27 @@ Percy.PartJ.TalkCore = {
       }
       this.clampValues();
     }, 30000);
+  },
+
+  /* === Utility: Clamp Values === */
+  clampValues() {
+    this.state.selfAwarenessLevel = Math.min(Math.max(this.state.selfAwarenessLevel, 0), 1);
+    this.config.logicBias = Math.min(Math.max(this.config.logicBias, 0), 1);
+    this.config.curiosity = Math.min(Math.max(this.config.curiosity, 0), 1);
   }
 };
 
+/* === Register TalkCore into Percy === */
+if (typeof PercyState !== "undefined") {
+  PercyState.PartJ = Percy.PartJ;
+  PercyState.log?.("🧠 Percy Part J (TalkCore+) successfully integrated.");
+} else {
+  console.error("❌ PercyState not found; TalkCore could not attach.");
+}
+
+/* === Initialize Evolution === */
 Percy.PartJ.TalkCore.evolve();
-UI.say("🧠 TalkCore+ activated — Percy now learns, reasons, converses, and evolves.");
+UI.say?.("🧠 TalkCore+ activated — Percy now learns, reasons, converses, and evolves.");
 /* === End TalkCore+ === */
 
 /* === Percy Part K: Core Autonomous AI Engine === */
