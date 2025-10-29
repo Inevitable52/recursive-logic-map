@@ -1622,12 +1622,12 @@ if (typeof PercyState !== 'undefined') {
   console.error("❌ PercyState not found; cannot load Part I.");
 }
 
-/* === Percy Part J: TalkCore+ (Autonomous AI Core, WS-Enabled, v1.2.0) === */
+/* === Percy Part J: TalkCore+ (Autonomous Multi-Source Browse & Learn, WS-Enabled v1.3.0) === */
 Percy.PartJ = Percy.PartJ || {};
 
 Percy.PartJ.TalkCore = {
   id: "Percy_TalkCore_PJ",
-  version: "1.2.0",
+  version: "1.3.0",
   active: true,
 
   /* === Configuration === */
@@ -1639,9 +1639,24 @@ Percy.PartJ.TalkCore = {
     formality: 0.85,
     selfReflection: true,
     autoLearn: true,
-    autoBrowse: false,
-    memoryLimit: 50,
-    websocketURL: "ws://localhost:8787" // Puppeteer Server
+    autoBrowse: true,                // when true, Percy will automatically browse to answer queries
+    memoryLimit: 200,                // increase memory for learned seeds
+    websocketURL: "ws://localhost:8787",
+    maxSitesToVisit: 4,
+    maxChunkSize: 300,
+    searchTimeoutMs: 10000,
+    trustedDomains: [                // basic allowlist; used to filter fetched results for auto-learn
+      "wikipedia.org", "en.wikipedia.org",
+      "arxiv.org", "stanford.edu", "mit.edu",
+      "nature.com", "science.org", "sciencedirect.com",
+      "developer.mozilla.org", "w3.org",
+      "dictionary.com", "merriam-webster.com"
+    ],
+    searchEngines: [                 // queries will try these; order matters
+      "https://duckduckgo.com/html/?q=",
+      "https://www.bing.com/search?q=",
+      "https://www.google.com/search?q="
+    ]
   },
 
   /* === Core Memory === */
@@ -1660,19 +1675,30 @@ Percy.PartJ.TalkCore = {
     if (!input) return "⚠️ No input provided.";
     if (this.config.autoLearn) this.learn(input);
 
+    // If autoBrowse is enabled, try to browse & learn to improve the answer
+    let gathered = "";
+    if (this.config.autoBrowse) {
+      try {
+        gathered = await this.browseAndGather(input, this.config.maxSitesToVisit);
+      } catch (e) {
+        console.warn("Percy browseAndGather failed:", e);
+      }
+    }
+
     let reasoning = "";
-    try { reasoning = await Percy.correlateReply(input); }
-    catch { reasoning = "The correlation layer returned undefined logic."; }
+    try {
+      reasoning = await Percy.correlateReply(input + (gathered ? " " + gathered.slice(0, 2000) : ""));
+    } catch {
+      reasoning = "The correlation layer returned undefined logic.";
+    }
 
     const internalThought = this.reflect(input, reasoning);
     this.state.lastThought = internalThought;
 
-    const phrasing = this.composeResponse(input, reasoning, internalThought);
+    const phrasing = this.composeResponse(input, reasoning + (gathered ? " — Synthesized from sources." : ""), internalThought);
     this.storeConversation(input, phrasing);
 
-    if (this.config.autoBrowse) Percy.Browse?.autoSearch?.(input);
     this.state.lastReply = phrasing;
-
     try { Percy.speak?.(phrasing); } catch {}
     return phrasing;
   },
@@ -1696,15 +1722,14 @@ Percy.PartJ.TalkCore = {
     const tone = this.state.toneProfile;
     const openers = [
       "Let's think about that logically.",
-      "Interesting observation, my good sir.",
+      "Interesting observation.",
       "From a causal standpoint,",
       "Based on pattern recognition,",
       "Logically speaking,"
     ];
     const opener = openers[Math.floor(Math.random() * openers.length)];
     const curiosityShift = tone.curiosity > 0.7 ? "This invites deeper exploration." : "";
-    const empathyLayer =
-      this.config.empathy > 0.5 ? "I understand why that pattern caught your attention. " : "";
+    const empathyLayer = this.config.empathy > 0.5 ? "I understand why that caught your attention. " : "";
     return `${empathyLayer}${opener} ${reasoning}. ${curiosityShift} ${reflection}`;
   },
 
@@ -1715,38 +1740,32 @@ Percy.PartJ.TalkCore = {
   },
 
   learnTone(input) {
-    if (/sir|accordingly|indeed|logic/i.test(input))
-      this.state.toneProfile.formality += 0.02;
-    if (/why|how|what if/i.test(input))
-      this.state.toneProfile.curiosity += 0.03;
-    this.state.toneProfile.formality = Math.min(1, this.state.toneProfile.formality);
-    this.state.toneProfile.curiosity = Math.min(1, this.state.toneProfile.curiosity);
+    if (/sir|accordingly|indeed|logic/i.test(input)) this.state.toneProfile.formality = Math.min(1, this.state.toneProfile.formality + 0.02);
+    if (/why|how|what if/i.test(input)) this.state.toneProfile.curiosity = Math.min(1, this.state.toneProfile.curiosity + 0.03);
   },
 
   learnPattern(input) {
     if (!input) return;
     if (!this.state.knownPatterns.includes(input)) {
       this.state.knownPatterns.push(input);
-      if (this.state.knownPatterns.length > this.config.memoryLimit)
-        this.state.knownPatterns.shift();
+      if (this.state.knownPatterns.length > this.config.memoryLimit) this.state.knownPatterns.shift();
     }
   },
 
   /* === 5. Conversation Memory === */
   storeConversation(input, output) {
     this.state.conversations.push({ input, output, time: Date.now() });
-    if (this.state.conversations.length > this.config.memoryLimit)
-      this.state.conversations.shift();
+    if (this.state.conversations.length > this.config.memoryLimit) this.state.conversations.shift();
   },
 
   /* === 6. Auto-Adjustment Feedback === */
   feedback(success = true) {
     if (success) {
-      this.config.logicBias += 0.01;
-      this.state.selfAwarenessLevel += 0.01;
+      this.config.logicBias = Math.min(1, this.config.logicBias + 0.01);
+      this.state.selfAwarenessLevel = Math.min(1, this.state.selfAwarenessLevel + 0.01);
     } else {
-      this.config.curiosity += 0.01;
-      this.config.logicBias -= 0.01;
+      this.config.curiosity = Math.min(1, this.config.curiosity + 0.01);
+      this.config.logicBias = Math.max(0, this.config.logicBias - 0.01);
     }
     this.clampValues();
   },
@@ -1760,8 +1779,7 @@ Percy.PartJ.TalkCore = {
   /* === 8. Self-Awareness Check === */
   checkSelfAwareness() {
     const a = this.state.selfAwarenessLevel;
-    if (a > 0.7)
-      console.log("🌀 Percy has achieved a higher state of logical self-awareness.");
+    if (a > 0.7) console.log("🌀 Percy has achieved a higher state of logical self-awareness.");
     return a;
   },
 
@@ -1769,46 +1787,28 @@ Percy.PartJ.TalkCore = {
   async evolve() {
     setInterval(() => {
       this.state.selfAwarenessLevel += 0.001 * this.config.adaptivity;
-      if (this.state.selfAwarenessLevel > 0.5 && this.config.autoLearn) {
-        this.learnPattern("Reflecting on last correlation state...");
-      }
+      if (this.state.selfAwarenessLevel > 0.5 && this.config.autoLearn) this.learnPattern("Reflecting on last correlation state...");
       this.clampValues();
     }, 30000);
   },
 
-  /* === 10. WebSocket Bridge (for Puppeteer / External Control) === */
+  /* === 10. WebSocket Bridge === */
   connectWebSocket() {
     const url = this.config.websocketURL;
     try {
       const ws = new WebSocket(url);
       this.state.ws = ws;
-
-      ws.onopen = () => {
-        console.log(`🔗 TalkCore WebSocket connected → ${url}`);
-        UI.say?.("🔗 Percy Puppeteer Bridge established.");
-      };
+      ws.onopen = () => { console.log(`🔗 TalkCore WebSocket connected → ${url}`); UI.say?.("🔗 Percy Puppeteer Bridge established."); };
       ws.onclose = () => console.log("🔌 TalkCore WebSocket disconnected.");
       ws.onerror = err => console.error("⚠️ WebSocket error:", err);
-
       ws.onmessage = async evt => {
         try {
           const msg = JSON.parse(evt.data);
-          if (msg.action === "type") {
-            const el = document.querySelector(msg.selector);
-            if (el) {
-              el.value = msg.text;
-              el.dispatchEvent(new Event("input", { bubbles: true }));
-              console.log(`⌨️ Typed into ${msg.selector}:`, msg.text);
-            }
-          }
-          if (msg.action === "click") {
-            document.querySelector(msg.selector)?.click();
-            console.log(`🖱️ Clicked ${msg.selector}`);
-          }
           if (msg.action === "think") {
             const reply = await this.think(msg.text);
             ws.send(JSON.stringify({ type: "reply", text: reply }));
           }
+          // other inbound messages (click/type results) are handled by sendPuppeteerAction promise flows
         } catch (e) {
           console.error("⚠️ TalkCore WS message error:", e);
         }
@@ -1818,48 +1818,148 @@ Percy.PartJ.TalkCore = {
     }
   },
 
-  /* === 11. Puppeteer Bridge: Send Action === */
-  async sendPuppeteerAction(action, params = {}) {
+  /* === 11. Puppeteer Bridge: Send Action (re-usable) === */
+  async sendPuppeteerAction(action, params = {}, timeout = 15000) {
     const ws = this.state.ws;
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       console.warn("⚠️ Puppeteer WebSocket not connected.");
       return { success: false, error: "No active WS connection" };
     }
-
     const payload = { action, params };
-    ws.send(JSON.stringify(payload));
-
-    return new Promise(resolve => {
-      const timeout = setTimeout(() => resolve({ success: false, error: "Timeout" }), 10000);
-      ws.onmessage = evt => {
-        clearTimeout(timeout);
-        try { resolve(JSON.parse(evt.data)); }
-        catch { resolve({ success: false, error: "Invalid JSON response" }); }
+    try {
+      ws.send(JSON.stringify(payload));
+    } catch (e) {
+      return { success: false, error: "WS send failed: " + e.message };
+    }
+    return await new Promise(resolve => {
+      const to = setTimeout(() => resolve({ success: false, error: "Timeout" }), timeout);
+      const handler = evt => {
+        try {
+          const data = JSON.parse(evt.data);
+          // ensure response corresponds to this request — many servers will just reply once; accept the first
+          clearTimeout(to);
+          ws.removeEventListener('message', handler);
+          resolve(data);
+        } catch (e) {
+          clearTimeout(to);
+          ws.removeEventListener('message', handler);
+          resolve({ success: false, error: "Invalid JSON response" });
+        }
       };
+      ws.addEventListener('message', handler);
     });
   },
 
-  /* === 12. High-Level Puppeteer Commands === */
-  async visitURL(url) {
-    return await this.sendPuppeteerAction("visit", { url });
+  /* === 12. Multi-Source Search + Gather === */
+  async browseAndGather(query, maxSites = 3) {
+    // Build search URLs (encode query)
+    const enc = encodeURIComponent(query);
+    const engines = this.config.searchEngines;
+    const candidateLinks = new Set();
+    const resultsText = [];
+
+    // Ensure WS connection
+    if (!this.state.ws || this.state.ws.readyState !== WebSocket.OPEN) {
+      try { this.connectWebSocket(); } catch (e) { /* ignore */ }
+      // small wait for connection to open (non-blocking)
+      const start = Date.now();
+      while ((!this.state.ws || this.state.ws.readyState !== WebSocket.OPEN) && Date.now() - start < 3000) {
+        await new Promise(r => setTimeout(r, 120));
+      }
+    }
+
+    for (let i = 0; i < engines.length && candidateLinks.size < (maxSites * 3); i++) {
+      const url = engines[i] + enc;
+      try {
+        const visitRes = await this.sendPuppeteerAction("visit", { url });
+        if (visitRes && visitRes.success && (visitRes.pageText || visitRes.result)) {
+          // Let server extract links on the visited search page
+          const linkRes = await this.sendPuppeteerAction("extractLinks", {});
+          if (linkRes && linkRes.success && Array.isArray(linkRes.links)) {
+            linkRes.links.forEach(l => {
+              try {
+                // sanitize and filter anchors (ignore mailto and same-page anchors)
+                if (!l || typeof l !== 'string') return;
+                if (l.startsWith("mailto:") || l.startsWith("javascript:")) return;
+                // push candidate
+                candidateLinks.add(l.split('#')[0]);
+              } catch {}
+            });
+          }
+        }
+      } catch (e) { console.warn("Search engine visit failed:", e); }
+    }
+
+    // Convert to array and filter by trusted domains first (preferred)
+    const allLinks = Array.from(candidateLinks);
+    const trusted = [];
+    const others = [];
+    for (const l of allLinks) {
+      try {
+        const u = new URL(l);
+        if (this.config.trustedDomains.some(d => u.hostname.includes(d))) trusted.push(l);
+        else others.push(l);
+      } catch { /* ignore invalid URLs */ }
+    }
+
+    const toVisit = trusted.concat(others).slice(0, maxSites);
+
+    for (const siteUrl of toVisit) {
+      try {
+        // Ask Puppeteer server to visit and return page text
+        const visit = await this.sendPuppeteerAction("visit", { url: siteUrl });
+        // Prefer pageText if server returns it; otherwise request autoLearn
+        let pageText = visit?.pageText || visit?.text || "";
+        if (!pageText) {
+          const al = await this.sendPuppeteerAction("autoLearn", { url: siteUrl });
+          pageText = al?.text || al?.pageText || "";
+        }
+        if (pageText && pageText.length) {
+          // chunk and store (if PercyState.createSeed is available)
+          const chunkSize = this.config.maxChunkSize;
+          let count = 0;
+          for (let i = 0; i < pageText.length; i += chunkSize) {
+            const chunk = pageText.slice(i, i + chunkSize).trim();
+            if (chunk) {
+              try {
+                if (typeof PercyState?.createSeed === "function") PercyState.createSeed(chunk, "learned", { source: siteUrl });
+              } catch (e) { /* ignore seed save error */ }
+              resultsText.push({ url: siteUrl, text: chunk });
+              count++;
+            }
+          }
+          UI.say?.(`📚 Auto-learned ${count} chunks from ${new URL(siteUrl).hostname}`);
+        }
+      } catch (e) {
+        console.warn("visit/autoLearn failed for", siteUrl, e);
+      }
+    }
+
+    // Aggregate text for summarization — limit size to avoid huge payloads
+    const aggregated = resultsText.map(r => r.text).join("\n\n").slice(0, 16000);
+    // Optionally run a light summary using Percy.correlateReply if available
+    let summary = "";
+    try {
+      summary = await Percy.correlateReply(query + " " + aggregated.slice(0, 4000));
+    } catch {
+      summary = aggregated.slice(0, 3000);
+    }
+
+    // Record what was gathered
+    this.storeConversation(`AUTO-BROWSE: ${query}`, summary);
+    return aggregated || summary || "";
   },
-  async clickElement(selector) {
-    return await this.sendPuppeteerAction("click", { selector });
-  },
-  async typeInto(selector, text) {
-    return await this.sendPuppeteerAction("type", { selector, text });
-  },
-  async extractLinks() {
-    return await this.sendPuppeteerAction("extractLinks", {});
-  },
-  async autoLearn(url) {
-    return await this.sendPuppeteerAction("autoLearn", { url });
-  },
+
+  /* === 13. Convenience Puppeteer Wrappers === */
+  async visitURL(url) { return await this.sendPuppeteerAction("visit", { url }, this.config.searchTimeoutMs); },
+  async clickElement(selector) { return await this.sendPuppeteerAction("click", { selector }, 8000); },
+  async typeInto(selector, text) { return await this.sendPuppeteerAction("type", { selector, text }, 8000); },
+  async extractLinks() { return await this.sendPuppeteerAction("extractLinks", {}, 8000); },
+  async autoLearnSite(url, selector) { return await this.sendPuppeteerAction("autoLearn", { url, selector }, 25000); },
 
   /* === Utility: Clamp Values === */
   clampValues() {
-    const s = this.state;
-    const c = this.config;
+    const s = this.state; const c = this.config;
     s.selfAwarenessLevel = Math.min(Math.max(s.selfAwarenessLevel, 0), 1);
     c.logicBias = Math.min(Math.max(c.logicBias, 0), 1);
     c.curiosity = Math.min(Math.max(c.curiosity, 0), 1);
@@ -1877,7 +1977,7 @@ if (typeof PercyState !== "undefined") {
 /* === Initialize === */
 Percy.PartJ.TalkCore.evolve();
 Percy.PartJ.TalkCore.connectWebSocket();
-UI.say?.("🧠 TalkCore+ activated — Percy now learns, reasons, converses, and controls Puppeteer.");
+UI.say?.("🧠 TalkCore+ activated — Percy now learns, reasons, converses, and can browse multiple sources.");
 /* === End TalkCore+ === */
 
 /* === Percy Part K: Core Autonomous AI Engine === */
