@@ -128,7 +128,6 @@ wss.on('connection', ws => {
           break;
         }
 
-
         // === Screenshot ===
         case 'screenshot': {
           const savePath = params.path || 'screenshot.png';
