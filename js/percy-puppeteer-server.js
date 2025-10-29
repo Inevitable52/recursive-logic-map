@@ -99,6 +99,36 @@ wss.on('connection', ws => {
           break;
         }
 
+        // === Fetch and Learn (for Part J 4.1) ===
+        case 'fetchAndLearn': {
+          const { topic, urlCandidates = [] } = params;
+          console.log(`🌍 Fetching topic: ${topic}`);
+
+          for (const url of urlCandidates) {
+            try {
+              const newPage = await browser.newPage();
+              await newPage.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+
+              const content = await newPage.evaluate(() => document.body.innerText.slice(0, 20000));
+              const summary = content.replace(/\s+/g, ' ').slice(0, 20000);
+
+              ws.send(JSON.stringify({
+                type: 'learnedContent',
+                summary,
+                source: url
+              }));
+
+              await newPage.close();
+              console.log(`✅ Learned successfully from ${url}`);
+              break;
+            } catch (e) {
+              console.error(`⚠️ Fetch failed for ${url}: ${e.message}`);
+            }
+          }
+          break;
+        }
+
+
         // === Screenshot ===
         case 'screenshot': {
           const savePath = params.path || 'screenshot.png';
