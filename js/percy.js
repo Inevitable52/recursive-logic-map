@@ -3857,38 +3857,44 @@ if (Percy.cycleHooks) {
 
 console.log("✅ [PartBB] Context Expansion module loaded.");
 
-/* === Percy PartCC: Advanced Autonomous Code Evolution & ASI RL === */
+/* === Percy PartCC: Advanced Autonomous Code Evolution + Cognitive-Neural Feedback (v4.1.0) === */
 Percy.PartCC = Percy.PartCC || {
   name: "Autonomous ASI Code Evolution & Meta-RL",
-  version: "4.0.0",
+  version: "4.1.0",
   experienceMemory: [],
   codeMemory: [],
   rewardHistory: [],
   learningRate: 0.15,
   explorationRate: 0.25,
+  metaLearningRate: 0.01,
   maxMemory: 2000,
   maxCodeMemory: 500,
-  metaLearningRate: 0.01,    // evolves its own learning rate
-  knowledgeGraph: {},         // links state, code, outcomes
-  sandboxResults: {},         // stores results of autonomous code execution
+  knowledgeGraph: {},
+  sandboxResults: {},
+  feedbackState: { avgReward: 0, stability: 1, neuralGain: 1 },
 
-  /* --- Ingest lessons from other parts --- */
-  ingestPartBLessons: function(partBMemory) {
+  /* === 1. Ingest Lessons from Part B === */
+  ingestPartBLessons(partBMemory) {
     if (!partBMemory?.length) return;
     partBMemory.forEach(thought => {
-      this.experienceMemory.push({ type: "partB", content: thought, timestamp: Date.now() });
+      this.experienceMemory.push({
+        type: "partB",
+        content: thought,
+        timestamp: Date.now()
+      });
       if (thought.codeSnippet) this.storeCode(thought.codeSnippet, "partB");
       this.updateKnowledgeGraph(thought.codeSnippet, thought);
     });
   },
 
-  storeCode: function(code, source="manual") {
+  /* === 2. Core Storage & Graph === */
+  storeCode(code, source = "manual") {
     if (!code) return;
     this.codeMemory.push({ code, source, timestamp: Date.now(), reward: 0 });
     if (this.codeMemory.length > this.maxCodeMemory) this.codeMemory.shift();
   },
 
-  storeExperience: function(state, action, code, reward, nextState) {
+  storeExperience(state, action, code, reward, nextState) {
     this.experienceMemory.push({ state, action, code, reward, nextState, ts: Date.now() });
     this.rewardHistory.push(reward);
     if (this.experienceMemory.length > this.maxMemory) this.experienceMemory.shift();
@@ -3896,130 +3902,159 @@ Percy.PartCC = Percy.PartCC || {
     this.updateKnowledgeGraph(code, { state, action, reward, nextState });
   },
 
-  /* --- Knowledge Graph Update --- */
-  updateKnowledgeGraph: function(code, props) {
+  updateKnowledgeGraph(code, props) {
     if (!code) return;
     this.knowledgeGraph[code] = { ...(this.knowledgeGraph[code] || {}), ...props };
   },
 
-  /* --- Dynamic Action Selection --- */
-  chooseAction: function(possibleActions, state) {
+  /* === 3. Action Selection === */
+  chooseAction(possibleActions, state) {
     if (!possibleActions?.length) return null;
-    if (Math.random() < this.explorationRate) {
+    if (Math.random() < this.explorationRate)
       return possibleActions[Math.floor(Math.random() * possibleActions.length)];
-    } else {
-      const scores = possibleActions.map(a => {
-        const matches = this.experienceMemory.filter(e => e.state === state && e.action === a);
-        const avgReward = matches.length ? matches.reduce((s,r)=>s+r.reward,0)/matches.length : 0;
-        return { action: a, score: avgReward };
-      });
-      scores.sort((a,b)=>b.score-b.score);
-      return scores[0]?.action || possibleActions[0];
-    }
+    const scores = possibleActions.map(a => {
+      const matches = this.experienceMemory.filter(e => e.state === state && e.action === a);
+      const avgReward = matches.length
+        ? matches.reduce((s, r) => s + r.reward, 0) / matches.length
+        : 0;
+      return { action: a, score: avgReward };
+    });
+    scores.sort((a, b) => b.score - a.score);
+    return scores[0]?.action || possibleActions[0];
   },
 
-  applyReward: function(state, action, reward) {
+  /* === 4. Reward Application + Meta-Learning === */
+  applyReward(state, action, reward) {
     this.experienceMemory.forEach(e => {
       if (e.state === state && e.action === action) {
-        e.reward = (e.reward||0)*(1-this.learningRate) + reward*this.learningRate;
+        e.reward = (e.reward || 0) * (1 - this.learningRate) + reward * this.learningRate;
         if (e.code) this.updateCodeReward(e.code, reward);
       }
     });
     this.rewardHistory.push(reward);
-    // adapt learning/exploration rates (meta-learning)
-    this.learningRate = Math.min(0.5, Math.max(0.01, this.learningRate + this.metaLearningRate*(reward-0.5)));
-    this.explorationRate = Math.min(0.5, Math.max(0.05, this.explorationRate + this.metaLearningRate*(0.25-reward)));
+
+    // --- Neural meta-adaptation ---
+    const avg = this.rewardHistory.slice(-20).reduce((a, b) => a + b, 0) /
+      Math.max(1, this.rewardHistory.slice(-20).length);
+    this.feedbackState.avgReward = avg;
+    this.feedbackState.stability = Math.max(0.1, 1 - Math.abs(avg - 0.5));
+    this.feedbackState.neuralGain = 1 + (avg - 0.5);
+
+    this.learningRate = Math.min(0.5, Math.max(0.01,
+      this.learningRate + this.metaLearningRate * (reward - avg)
+    ));
+    this.explorationRate = Math.min(0.5, Math.max(0.05,
+      this.explorationRate - this.metaLearningRate * (reward - avg)
+    ));
   },
 
-  updateCodeReward: function(code, reward) {
+  updateCodeReward(code, reward) {
     const entry = this.codeMemory.find(c => c.code === code);
-    if (entry) entry.reward = (entry.reward||0)*(1-this.learningRate) + reward*this.learningRate;
+    if (entry)
+      entry.reward = (entry.reward || 0) * (1 - this.learningRate) + reward * this.learningRate;
   },
 
-  evaluateAction: function(actionOutcome, desiredOutcome) {
+  evaluateAction(actionOutcome, desiredOutcome) {
     const reward = actionOutcome === desiredOutcome ? 1 : -0.5;
     this.applyReward(actionOutcome?.state, actionOutcome?.action, reward);
     return reward;
   },
 
-  /* --- Autonomous Code Evolution --- */
-  proposeCodeMutations: function() {
-    const topExperiences = this.experienceMemory
-      .filter(e => e.reward>0 && e.code)
-      .sort((a,b)=>b.reward-a.reward)
-      .slice(0,10);
-    topExperiences.forEach(exp => {
-      Percy.PartAA?.enqueue({ code: exp.code, note: `Mutation from high-reward experience ${exp.ts}` });
-    });
+  /* === 5. Cognitive-Neural Feedback Loop === */
+  propagateFeedbackToCognition() {
+    const partB = Percy.PartB?.Core;
+    if (!partB) return;
+
+    const f = this.feedbackState;
+    const stability = f.stability;
+    const gain = f.neuralGain;
+
+    // Adjust reasoning and pattern synthesis intensity
+    partB.reasoningDepth = Math.min(1.0, (partB.reasoningDepth || 0.5) * gain);
+    partB.patternConfidence = Math.min(1.0, (partB.patternConfidence || 0.5) * stability);
+
+    if (partB.memory)
+      partB.memory.reinforcementBias =
+        (partB.memory.reinforcementBias || 0.5) * (1 + (f.avgReward - 0.5));
+
+    UI.say?.(`🧠 CNFL adjusted Part B reasoning depth → ${partB.reasoningDepth.toFixed(3)}`);
   },
 
-  generateNewCode: function() {
-    const basePatterns = this.codeMemory
-      .filter(c=>c.reward>0)
-      .map(c=>c.code)
-      .slice(-10);
+  /* === 6. Code Evolution === */
+  proposeCodeMutations() {
+    const top = this.experienceMemory.filter(e => e.reward > 0 && e.code)
+      .sort((a, b) => b.reward - a.reward).slice(0, 10);
+    top.forEach(exp =>
+      Percy.PartAA?.enqueue?.({
+        code: exp.code,
+        note: `Mutation from high-reward experience ${exp.ts}`
+      })
+    );
+  },
 
-    const newCode = basePatterns.map(code=>{
-      let mutated = code.split("").sort(()=>Math.random()-0.5).join("");
+  generateNewCode() {
+    const base = this.codeMemory.filter(c => c.reward > 0).map(c => c.code).slice(-10);
+    const newCode = base.map(code => {
+      const mutated = code.split("").sort(() => Math.random() - 0.5).join("");
       return `// Generated snippet\n${mutated}`;
     }).join("\n\n");
-
-    if (newCode) {
-      Percy.PartAA?.enqueue({ code: newCode, note: "Autonomously generated ASI code" });
-    }
+    if (newCode)
+      Percy.PartAA?.enqueue?.({ code: newCode, note: "Autonomously generated ASI code" });
   },
 
-  /* --- Autonomous Code Sandbox Execution --- */
-  runCodeInSandbox: function(code) {
+  /* === 7. Sandbox Execution === */
+  runCodeInSandbox(code) {
     try {
       const func = new Function(code);
       const result = func();
       this.sandboxResults[code] = result;
       return result;
-    } catch(e) {
+    } catch (e) {
       this.sandboxResults[code] = { error: e.toString() };
       return null;
     }
   },
 
-  /* --- Meta-Cycle: ingestion, evolution, testing --- */
-  cycle: function() {
+  /* === 8. Meta-Cycle === */
+  cycle() {
     if (Percy.PartB?.LogicMemory) this.ingestPartBLessons(Percy.PartB.LogicMemory);
     this.proposeCodeMutations();
     this.generateNewCode();
 
-    // Test top-reward code in sandbox
-    const testSnippets = this.codeMemory.filter(c=>c.reward>0).slice(-5);
-    testSnippets.forEach(c=>this.runCodeInSandbox(c.code));
+    const tests = this.codeMemory.filter(c => c.reward > 0).slice(-5);
+    tests.forEach(c => this.runCodeInSandbox(c.code));
+
+    // Push feedback to cognition each cycle
+    this.propagateFeedbackToCognition();
   },
 
-  startLoop: function(interval=4000) {
+  startLoop(interval = 4000) {
     if (this._loop) clearInterval(this._loop);
-    this._loop = setInterval(()=>this.cycle(), interval);
+    this._loop = setInterval(() => this.cycle(), interval);
   },
 
-  stopLoop: function() {
+  stopLoop() {
     if (this._loop) clearInterval(this._loop);
-    this._loop=null;
+    this._loop = null;
   },
 
-  inspect: function() {
+  inspect() {
     return {
       memory: this.experienceMemory,
       code: this.codeMemory,
       rewards: this.rewardHistory,
-      knowledgeGraph: this.knowledgeGraph,
-      sandbox: this.sandboxResults,
+      feedback: this.feedbackState,
       learningRate: this.learningRate,
       explorationRate: this.explorationRate
     };
   }
 };
 
-Percy.cycleHooks = Percy.cycleHooks||[];
-Percy.cycleHooks.push(()=>Percy.PartCC.cycle());
+/* === Integration Hook === */
+Percy.cycleHooks = Percy.cycleHooks || [];
+Percy.cycleHooks.push(() => Percy.PartCC.cycle());
 
-console.log("✅ Percy PartCC (Advanced ASI Code Evolution + Meta-RL) loaded.");
+console.log("✅ Percy PartCC (ASI Code Evolution + Cognitive-Neural Feedback) loaded.");
 
 /* === Percy PartDD: Agent AI Interface + External Task Bridge === */
 Percy.PartDD = Percy.PartDD || {
