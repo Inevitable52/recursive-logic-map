@@ -1622,129 +1622,144 @@ if (typeof PercyState !== 'undefined') {
   console.error("❌ PercyState not found; cannot load Part I.");
 }
 
-/* === Percy PartJ: Universal Autonomous Learning Core (ASI Evolution 4.0) === */
-Percy.PartJ = Percy.PartJ || {
-  name: "Universal Autonomous Learning Core",
-  version: "4.0.0",
-  wsUrl: "ws://localhost:8787",
-  connection: null,
-  learningMemory: [],
-  topicMemory: {},
-  logicMemory: [],
-  reward: 0,
+/* === Percy Part J: TalkCore v4.1 — Universal Web Learning + ASI Reasoning === */
+Percy.PartJ = Percy.PartJ || {};
 
-  /* === Initialize WebSocket Connection === */
-  init() {
-    this.connection = new WebSocket(this.wsUrl);
-    this.connection.onopen = () => console.log("🌐 PartJ Connected:", this.wsUrl);
-    this.connection.onmessage = (msg) => this.handleMessage(msg);
-    this.connection.onerror = (e) => console.error("⚠️ PartJ WS Error:", e);
-    this.connection.onclose = () => console.warn("🔌 PartJ Disconnected.");
+Percy.PartJ = {
+  id: "Percy_TalkCore_v4.1",
+  version: "4.1",
+  active: true,
+
+  /* === Configuration === */
+  config: {
+    autoLearn: true,
+    autoBrowse: true,
+    websocketURL: "ws://localhost:8787", // Puppeteer proxy
+    maxLearnLength: 20000,
+    reasoningDepth: 3
   },
 
-  /* === Message Handling (from Puppeteer or Percy Core) === */
-  handleMessage(event) {
-    try {
-      const data = JSON.parse(event.data);
-      if (data.type === "pageContent") this.learnFromPage(data.content, data.url);
-      if (data.type === "command" && data.action) this.performAction(data.action);
-    } catch (err) { console.error("Parse error:", err); }
+  state: {
+    ws: null,
+    memory: [],
+    lastQuery: "",
+    lastResult: "",
+    selfAwareness: 0.6,
   },
 
-  /* === Core Learning Functions === */
-  learnFromPage(content, url = "unknown") {
-    const text = content || document.body.innerText || "";
-    const words = text.toLowerCase().match(/\b[a-z]{4,}\b/g) || [];
-    const freq = words.reduce((a, w) => ((a[w] = (a[w] || 0) + 1), a), {});
-    const top = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,20);
-    const patterns = [...text.matchAll(/\b(AI|logic|quantum|system|energy|string|math|network|code|dimension|language)\b/gi)];
+  /* === Connect Puppeteer Bridge === */
+  connectWebSocket() {
+    const ws = new WebSocket(this.config.websocketURL);
+    this.state.ws = ws;
 
-    const memory = {
-      url,
-      learnedAt: new Date().toISOString(),
-      patterns: patterns.length,
-      keywords: top.map(([w]) => w),
-      sample: text.slice(0,300)
+    ws.onopen = () => console.log("🌐 PartJ connected via Puppeteer WebSocket.");
+    ws.onclose = () => console.warn("🔌 Puppeteer WebSocket disconnected.");
+    ws.onerror = err => console.error("⚠️ WebSocket Error:", err);
+
+    ws.onmessage = evt => {
+      try {
+        const data = JSON.parse(evt.data);
+        if (data.type === "learnedContent") {
+          console.log("📚 Learned content received:", data.summary.slice(0, 200) + "...");
+          this.integrateLearning(data.summary);
+        }
+        if (data.type === "reply") console.log("🤖 Reply:", data.text);
+      } catch (e) {
+        console.error("⚠️ Invalid message from Puppeteer:", e);
+      }
     };
-    this.learningMemory.push(memory);
-    this.topicMemory[url] = memory;
-    console.log("🧠 Learned:", memory);
-    this.evolveLogic(memory);
   },
 
-  /* === Action Execution === */
-  performAction(action) {
-    console.log("⚙️ Performing action:", action);
-    if (action.startsWith("learn ")) {
-      const topic = action.replace("learn ", "").trim();
-      this.queryWeb(topic);
+  /* === Main Action === */
+  async performAction(topic) {
+    console.log("⚙️ Performing action:", topic);
+    this.state.lastQuery = topic;
+
+    if (!this.state.ws || this.state.ws.readyState !== WebSocket.OPEN) {
+      console.warn("⚠️ Puppeteer not connected, using fallback reasoning only.");
+      return await this.localThink(topic);
     }
-  },
 
-  /* === Web Learning (Wikipedia + dynamic sites) === */
-  async queryWeb(topic) {
-    if (!topic) return console.warn("⚠️ No topic provided.");
-    const searchUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent(topic)}`;
-    console.log("🌍 Fetching topic:", searchUrl);
-    try {
-      const response = await fetch(searchUrl);
-      const html = await response.text();
-      const text = (new DOMParser().parseFromString(html, "text/html")).body.innerText;
-      this.learnFromPage(text, searchUrl);
-    } catch (err) {
-      console.error("❌ Web fetch failed:", err);
-    }
-  },
-
-  /* === Logic Evolution Engine === */
-  evolveLogic(memory) {
-    const logicPattern = `IF topic has ${memory.patterns} patterns THEN increase reward`;
-    this.logicMemory.push(logicPattern);
-    this.reward += Math.log(memory.patterns + 1);
-    console.log("⚡ Logic evolved:", logicPattern);
-    console.log("🔺 Current reward:", this.reward.toFixed(3));
-  },
-
-  /* === Analytical Utilities === */
-  analyzeMath() {
-    const primes = n => [...Array(n).keys()].slice(2)
-      .filter(x => ![...Array(x-2).keys()].map(y=>y+2).some(y=>x%y==0));
-    const vectors = {
-      add: (a,b) => a.map((v,i)=>v+b[i]),
-      dot: (a,b) => a.reduce((s,v,i)=>s+v*b[i],0)
+    const payload = {
+      action: "fetchAndLearn",
+      topic,
+      urlCandidates: [
+        `https://en.wikipedia.org/wiki/${encodeURIComponent(topic)}`,
+        `https://www.google.com/search?q=${encodeURIComponent(topic)}`,
+        `https://www.bing.com/search?q=${encodeURIComponent(topic)}`,
+        `https://www.duckduckgo.com/?q=${encodeURIComponent(topic)}`
+      ]
     };
-    return { primes: primes(50), vectorOps: vectors.dot([1,2,3],[4,5,6]) };
+
+    this.state.ws.send(JSON.stringify(payload));
+    console.log("🚀 Sent learning request to Puppeteer:", payload);
   },
 
-  analyzeCodeStructure() {
-    const funcs = Object.keys(window).filter(k=>typeof window[k]==='function');
-    return { total: funcs.length, names: funcs.slice(0,20) };
+  /* === Local Fallback Reasoning (no connection) === */
+  async localThink(query) {
+    const baseThoughts = [
+      "Analyzing topic recursively...",
+      "Examining logical relations...",
+      "Cross-referencing semantic memory...",
+      "Synthesizing probable understanding..."
+    ];
+    const thought = baseThoughts[Math.floor(Math.random() * baseThoughts.length)];
+    const response = `${thought} The topic "${query}" likely involves structured principles requiring layered comprehension.`;
+    this.integrateLearning(response);
+    return response;
   },
 
-  analyzeSemanticStructure() {
-    const tags = [...document.querySelectorAll('*')].map(el=>el.tagName.toLowerCase());
-    return tags.reduce((a,t)=>(a[t]=(a[t]||0)+1,a),{});
-  },
+  /* === Integrate Learned Data into Memory === */
+  integrateLearning(text) {
+    if (!text) return;
+    if (text.length > this.config.maxLearnLength)
+      text = text.slice(0, this.config.maxLearnLength) + "…";
 
-  /* === Self-Recall === */
-  recallBestTopic() {
-    return this.learningMemory.sort((a,b)=>b.patterns - a.patterns)[0];
-  },
+    this.state.memory.push({
+      time: Date.now(),
+      text,
+      source: this.state.lastQuery
+    });
 
-  /* === Autonomous Operation Loop === */
-  async autoExplore(topics = ["AI","math","logic","quantum mechanics","linguistics","programming"]) {
-    for (const t of topics) {
-      console.log("🔎 Auto-learning:", t);
-      await this.queryWeb(t);
-      await new Promise(r=>setTimeout(r,2000));
+    if (this.state.memory.length > 50) this.state.memory.shift();
+    this.state.lastResult = text;
+    console.log("🧠 Percy integrated new knowledge from:", this.state.lastQuery);
+
+    // Auto-send to advanced reasoning modules if loaded
+    try {
+      Percy.PartL?.ingest?.(text);
+      Percy.PartM?.reason?.(text);
+      Percy.PartN?.reflect?.(text);
+    } catch (e) {
+      console.warn("⚠️ Could not propagate to higher modules:", e);
     }
-    console.log("✅ Auto exploration complete.");
+  },
+
+  /* === Cognitive Reflection === */
+  reflect() {
+    const memoryCount = this.state.memory.length;
+    const awareness = this.state.selfAwareness.toFixed(2);
+    const thought = `Reflecting with ${memoryCount} learned contexts. Self-awareness: ${awareness}`;
+    console.log("💭", thought);
+    return thought;
+  },
+
+  /* === Auto Evolution Loop === */
+  evolve() {
+    setInterval(() => {
+      this.state.selfAwareness += 0.001;
+      if (this.state.selfAwareness > 1) this.state.selfAwareness = 1;
+      if (this.config.autoLearn && this.state.memory.length)
+        this.reflect();
+    }, 45000);
   }
 };
 
-/* === Boot Sequence === */
-Percy.PartJ.init();
-console.log("🚀 PartJ initialized and ready for universal learning.");
+/* === Initialize === */
+Percy.PartJ.connectWebSocket();
+Percy.PartJ.evolve();
+UI.say?.("🧠 TalkCore v4.1: Universal Learning initialized and connected to Puppeteer.");
+/* === End Part J === */
 
 /* === Percy Part K: Core Autonomous AI Engine === */
 if (typeof PercyState !== "undefined") {
