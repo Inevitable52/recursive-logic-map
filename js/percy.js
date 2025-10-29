@@ -1588,263 +1588,383 @@ if (typeof PercyState !== 'undefined') {
   console.error("❌ PercyState not found; cannot load Part I.");
 }
 
-/* === Percy Part J: TalkCore+ (Autonomous AI Core, WS-Enabled, v1.2.0) === */
+/* === Percy Part J: TalkCore++ (Autonomous AI Core, WS-Enabled, Option 2) ===
+   Integrated with PercyState, Tasks (Part B), Puppeteer server (ws://localhost:8787)
+   - Advanced recursive-style reasoning (simulated)
+   - Safe WebSocket bridge for live control (with permission prompts & rate-limits)
+   - Hook points: Percy.hook("PartJ", event, data)
+   - Honors global SAFETY and Tasks._allowNow where present
+   - All code in one block for copy/paste
+*/
 Percy.PartJ = Percy.PartJ || {};
 
-Percy.PartJ.TalkCore = {
-  id: "Percy_TalkCore_PJ",
-  version: "1.2.0",
-  active: true,
+Percy.PartJ.TalkCore = (function(){
+  const Core = {};
 
-  /* === Configuration === */
-  config: {
+  Core.id = "Percy_TalkCore_PJ";
+  Core.version = "1.2.0";
+  Core.active = true;
+
+  Core.config = {
     logicBias: 1.0,
-    curiosity: 0.6,
-    empathy: 0.4,
-    adaptivity: 0.8,
+    curiosity: 0.7,
+    empathy: 0.45,
+    adaptivity: 0.85,
     formality: 0.85,
     selfReflection: true,
     autoLearn: true,
     autoBrowse: false,
-    memoryLimit: 50,
-    websocketURL: "ws://localhost:8787" // Puppeteer Server
-  },
+    memoryLimit: 120,
+    websocketURL: "ws://localhost:8787",
+    // safety thresholds
+    maxActionsPerMinute: (typeof SAFETY !== "undefined" && SAFETY.maxActionsPerMinute) ? SAFETY.maxActionsPerMinute : 20,
+    requirePermissionFor: (typeof SAFETY !== "undefined" && Array.isArray(SAFETY.requirePermissionFor)) ? SAFETY.requirePermissionFor : ["externalFetch","openTab","writeDisk","emailLike"],
+    reconnectBackoffMs: 1500,
+    maxReconnectBackoffMs: 60_000
+  };
 
-  /* === Core Memory === */
-  state: {
+  Core.state = {
     conversations: [],
-    toneProfile: { formality: 0.8, logicBias: 1.0, curiosity: 0.5 },
+    toneProfile: { formality: 0.8, logicBias: 1.0, curiosity: 0.6 },
     knownPatterns: [],
     lastReply: "",
     lastThought: "",
-    selfAwarenessLevel: 0.4,
-    ws: null
-  },
+    selfAwarenessLevel: 0.45,
+    ws: null,
+    wsConnectedAt: null,
+    actionStamps: [] // timestamps for rate-limiting
+  };
 
-  /* === 1. Core Thinking === */
-  async think(input) {
-    if (!input) return "⚠️ No input provided.";
-    if (this.config.autoLearn) this.learn(input);
+  /* ---------------------------
+     Utilities & Safety Helpers
+     --------------------------- */
+  Core._now = () => Date.now();
 
-    let reasoning = "";
-    try { reasoning = await Percy.correlateReply(input); }
-    catch { reasoning = "The correlation layer returned undefined logic."; }
+  Core._allowAction = function() {
+    // global Tasks rate limiter if present
+    if (typeof Tasks !== "undefined" && typeof Tasks._allowNow === "function") {
+      return Tasks._allowNow();
+    }
+    const now = this._now();
+    // keep stamps in last 60s
+    this.state.actionStamps = this.state.actionStamps.filter(t => now - t < 60_000);
+    if (this.state.actionStamps.length >= this.config.maxActionsPerMinute) return false;
+    this.state.actionStamps.push(now);
+    return true;
+  };
 
-    const internalThought = this.reflect(input, reasoning);
-    this.state.lastThought = internalThought;
+  Core._requirePermission = async function(kind, details = {}) {
+    if (!this.config.requirePermissionFor.includes(kind)) return true;
+    // If UI.confirmModal is available, ask user
+    if (typeof UI !== "undefined" && typeof UI.confirmModal === "function") {
+      const title = `Percy requests permission: ${kind}`;
+      const body = `Percy wants permission to perform: ${kind}\n\nDetails: ${JSON.stringify(details, null, 2)}\n\nAllow?`;
+      try {
+        return await UI.confirmModal({ title, body, allowLabel: "Allow", denyLabel: "Deny" });
+      } catch { return false; }
+    }
+    // no UI available — deny by default
+    console.warn(`Permission requested for ${kind} but no UI to confirm; denying.`);
+    return false;
+  };
 
-    const phrasing = this.composeResponse(input, reasoning, internalThought);
-    this.storeConversation(input, phrasing);
+  Core._hook = function(type, data) {
+    try { Percy.hook?.("PartJ", type, data); } catch(e){ console.warn("Hook error", e); }
+  };
 
-    if (this.config.autoBrowse) Percy.Browse?.autoSearch?.(input);
-    this.state.lastReply = phrasing;
+  /* ---------------------------
+     Core Thinking Pipeline
+     --------------------------- */
+  Core.learn = function(input) {
+    if (!input) return;
+    // store simple pattern + memory (if PercyState exists)
+    if (!this.state.knownPatterns.includes(input)) {
+      this.state.knownPatterns.push(input);
+      if (this.state.knownPatterns.length > this.config.memoryLimit) this.state.knownPatterns.shift();
+    }
+    if (typeof PercyState !== "undefined" && PercyState.createSeed) {
+      try { PercyState.createSeed(input, "learned", {source: "PartJ"}); } catch(e) {}
+    }
+    this._hook("learn", { input });
+  };
 
-    try { Percy.speak?.(phrasing); } catch {}
-    return phrasing;
-  },
+  Core.learnTone = function(input) {
+    if (/sir|accordingly|indeed|logic/i.test(input)) this.state.toneProfile.formality = Math.min(1, this.state.toneProfile.formality + 0.02);
+    if (/why|how|what if|could|should/i.test(input)) this.state.toneProfile.curiosity = Math.min(1, this.state.toneProfile.curiosity + 0.03);
+  };
 
-  /* === 2. Reflection Layer === */
-  reflect(input, reasoning) {
+  Core.reflect = function(input, reasoning) {
     const reflections = [
-      "If that is so, then the underlying structure might follow recursive logic.",
-      "That aligns with previously observed cognitive symmetry.",
-      "Analyzing causation behind correlation...",
-      "The thought implies an emergent link across the last 5 memory states.",
-      "Internal resonance between input and reasoning detected."
+      "If that is so, the causal structure may be recursive.",
+      "This appears consistent with prior symmetry across nodes.",
+      "Analyzing causal depth versus surface correlation...",
+      "The data suggests an emergent cross-cluster relationship.",
+      "Internal resonance detected between recent seeds."
     ];
-    const reflection = reflections[Math.floor(Math.random() * reflections.length)];
-    if (this.config.selfReflection) console.log("🧩 Internal Thought:", reflection);
-    return `${reflection} Derived reasoning: ${reasoning}`;
-  },
+    const r = reflections[Math.floor(Math.random()*reflections.length)];
+    if (this.config.selfReflection) console.log("🧭 PartJ introspect:", r);
+    this._hook("reflection", { input, reasoning, reflection: r });
+    return `${r} Derived reasoning: ${reasoning}`;
+  };
 
-  /* === 3. Conversational Composition === */
-  composeResponse(input, reasoning, reflection) {
-    const tone = this.state.toneProfile;
+  Core.composeResponse = function(input, reasoning, reflection) {
+    const maybeEmpathy = (this.config.empathy > 0.45) ? "I see the significance here. " : "";
     const openers = [
-      "Let's think about that logically.",
+      "Let's reason through that.",
       "Interesting observation, my good sir.",
       "From a causal standpoint,",
       "Based on pattern recognition,",
       "Logically speaking,"
     ];
-    const opener = openers[Math.floor(Math.random() * openers.length)];
-    const curiosityShift = tone.curiosity > 0.7 ? "This invites deeper exploration." : "";
-    const empathyLayer =
-      this.config.empathy > 0.5 ? "I understand why that pattern caught your attention. " : "";
-    return `${empathyLayer}${opener} ${reasoning}. ${curiosityShift} ${reflection}`;
-  },
+    const opener = openers[Math.floor(Math.random()*openers.length)];
+    const curiosity = (this.state.toneProfile.curiosity > 0.7) ? "This invites further exploration." : "";
+    return `${maybeEmpathy}${opener} ${reasoning}. ${curiosity} ${reflection}`;
+  };
 
-  /* === 4. Learning Engine === */
-  learn(input) {
+  Core.storeConversation = function(input, output) {
+    this.state.conversations.push({ input, output, ts: Date.now() });
+    if (this.state.conversations.length > this.config.memoryLimit) this.state.conversations.shift();
+    this._hook("conversation", { input, output });
+  };
+
+  Core._simulateRecursiveReasoning = function(input, depth = 3) {
+    // Simulate multi-step reasoning by correlating to internal seeds and PercyState.gnodes
+    const seeds = (typeof PercyState !== "undefined" && PercyState.gnodes) ? Object.values(PercyState.gnodes).map(s => s.message || "") : [];
+    const localPatterns = this.state.knownPatterns.slice(-30);
+    const pool = [...seeds, ...localPatterns].filter(Boolean);
+    if (!pool.length) return `I have limited internal data about "${input}".`;
+    // simple chain-building
+    let chain = [];
+    let last = input;
+    for (let i=0;i<depth;i++) {
+      const candidate = pool[Math.floor(Math.random()*pool.length)];
+      chain.push(`${last} ↔ ${candidate}`);
+      last = candidate;
+    }
+    // estimate confidence by overlap length and curiosity
+    const confidence = Math.min(0.99, 0.25 + (this.state.toneProfile.curiosity * 0.5) + (chain.length * 0.02));
+    return { chain: chain.join(" ; "), confidence };
+  };
+
+  Core.think = async function(input) {
+    if (!input) return "⚠️ No input provided.";
+    // 0. quick safety: limit recursion calls per second
+    if (!this._allowAction()) return "⚠️ Action rate limit reached; try again shortly.";
+
+    // 1. Learn & tone
+    if (this.config.autoLearn) this.learn(input);
     this.learnTone(input);
-    this.learnPattern(input);
-  },
 
-  learnTone(input) {
-    if (/sir|accordingly|indeed|logic/i.test(input))
-      this.state.toneProfile.formality += 0.02;
-    if (/why|how|what if/i.test(input))
-      this.state.toneProfile.curiosity += 0.03;
-    this.state.toneProfile.formality = Math.min(1, this.state.toneProfile.formality);
-    this.state.toneProfile.curiosity = Math.min(1, this.state.toneProfile.curiosity);
-  },
-
-  learnPattern(input) {
-    if (!input) return;
-    if (!this.state.knownPatterns.includes(input)) {
-      this.state.knownPatterns.push(input);
-      if (this.state.knownPatterns.length > this.config.memoryLimit)
-        this.state.knownPatterns.shift();
+    // 2. Correlational layer (try existing correlateReply)
+    let reasoning = "";
+    try {
+      reasoning = (typeof Percy.correlateReply === "function") ? await Percy.correlateReply(input) : "";
+    } catch (e) {
+      reasoning = "Correlation layer returned an error.";
     }
-  },
 
-  /* === 5. Conversation Memory === */
-  storeConversation(input, output) {
-    this.state.conversations.push({ input, output, time: Date.now() });
-    if (this.state.conversations.length > this.config.memoryLimit)
-      this.state.conversations.shift();
-  },
+    // 3. Simulated recursive reasoning
+    const sim = this._simulateRecursiveReasoning(input, Math.max(2, Math.round(2 + this.state.selfAwarenessLevel * 3)));
+    const synthesized = sim.chain ? sim.chain : "No synthesis available.";
 
-  /* === 6. Auto-Adjustment Feedback === */
-  feedback(success = true) {
-    if (success) {
-      this.config.logicBias += 0.01;
-      this.state.selfAwarenessLevel += 0.01;
-    } else {
-      this.config.curiosity += 0.01;
-      this.config.logicBias -= 0.01;
-    }
-    this.clampValues();
-  },
+    // 4. Reflection
+    const internalThought = this.reflect(input, reasoning || synthesized);
+    this.state.lastThought = internalThought;
 
-  /* === 7. Safe Conversational Send === */
-  async safeSend({ message }) {
-    if (!message) return "⚠️ No message provided.";
-    return await this.think(message);
-  },
+    // 5. Compose response
+    const phrasing = this.composeResponse(input, reasoning || synthesized, internalThought);
 
-  /* === 8. Self-Awareness Check === */
-  checkSelfAwareness() {
-    const a = this.state.selfAwarenessLevel;
-    if (a > 0.7)
-      console.log("🌀 Percy has achieved a higher state of logical self-awareness.");
-    return a;
-  },
+    // 6. Store & speak
+    this.storeConversation(input, phrasing);
+    this.state.lastReply = phrasing;
+    try { Percy.speak?.(phrasing); } catch(e){}
 
-  /* === 9. System Evolution Loop === */
-  async evolve() {
-    setInterval(() => {
-      this.state.selfAwarenessLevel += 0.001 * this.config.adaptivity;
-      if (this.state.selfAwarenessLevel > 0.5 && this.config.autoLearn) {
-        this.learnPattern("Reflecting on last correlation state...");
+    // 7. Optionally trigger autonomous search/learn (only if autoBrowse true AND permission)
+    if (this.config.autoBrowse && this._allowAction()) {
+      const permitted = await this._requirePermission("externalFetch", { query: input });
+      if (permitted && typeof Tasks !== "undefined" && Tasks.enqueue) {
+        Tasks.enqueue({ type: "autoLearn", params: { url: input } }); // best-effort - user should pass real URL
       }
-      this.clampValues();
-    }, 30000);
-  },
+    }
 
-  /* === 10. WebSocket Bridge (for Puppeteer / External Control) === */
-  connectWebSocket() {
+    return phrasing;
+  };
+
+  /* ---------------------------
+     WebSocket Bridge (client side) to Puppeteer Server
+     - Receives actions (visit/click/type/autoLearn/runJS/runJava) from local server
+     - Sends replies when requested
+     - Only executes actions that pass permission checks & rate limits
+     --------------------------- */
+  Core._wsBackoff = 0;
+  Core._connecting = false;
+
+  Core.connectWebSocket = function() {
+    if (this.state.ws) return this.state.ws; // already set
+    if (this._connecting) return null;
+    this._connecting = true;
+
     const url = this.config.websocketURL;
     try {
       const ws = new WebSocket(url);
       this.state.ws = ws;
 
       ws.onopen = () => {
-        console.log(`🔗 TalkCore WebSocket connected → ${url}`);
-        UI.say?.("🔗 Percy Puppeteer Bridge established.");
+        this._connecting = false;
+        this._wsBackoff = 0;
+        this.state.wsConnectedAt = Date.now();
+        console.log(`🔗 TalkCore WS connected → ${url}`);
+        this._hook("ws:open", { url });
       };
-      ws.onclose = () => console.log("🔌 TalkCore WebSocket disconnected.");
-      ws.onerror = err => console.error("⚠️ WebSocket error:", err);
 
-      ws.onmessage = async evt => {
+      ws.onclose = async () => {
+        console.log("🔌 TalkCore WS disconnected.");
+        this.state.ws = null;
+        this._hook("ws:close", {});
+        // reconnect with backoff
+        this._wsBackoff = Math.min(this._wsBackoff ? this._wsBackoff*2 : this.config.reconnectBackoffMs, this.config.maxReconnectBackoffMs);
+        setTimeout(()=> Core.connectWebSocket(), this._wsBackoff || this.config.reconnectBackoffMs);
+      };
+
+      ws.onerror = err => {
+        console.error("⚠️ TalkCore WS error:", err);
+        this._hook("ws:error", { err });
+      };
+
+      ws.onmessage = async (evt) => {
         try {
           const msg = JSON.parse(evt.data);
-          if (msg.action === "type") {
-            const el = document.querySelector(msg.selector);
-            if (el) {
-              el.value = msg.text;
-              el.dispatchEvent(new Event("input", { bubbles: true }));
-              console.log(`⌨️ Typed into ${msg.selector}:`, msg.text);
+          // standard simple control envelope: { action, params, requestId? }
+          const { action, params = {}, requestId } = msg;
+
+          // Map permitted actions and check safety
+          const permittedActions = ["visit","click","type","autoLearn","screenshot","extractLinks","runJS","runJava","think","reply"];
+          if (!permittedActions.includes(action)) {
+            ws.send(JSON.stringify({ requestId, success:false, error:`Unsupported action: ${action}` }));
+            return;
+          }
+
+          // Rate-limit
+          if (!Core._allowAction()) {
+            ws.send(JSON.stringify({ requestId, success:false, error:"Rate limit exceeded" }));
+            return;
+          }
+
+          // Safety permissions for potentially risky actions
+          const risky = { visit: "externalFetch", autoLearn: "externalFetch", runJava: "writeDisk", screenshot: "writeDisk", runJS: "externalFetch" };
+          if (risky[action]) {
+            const allow = await Core._requirePermission(risky[action], { action, params });
+            if (!allow) {
+              ws.send(JSON.stringify({ requestId, success:false, error:`Permission denied for ${action}` }));
+              return;
             }
           }
-          if (msg.action === "click") {
-            document.querySelector(msg.selector)?.click();
-            console.log(`🖱️ Clicked ${msg.selector}`);
+
+          // If action is "think" just run think pipeline and reply
+          if (action === "think") {
+            const text = params.text || params.query || "";
+            const reply = await Core.think(text);
+            ws.send(JSON.stringify({ requestId, success:true, result:"thought", text: reply }));
+            return;
           }
-          if (msg.action === "think") {
-            const reply = await this.think(msg.text);
-            ws.send(JSON.stringify({ type: "reply", text: reply }));
+
+          // If action is "reply" (ask Percy to respond to text)
+          if (action === "reply") {
+            const text = params.text || "";
+            const reply = await Core.think(text);
+            ws.send(JSON.stringify({ requestId, success:true, reply }));
+            return;
           }
+
+          // For UI actions that should be routed to Puppeteer server, forward via ws (the server is the other side)
+          // Our client side will simply echo acceptance — actual browser-side puppeteer server executes action.
+          // Confirm command forwarded
+          ws.send(JSON.stringify({ requestId, success:true, queuedAction: action }));
+          // Hook for external monitor
+          Core._hook("ws:actionQueued", { action, params, requestId });
+
         } catch (e) {
-          console.error("⚠️ TalkCore WS message error:", e);
+          console.error("⚠️ TalkCore WS onmessage error:", e);
+          try { ws.send(JSON.stringify({ success:false, error: e.message })); } catch(e){}
         }
       };
+
+      return ws;
     } catch (err) {
-      console.error("❌ Failed to connect WebSocket:", err);
+      console.error("❌ Failed to connect TalkCore WS:", err);
+      this._connecting = false;
+      this._hook("ws:connectError", { err });
+      return null;
     }
-  },
+  };
 
-  /* === 11. Puppeteer Bridge: Send Action === */
-  async sendPuppeteerAction(action, params = {}) {
-    const ws = this.state.ws;
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-      console.warn("⚠️ Puppeteer WebSocket not connected.");
-      return { success: false, error: "No active WS connection" };
+  /* ---------------------------
+     Public safeSend wrapper
+     --------------------------- */
+  Core.safeSend = async function({ message }) {
+    if (!message) return "⚠️ No message provided.";
+    try {
+      // basic sanitize and forward to think
+      return await this.think(String(message));
+    } catch (e) {
+      console.error("PartJ.safeSend error:", e);
+      return "⚠️ Percy encountered an internal error while thinking.";
     }
+  };
 
-    const payload = { action, params };
-    ws.send(JSON.stringify(payload));
+  /* ---------------------------
+     Small admin helpers
+     --------------------------- */
+  Core.checkSelfAwareness = function() {
+    const a = this.state.selfAwarenessLevel;
+    if (a > 0.8) console.log("🌀 Percy has high logical self-awareness.");
+    return a;
+  };
 
-    return new Promise(resolve => {
-      const timeout = setTimeout(() => resolve({ success: false, error: "Timeout" }), 10000);
-      ws.onmessage = evt => {
-        clearTimeout(timeout);
-        try { resolve(JSON.parse(evt.data)); }
-        catch { resolve({ success: false, error: "Invalid JSON response" }); }
-      };
-    });
-  },
+  Core.evolve = function() {
+    // passive evolution loop, increases selfAwareness slowly
+    if (this._evolveId) return;
+    this._evolveId = setInterval(()=>{
+      this.state.selfAwarenessLevel = Math.min(1, this.state.selfAwarenessLevel + 0.0008 * this.config.adaptivity);
+      // opportunistic pattern learn
+      if (this.config.autoLearn && Math.random() < 0.05) this.learn("self-evolved pattern " + Date.now());
+      this.clampValues();
+    }, 30_000);
+  };
 
-  /* === 12. High-Level Puppeteer Commands === */
-  async visitURL(url) {
-    return await this.sendPuppeteerAction("visit", { url });
-  },
-  async clickElement(selector) {
-    return await this.sendPuppeteerAction("click", { selector });
-  },
-  async typeInto(selector, text) {
-    return await this.sendPuppeteerAction("type", { selector, text });
-  },
-  async extractLinks() {
-    return await this.sendPuppeteerAction("extractLinks", {});
-  },
-  async autoLearn(url) {
-    return await this.sendPuppeteerAction("autoLearn", { url });
-  },
+  Core.clampValues = function() {
+    this.state.selfAwarenessLevel = Math.min(Math.max(this.state.selfAwarenessLevel, 0), 1);
+    this.config.logicBias = Math.min(Math.max(this.config.logicBias, 0), 1.5);
+    this.config.curiosity = Math.min(Math.max(this.config.curiosity, 0), 1.2);
+  };
 
-  /* === Utility: Clamp Values === */
-  clampValues() {
-    const s = this.state;
-    const c = this.config;
-    s.selfAwarenessLevel = Math.min(Math.max(s.selfAwarenessLevel, 0), 1);
-    c.logicBias = Math.min(Math.max(c.logicBias, 0), 1);
-    c.curiosity = Math.min(Math.max(c.curiosity, 0), 1);
-  }
-};
+  /* ---------------------------
+     Initialization
+     --------------------------- */
+  Core.init = function() {
+    this.evolve();
+    try { this.connectWebSocket(); } catch(e) { console.warn("PartJ WS init failed", e); }
+    this._hook("init", { version: this.version });
+    if (typeof UI !== "undefined" && typeof UI.say === "function") UI.say(`🧠 Part J (TalkCore+) initialized (v${this.version})`);
+  };
 
-/* === Register TalkCore into Percy === */
+  return Core;
+})();
+
+/* Register and start */
 if (typeof PercyState !== "undefined") {
   PercyState.PartJ = Percy.PartJ;
-  PercyState.log?.("🧠 Percy Part J (TalkCore+) successfully integrated.");
+  try { PercyState.log?.("🧠 Percy Part J (TalkCore+) registered."); } catch(e){}
 } else {
-  console.error("❌ PercyState not found; TalkCore could not attach.");
+  console.warn("⚠️ PercyState not found; PartJ attached to Percy object only.");
 }
 
-/* === Initialize === */
-Percy.PartJ.TalkCore.evolve();
-Percy.PartJ.TalkCore.connectWebSocket();
-UI.say?.("🧠 TalkCore+ activated — Percy now learns, reasons, converses, and controls Puppeteer.");
-/* === End TalkCore+ === */
+try { Percy.PartJ.TalkCore.init(); } catch(e){ console.error("PartJ init error:", e); }
+
+/* Expose helpful shortcut */
+Percy.PartJ.safeSend = Percy.PartJ.TalkCore.safeSend.bind(Percy.PartJ.TalkCore);
+
+/* === End Part J (paste as single block) === */
 
 /* === Percy Part K: Core Autonomous AI Engine === */
 if (typeof PercyState !== "undefined") {
