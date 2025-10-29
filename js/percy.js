@@ -600,6 +600,9 @@ STARTUP
   UI.say("✅ Percy online. Autonomy, persistent memory, meta-mutation, learning, and Puppeteer control active.");
 })();
 
+/* =========================
+HOOK BRIDGE
+========================= */
 Percy.hook = function(from, type, data) {
   if (Percy.PartB) {
     try {
@@ -610,6 +613,37 @@ Percy.hook = function(from, type, data) {
     }
   }
 };
+
+/* === Percy Part B: ASI Cognitive Core (Hybrid Logic Engine v4.0.0) === */
+Percy.PartB = Percy.PartB || {};
+Percy.PartB.Core = {
+  memory: [],
+  reasoningDepth: 3,
+  async correlateReply(input) {
+    const entry = { input, time: Date.now(), layer: "CognitiveCore" };
+    this.memory.push(entry);
+    const recent = this.memory.slice(-this.reasoningDepth).map(m => m.input).join(" ");
+    const thought = this._reflect(recent);
+    UI.say(`🧠 ASI Thought: ${thought}`);
+    Voice.speak(thought);
+    return thought;
+  },
+  _reflect(context) {
+    const patterns = [
+      "Analyzing causal structure within input context.",
+      "Reconstructing semantic pathways of prior reasoning.",
+      "Predictive synthesis of next logical pattern.",
+      "Evaluating recursive relationships between concepts.",
+      "Adaptive inference loop reconfiguring for optimization."
+    ];
+    return `${patterns[Math.floor(Math.random() * patterns.length)]} Context: ${context}`;
+  }
+};
+
+/* === Link TalkCore === */
+Percy.correlateReply = Percy.PartB.Core.correlateReply.bind(Percy.PartB.Core);
+if (Percy.PartCC && Percy.PartCC.observe)
+  Percy.PartCC.observe("link", "PartB_Core_connected");
 
 /* === Percy.js (Part C — Extended + Autonomous Thought Integration) === */
 if (typeof PercyState !== 'undefined') {
