@@ -99,27 +99,72 @@ wss.on('connection', ws => {
           break;
         }
 
-        // === Fetch and Learn (for Part J 4.1) ===
+        // === Fetch and Learn (for Part J 5.0 — Dynamic Multi-Source Learning) ===
         case 'fetchAndLearn': {
           const { topic, urlCandidates = [] } = params;
           console.log(`🌍 Fetching topic: ${topic}`);
-
-          for (const url of urlCandidates) {
+        
+          const safeUserAgent =
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
+            '(KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36';
+        
+          // Add fallback trusted sources dynamically
+          const extendedCandidates = [
+            ...urlCandidates,
+            `https://developer.mozilla.org/en-US/search?q=${encodeURIComponent(topic)}`,
+            `https://www.w3schools.com/search/search_result.asp?query=${encodeURIComponent(topic)}`,
+            `https://stackoverflow.com/search?q=${encodeURIComponent(topic)}`
+          ];
+        
+          for (const url of extendedCandidates) {
             try {
               const newPage = await browser.newPage();
-              await newPage.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
-
-              const content = await newPage.evaluate(() => document.body.innerText.slice(0, 20000));
-              const summary = content.replace(/\s+/g, ' ').slice(0, 20000);
-
+        
+              // Set headers and behavior like a real user
+              await newPage.setUserAgent(safeUserAgent);
+              await newPage.setExtraHTTPHeaders({
+                'Accept-Language': 'en-US,en;q=0.9',
+                'DNT': '1',
+                'Upgrade-Insecure-Requests': '1'
+              });
+        
+              console.log(`🧭 Visiting ${url}`);
+              const response = await newPage.goto(url, {
+                waitUntil: 'domcontentloaded',
+                timeout: 20000
+              });
+        
+              // Skip blank or failed pages
+              const status = response?.status() ?? 0;
+              if (!response || status >= 400) {
+                console.warn(`⚠️ Skipping ${url} (status: ${status})`);
+                await newPage.close();
+                continue;
+              }
+        
+              // Extract meaningful readable text
+              const content = await newPage.evaluate(() => {
+                const text = document.body.innerText;
+                return text ? text.replace(/\s+/g, ' ').slice(0, 25000) : '';
+              });
+        
+              if (content.length < 500) {
+                console.warn(`⚠️ Page too short at ${url}, skipping`);
+                await newPage.close();
+                continue;
+              }
+        
+              const summary = content.slice(0, 25000);
               ws.send(JSON.stringify({
                 type: 'learnedContent',
+                topic,
                 summary,
-                source: url
+                source: url,
+                confidence: Math.min(1.0, summary.length / 25000)
               }));
-
-              await newPage.close();
+        
               console.log(`✅ Learned successfully from ${url}`);
+              await newPage.close();
               break;
             } catch (e) {
               console.error(`⚠️ Fetch failed for ${url}: ${e.message}`);
