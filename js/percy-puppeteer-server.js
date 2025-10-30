@@ -99,86 +99,73 @@ wss.on('connection', ws => {
           break;
         }
 
-        // === Fetch and Learn (Percy Part J 6.0 — Autonomous Search & Reading) ===
+        // === Fetch and Learn (Percy Part J 6.5 — Stable AutoLearn Google Integration) ===
         case 'fetchAndLearn': {
-          const topic = params.topic || 'artificial intelligence';
-          console.log(`🧠 Percy.FetchAndLearn: ${topic}`);
-        
-          if (!browser) {
-            browser = await puppeteer.launch({
-              headless: false,
-              defaultViewport: null,
-              args: ["--no-sandbox", "--disable-setuid-sandbox", "--start-maximized"]
-            });
-          }
-        
-          const page = await browser.newPage();
+          const { topic } = params;
+          console.log(`🌐 Navigating to Google for: ${topic}`);
         
           try {
-            // === Try Google first ===
-            console.log(`🌐 Navigating to Google for: ${topic}`);
-            await page.goto("https://www.google.com/ncr", { waitUntil: "domcontentloaded" });
+            const tab = await browser.newPage();
+            await tab.setUserAgent(
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            );
         
-            await page.waitForSelector("textarea[name='q'], input[name='q']", { timeout: 10000 });
-            console.log("⌨️ Typing search query...");
-            await page.type("textarea[name='q'], input[name='q']", topic, { delay: 100 });
-            await page.keyboard.press("Enter");
+            // --- Step 1: Go to Google safely ---
+            let loaded = false;
+            for (let i = 0; i < 3; i++) {
+              try {
+                await tab.goto('https://www.google.com', { waitUntil: 'domcontentloaded', timeout: 20000 });
+                loaded = true;
+                break;
+              } catch {
+                console.log(`⚠️ Retry Google load attempt ${i + 1}`);
+                await wait(2000);
+              }
+            }
+            if (!loaded) throw new Error('Google did not load after retries.');
         
-            // Wait for search results
-            await page.waitForSelector("div#search", { timeout: 15000 });
-            console.log("🔍 Extracting content...");
+            // --- Step 2: Wait for search box and type ---
+            await tab.waitForSelector("textarea[name='q'], input[name='q']", { timeout: 10000 });
+            console.log('⌨️ Typing query...');
+            await tab.click("textarea[name='q'], input[name='q']", { clickCount: 3 });
+            await tab.type("textarea[name='q'], input[name='q']", topic, { delay: 75 });
+            await tab.keyboard.press('Enter');
         
-            const content = await page.evaluate(() => {
-              const results = Array.from(document.querySelectorAll("div#search div"));
-              return results.map(div => div.innerText).join("\n\n").slice(0, 2000);
+            // --- Step 3: Wait for results ---
+            await tab.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 25000 }).catch(() => null);
+            await tab.waitForSelector('div#search', { timeout: 20000 }).catch(() => null);
+            console.log('🔍 Extracting content...');
+        
+            // --- Step 4: Extract readable text ---
+            const snippet = await tab.evaluate(() => {
+              const blocks = Array.from(document.querySelectorAll('div#search div'));
+              const text = blocks.map(div => div.innerText).join('\n\n').replace(/\s+/g, ' ').trim();
+              return text.slice(0, 1200);
             });
         
-            console.log("✅ Learning complete.");
-            ws.send(JSON.stringify({
-              success: true,
-              type: 'learnedContent',
-              topic,
-              snippet: content,
-              source: "google.com"
-            }));
-        
-          } catch (err) {
-            console.error("❌ fetchAndLearn error:", err);
-        
-            // === Fallback to DuckDuckGo if Google fails ===
-            try {
-              console.log("🦆 Switching to DuckDuckGo...");
-              await page.goto("https://duckduckgo.com", { waitUntil: "domcontentloaded" });
-              await page.waitForSelector("input[name='q']", { timeout: 10000 });
-              await page.type("input[name='q']", topic, { delay: 100 });
-              await page.keyboard.press("Enter");
-              await page.waitForSelector("a.result__a", { timeout: 10000 });
-        
-              const altContent = await page.evaluate(() => {
-                const results = Array.from(document.querySelectorAll("a.result__a, div.result__snippet"));
-                return results.map(el => el.innerText).join("\n\n").slice(0, 2000);
-              });
-        
+            if (snippet && snippet.length > 100) {
               ws.send(JSON.stringify({
+                type: 'learnedContent',
                 success: true,
-                type: 'learnedContent',
                 topic,
-                snippet: altContent,
-                source: "duckduckgo.com"
+                source: 'Google',
+                snippet
               }));
-        
-            } catch (altErr) {
-              ws.send(JSON.stringify({
-                success: false,
-                type: 'learnedContent',
-                topic,
-                error: `All sources failed: ${altErr.message}`
-              }));
+              console.log('✅ Learned successfully.');
+            } else {
+              throw new Error('No readable snippet extracted.');
             }
-          } finally {
-            await page.close();
-          }
         
+            await tab.close();
+          } catch (err) {
+            console.error('❌ fetchAndLearn error:', err.message);
+            ws.send(JSON.stringify({
+              type: 'learnedContent',
+              success: false,
+              topic,
+              error: err.message
+            }));
+          }
           break;
         }
 
