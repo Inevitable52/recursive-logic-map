@@ -122,7 +122,19 @@ wss.on('connection', ws => {
                   waitUntil: ['domcontentloaded', 'networkidle2'],
                   timeout: 40000
                 });
-                await wait(2500);
+            
+                // --- NEW: Smart adaptive wait ---
+                await tab.waitForFunction('document.readyState === "complete"', { timeout: 15000 });
+                // Wait for the search box itself (adaptive check)
+                try {
+                  await tab.waitForSelector('textarea[name="q"], input[name="q"]', { visible: true, timeout: 10000 });
+                  console.log('🔍 Google search input detected.');
+                  loaded = true;
+                  break;
+                } catch {
+                  console.log('⚠️ Search input not ready yet, retrying...');
+                }
+            
                 const current = await tab.url();
                 if (current.includes('google')) {
                   loaded = true;
@@ -136,9 +148,9 @@ wss.on('connection', ws => {
                 await wait(3000);
               }
             }
-        
-            // --- Step 2.5: Verify final URL after load ---
-            await wait(1500);
+            
+            // --- Step 2.5: Confirm final readiness ---
+            await wait(2000);
             const finalUrl = await tab.url();
             console.log(`🌍 Final loaded URL: ${finalUrl}`);
             if (!loaded || !finalUrl.includes('google')) {
