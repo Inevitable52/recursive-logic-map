@@ -99,97 +99,121 @@ wss.on('connection', ws => {
           break;
         }
 
-       // === Fetch and Learn (Percy Part J 7.0 — Full Autonomous Browser AI Mode) ===
-case 'fetchAndLearn': {
-  const { topic } = params;
-  console.log(`🌐 [Percy] Beginning autonomous fetch-and-learn for topic: "${topic}"`);
-
-  try {
-    // --- Step 1: Launch visible browser ---
-    await ensureBrowser(false); // forces visible (non-headless) Chrome
-
-    const tab = await browser.newPage();
-    await tab.setViewport({ width: 1366, height: 768 });
-    await tab.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    );
-
-    // --- Step 2: Go to Google manually ---
-    console.log('🚀 Navigating to Google...');
-    let loaded = false;
-    for (let i = 0; i < 3; i++) {
-      try {
-        await tab.goto('https://www.google.com', { waitUntil: 'domcontentloaded', timeout: 25000 });
-        loaded = true;
-        break;
-      } catch {
-        console.log(`⚠️ Retry Google load attempt ${i + 1}`);
-        await wait(2500);
-      }
-    }
-    if (!loaded) throw new Error('Google did not load after retries.');
-
-    // --- Step 3: Accept cookies or terms if needed ---
-    const consentSelector = 'button[aria-label*="Accept"], button[aria-label*="agree"], button:has-text("I agree")';
-    const hasConsent = await tab.$(consentSelector);
-    if (hasConsent) {
-      console.log('🟢 Accepting cookies...');
-      await tab.click(consentSelector).catch(() => {});
-      await wait(1500);
-    }
-
-    // --- Step 4: Type the topic in Google search ---
-    await tab.waitForSelector("textarea[name='q'], input[name='q']", { timeout: 15000 });
-    console.log(`⌨️ Typing query: "${topic}"`);
-    await tab.click("textarea[name='q'], input[name='q']", { clickCount: 3 });
-    await tab.type("textarea[name='q'], input[name='q']", topic, { delay: 70 });
-    await tab.keyboard.press('Enter');
-
-    // --- Step 5: Wait until real content appears ---
-    console.log('🔎 Waiting for results...');
-    await tab.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => null);
-    await tab.waitForFunction(
-      () => document.querySelector('div#search, .v7W49e, #rso'),
-      { timeout: 20000 }
-    );
-
-    // --- Step 6: Extract readable text ---
-    console.log('📖 Extracting readable knowledge...');
-    const snippet = await tab.evaluate(() => {
-      const blocks = Array.from(document.querySelectorAll('div#search div, .v7W49e, #rso div'));
-      const text = blocks.map(div => div.innerText).join('\n\n').replace(/\s+/g, ' ').trim();
-      return text.slice(0, 2500);
-    });
-
-    // --- Step 7: Send back learned text to Percy ---
-    if (snippet && snippet.length > 200) {
-      ws.send(JSON.stringify({
-        type: 'learnedContent',
-        success: true,
-        topic,
-        source: 'Google',
-        summary: snippet
-      }));
-      console.log('✅ Percy learned successfully.');
-    } else {
-      throw new Error('No readable content extracted.');
-    }
-
-    await tab.close();
-  } catch (err) {
-    console.error('❌ fetchAndLearn error:', err.message);
-    ws.send(JSON.stringify({
-      type: 'learnedContent',
-      success: false,
-      topic,
-      error: err.message
-    }));
-  }
-  break;
-}
-
-
-        // === Screenshot ===
+         // === Fetch and Learn (Percy Part J 7.0 — Full Autonomous Browser AI Mode) ===
+        case 'fetchAndLearn': {
+          const { topic } = params;
+          console.log(`🌐 [Percy] Beginning autonomous fetch-and-learn for topic: "${topic}"`);
+        
+          try {
+            // --- Step 1: Launch visible browser ---
+            await ensureBrowser(false); // visible (non-headless)
+            const tab = await browser.newPage();
+            await tab.setViewport({ width: 1366, height: 768 });
+            await tab.setUserAgent(
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            );
+        
+            // --- Step 2: Go to Google manually ---
+            console.log('🚀 Navigating to Google...');
+            let loaded = false;
+            for (let i = 0; i < 5; i++) {
+              try {
+                await tab.goto('https://www.google.com', {
+                  waitUntil: ['domcontentloaded', 'networkidle2'],
+                  timeout: 40000
+                });
+                await wait(2500);
+                const current = await tab.url();
+                if (current.includes('google')) {
+                  loaded = true;
+                  break;
+                } else {
+                  console.log(`⚠️ URL still blank (${current}), retrying...`);
+                  await wait(3000);
+                }
+              } catch (err) {
+                console.log(`⚠️ Retry Google load attempt ${i + 1}: ${err.message}`);
+                await wait(3000);
+              }
+            }
+        
+            // --- Step 2.5: Verify final URL after load ---
+            await wait(1500);
+            const finalUrl = await tab.url();
+            console.log(`🌍 Final loaded URL: ${finalUrl}`);
+            if (!loaded || !finalUrl.includes('google')) {
+              throw new Error('Navigation fallback detected — still not at Google homepage.');
+            }
+        
+            // --- Step 3: Accept cookies if needed ---
+            const consentSelector =
+              'button[aria-label*="Accept"], button[aria-label*="agree"], button:has-text("I agree")';
+            const hasConsent = await tab.$(consentSelector);
+            if (hasConsent) {
+              console.log('🟢 Accepting cookies...');
+              await tab.click(consentSelector).catch(() => {});
+              await wait(1500);
+            }
+        
+            // --- Step 4: Type the topic in Google search ---
+            await tab.waitForSelector("textarea[name='q'], input[name='q']", { timeout: 15000 });
+            console.log(`⌨️ Typing query: "${topic}"`);
+            await tab.click("textarea[name='q'], input[name='q']", { clickCount: 3 });
+            await tab.type("textarea[name='q'], input[name='q']", topic, { delay: 70 });
+            await tab.keyboard.press('Enter');
+        
+            // --- Step 5: Wait until real content appears ---
+            console.log('🔎 Waiting for results...');
+            await tab.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => null);
+            await tab.waitForFunction(() => document.querySelector('div#search, .v7W49e, #rso'), {
+              timeout: 20000
+            });
+        
+            // --- Step 6: Extract readable text ---
+            console.log('📖 Extracting readable knowledge...');
+            const snippet = await tab.evaluate(() => {
+              const blocks = Array.from(document.querySelectorAll('div#search div, .v7W49e, #rso div'));
+              const text = blocks.map(div => div.innerText).join('\n\n').replace(/\s+/g, ' ').trim();
+              return text.slice(0, 2500);
+            });
+        
+            // --- Step 7: Save screenshot for verification ---
+            const shotPath = `fetchAndLearn_${topic.replace(/\W+/g, '_')}.png`;
+            await tab.screenshot({ path: shotPath });
+            console.log(`📸 Screenshot saved: ${shotPath}`);
+        
+            // --- Step 8: Send back learned text ---
+            if (snippet && snippet.length > 200) {
+              ws.send(
+                JSON.stringify({
+                  type: 'learnedContent',
+                  success: true,
+                  topic,
+                  source: 'Google',
+                  summary: snippet
+                })
+              );
+              console.log('✅ Percy learned successfully.');
+            } else {
+              throw new Error('No readable content extracted.');
+            }
+        
+            await tab.close();
+          } catch (err) {
+            console.error('❌ fetchAndLearn error:', err.message);
+            ws.send(
+              JSON.stringify({
+                type: 'learnedContent',
+                success: false,
+                topic,
+                error: err.message
+              })
+            );
+          }
+          break;
+        }
+ 
+         // === Screenshot ===
         case 'screenshot': {
           const savePath = params.path || 'screenshot.png';
           await page.screenshot({ path: savePath, fullPage: true });
