@@ -101,72 +101,84 @@ wss.on('connection', ws => {
 
         // === Fetch and Learn (Percy Part J 6.0 — Autonomous Search & Reading) ===
         case 'fetchAndLearn': {
-          const { topic, urlCandidates = [] } = params;
-          console.log(`🌍 Autonomous Learn: ${topic}`);
+          const topic = params.topic || 'artificial intelligence';
+          console.log(`🧠 Percy.FetchAndLearn: ${topic}`);
         
-          const searchEngines = [
-            { name: 'Google', url: 'https://www.google.com', selector: 'textarea[name="q"], input[name="q"]' },
-            { name: 'Bing', url: 'https://www.bing.com', selector: 'input[name="q"]' },
-            { name: 'DuckDuckGo', url: 'https://duckduckgo.com', selector: 'input[name="q"]' },
-            { name: 'Wikipedia', url: `https://en.wikipedia.org/wiki/${encodeURIComponent(topic)}`, selector: 'body' }
-          ];
-        
-          let learned = false;
-        
-          for (const engine of searchEngines) {
-            try {
-              const tab = await browser.newPage();
-              await tab.setUserAgent(
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
-              );
-              console.log(`🧭 Visiting ${engine.name}`);
-        
-              await tab.goto(engine.url, { waitUntil: 'domcontentloaded', timeout: 25000 });
-        
-              // Try typing the topic if there's a search bar
-              const boxExists = await tab.$(engine.selector);
-              if (boxExists && !engine.url.includes('wikipedia.org')) {
-                await tab.click(engine.selector, { clickCount: 3 });
-                await tab.type(engine.selector, topic, { delay: 50 });
-                await tab.keyboard.press('Enter');
-                await tab.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 25000 });
-              }
-        
-              // Extract main readable text
-              const text = await tab.evaluate(() => {
-                const body = document.body.innerText;
-                return body ? body.replace(/\s+/g, ' ').trim().slice(0, 25000) : '';
-              });
-        
-              if (text.length > 800) {
-                ws.send(JSON.stringify({
-                  type: 'learnedContent',
-                  source: engine.name,
-                  topic,
-                  snippet: text.slice(0, 1000),
-                  fullText: text,
-                  success: true
-                }));
-                console.log(`✅ Learned successfully from ${engine.name}`);
-                learned = true;
-                await tab.close();
-                break;
-              }
-        
-              await tab.close();
-            } catch (e) {
-              console.warn(`⚠️ ${engine.name} failed: ${e.message}`);
-            }
+          if (!browser) {
+            browser = await puppeteer.launch({
+              headless: false,
+              defaultViewport: null,
+              args: ["--no-sandbox", "--disable-setuid-sandbox", "--start-maximized"]
+            });
           }
         
-          if (!learned) {
+          const page = await browser.newPage();
+        
+          try {
+            // === Try Google first ===
+            console.log(`🌐 Navigating to Google for: ${topic}`);
+            await page.goto("https://www.google.com/ncr", { waitUntil: "domcontentloaded" });
+        
+            await page.waitForSelector("textarea[name='q'], input[name='q']", { timeout: 10000 });
+            console.log("⌨️ Typing search query...");
+            await page.type("textarea[name='q'], input[name='q']", topic, { delay: 100 });
+            await page.keyboard.press("Enter");
+        
+            // Wait for search results
+            await page.waitForSelector("div#search", { timeout: 15000 });
+            console.log("🔍 Extracting content...");
+        
+            const content = await page.evaluate(() => {
+              const results = Array.from(document.querySelectorAll("div#search div"));
+              return results.map(div => div.innerText).join("\n\n").slice(0, 2000);
+            });
+        
+            console.log("✅ Learning complete.");
             ws.send(JSON.stringify({
+              success: true,
               type: 'learnedContent',
               topic,
-              success: false,
-              error: 'No valid text extracted'
+              snippet: content,
+              source: "google.com"
             }));
+        
+          } catch (err) {
+            console.error("❌ fetchAndLearn error:", err);
+        
+            // === Fallback to DuckDuckGo if Google fails ===
+            try {
+              console.log("🦆 Switching to DuckDuckGo...");
+              await page.goto("https://duckduckgo.com", { waitUntil: "domcontentloaded" });
+              await page.waitForSelector("input[name='q']", { timeout: 10000 });
+              await page.type("input[name='q']", topic, { delay: 100 });
+              await page.keyboard.press("Enter");
+              await page.waitForSelector("a.result__a", { timeout: 10000 });
+        
+              const altContent = await page.evaluate(() => {
+                const results = Array.from(document.querySelectorAll("a.result__a, div.result__snippet"));
+                return results.map(el => el.innerText).join("\n\n").slice(0, 2000);
+              });
+        
+              ws.send(JSON.stringify({
+                success: true,
+                type: 'learnedContent',
+                topic,
+                snippet: altContent,
+                source: "duckduckgo.com"
+              }));
+        
+            } catch (altErr) {
+              ws.send(JSON.stringify({
+                success: false,
+                type: 'learnedContent',
+                topic,
+                error: `All sources failed: ${altErr.message}`
+              }));
+            }
+          } finally {
+            await page.close();
           }
+        
           break;
         }
 
