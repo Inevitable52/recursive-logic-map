@@ -99,76 +99,73 @@ wss.on('connection', ws => {
           break;
         }
 
-        // === Fetch and Learn (for Part J 5.0 — Dynamic Multi-Source Learning) ===
+        // === Fetch and Learn (Percy Part J 6.0 — Autonomous Search & Reading) ===
         case 'fetchAndLearn': {
           const { topic, urlCandidates = [] } = params;
-          console.log(`🌍 Fetching topic: ${topic}`);
+          console.log(`🌍 Autonomous Learn: ${topic}`);
         
-          const safeUserAgent =
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-            '(KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36';
-        
-          // Add fallback trusted sources dynamically
-          const extendedCandidates = [
-            ...urlCandidates,
-            `https://developer.mozilla.org/en-US/search?q=${encodeURIComponent(topic)}`,
-            `https://www.w3schools.com/search/search_result.asp?query=${encodeURIComponent(topic)}`,
-            `https://stackoverflow.com/search?q=${encodeURIComponent(topic)}`
+          const searchEngines = [
+            { name: 'Google', url: 'https://www.google.com', selector: 'textarea[name="q"], input[name="q"]' },
+            { name: 'Bing', url: 'https://www.bing.com', selector: 'input[name="q"]' },
+            { name: 'DuckDuckGo', url: 'https://duckduckgo.com', selector: 'input[name="q"]' },
+            { name: 'Wikipedia', url: `https://en.wikipedia.org/wiki/${encodeURIComponent(topic)}`, selector: 'body' }
           ];
         
-          for (const url of extendedCandidates) {
+          let learned = false;
+        
+          for (const engine of searchEngines) {
             try {
-              const newPage = await browser.newPage();
+              const tab = await browser.newPage();
+              await tab.setUserAgent(
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
+              );
+              console.log(`🧭 Visiting ${engine.name}`);
         
-              // Set headers and behavior like a real user
-              await newPage.setUserAgent(safeUserAgent);
-              await newPage.setExtraHTTPHeaders({
-                'Accept-Language': 'en-US,en;q=0.9',
-                'DNT': '1',
-                'Upgrade-Insecure-Requests': '1'
-              });
+              await tab.goto(engine.url, { waitUntil: 'domcontentloaded', timeout: 25000 });
         
-              console.log(`🧭 Visiting ${url}`);
-              const response = await newPage.goto(url, {
-                waitUntil: 'domcontentloaded',
-                timeout: 20000
-              });
-        
-              // Skip blank or failed pages
-              const status = response?.status() ?? 0;
-              if (!response || status >= 400) {
-                console.warn(`⚠️ Skipping ${url} (status: ${status})`);
-                await newPage.close();
-                continue;
+              // Try typing the topic if there's a search bar
+              const boxExists = await tab.$(engine.selector);
+              if (boxExists && !engine.url.includes('wikipedia.org')) {
+                await tab.click(engine.selector, { clickCount: 3 });
+                await tab.type(engine.selector, topic, { delay: 50 });
+                await tab.keyboard.press('Enter');
+                await tab.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 25000 });
               }
         
-              // Extract meaningful readable text
-              const content = await newPage.evaluate(() => {
-                const text = document.body.innerText;
-                return text ? text.replace(/\s+/g, ' ').slice(0, 25000) : '';
+              // Extract main readable text
+              const text = await tab.evaluate(() => {
+                const body = document.body.innerText;
+                return body ? body.replace(/\s+/g, ' ').trim().slice(0, 25000) : '';
               });
         
-              if (content.length < 500) {
-                console.warn(`⚠️ Page too short at ${url}, skipping`);
-                await newPage.close();
-                continue;
+              if (text.length > 800) {
+                ws.send(JSON.stringify({
+                  type: 'learnedContent',
+                  source: engine.name,
+                  topic,
+                  snippet: text.slice(0, 1000),
+                  fullText: text,
+                  success: true
+                }));
+                console.log(`✅ Learned successfully from ${engine.name}`);
+                learned = true;
+                await tab.close();
+                break;
               }
         
-              const summary = content.slice(0, 25000);
-              ws.send(JSON.stringify({
-                type: 'learnedContent',
-                topic,
-                summary,
-                source: url,
-                confidence: Math.min(1.0, summary.length / 25000)
-              }));
-        
-              console.log(`✅ Learned successfully from ${url}`);
-              await newPage.close();
-              break;
+              await tab.close();
             } catch (e) {
-              console.error(`⚠️ Fetch failed for ${url}: ${e.message}`);
+              console.warn(`⚠️ ${engine.name} failed: ${e.message}`);
             }
+          }
+        
+          if (!learned) {
+            ws.send(JSON.stringify({
+              type: 'learnedContent',
+              topic,
+              success: false,
+              error: 'No valid text extracted'
+            }));
           }
           break;
         }
