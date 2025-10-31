@@ -136,59 +136,57 @@
   /* =====================================================
      PartZ — Camera, vision models, audio visualizer, ASI
      ===================================================== */
-  PartZ.init = async function(){
-  try {
-    // use enhanced audio constraints to prevent feedback hum
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: false
+  Percy.PartZ = (function(){
+    const PartZ = {};
+    const video = document.getElementById('camera-feed');
+    const overlay = document.getElementById('camera-overlay');
+    const overlayCtx = overlay.getContext('2d',{willReadFrequently:false});
+
+    // audio visualizer
+    let audioCtx=null, analyser=null, dataFreq=null, dataWave=null;
+    PartZ.analyser = null;
+
+    // models
+    let cocoModel = null, faceModel = null;
+
+    // rate limiting & readiness
+    let lastDetectAt = 0;
+    const minDetectInterval = 100; // ms
+
+    /* Helpful UI helpers */
+    function appendConsole(text, cls){
+      const el = document.createElement('div');
+      el.className = 'console-line' + (cls ? ' ' + cls : '');
+      el.textContent = text;
+      const container = document.getElementById('percy-console');
+      container.appendChild(el);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function resizeOverlayToVideo(){
+      if(!video || !overlay) return;
+      // Use video intrinsic size for drawing, but style to match element size
+      const vidW = video.videoWidth || video.clientWidth || 640;
+      const vidH = video.videoHeight || video.clientHeight || 480;
+      overlay.width = vidW;
+      overlay.height = vidH;
+      // keep CSS size equal to element size to keep mapped coordinates correct
+      overlay.style.width = video.clientWidth + 'px';
+      overlay.style.height = video.clientHeight + 'px';
+    }
+
+    async function initModels(){
+      appendConsole('🔍 Loading models...', 'exec');
+      // load concurrently
+      try {
+        cocoModel = await cocoSsd.load();
+        faceModel = await blazeface.load();
+        appendConsole('✅ Models loaded (Coco-SSD + BlazeFace)', 'exec');
+      } catch(e){
+        console.error('Model load error', e);
+        appendConsole('⚠️ Model load error: '+ e.message, 'exec');
       }
-    });
-
-    // connect video stream, but mute output
-    video.srcObject = stream;
-    video.muted = true;
-    await video.play();
-    resizeOverlayToVideo();
-    window.addEventListener('resize', resizeOverlayToVideo);
-
-    // audio setup (visualizer only, no playback)
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 256;
-    dataFreq = new Uint8Array(analyser.frequencyBinCount);
-    dataWave = new Uint8Array(analyser.frequencyBinCount);
-    const srcNode = audioCtx.createMediaStreamSource(stream);
-    srcNode.connect(analyser);
-    // do NOT connect to destination -> prevents hum
-    PartZ.analyser = analyser;
-
-    // lazy resume on user interaction (for autoplay policy)
-    ['click','keydown','touchstart'].forEach(ev => {
-      const once = async () => {
-        try { if (audioCtx.state === 'suspended') await audioCtx.resume(); } catch(e){}
-        window.removeEventListener(ev, once);
-      };
-      window.addEventListener(ev, once, {passive:true});
-    });
-
-    // init models + detection loop
-    await initModels();
-    detect();
-
-    // start voice visualizer
-    const vc = document.getElementById('voice-canvas');
-    startAudioVisualizer(vc);
-
-    appendConsole('✅ PartZ initialized (hum fix applied)', 'exec');
-  } catch(err){
-    console.error('PartZ init failed', err);
-    appendConsole('⚠️ PartZ init failed: ' + (err.message||err), 'exec');
-  }
-};
+    }
 
     /* detection loop */
     async function detect(){
@@ -293,6 +291,48 @@
         ctxV.stroke();
       })();
     }
+
+    PartZ.init = async function(){
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        video.srcObject = stream;
+        await video.play();
+        resizeOverlayToVideo();
+        window.addEventListener('resize', resizeOverlayToVideo);
+
+        // audio setup
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256;
+        dataFreq = new Uint8Array(analyser.frequencyBinCount);
+        dataWave = new Uint8Array(analyser.frequencyBinCount);
+        const srcNode = audioCtx.createMediaStreamSource(stream);
+        srcNode.connect(analyser);
+        PartZ.analyser = analyser;
+
+        // lazy resume on user interaction (autoplay policies)
+        ['click','keydown','touchstart'].forEach(ev => {
+          const once = async ()=>{ try{ if(audioCtx.state==='suspended') await audioCtx.resume(); }catch(e){} window.removeEventListener(ev, once); };
+          window.addEventListener(ev, once, {passive:true});
+        });
+
+        // init models and loops
+        await initModels();
+        detect();
+
+        // voice visualizer attach
+        const vc = document.getElementById('voice-canvas');
+        startAudioVisualizer(vc);
+
+        appendConsole('✅ PartZ initialized', 'exec');
+      } catch(err){
+        console.error('PartZ init failed', err);
+        appendConsole('⚠️ PartZ init failed: ' + (err.message||err), 'exec');
+      }
+    };
+
+    return PartZ;
+  })();
 
   /* =====================================================
      Percy.ASI (simple task queue)
