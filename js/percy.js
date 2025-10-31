@@ -994,7 +994,7 @@ Percy.generators.voice = function(text) {
   source.type = "sine";
   source.frequency.value = 220;
   source.connect(analyser);
-  analyser.connect(audioCtx.destination);
+  // analyser.connect(audioCtx.destination);  <-- REMOVE or comment this out
   source.start();
   source.stop(audioCtx.currentTime + text.length / 15);
 
