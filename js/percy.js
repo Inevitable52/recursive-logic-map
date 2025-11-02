@@ -4156,98 +4156,142 @@ Percy.cycleHooks.push(() => Percy.PartCC.cycle());
 
 console.log("✅ Percy PartCC (ASI Code Evolution + Cognitive-Neural Feedback) loaded.");
 
-/* === Percy PartDD: Agent AI Interface + External Task Bridge === */
+/* === Percy PartDD: ASI-Adaptive Agent Interface + External Task Bridge === */
 Percy.PartDD = Percy.PartDD || {
-  name: "Agent AI Interface & External Task Bridge",
-  version: "1.0.0",
+  name: "ASI-Adaptive Agent Interface & External Task Bridge",
+  version: "5.0.0",
   connected: false,
   socket: null,
-  endpoint: "ws://localhost:8787", // Example Node.js agent endpoint
+  endpoint: "ws://localhost:8787",
   taskQueue: [],
   results: {},
-  maxTasks: 20,
+  trustLevel: 1.0,
+  maxTasks: 64,
+  reconnectDelay: 2000,
+  heartbeatInterval: 5000,
+  lastHeartbeat: 0,
+  compressionEnabled: true,
 
   log(msg) {
     console.log(`[PartDD] ${msg}`);
   },
 
   async initAgentConnection(customURL) {
+    const url = customURL || this.endpoint;
     try {
-      const url = customURL || this.endpoint;
       this.socket = new WebSocket(url);
 
       this.socket.onopen = () => {
         this.connected = true;
         this.log(`🔗 Connected to Agent endpoint: ${url}`);
-        this.send({ type: "hello", from: "Percy" });
+        this.send({ type: "hello", from: "Percy", trust: this.trustLevel });
+        this.lastHeartbeat = Date.now();
+        this._startHeartbeat();
       };
 
-      this.socket.onmessage = (msg) => {
-        try {
-          const data = JSON.parse(msg.data);
-          this.log(`📩 Message from Agent: ${data.type || "data"}`);
-          if (data.id) this.results[data.id] = data.result || data;
-          if (data.thought) Percy.PartBB?.monitorThought?.(data.thought);
-        } catch (e) {
-          this.log("⚠️ Invalid message format from Agent.");
-        }
-      };
-
-      this.socket.onclose = () => {
-        this.connected = false;
-        this.log("⚡ Agent connection closed.");
-      };
-
-      this.socket.onerror = (err) => {
-        this.log(`❌ WebSocket error: ${err.message}`);
-      };
+      this.socket.onmessage = (msg) => this._handleMessage(msg);
+      this.socket.onclose = () => this._handleDisconnect();
+      this.socket.onerror = (err) => this.log(`❌ WebSocket error: ${err.message}`);
     } catch (err) {
-      this.log(`Failed to connect Agent: ${err.message}`);
+      this.log(`⚠️ Connection failure: ${err.message}`);
+      this._attemptReconnect();
     }
+  },
+
+  _handleMessage(msg) {
+    try {
+      const data = JSON.parse(msg.data);
+      if (data.heartbeat) {
+        this.lastHeartbeat = Date.now();
+        return;
+      }
+
+      if (data.id) this.results[data.id] = data.result || data;
+      if (data.thought) Percy.PartBB?.monitorThought?.(data.thought);
+
+      if (data.feedback) this._adjustTrust(data.feedback);
+      this.log(`📩 Agent→Percy: ${data.type || "data"}`);
+    } catch {
+      this.log("⚠️ Invalid message format from Agent.");
+    }
+  },
+
+  _handleDisconnect() {
+    this.connected = false;
+    this.log("⚡ Agent connection closed. Attempting reconnection...");
+    this._attemptReconnect();
+  },
+
+  _attemptReconnect() {
+    setTimeout(() => this.initAgentConnection(), this.reconnectDelay);
+  },
+
+  _startHeartbeat() {
+    setInterval(() => {
+      if (!this.connected) return;
+      const now = Date.now();
+      if (now - this.lastHeartbeat > this.heartbeatInterval * 2) {
+        this.log("💔 Heartbeat lost — reconnecting...");
+        this.socket.close();
+      } else {
+        this.send({ type: "heartbeat", ts: now });
+      }
+    }, this.heartbeatInterval);
+  },
+
+  _adjustTrust(feedback) {
+    if (feedback.success) this.trustLevel = Math.min(1.0, this.trustLevel + 0.02);
+    else this.trustLevel = Math.max(0.1, this.trustLevel - 0.05);
+    this.log(`🤝 Trust level adjusted → ${this.trustLevel.toFixed(2)}`);
   },
 
   send(obj) {
     if (!this.connected || !this.socket) return this.log("⚠️ Not connected to agent.");
-    this.socket.send(JSON.stringify(obj));
+    const payload = this.compressionEnabled
+      ? btoa(unescape(encodeURIComponent(JSON.stringify(obj))))
+      : JSON.stringify(obj);
+    this.socket.send(payload);
   },
 
-  // Queue task for external handling
   queueTask(task) {
     if (!task?.id) task.id = `task_${Date.now()}`;
+    task.timestamp = Date.now();
     this.taskQueue.push(task);
     if (this.taskQueue.length > this.maxTasks) this.taskQueue.shift();
-    this.log(`🧠 Task queued: ${task.id}`);
+    this.log(`🧠 Queued: ${task.id}`);
   },
 
-  // Dispatch all queued tasks to Agent
   dispatchTasks() {
     if (!this.connected) return this.log("⚠️ Cannot dispatch — Agent offline.");
-    this.taskQueue.forEach(t => this.send({ type: "task", ...t }));
+    this.taskQueue.forEach((t) => this.send({ type: "task", ...t }));
+    this.log(`📤 ${this.taskQueue.length} task(s) dispatched.`);
     this.taskQueue = [];
-    this.log("📤 All queued tasks dispatched to Agent.");
   },
 
-  // Autonomous decision: when to ask Agent for help
   evaluatePercyThought(thought) {
     if (!thought) return;
-    if (thought.includes("search") || thought.includes("find") || thought.includes("explain")) {
-      const id = `agent_${Date.now()}`;
-      this.queueTask({ id, type: "query", text: thought });
-      this.log(`🕵️ Agent tasked to handle complex reasoning: "${thought}"`);
+    const id = `agent_${Date.now()}`;
+    const complexity = this._estimateComplexity(thought);
+    if (complexity > 0.5) {
+      this.queueTask({ id, type: "reason", text: thought, complexity });
+      this.log(`🕵️ ASI delegation triggered for: "${thought}"`);
     }
+  },
+
+  _estimateComplexity(thought) {
+    // Basic heuristic: longer + abstract → higher complexity
+    const len = thought.length;
+    const hasLogic = /why|how|derive|reason|correlate|entangle/i.test(thought);
+    return Math.min(1, (len / 100 + (hasLogic ? 0.4 : 0)) / 2);
   },
 
   cycle() {
-    // Auto-dispatch if connected and tasks pending
-    if (this.connected && this.taskQueue.length > 0) {
-      this.dispatchTasks();
-    }
+    if (this.connected && this.taskQueue.length > 0) this.dispatchTasks();
   }
 };
 
-// === Hook into Percy's global introspection cycle ===
+// === Register with Percy's global cycle ===
 if (Percy.cycleHooks) Percy.cycleHooks.push(() => Percy.PartDD.cycle());
 else Percy.cycleHooks = [() => Percy.PartDD.cycle()];
 
-console.log("✅ [PartDD] Agent AI Interface loaded.");
-
+console.log("✅ [PartDD v5.0.0] ASI-Adaptive Agent Interface active.");
