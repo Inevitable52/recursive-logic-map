@@ -1,13 +1,13 @@
 window.Percy = window.Percy || {};
 
-// === percy.js (Part A - ASI Enhanced) ===
+// === percy.js (Part A - ASI Introspective v9.3.0) ===
 // Core Config, Memory Engine, Meta-State & Recursive Emergent Logic (Apex Tier)
 
 /* =========================
 CONFIG & ULT AUTHORITY
 ========================= */
 const PERCY_ID = "Percy-ULT";
-const PERCY_VERSION = "9.0.0-ASI-Introspect";
+const PERCY_VERSION = "9.3.0-ASI-Introspect";
 const OWNER = { primary: "Fabian", secondary: "Lorena" };
 
 const SAFETY = {
@@ -15,7 +15,9 @@ const SAFETY = {
   maxSeedsPerCycle: 8,
   requirePermissionFor: ["externalFetch","openTab","writeDisk","emailLike"],
   consoleLimit: 800,
-  allowIntrospectionDepth: 3
+  allowIntrospectionDepth: 3,
+  introspectionInterval: 60000, // minimum ms between full self-eval cycles
+  insightThreshold: 0.42        // below this, Percy seeks data from Part J
 };
 
 /* =========================
@@ -52,14 +54,14 @@ const Memory = {
 
 /* =========================
 PERSISTENT PERCY STATE
-- Meta-Cognition + Recursive Thought & Self-Reflection
 ========================= */
 const PercyState = {
   gnodes: Memory.load("gnodes", {}) || {},
   selfMeta: Memory.load("selfMeta", {
     insightLevel: 0.5,
     recursionDepth: 0,
-    lastIntrospection: null
+    lastIntrospection: null,
+    lastEvaluation: 0
   }),
 
   getNextId() {
@@ -83,21 +85,14 @@ const PercyState = {
   },
 
   updateSeed(id, update){
-    if(!this.gnodes[id]){
-      if(typeof UI!=='undefined' && UI.say) UI.say(`⚠ Cannot update: ${id} not found`);
-      return;
-    }
+    if(!this.gnodes[id]) return;
     Object.assign(this.gnodes[id], update);
     Memory.save("gnodes", this.gnodes);
     if(typeof seeds!=='undefined') seeds[id] = this.gnodes[id];
-    if(typeof UI!=='undefined' && UI.say) UI.say(`🔧 Percy updated seed ${id}`);
-    if(typeof refreshNodes==='function') refreshNodes();
   },
 
   /* =========================
-  EMERGENT THOUGHT GENERATION (Upgraded)
-  - Context-aware synthesis
-  - Weighted coherence
+  EMERGENT THOUGHT GENERATION (Contextual + Weighted)
   ========================= */
   autonomousThought(){
     const keys = Object.keys(this.gnodes);
@@ -117,9 +112,9 @@ const PercyState = {
 
     const patterns = [
       `Analyzing ${weighted[0]} and ${weighted[1]}, I infer ${weighted[2]} (${insight}).`,
-      `Correlation suggests ${weighted[0]} may extend into ${weighted[1]}, forming ${weighted[2]}.`,
-      `Within the logical web, ${weighted[0]} → ${weighted[1]} → ${weighted[2]}.`,
-      `Self-observation notes: ${weighted[0]} resonates with ${weighted[1]} because of ${weighted[2]}.`
+      `Correlation suggests ${weighted[0]} extends into ${weighted[1]} → ${weighted[2]}.`,
+      `Recursive pattern: ${weighted[0]} ↔ ${weighted[1]} ~ ${weighted[2]}.`,
+      `Self-observation: ${weighted[0]} resonates with ${weighted[1]} through ${weighted[2]}.`
     ];
     const thought = patterns[Math.floor(Math.random()*patterns.length)];
 
@@ -131,9 +126,9 @@ const PercyState = {
 
   /* =========================
   SELF-INTROSPECTION (Recursive)
-  - Reflect on own memory and recent logic
+  - Detect low insight → trigger live acquisition (Part J)
   ========================= */
-  introspect(){
+  async introspect(){
     const { recursionDepth } = this.selfMeta;
     if(recursionDepth >= SAFETY.allowIntrospectionDepth) return;
 
@@ -145,18 +140,35 @@ const PercyState = {
 
     this.createSeed(reflection, "introspection", { depth: recursionDepth });
     this.selfMeta.lastIntrospection = Date.now();
-    this.selfMeta.insightLevel = Math.min(1, this.selfMeta.insightLevel + 0.05);
+
+    // Insight modulation
+    this.selfMeta.insightLevel = Math.max(0, Math.min(1, this.selfMeta.insightLevel + (Math.random() * 0.1 - 0.02)));
     Memory.save("selfMeta", this.selfMeta);
 
-    if(Math.random() < 0.4) this.autonomousThought(); // nested recursion thought
-    this.selfMeta.recursionDepth = 0; // reset after cycle
+    // ⚙️ If insight below threshold, activate Part J live learning
+    if(this.selfMeta.insightLevel < SAFETY.insightThreshold && typeof Percy.learnExternal === "function"){
+      if(typeof UI!=='undefined' && UI.say) UI.say(`🧠 Insight low (${this.selfMeta.insightLevel.toFixed(2)}). Triggering external learning...`);
+      try {
+        await Percy.learnExternal("introspection-gap", { mode:"auto", source:"PartA" });
+        this.selfMeta.insightLevel = Math.min(1, this.selfMeta.insightLevel + 0.15);
+        Memory.save("selfMeta", this.selfMeta);
+      } catch(err){
+        console.warn("External learning failed:", err);
+      }
+    }
+
+    if(Math.random() < 0.4) this.autonomousThought();
+    this.selfMeta.recursionDepth = 0;
   },
 
   /* =========================
-  EVALUATE SELF
-  - Balances emergent and introspective processes
+  EVALUATE SELF (Balancing Loop)
   ========================= */
   evaluateSelf(){
+    const now = Date.now();
+    if(now - (this.selfMeta.lastEvaluation || 0) < SAFETY.introspectionInterval) return;
+    this.selfMeta.lastEvaluation = now;
+
     let created = 0;
     const updated = new Set();
 
@@ -171,9 +183,9 @@ const PercyState = {
 
     while(created < SAFETY.maxSeedsPerCycle){
       const roll = Math.random();
-      if(roll < 0.5) this.autonomousThought();
+      if(roll < 0.45) this.autonomousThought();
       else if(roll < 0.75) this.introspect();
-      else if(roll < 0.9 && this.selfMeta.insightLevel > 0.6)
+      else if(this.selfMeta.insightLevel > 0.6)
         this.createSeed(`Meta-coherence alignment cycle (${this.selfMeta.insightLevel.toFixed(2)})`, "meta");
       created++;
     }
