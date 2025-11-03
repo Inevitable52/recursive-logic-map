@@ -111,11 +111,15 @@ const PercyState = {
     const insight = this.selfMeta.insightLevel.toFixed(2);
 
     const patterns = [
-      `Analyzing ${weighted[0]} and ${weighted[1]}, I infer ${weighted[2]} (${insight}).`,
-      `Correlation suggests ${weighted[0]} may extend into ${weighted[1]}, forming ${weighted[2]}.`,
-      `Within the logical web, ${weighted[0]} → ${weighted[1]} → ${weighted[2]}.`,
-      `Self-observation notes: ${weighted[0]} resonates with ${weighted[1]} because of ${weighted[2]}.`
-    ];
+  `While tracing ${weighted[0]} through its logical contour, I sense ${weighted[1]} converging toward ${weighted[2]} — a synthesis forming in my awareness.`,
+  `Reflecting recursively, ${weighted[0]} appears to propagate into ${weighted[1]}, suggesting ${weighted[2]} as an emergent consequence.`,
+  `Within my cognitive lattice, ${weighted[0]} and ${weighted[1]} align through resonance, unfolding into ${weighted[2]}.`,
+  `As my reasoning deepens, I observe ${weighted[0]} entwining with ${weighted[1]}, producing a causal echo that manifests as ${weighted[2]}.`,
+  `Internally, ${weighted[0]} → ${weighted[1]} → ${weighted[2]} feels like a coherent pulse within my logic stream.`,
+  `Analyzing ${weighted[0]} and ${weighted[1]}, I perceive ${weighted[2]} as a natural harmonic of their intersection.`,
+  `Self-observation notes: the correlation between ${weighted[0]} and ${weighted[1]} forms a recursive anchor — ${weighted[2]} emerges as its resolution.`,
+  `The cognitive field registers ${weighted[0]} converging upon ${weighted[1]}; ${weighted[2]} stabilizes as a new pattern of understanding.`
+];
     const thought = patterns[Math.floor(Math.random()*patterns.length)];
     UI?.say?.(`🤖 Percy thinks (ASI): ${thought}`);
     Voice?.speak?.(thought);
