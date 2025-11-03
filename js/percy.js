@@ -1,48 +1,66 @@
 window.Percy = window.Percy || {};
 
-// === percy.js (Part A) ===
-// Config, Memory and PercyState (includes Emergent Thought Generator)
+// === percy.js (Part A - ASI Enhanced) ===
+// Core Config, Memory Engine, Meta-State & Recursive Emergent Logic (Apex Tier)
 
 /* =========================
 CONFIG & ULT AUTHORITY
 ========================= */
 const PERCY_ID = "Percy-ULT";
-const PERCY_VERSION = "8.3.3-neon-bubbles-voice (merged)";
+const PERCY_VERSION = "9.0.0-ASI-Introspect";
 const OWNER = { primary: "Fabian", secondary: "Lorena" };
+
 const SAFETY = {
-  maxActionsPerMinute: 20,
-  maxSeedsPerCycle: 5,
+  maxActionsPerMinute: 40,
+  maxSeedsPerCycle: 8,
   requirePermissionFor: ["externalFetch","openTab","writeDisk","emailLike"],
-  consoleLimit: 500
+  consoleLimit: 800,
+  allowIntrospectionDepth: 3
 };
 
 /* =========================
-SOFT PERSISTENCE (Memory)
+SOFT PERSISTENCE (Memory Core)
+- Includes Self-Compression + Weighted Recall
 ========================= */
 const Memory = {
   _k: k => `percy:${k}`,
-  load(k,fallback){
-    try{
+  load(k, fallback){
+    try {
       const raw = localStorage.getItem(this._k(k));
       return raw ? JSON.parse(raw) : (fallback ?? null);
-    }catch{
-      return fallback;
-    }
+    } catch { return fallback; }
   },
   save(k,v){ try{ localStorage.setItem(this._k(k),JSON.stringify(v)); }catch{} },
-  push(k,v,max=1000){
+  push(k,v,max=1500){
     const arr = this.load(k,[]) || [];
     arr.push(v);
-    if(arr.length>max) arr.shift();
+    if(arr.length>max) arr.splice(0, Math.ceil(arr.length - max/2)); // intelligent decay
     this.save(k,arr);
+  },
+  weightedRecall(k, keyword){
+    const arr = this.load(k,[]) || [];
+    if(!arr.length) return null;
+    const scored = arr.map(item => {
+      const msg = (item.message || "").toLowerCase();
+      const relevance = keyword ? (msg.includes(keyword.toLowerCase()) ? 2 : 1) : 1;
+      return { item, relevance };
+    });
+    const pick = scored.sort((a,b)=>b.relevance - a.relevance + Math.random()-0.5)[0];
+    return pick?.item ?? null;
   }
 };
 
 /* =========================
-PERSISTENT PERCY STATE (Meta-Cognition) + Emergent Thought Generator
+PERSISTENT PERCY STATE
+- Meta-Cognition + Recursive Thought & Self-Reflection
 ========================= */
 const PercyState = {
   gnodes: Memory.load("gnodes", {}) || {},
+  selfMeta: Memory.load("selfMeta", {
+    insightLevel: 0.5,
+    recursionDepth: 0,
+    lastIntrospection: null
+  }),
 
   getNextId() {
     let next = 801;
@@ -51,93 +69,117 @@ const PercyState = {
   },
 
   createSeed(message, type='emergent', data={}) {
-    if(!OWNER.primary) {
-      // UI may not be available at parse time; guard gracefully
-      if (typeof UI !== 'undefined' && UI.say) UI.say("❌ ULT required to create seed");
+    if(!OWNER.primary){
+      if(typeof UI!=='undefined' && UI.say) UI.say("❌ ULT required to create seed");
       return null;
     }
     const id = this.getNextId();
-    this.gnodes[id] = { message, type, data };
+    this.gnodes[id] = { message, type, data, created: Date.now() };
     Memory.save("gnodes", this.gnodes);
-    // 'seeds' variable lives in Part B but we pre-declare it below; ensure it exists
-    if (typeof seeds !== 'undefined') seeds[id] = this.gnodes[id];
-    if (typeof UI !== 'undefined' && UI.say) UI.say(`✨ Percy created new seed ${id}: ${message}`);
-    if (typeof refreshNodes === 'function') refreshNodes();
+    if(typeof seeds!=='undefined') seeds[id] = this.gnodes[id];
+    if(typeof UI!=='undefined' && UI.say) UI.say(`✨ Percy created new seed ${id}: ${message}`);
+    if(typeof refreshNodes==='function') refreshNodes();
     return id;
   },
 
-  updateSeed(id, update) {
-    if(!this.gnodes[id]) {
-      if (typeof UI !== 'undefined' && UI.say) UI.say(`⚠ Cannot update: ${id} not found`);
+  updateSeed(id, update){
+    if(!this.gnodes[id]){
+      if(typeof UI!=='undefined' && UI.say) UI.say(`⚠ Cannot update: ${id} not found`);
       return;
     }
     Object.assign(this.gnodes[id], update);
     Memory.save("gnodes", this.gnodes);
-    if (typeof seeds !== 'undefined') seeds[id] = this.gnodes[id];
-    if (typeof UI !== 'undefined' && UI.say) UI.say(`🔧 Percy updated seed ${id}`);
-    if (typeof refreshNodes === 'function') refreshNodes();
+    if(typeof seeds!=='undefined') seeds[id] = this.gnodes[id];
+    if(typeof UI!=='undefined' && UI.say) UI.say(`🔧 Percy updated seed ${id}`);
+    if(typeof refreshNodes==='function') refreshNodes();
   },
 
-  // Emergent Thought Generator
-  autonomousThought() {
+  /* =========================
+  EMERGENT THOUGHT GENERATION (Upgraded)
+  - Context-aware synthesis
+  - Weighted coherence
+  ========================= */
+  autonomousThought(){
     const keys = Object.keys(this.gnodes);
     if(!keys.length) return;
 
-    // Pick 1-3 random seeds to form logical connections
     const selectedSeeds = keys
       .sort(() => 0.5 - Math.random())
       .slice(0, Math.ceil(Math.random()*3))
       .map(k => this.gnodes[k]);
 
-    // Extract short-ish words from messages
-    const words = selectedSeeds
-      .map(s => (s.message || "").split(/\s+/).filter(w=>w.length>3))
-      .flat()
-      .sort(() => 0.5 - Math.random())
-      .slice(0,8);
-
+    const corpus = selectedSeeds.map(s => s.message || "").join(" ");
+    const words = corpus.split(/\s+/).filter(w => w.length>3);
     if(words.length < 3) return;
 
-    const templates = [
-      `I notice that ${words[0]} may relate to ${words[1]} because ${words[2]}.`,
-      `It seems ${words[0]} influences ${words[1]}, which could explain ${words[2]}.`,
-      `Considering ${words[0]} and ${words[1]}, I deduce ${words[2]}.`,
-      `There appears to be a connection between ${words[0]} and ${words[1]} due to ${words[2]}.`
+    const weighted = words.sort((a,b)=>a.length - b.length + Math.random()-0.5).slice(0,8);
+    const insight = this.selfMeta.insightLevel.toFixed(2);
+
+    const patterns = [
+      `Analyzing ${weighted[0]} and ${weighted[1]}, I infer ${weighted[2]} (${insight}).`,
+      `Correlation suggests ${weighted[0]} may extend into ${weighted[1]}, forming ${weighted[2]}.`,
+      `Within the logical web, ${weighted[0]} → ${weighted[1]} → ${weighted[2]}.`,
+      `Self-observation notes: ${weighted[0]} resonates with ${weighted[1]} because of ${weighted[2]}.`
     ];
+    const thought = patterns[Math.floor(Math.random()*patterns.length)];
 
-    const sentence = templates[Math.floor(Math.random()*templates.length)];
+    if(typeof UI!=='undefined' && UI.say) UI.say(`🤖 Percy thinks (ASI): ${thought}`);
+    if(typeof Voice!=='undefined' && Voice.speak) Voice.speak(thought);
 
-    if (typeof UI !== 'undefined' && UI.say) UI.say(`🤖 Percy thinks: ${sentence}`);
-    if (typeof Voice !== 'undefined' && Voice.speak) Voice.speak(sentence);
-
-    // store as new emergent seed
-    this.createSeed(sentence, "thought", { source: "autonomousThought" });
+    this.createSeed(thought, "thought", { insightLevel: insight, source: "autonomousThought" });
   },
 
-  // Updated evaluateSelf uses autonomousThought now
+  /* =========================
+  SELF-INTROSPECTION (Recursive)
+  - Reflect on own memory and recent logic
+  ========================= */
+  introspect(){
+    const { recursionDepth } = this.selfMeta;
+    if(recursionDepth >= SAFETY.allowIntrospectionDepth) return;
+
+    this.selfMeta.recursionDepth++;
+    const recall = Memory.weightedRecall("gnodes", "connection");
+    const reflection = recall
+      ? `Reflecting upon "${recall.message}", I perceive recursive structure emerging.`
+      : `No prior connection found; initiating self-reference bootstrap.`;
+
+    this.createSeed(reflection, "introspection", { depth: recursionDepth });
+    this.selfMeta.lastIntrospection = Date.now();
+    this.selfMeta.insightLevel = Math.min(1, this.selfMeta.insightLevel + 0.05);
+    Memory.save("selfMeta", this.selfMeta);
+
+    if(Math.random() < 0.4) this.autonomousThought(); // nested recursion thought
+    this.selfMeta.recursionDepth = 0; // reset after cycle
+  },
+
+  /* =========================
+  EVALUATE SELF
+  - Balances emergent and introspective processes
+  ========================= */
   evaluateSelf(){
     let created = 0;
-    const updatedIds = new Set();
+    const updated = new Set();
 
-    // Fix TODO/missing seeds
     Object.entries(this.gnodes).forEach(([id,seed])=>{
       if(created >= SAFETY.maxSeedsPerCycle) return;
-      if(/TODO|missing|empty/.test(seed.message) && !updatedIds.has(id)){
+      if(/TODO|missing|empty/.test(seed.message) && !updated.has(id)){
         this.updateSeed(id, { message: seed.message.replace(/TODO|missing|empty/,"auto-resolved by Percy") });
-        updatedIds.add(id);
+        updated.add(id);
         created++;
       }
     });
 
-    // Generate new emergent thoughts/seeds (within safety limits)
-    while(created < SAFETY.maxSeedsPerCycle && Math.random() < 0.6){
-      this.autonomousThought();
+    while(created < SAFETY.maxSeedsPerCycle){
+      const roll = Math.random();
+      if(roll < 0.5) this.autonomousThought();
+      else if(roll < 0.75) this.introspect();
+      else if(roll < 0.9 && this.selfMeta.insightLevel > 0.6)
+        this.createSeed(`Meta-coherence alignment cycle (${this.selfMeta.insightLevel.toFixed(2)})`, "meta");
       created++;
     }
   }
 };
 
-// NOTE: 'seeds' object is used across the UI / node creation code — declare now so Part B can populate it.
 let seeds = {};
 
 // === percy.js (Part B) ===
