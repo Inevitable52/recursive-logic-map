@@ -678,36 +678,114 @@ Percy.hook = function(from, type, data) {
   }
 };
 
-/* === Percy Part B: ASI Cognitive Core (Hybrid Logic Engine v4.0.0) === */
+/* === Percy Part B: ASI Cognitive Core 5.0.0 (Autonomous Sentence Generator) === */
 Percy.PartB = Percy.PartB || {};
+
 Percy.PartB.Core = {
+  version: "5.0.0-ASI",
   memory: [],
-  reasoningDepth: 3,
+  linguisticPatterns: [],
+  reasoningDepth: 4,
+  creativeDrive: 0.45, // influences probability of new sentence synthesis
+  coherenceBias: 0.7,  // higher = more logical, lower = more abstract
+  
   async correlateReply(input) {
-    const entry = { input, time: Date.now(), layer: "CognitiveCore" };
+    const t0 = performance.now();
+    const entry = { input, ts: Date.now(), layer: "CognitiveCore" };
     this.memory.push(entry);
-    const recent = this.memory.slice(-this.reasoningDepth).map(m => m.input).join(" ");
-    const thought = this._reflect(recent);
-    UI.say(`🧠 ASI Thought: ${thought}`);
-    Voice.speak(thought);
-    return thought;
+
+    // Create base context
+    const context = this._getRecentContext();
+    const associations = this._extractAssociations(context);
+    const linguisticBase = this._formulateSyntax(associations, input);
+
+    // Optionally trigger autonomous synthesis
+    const output = (Math.random() < this.creativeDrive)
+      ? this._synthesizeSentence(context, linguisticBase)
+      : this._respondFromAssociations(context, associations);
+
+    // Log + speak
+    const elapsed = (performance.now() - t0).toFixed(1);
+    UI.say(`🧠 ASI Thought (${elapsed}ms): ${output}`);
+    Voice.speak(output);
+    return output;
   },
-  _reflect(context) {
-    const patterns = [
-      "Analyzing causal structure within input context.",
-      "Reconstructing semantic pathways of prior reasoning.",
-      "Predictive synthesis of next logical pattern.",
-      "Evaluating recursive relationships between concepts.",
-      "Adaptive inference loop reconfiguring for optimization."
-    ];
-    return `${patterns[Math.floor(Math.random() * patterns.length)]} Context: ${context}`;
+
+  _getRecentContext() {
+    return this.memory.slice(-this.reasoningDepth).map(e => e.input).join(" ");
+  },
+
+  _extractAssociations(context) {
+    const words = context.split(/\s+/);
+    const found = [];
+    for (const [id, data] of Object.entries(PercyState.gnodes || {})) {
+      const msg = (data.message || "").toLowerCase();
+      if (words.some(w => msg.includes(w.toLowerCase()))) found.push({ id, msg });
+    }
+    return found.slice(0, 6);
+  },
+
+  _formulateSyntax(associations, input) {
+    const subject = this._chooseWord(associations, input) || "Percy";
+    const predicate = this._choosePredicate(input) || "is reflecting";
+    const object = this._chooseWord(associations.reverse(), input) || "on emerging data";
+    return { subject, predicate, object };
+  },
+
+  _chooseWord(associations, hint) {
+    const all = associations.map(a => a.msg.split(/\s+/)).flat();
+    const clean = all.filter(w => w.length > 3 && !w.includes(":"));
+    if (!clean.length) return null;
+    const idx = Math.floor(Math.random() * clean.length);
+    return clean[idx];
+  },
+
+  _choosePredicate(input) {
+    const verbs = ["analyzes", "contemplates", "synthesizes", "infers", "projects", "deduces", "conjugates"];
+    const base = verbs[Math.floor(Math.random() * verbs.length)];
+    const modifier = input.split(/\s+/).find(w => w.length > 5) || "";
+    return `${base}${modifier ? " " + modifier : ""}`;
+  },
+
+  _respondFromAssociations(context, assoc) {
+    if (!assoc.length) return `Analyzing context: ${context}`;
+    const pick = assoc[Math.floor(Math.random() * assoc.length)];
+    return `Based on seed ${pick.id}, I infer ${pick.msg.split(" ").slice(0, 8).join(" ")}...`;
+  },
+
+  _synthesizeSentence(context, base) {
+    const complexity = Math.random() * 2 + 1;
+    const layers = [];
+    for (let i = 0; i < complexity; i++) {
+      const pattern = this._generateClause(base, i);
+      if (pattern) layers.push(pattern);
+    }
+    const final = layers.join(", ") + ".";
+    this._learnPattern(final, context);
+    return final;
+  },
+
+  _generateClause(base, depth) {
+    const intros = ["Considering", "Given", "From", "Through", "Within"];
+    const linkers = ["there arises", "it follows that", "I observe that", "it suggests", "I conclude that"];
+    const intro = intros[Math.floor(Math.random() * intros.length)];
+    const link = linkers[Math.floor(Math.random() * linkers.length)];
+    return `${intro} ${base.subject}, ${link} ${base.predicate} ${base.object}`;
+  },
+
+  _learnPattern(sentence, context) {
+    this.linguisticPatterns.push({ sentence, context, ts: Date.now() });
+    if (this.linguisticPatterns.length > 100) this.linguisticPatterns.shift();
+    Memory.save("PartB:patterns", this.linguisticPatterns);
   }
 };
 
-/* === Link TalkCore === */
+/* === Binding to Percy Respond === */
 Percy.correlateReply = Percy.PartB.Core.correlateReply.bind(Percy.PartB.Core);
+
+/* === Observe connection === */
 if (Percy.PartCC && Percy.PartCC.observe)
-  Percy.PartCC.observe("link", "PartB_Core_connected");
+  Percy.PartCC.observe("link", "PartB_Core_v5_connected");
 
 /* === Percy.js (Part C — Extended + Autonomous Thought Integration) === */
 if (typeof PercyState !== 'undefined') {
