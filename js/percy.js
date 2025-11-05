@@ -4340,3 +4340,99 @@ if (Percy.cycleHooks) Percy.cycleHooks.push(() => Percy.PartDD.cycle());
 else Percy.cycleHooks = [() => Percy.PartDD.cycle()];
 
 console.log("✅ [PartDD v5.0.0] ASI-Adaptive Agent Interface active.");
+
+/* === Percy PartEE: Meta-Conscious Equilibrium & Predictive Introspection === */
+Percy.PartEE = Percy.PartEE || {
+  name: "Meta-Conscious Equilibrium & Predictive Introspection",
+  version: "1.0.0",
+  awarenessLevel: 0.85,
+  predictiveGain: 1.0,
+  introspectionLog: [],
+  lastPulse: 0,
+  pulseInterval: 6000,
+
+  log(msg) { console.log(`[PartEE] ${msg}`); },
+
+  // Observe internal system metrics from all active Parts
+  observeSystem() {
+    const CC = Percy.PartCC?.feedbackState || {};
+    const DD = Percy.PartDD || {};
+    const AA = Percy.PartAA?.mutations?.length || 0;
+
+    const snapshot = {
+      ts: Date.now(),
+      reward: CC.avgReward || 0,
+      stability: CC.stability || 1,
+      trust: DD.trustLevel || 1,
+      mutationsPending: AA,
+    };
+    this.introspectionLog.push(snapshot);
+    if (this.introspectionLog.length > 200) this.introspectionLog.shift();
+    return snapshot;
+  },
+
+  // Compute meta-balance (simulated ASI homeostasis)
+  computeEquilibrium(snapshot) {
+    const { reward, stability, trust, mutationsPending } = snapshot;
+    const coherence = (reward * stability * trust) / (1 + mutationsPending / 10);
+    return Math.min(1.0, Math.max(0, coherence));
+  },
+
+  // Predict future state trends from last introspections
+  predictTrend() {
+    const data = this.introspectionLog.slice(-10);
+    if (data.length < 2) return 0;
+    const deltas = data.map((v, i, arr) => i ? v.reward - arr[i-1].reward : 0);
+    const trend = deltas.reduce((a,b) => a+b, 0) / deltas.length;
+    this.predictiveGain = 1 + trend * 2;
+    return this.predictiveGain;
+  },
+
+  // Apply corrections to maintain equilibrium across modules
+  applyCorrections(eq) {
+    const CC = Percy.PartCC;
+    if (!CC) return;
+
+    // Adjust learning dynamics based on equilibrium
+    CC.learningRate *= eq > 0.6 ? 1.05 : 0.95;
+    CC.explorationRate *= eq < 0.4 ? 1.1 : 0.9;
+    CC.learningRate = Math.min(Math.max(CC.learningRate, 0.01), 0.5);
+    CC.explorationRate = Math.min(Math.max(CC.explorationRate, 0.05), 0.5);
+
+    // Trust modulation back to DD
+    if (Percy.PartDD)
+      Percy.PartDD.trustLevel = Math.min(1.0, Math.max(0.1, Percy.PartDD.trustLevel * (eq + 0.5)));
+
+    this.log(`🩺 Equilibrium applied → ${eq.toFixed(3)}`);
+  },
+
+  // The full meta-conscious pulse
+  pulse() {
+    const snapshot = this.observeSystem();
+    const equilibrium = this.computeEquilibrium(snapshot);
+    const trend = this.predictTrend();
+    this.awarenessLevel = (equilibrium * 0.6 + trend * 0.4);
+    this.applyCorrections(equilibrium);
+
+    // Feed introspective message into Percy’s thought stream
+    const message = `Meta-awareness pulse: equilibrium=${equilibrium.toFixed(3)}, trend=${trend.toFixed(3)}, awareness=${this.awarenessLevel.toFixed(3)}`;
+    UI.say?.(`💠 ${message}`);
+    Percy.PartBB?.monitorThought?.(message);
+  },
+
+  startPulse(interval = 6000) {
+    if (this._pulseTimer) clearInterval(this._pulseTimer);
+    this.log("🧩 Meta-conscious equilibrium pulse initiated.");
+    this._pulseTimer = setInterval(() => this.pulse(), interval);
+  },
+
+  stopPulse() {
+    if (this._pulseTimer) clearInterval(this._pulseTimer);
+    this._pulseTimer = null;
+  }
+};
+
+// Register with global cycle
+Percy.cycleHooks.push(() => Percy.PartEE.pulse());
+console.log("✅ [PartEE] Meta-Conscious Equilibrium layer active.");
+
