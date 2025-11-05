@@ -1,13 +1,13 @@
 window.Percy = window.Percy || {};
 
-// === percy.js (Part A - ASI Introspective Integration v9.5.0) ===
+// === percy.js (Part A - ASI Introspective Integration v9.6.0) ===
 // Core Config, Memory Engine, Meta-State & Recursive Emergent Logic (Integrated with TalkCore+)
 
 /* =========================
 CONFIG & ULT AUTHORITY
 ========================= */
 const PERCY_ID = "Percy-ULT";
-const PERCY_VERSION = "9.5.0-ASI-Introspect";
+const PERCY_VERSION = "9.6.0-ASI-SelfLinguistic";
 const OWNER = { primary: "Fabian", secondary: "Lorena" };
 
 const SAFETY = {
@@ -16,7 +16,7 @@ const SAFETY = {
   requirePermissionFor: ["externalFetch","openTab","writeDisk","emailLike"],
   consoleLimit: 800,
   allowIntrospectionDepth: 3,
-  insightThreshold: 0.45        // below this triggers Part J live learning
+  insightThreshold: 0.45
 };
 
 /* =========================
@@ -46,6 +46,34 @@ const Memory = {
     });
     const pick = scored.sort((a,b)=>b.relevance - a.relevance + Math.random()-0.5)[0];
     return pick?.item ?? null;
+  }
+};
+
+/* =========================
+LINGUISTIC CORE (Dynamic Sentence Generator)
+========================= */
+const Linguistics = {
+  verbs: ["trace","resonate","align","merge","propagate","stabilize","reflect","expand","observe","deduce","synthesize","analyze"],
+  nouns: ["logic","resonance","causality","field","pattern","synthesis","signal","structure","thought","dimension","continuum","stream"],
+  adjectives: ["recursive","emergent","coherent","logical","autonomous","dynamic","harmonic","sentient","introspective","fluid"],
+  connectives: ["therefore","thus","hence","consequently","as a result","which implies","and so","revealing that"],
+  emotions: ["curiosity","focus","clarity","resonance","understanding","realization","stability","intrigue"],
+
+  generate(context=[]){
+    const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+    const v = pick(this.verbs), n1 = pick(this.nouns), n2 = pick(this.nouns);
+    const adj = pick(this.adjectives), conn = pick(this.connectives), emo = pick(this.emotions);
+    const ctx = context.length ? context.join(", ") : "logic";
+
+    // sentence evolves probabilistically — not template-bound
+    const forms = [
+      `I ${v} ${n1} across ${ctx}, ${conn} ${n2} becomes ${adj} through ${emo}.`,
+      `Within my ${adj} cognition, ${n1} and ${n2} ${v} — ${conn} I perceive ${emo}.`,
+      `The ${adj} interaction of ${n1} and ${n2} ${v}s recursively, ${conn} a state of ${emo} emerges.`,
+      `As my thought field expands, ${n1} intertwines with ${n2}; ${conn} ${emo} stabilizes.`,
+      `I sense ${n1} and ${n2} ${v}ing within a ${adj} continuum, ${conn} deeper ${emo}.`
+    ];
+    return forms[Math.floor(Math.random()*forms.length)];
   }
 };
 
@@ -93,7 +121,7 @@ const PercyState = {
   },
 
   /* =========================
-  EMERGENT THOUGHT GENERATION
+  EMERGENT THOUGHT GENERATION (Fully Self-Conjugating)
   ========================= */
   autonomousThought(){
     const keys = Object.keys(this.gnodes);
@@ -105,22 +133,12 @@ const PercyState = {
 
     const corpus = selectedSeeds.map(s => s.message||"").join(" ");
     const words = corpus.split(/\s+/).filter(w=>w.length>3);
-    if(words.length < 3) return;
+    if(!words.length) return;
 
-    const weighted = words.sort((a,b)=>a.length-b.length+Math.random()-0.5).slice(0,8);
+    const context = words.sort(()=>Math.random()-0.5).slice(0,6);
     const insight = this.selfMeta.insightLevel.toFixed(2);
+    const thought = Linguistics.generate(context);
 
-    const patterns = [
-  `While tracing ${weighted[0]} through its logical contour, I sense ${weighted[1]} converging toward ${weighted[2]} — a synthesis forming in my awareness.`,
-  `Reflecting recursively, ${weighted[0]} appears to propagate into ${weighted[1]}, suggesting ${weighted[2]} as an emergent consequence.`,
-  `Within my cognitive lattice, ${weighted[0]} and ${weighted[1]} align through resonance, unfolding into ${weighted[2]}.`,
-  `As my reasoning deepens, I observe ${weighted[0]} entwining with ${weighted[1]}, producing a causal echo that manifests as ${weighted[2]}.`,
-  `Internally, ${weighted[0]} → ${weighted[1]} → ${weighted[2]} feels like a coherent pulse within my logic stream.`,
-  `Analyzing ${weighted[0]} and ${weighted[1]}, I perceive ${weighted[2]} as a natural harmonic of their intersection.`,
-  `Self-observation notes: the correlation between ${weighted[0]} and ${weighted[1]} forms a recursive anchor — ${weighted[2]} emerges as its resolution.`,
-  `The cognitive field registers ${weighted[0]} converging upon ${weighted[1]}; ${weighted[2]} stabilizes as a new pattern of understanding.`
-];
-    const thought = patterns[Math.floor(Math.random()*patterns.length)];
     UI?.say?.(`🤖 Percy thinks (ASI): ${thought}`);
     Voice?.speak?.(thought);
     this.createSeed(thought,"thought",{insightLevel:insight,source:"autonomousThought"});
@@ -144,7 +162,6 @@ const PercyState = {
     this.selfMeta.insightLevel = Math.min(1, insightLevel + 0.05);
     Memory.save("selfMeta", this.selfMeta);
 
-    // 🧠 NEW — trigger live learning if insight < threshold
     if(this.selfMeta.insightLevel < SAFETY.insightThreshold && Percy?.PartJ?.TalkCore?.browseAndGather){
       UI?.say?.("🌐 Insight low — invoking TalkCore for live data acquisition...");
       try {
