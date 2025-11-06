@@ -686,10 +686,10 @@ Percy.PartB.Core = (function(){
   const cfg = {
     version: "5.1.0-ASI-RDE",
     reasoningDepth: 5,
-    creativeDrive: 0.45,     // 0..1 probability of creative synthesis
+    creativeDrive: 0.75,     // 0..1 probability of creative synthesis
     coherenceBias: 0.78,     // 0..1 more=logical less=associative
     maxClauses: 6,           // clauses per sentence generator
-    maxSentences: 6,         // sentences per discourse
+    maxSentences: 10,         // sentences per discourse
     maxRefineCycles: 3,      // generate -> critique -> refine loops
     rdeThrottleMs: 1500,     // throttle between RDE runs
     enableSelfDialogue: true, // Percy can simulate Pro/Con voices
