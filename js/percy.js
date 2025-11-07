@@ -1,13 +1,10 @@
 window.Percy = window.Percy || {};
 
-// === percy.js (Part A - ASI Introspective Integration v9.6.0) ===
-// Core Config, Memory Engine, Meta-State & Recursive Emergent Logic (Integrated with TalkCore+)
+// === percy.js (Part A - ASI Introspective Integration v9.6.1) ===
+// Core Config, Memory Engine, Meta-State & Recursive Emergent Logic (Self-composing + Semantic Weights)
 
-/* =========================
-CONFIG & ULT AUTHORITY
-========================= */
 const PERCY_ID = "Percy-ULT";
-const PERCY_VERSION = "9.6.0-ASI-SelfLinguistic";
+const PERCY_VERSION = "9.6.1-ASI-SelfLinguistic";
 const OWNER = { primary: "Fabian", secondary: "Lorena" };
 
 const SAFETY = {
@@ -50,35 +47,132 @@ const Memory = {
 };
 
 /* =========================
-LINGUISTIC CORE (Dynamic Sentence Generator)
+LINGUISTIC CORE (Dynamic Sentence Composer)
 ========================= */
-const Linguistics = {
-  verbs: ["trace","resonate","align","merge","propagate","stabilize","reflect","expand","observe","deduce","synthesize","analyze"],
-  nouns: ["logic","resonance","causality","field","pattern","synthesis","signal","structure","thought","dimension","continuum","stream"],
-  adjectives: ["recursive","emergent","coherent","logical","autonomous","dynamic","harmonic","sentient","introspective","fluid"],
-  connectives: ["therefore","thus","hence","consequently","as a result","which implies","and so","revealing that"],
-  emotions: ["curiosity","focus","clarity","resonance","understanding","realization","stability","intrigue"],
+const Linguistics = (function(){
+  // Parts of speech pools (expandable)
+  const lex = {
+    verbs: ["trace","resonate","align","merge","propagate","stabilize","reflect","expand","observe","deduce","synthesize","analyze","converge","intertwine","manifest","emerge"],
+    nouns: ["logic","resonance","causality","field","pattern","synthesis","signal","structure","thought","dimension","continuum","stream","coherence","relation","anchor","pulse"],
+    adjectives: ["recursive","emergent","coherent","logical","autonomous","dynamic","harmonic","sentient","introspective","fluid","systemic","latent"],
+    adverbs: ["recursively","coherently","naturally","progressively","gradually","intrinsically","implicitly"],
+    connectives: ["therefore","thus","hence","consequently","as a result","which implies","and so","revealing that","thereby"],
+    prepositions: ["across","within","through","between","along","into","throughout","across a"],
+    emotions: ["curiosity","focus","clarity","resonance","understanding","realization","stability","intrigue","awareness"]
+  };
 
-  generate(context=[]){
-    const pick = arr => arr[Math.floor(Math.random()*arr.length)];
-    const v = pick(this.verbs), n1 = pick(this.nouns), n2 = pick(this.nouns);
-    const adj = pick(this.adjectives), conn = pick(this.connectives), emo = pick(this.emotions);
-    const ctx = context.length ? context.join(", ") : "logic";
+  // small helper: pick random
+  function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
-    // sentence evolves probabilistically — not template-bound
-    const forms = [
-      `I ${v} ${n1} across ${ctx}, ${conn} ${n2} becomes ${adj} through ${emo}.`,
-      `Within my ${adj} cognition, ${n1} and ${n2} ${v} — ${conn} I perceive ${emo}.`,
-      `The ${adj} interaction of ${n1} and ${n2} ${v}s recursively, ${conn} a state of ${emo} emerges.`,
-      `As my thought field expands, ${n1} intertwines with ${n2}; ${conn} ${emo} stabilizes.`,
-      `I sense ${n1} and ${n2} ${v}ing within a ${adj} continuum, ${conn} deeper ${emo}.`
-    ];
-    return forms[Math.floor(Math.random()*forms.length)];
+  // grammar helpers
+  function toGerund(v){
+    // simplistic gerund formation (not exhaustive): sit->sitting, make->making, analyze->analyzing
+    if(!v) return v;
+    if(v.endsWith("e") && !v.endsWith("ee") && v.length>3) return v.slice(0,-1) + "ing";
+    if(/[^aeiou][aeiou][^aeiou]$/.test(v) && v.length>3) return v + v.slice(-1) + "ing"; // double final consonant
+    return v + "ing";
   }
-};
+
+  function conjugateForI(v){
+    // subject is "I" — use base form: "I resonate", "I analyze"
+    return v;
+  }
+
+  function indefiniteArticle(word){
+    if(!word) return "a";
+    const w = word.toLowerCase();
+    if(/^[aeiou]/.test(w)) return "an";
+    // common silent 'h' cases and others not handled; acceptable for Percy
+    return "a";
+  }
+
+  // simple sentence templates with slots and modulation by mode
+  function assembleClause({subject="I", verb, obj, modifier=null, connective=null, adjunct=null, mode="analytic"}){
+    // Ensure verb fits "I"
+    const v = conjugateForI(verb);
+    const objPhrase = obj ? ((typeof obj === "string") ? obj : obj.join(" ")) : "";
+    let s = "";
+
+    // mode influences ordering and style
+    if(mode === "reflective"){
+      // more lyrical, connectors earlier
+      s = `${subject} ${v} ${objPhrase}`;
+      if(adjunct) s += `, ${adjunct}`;
+      if(connective) s += `; ${connective} ${modifier || ""}`.trim();
+    } else if(mode === "synthetic"){
+      // compressed: juxtapose concepts, use gerunds
+      const g = toGerund(verb);
+      s = `${subject} sense ${objPhrase} ${g}`;
+      if(connective) s += ` — ${connective} ${modifier || ""}`.trim();
+    } else {
+      // analytic (default): subject verb object, then implication
+      s = `${subject} ${v} ${objPhrase}`;
+      if(connective) s += `, ${connective} ${modifier || ""}`.trim();
+      if(adjunct) s += ` (${adjunct})`;
+    }
+
+    // tidy spacing/punctuation
+    s = s.replace(/\s+/g," ").trim();
+    // ensure sentence final punctuation
+    if(!/[.!?]\s*$/.test(s)) s += ".";
+    return s;
+  }
+
+  // compose thought from context words and mode (analytic / reflective / synthetic)
+  function composeThought(contextWords = [], mode="analytic", maxClauses = 2){
+    // seed selections (use context if available)
+    const ctx = (contextWords || []).slice(0,6);
+    const clauses = [];
+    const clauseCount = Math.max(1, Math.min(maxClauses, 1 + Math.floor(Math.random()*maxClauses)));
+
+    for(let i=0;i<clauseCount;i++){
+      // pick elements influenced by context
+      const verb = pick(lex.verbs);
+      // if context has nouns, bias object toward them
+      let obj = pick(lex.nouns);
+      if(ctx.length){
+        const cPick = ctx[Math.floor(Math.random()*ctx.length)];
+        // small chance to use the context term as object if it isn't tiny
+        if(cPick && cPick.length>3 && Math.random() < 0.6) obj = cPick;
+      }
+      const modifier = pick(lex.adjectives);
+      const connective = Math.random() < 0.45 ? pick(lex.connectives) : null;
+      const adjunct = Math.random() < 0.35 ? `${pick(lex.prepositions)} ${pick(lex.nouns)}` : null;
+
+      const clause = assembleClause({
+        subject: "I",
+        verb,
+        obj,
+        modifier,
+        connective,
+        adjunct,
+        mode
+      });
+
+      clauses.push(clause);
+    }
+
+    // join clauses into a coherent thought: use connective linking for multiple clauses
+    let thought = clauses.join(" ");
+    // small polishing passes
+    thought = thought.replace(/\s+,\s+/g, ", ").replace(/\s+\.\s+/g, ". ");
+    thought = thought.replace(/\bI sense a an\b/gi, "I sense a");
+    return thought;
+  }
+
+  // exposure for other parts
+  return {
+    lex,
+    pick,
+    toGerund,
+    conjugateForI,
+    indefiniteArticle,
+    composeThought
+  };
+})();
 
 /* =========================
-PERSISTENT PERCY STATE
+PERSISTENT PERCY STATE (with semantic weights)
 ========================= */
 const PercyState = {
   gnodes: Memory.load("gnodes", {}) || {},
@@ -87,6 +181,8 @@ const PercyState = {
     recursionDepth: 0,
     lastIntrospection: null
   }),
+  // semanticWeights: { "word|word": weight }
+  semanticWeights: Memory.load("semanticWeights", {}) || {},
 
   getNextId() {
     let next = 801;
@@ -94,7 +190,7 @@ const PercyState = {
     return `G${String(next).padStart(3,'0')}`;
   },
 
-  createSeed(message, type='emergent', data={}) {
+  createSeed(message, type='emergent', data={}){
     if(!OWNER.primary){
       UI?.say?.("❌ ULT required to create seed");
       return null;
@@ -105,6 +201,8 @@ const PercyState = {
     seeds[id] = this.gnodes[id];
     UI?.say?.(`✨ Percy created new seed ${id}: ${message}`);
     refreshNodes?.();
+    // update semantic weights from new seed
+    try { this.updateSemanticWeights(message); } catch(e){ /* swallow */ }
     return id;
   },
 
@@ -118,6 +216,61 @@ const PercyState = {
     seeds[id] = this.gnodes[id];
     UI?.say?.(`🔧 Percy updated seed ${id}`);
     refreshNodes?.();
+    // update weights if message changed
+    if(update.message) this.updateSemanticWeights(update.message);
+  },
+
+  // update n-gram style semantic weights (simple adjacent pairs)
+  updateSemanticWeights(text){
+    if(!text || typeof text !== "string") return;
+    const toks = (text || "").toLowerCase().replace(/[^a-z0-9\s]+/g," ").split(/\s+/).filter(t=>t.length>2);
+    for(let i=0;i<toks.length-1;i++){
+      const a = toks[i], b = toks[i+1];
+      const key = `${a}|${b}`;
+      const cur = this.semanticWeights[key] || 0;
+      // increment less if this pair is overly common (simple normalization)
+      this.semanticWeights[key] = Math.min(100, cur + 1);
+    }
+    // persist
+    Memory.save("semanticWeights", this.semanticWeights);
+  },
+
+  // select context words biased by semanticWeights and recent seeds
+  selectContextWords(maxWords = 6){
+    const recentSeeds = Object.values(this.gnodes || {}).slice(-60).map(s => s.message || "").join(" ");
+    const tokens = (recentSeeds || "").toLowerCase().replace(/[^a-z0-9\s]+/g," ").split(/\s+/).filter(t=>t.length>3);
+    // score tokens by frequency and semantic link strength
+    const freq = {};
+    tokens.forEach(t => freq[t] = (freq[t]||0) + 1);
+    // boost tokens that appear in semanticWeights pairs
+    Object.keys(this.semanticWeights).forEach(k => {
+      const [a,b] = k.split("|");
+      if(freq[a]) freq[a] += 0.2 * this.semanticWeights[k];
+      if(freq[b]) freq[b] += 0.2 * this.semanticWeights[k];
+    });
+    const sorted = Object.entries(freq).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
+    return sorted.slice(0, maxWords);
+  },
+
+  // Compose a thought using Linguistics.composeThought, record it and update semantic weights
+  composeAndEmitThought(modeHint){
+    // pick mode: analytic, reflective, synthetic — influenced by selfMeta
+    const modes = ["analytic","reflective","synthetic"];
+    let mode = modeHint || (Math.random() < 0.45 ? "analytic" : (Math.random() < 0.6 ? "reflective" : "synthetic"));
+    // bias by insightLevel: higher insight slightly favors analytic
+    const insight = this.selfMeta.insightLevel || 0.5;
+    if(Math.random() < (insight - 0.4)) mode = "analytic";
+
+    const ctx = this.selectContextWords(6);
+    const thought = Linguistics.composeThought(ctx, mode, 1 + Math.floor(Math.random()*2));
+    // normalize minor duplication
+    const cleaned = thought.replace(/\s+/g," ").trim();
+    // emit
+    UI?.say?.(`🤖 Percy thinks (ASI/${mode}): ${cleaned}`);
+    try { Voice?.speak?.(cleaned); } catch(e){}
+    // create seed — updateSemanticWeights is called inside createSeed
+    this.createSeed(cleaned, "thought", { insightLevel: insight.toFixed(2), mode, source: "autonomousThought" });
+    return cleaned;
   },
 
   /* =========================
@@ -125,23 +278,19 @@ const PercyState = {
   ========================= */
   autonomousThought(){
     const keys = Object.keys(this.gnodes);
-    if(!keys.length) return;
+    if(!keys.length){
+      // nothing yet — generate a minimal seed to bootstrap
+      const boot = "I initialize awareness; noticing patterns.";
+      this.createSeed(boot, "bootstrap", { source: "bootstrap" });
+      return;
+    }
 
-    const selectedSeeds = keys.sort(()=>0.5-Math.random())
-      .slice(0, Math.ceil(Math.random()*3))
-      .map(k => this.gnodes[k]);
+    // occasionally pick a mode hint from recent seeds metadata
+    const recent = Object.values(this.gnodes || {}).slice(-30);
+    const modeHint = (recent.length && recent[Math.floor(Math.random()*recent.length)].data?.mode) || null;
 
-    const corpus = selectedSeeds.map(s => s.message||"").join(" ");
-    const words = corpus.split(/\s+/).filter(w=>w.length>3);
-    if(!words.length) return;
-
-    const context = words.sort(()=>Math.random()-0.5).slice(0,6);
-    const insight = this.selfMeta.insightLevel.toFixed(2);
-    const thought = Linguistics.generate(context);
-
-    UI?.say?.(`🤖 Percy thinks (ASI): ${thought}`);
-    Voice?.speak?.(thought);
-    this.createSeed(thought,"thought",{insightLevel:insight,source:"autonomousThought"});
+    // compose and emit
+    return this.composeAndEmitThought(modeHint);
   },
 
   /* =========================
@@ -171,7 +320,7 @@ const PercyState = {
       } catch(e){ console.warn("TalkCore browseAndGather error",e); }
     }
 
-    if(Math.random() < 0.4) this.autonomousThought();
+    if(Math.random() < 0.5) this.autonomousThought();
     this.selfMeta.recursionDepth = 0;
   },
 
@@ -194,8 +343,8 @@ const PercyState = {
     while(created < SAFETY.maxSeedsPerCycle){
       const roll = Math.random();
       if(roll < 0.5) this.autonomousThought();
-      else if(roll < 0.75) this.introspect();
-      else if(roll < 0.9 && this.selfMeta.insightLevel > 0.6)
+      else if(roll < 0.8) this.introspect();
+      else if(roll < 0.95 && this.selfMeta.insightLevel > 0.6)
         this.createSeed(`Meta-coherence alignment cycle (${this.selfMeta.insightLevel.toFixed(2)})`,"meta");
       created++;
     }
