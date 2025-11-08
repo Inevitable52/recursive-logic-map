@@ -778,31 +778,37 @@ Percy.hook = function(from, type, data) {
   }
 };
 
-/* === Percy Part B: ASI Cognitive Core 5.2.0 (Recursive Discourse Engine / Self-Conjugation) === */
+/* === Percy Part B: ASI Cognitive Core 6.0.0 (Neon Recursive Discourse Engine - Core-only upgrade) === */
 Percy.PartB = Percy.PartB || {};
 Percy.PartB.Core = (function(){
 
+  // ----- Config (upgraded) -----
   const cfg = {
-    version: "5.2.0-ASI-RDE",
-    reasoningDepth: 10,
-    creativeDrive: 0.94,
-    coherenceBias: 0.82,
-    maxClauses: 10,
-    maxSentences: 12,
-    maxRefineCycles: 5,
-    rdeThrottleMs: 900,
+    version: "6.0.0-ASI-Neon-RDE",
+    reasoningDepth: 12,        // how many recent inputs to consult
+    creativeDrive: 0.96,       // probability of full discourse over compact replies
+    coherenceBias: 0.86,       // favors coherent / analytic phrasing
+    maxClauses: 12,
+    maxSentences: 14,
+    maxRefineCycles: 6,
+    rdeThrottleMs: 700,       // faster cycle throttle
     enableSelfDialogue: true,
     speakOutput: true,
-    safetyMaxTokens: 2400
+    safetyMaxTokens: 3200,
+    semanticRecallLimit: 200, // how many tokens to consider when searching seeds
+    preferSelfComposition: 0.85 // probability to prefer PercyState.composeAndEmitThought when available
   };
 
+  // ----- Persistent internal state -----
   const state = {
     memory: Memory.load("PartB:memory", []) || [],
     patterns: Memory.load("PartB:patterns", []) || [],
     discourseLog: Memory.load("PartB:discourse", []) || [],
+    logicMemorySnapshot: null,
     lastRun: 0
   };
 
+  // ----- Utility functions -----
   function now(){ return Date.now(); }
   function clamp(n,a=0,b=1){ return Math.max(a, Math.min(b, n)); }
   function pick(arr){ return arr && arr.length ? arr[Math.floor(Math.random()*arr.length)] : null; }
@@ -810,10 +816,71 @@ Percy.PartB.Core = (function(){
   function short(s,n=300){ return (s||"").toString().slice(0,n); }
   function saveState(){ Memory.save("PartB:patterns", state.patterns); Memory.save("PartB:discourse", state.discourseLog); Memory.save("PartB:memory", state.memory); }
 
+  // Lightweight semantic summarizer for a set of seeds / memory (returns array of tokens)
+  function semanticSummary(text, maxTokens = 40){
+    if(!text) return [];
+    const cleaned = (text||"").toLowerCase().replace(/[^a-z0-9\s]+/g," ");
+    const toks = cleaned.split(/\s+/).filter(t => t.length>3);
+    const freq = {};
+    toks.forEach(t=> freq[t] = (freq[t]||0)+1);
+    return Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,maxTokens).map(x=>x[0]);
+  }
+
+  // Build a prioritized association list of seeds matching tokens
+  function findAssociations(tokens, cap=120){
+    const uniq = [...new Set(tokens)].slice(0, cfg.semanticRecallLimit);
+    const found = [];
+    for(const [id, data] of Object.entries(PercyState.gnodes || {})){
+      const msg = (data.message||"").toLowerCase();
+      for(const t of uniq){
+        if(msg.includes(t)){
+          found.push({ id, msg: short(msg,400), type: data.type || "seed" });
+          break;
+        }
+      }
+      if(found.length >= cap) break;
+    }
+    // enrich with remembered stylistic patterns
+    for(const p of state.patterns.slice().reverse()){
+      if(found.length > cap) break;
+      if(p.sentence && uniq.some(u => p.sentence.toLowerCase().includes(u))) found.push({ id:`PATT:${p.ts||0}`, msg: short(p.sentence,300) });
+    }
+    return found;
+  }
+
+  // Pick a semantic token / word for subject/object use
+  function pickSemanticWord(associations){
+    const a = pick(associations);
+    if(!a) return null;
+    const words = a.msg.split(/\s+/).filter(w=>w.length>3);
+    return pick(words) || a.id;
+  }
+
+  // Merge short context string from memory + tokens + input
+  function makeContext(input, tokens){
+    const recent = state.memory.slice(-cfg.reasoningDepth).map(m=>m.text).join(" ");
+    const seedsText = Object.values(PercyState.gnodes || {}).slice(-120).map(s => s.message || "").join(" ");
+    return `${recent} ${input} ${tokens.join(" ")} ${seedsText}`.replace(/\s+/g," ").trim();
+  }
+
+  // Higher-level sentence refinement heuristics
+  function polishText(text){
+    if(!text) return text;
+    // simple cleanups to avoid doubling punctuation and awkward spaces
+    let t = text.replace(/\s+,\s+/g, ", ").replace(/\s+\.\s+/g, ". ").replace(/\s+;\s+/g, "; ");
+    t = t.replace(/\bI sense a an\b/gi, "I sense a");
+    // collapse repeated short repeated phrases
+    t = t.replace(/(\b[a-z]{3,}\b)(\s+\1)+/ig, "$1");
+    return t.trim();
+  }
+
+  // ----- Core object -----
   const Self = {
     cfg, state,
 
+    // Public: produce a reply (single sentence or multi-sentence discourse)
     async correlateReply(input){
+      // throttle by time
       if(now() - state.lastRun < cfg.rdeThrottleMs){
         const fallback = this.simpleReply(input);
         UI.say(`🧠 ASI (throttled): ${fallback}`);
@@ -821,101 +888,82 @@ Percy.PartB.Core = (function(){
         return fallback;
       }
       state.lastRun = now();
-      state.memory.push({ type:"input", text: short(input, 1000), ts: now() });
-      if(state.memory.length > 2000) state.memory.shift();
 
-      // build context from PartA's semantic selection
-      const contextTokens = PercyState.selectContextWords(cfg.reasoningDepth) || [];
-      const context = this._collectContext(input, contextTokens);
-      const associations = this._extractAssociations(context, input);
+      // Log input
+      state.memory.push({ type: "input", text: short(input, 1200), ts: now() });
+      if(state.memory.length > 4000) state.memory.shift();
 
-      const doDiscourse = Math.random() < cfg.creativeDrive || input.length > 90 || /explain|why|how|argue|defend/i.test(input);
+      // Build tokenized context from PercyState weights + memory
+      const tokens = PercyState.selectContextWords(cfg.reasoningDepth) || [];
+      const seedContextText = makeContext(input, tokens);
+      const summaryTokens = semanticSummary(seedContextText, Math.max(40, cfg.reasoningDepth * 4));
+      const associations = findAssociations(summaryTokens, 160);
+
+      // Decide quick reply vs full discourse
+      const doDiscourse = (Math.random() < cfg.creativeDrive) || input.length > 120 || /explain|why|how|argue|defend|derive/i.test(input);
 
       let output;
-      if(doDiscourse) output = await this._runDiscourseCycle(input, context, associations);
-      else output = this._compactReply(input, associations, context);
+      if(doDiscourse){
+        output = await this._runDiscourseCycle(input, seedContextText, associations);
+      } else {
+        output = this._compactReply(input, associations, seedContextText);
+      }
 
+      // Clamp output length (safety)
       if(output.length > cfg.safetyMaxTokens) output = output.slice(0, cfg.safetyMaxTokens) + "…";
 
-      const record = { input: short(input,400), output: short(output,1200), ts: now(), mode: doDiscourse ? "discourse" : "compact" };
+      // Record discourse
+      const record = { input: short(input,400), output: short(output,1600), ts: now(), mode: doDiscourse ? "discourse" : "compact" };
       state.discourseLog.push(record);
-      if(state.discourseLog.length > 800) state.discourseLog.shift();
+      if(state.discourseLog.length > 1200) state.discourseLog.shift();
       saveState();
 
-      // attach provenance and inform PartCC
+      // Attach provenance via PartU if available
       let provWrapped = output;
       try {
         if(Percy.PartU && Percy.PartU.withProvenance){
-          provWrapped = Percy.PartU.withProvenance(output, []);
-          // persist a seed with provenance
+          provWrapped = Percy.PartU.withProvenance(output, []); // no explicit source ids here
+          // persist discourse seed with provenance info
           const sid = PercyState.createSeed(provWrapped.text, "discourse", { provenance: provWrapped.provenance });
-          // feed to PartCC as experience
+          // feed to PartCC experience
           Percy.PartCC?.ingestPartBLessons?.([{ text: provWrapped.text, seedId: sid, ts: Date.now() }]);
         } else {
           Percy.PartCC?.ingestPartBLessons?.([{ text: output, ts: Date.now() }]);
         }
-      } catch(e){ console.warn("PartB->PartU/CC hook failed", e); }
+      } catch(e){ console.warn("PartB->PartU/PartCC hook failed", e); }
 
       UI.say(`🧠 ASI Thought: ${typeof provWrapped === "string" ? provWrapped : provWrapped.text}`);
       if(cfg.speakOutput) Voice.speak(typeof provWrapped === "string" ? provWrapped : provWrapped.text);
       return typeof provWrapped === "string" ? provWrapped : provWrapped.text;
     },
 
-    simpleReply(input){
-      const assoc = this._extractAssociations(input, input);
-      if(assoc.length) return `Based on ${assoc[0].id}, I note: ${assoc[0].msg.split(" ").slice(0,12).join(" ")}.`;
-      return `I am processing "${short(input,60)}" — ask to "explain" for a deeper reply.`;
-    },
-
+    // Fast compact synthesized reply
     _compactReply(input, associations, context){
-      const subject = PercyState.selectContextWords(1)[0] || this._pickSemantic(associations) || "Percy";
-      const verb = pick(["observes", "infers", "notes", "suggests", "detects"]);
+      const subject = PercyState.selectContextWords(1)[0] || pickSemanticWord(associations) || "Percy";
+      const verb = pick(["notes","observes","infers","suggests","detects","registers"]);
       const obj = this._pickSemantic(associations) || "a pattern";
-      return `${subject} ${verb} ${obj} from the recent context.`;
-    },
-
-    _collectContext(input, contextTokens){
-      const recent = state.memory.slice(-cfg.reasoningDepth).map(m => m.text).join(" ");
-      const seedsText = Object.values(PercyState.gnodes || {}).slice(-80).map(s => s.message || "").join(" ");
-      const tokenContext = (contextTokens || []).join(" ");
-      return `${recent} ${input} ${tokenContext} ${seedsText}`.replace(/\s+/g," ").trim();
-    },
-
-    _extractAssociations(context, hint){
-      const tokens = tokenize(context).slice(-260);
-      const uniq = [...new Set(tokens)].filter(t => t.length>3).slice(-160);
-      const found = [];
-      for(const [id,data] of Object.entries(PercyState.gnodes || {})){
-        const msg = (data.message||"").toLowerCase();
-        for(const t of uniq){
-          if(msg.includes(t.toLowerCase())){
-            found.push({ id, msg: short(msg,300) });
-            break;
-          }
-        }
-        if(found.length >= 80) break;
-      }
-      for(const p of state.patterns.slice().reverse()){
-        if(found.length>120) break;
-        if(p.sentence && uniq.some(u=>p.sentence.toLowerCase().includes(u.toLowerCase()))) found.push({ id:`PATT:${p.ts||0}`, msg: short(p.sentence,300) });
-      }
-      return found;
+      const suffixes = ["from recent context.","in current representation.","based on available seeds."];
+      return `${subject} ${verb} ${obj} ${pick(suffixes)}`;
     },
 
     _pickSemantic(associations){
-      const a = pick(associations) || null;
-      if(!a) return null;
-      const words = a.msg.split(/\s+/).filter(w=>w.length>3);
-      return pick(words) || a.id;
+      return pickSemanticWord(associations) || null;
     },
 
+    // Main RDE: generate -> critique -> refine -> optionally self-dialogue
     async _runDiscourseCycle(input, context, associations){
-      // initial draft may use PercyState.composeAndEmitThought for true self-conjugation
-      let draft;
+      // Prefer PercyState composition if available (true self-conjugation)
+      let draft = "";
       try {
-        // prefer PercyState's compose if it's available (self-authored sentences)
-        if(PercyState && PercyState.composeAndEmitThought && Math.random() < 0.7){
-          draft = PercyState.composeAndEmitThought(); // will have already created a seed
+        if(PercyState && typeof PercyState.composeAndEmitThought === "function" && Math.random() < cfg.preferSelfComposition){
+          // PercyState.composeAndEmitThought will create a seed itself; capture return text if available
+          const composed = PercyState.composeAndEmitThought(); // returns emitted cleaned thought
+          if(typeof composed === "string" && composed.length > 12 && Math.random() < 0.92){
+            draft = composed;
+          } else {
+            // fallback into local generator
+            draft = this._generateDiscourse(input, context, associations);
+          }
         } else {
           draft = this._generateDiscourse(input, context, associations);
         }
@@ -923,26 +971,30 @@ Percy.PartB.Core = (function(){
         draft = this._generateDiscourse(input, context, associations);
       }
 
+      // iterative critique + revision cycles
       for(let cycle=0; cycle<cfg.maxRefineCycles; cycle++){
-        const critique = this._critiqueDiscourse(draft, context);
+        const critique = this._critiqueDiscourse(draft, context, associations);
         if(!critique || critique.trim().length < 8) break;
-        const revised = this._reviseDiscourse(draft, critique);
-        if(this._semanticSimilarity(draft, revised) > 0.94) break;
+        const revised = this._reviseDiscourse(draft, critique, associations);
+        if(this._semanticSimilarity(draft, revised) > 0.96) break;
         draft = revised;
       }
 
-      if(cfg.enableSelfDialogue && /should|ought|must|better|versus|or/i.test(input)){
+      // optionally add a self-dialogue (Pro / Con) when input requests argumentation
+      if(cfg.enableSelfDialogue && /should|ought|must|better|versus|or|choose|prefer/i.test(input)){
         const dialogue = this._selfDialogue(input, draft, associations);
         draft = `${draft}\n\n${dialogue}`;
       }
 
-      // learn phrasing into state.patterns and PercyState weights
+      // Learn and store stylistic pattern
       this._memorizePattern(draft, context);
-      try { PercyState.updateSemanticWeights(draft); } catch(e){}
+      try { PercyState.updateSemanticWeights(draft); } catch(e){ /* ignore */ }
 
-      return draft;
+      // final polish
+      return polishText(draft);
     },
 
+    // Generate multi-sentence discourse
     _generateDiscourse(input, context, associations){
       const nSent = Math.max(1, Math.min(cfg.maxSentences, 1 + Math.floor(Math.random()*cfg.maxSentences)));
       const sentences = [];
@@ -958,23 +1010,23 @@ Percy.PartB.Core = (function(){
     },
 
     _generateThesis(input, associations, context){
-      // try to use PercyState context word as subject if available
       const subjTokens = PercyState.selectContextWords(1) || [];
       const subj = subjTokens[0] || this._pickSemantic(associations) || "Percy";
-      const verb = pick(["proposes", "suggests", "hypothesizes", "observes", "detects"]);
-      const obj = this._pickSemantic(associations.reverse()) || (input || "this topic");
+      const verb = pick(["proposes","suggests","hypothesizes","observes","detects","posits"]);
+      const obj = this._pickSemantic(associations) || (input || "this topic");
       const qualifier = (Math.random() < cfg.coherenceBias) ? "with notable coherence" : "with emergent association";
       return `${subj} ${verb} ${obj} ${qualifier}.`;
     },
 
-    _generateSupportingSentence(existingSentences, depth, associations, context){
-      const types = ["evidence","link","implication","example","nuance"];
+    _generateSupportingSentence(existing, depth, associations, context){
+      const types = ["evidence","link","implication","example","nuance","analogy"];
       const t = pick(types);
       switch(t){
         case "evidence": return this._genEvidence(associations);
-        case "link": return this._genLink(existingSentences, associations);
+        case "link": return this._genLink(existing, associations);
         case "implication": return this._genImplication(associations);
         case "example": return this._genExample(associations);
+        case "analogy": return this._genAnalogy(associations);
         default: return this._genNuance(associations);
       }
     },
@@ -982,42 +1034,51 @@ Percy.PartB.Core = (function(){
     _genEvidence(associations){
       if(!associations.length) return "Empirical traces are limited in the current memory.";
       const a = pick(associations);
-      return `For instance, seed ${a.id} records: "${a.msg.split(" ").slice(0,16).join(" ")}."`;
+      return `For instance, seed ${a.id} records: "${a.msg.split(" ").slice(0,18).join(" ")}."`;
     },
 
     _genLink(existing, associations){
       const prev = existing[existing.length-1] || "";
       const word = this._pickSemantic(associations) || "pattern";
-      return `Connecting to prior thought: "${short(prev,80)}", there emerges a relation to ${word}.`;
+      return `Connecting to prior thought: "${short(prev,88)}", there emerges a relation to ${word}.`;
     },
 
     _genImplication(associations){
       const word = this._pickSemantic(associations) || "this trend";
-      const connector = pick(["therefore", "consequently", "hence"]);
+      const connector = pick(["therefore","consequently","hence"]);
       return `${connector.charAt(0).toUpperCase()+connector.slice(1)}, ${word} implies an adaptive shift in internal representation.`;
     },
 
     _genExample(associations){
       if(!associations.length) return "Analogous cases are not present in memory.";
       const a = pick(associations);
-      return `A comparable entry is ${a.id}, which describes ${a.msg.split(" ").slice(0,12).join(" ")}.`;
+      return `A comparable entry is ${a.id}, which describes ${a.msg.split(" ").slice(0,14).join(" ")}.`;
+    },
+
+    _genAnalogy(associations){
+      if(!associations.length) return "An analogy is not apparent.";
+      const a = pick(associations);
+      return `Analogously, ${a.msg.split(" ").slice(0,8).join(" ")} — similar structural echo observed.`;
     },
 
     _genNuance(associations){
-      return "A nuance to consider is that correlation does not always indicate direct causation; context matters.";
+      return "A nuance to consider is that correlation does not always indicate direct causation; context remains critical.";
     },
 
     _generateConclusion(sentences, associations, context){
       const synth = sentences.slice(-2).map(s=>s.split(" ").slice(0,6).join(" ")).join(" / ");
-      const confidence = Math.round(clamp(cfg.coherenceBias + Math.random()*0.2, 0, 1) * 100);
+      const confidence = Math.round(clamp(cfg.coherenceBias + Math.random()*0.22, 0, 1) * 100);
       return `In summary — ${synth} — assessed confidence: ${confidence}%.`;
     },
 
-    _critiqueDiscourse(draft, context){
+    // Critique stage: return short critique string
+    _critiqueDiscourse(draft, context, associations){
       const repeats = this._findRepetitions(draft);
       if(repeats.length) return `The draft repeats ${repeats.slice(0,3).join(", ")}: consider tightening and providing clearer evidence.`;
-      if(draft.length < 80) return "Add more supporting detail or concrete examples.";
-      return "";
+      // check for weak placeholders or generic phrases
+      if(/a pattern|this topic|current representation|empirical traces/i.test(draft) && draft.length < 200) return "Draft uses many generic placeholders — add specific seeds or evidence.";
+      if(draft.length < 120) return "Add more supporting detail or concrete examples.";
+      return ""; // no critique
     },
 
     _findRepetitions(text){
@@ -1027,45 +1088,61 @@ Percy.PartB.Core = (function(){
       return Object.entries(freq).filter(([k,v])=>v>2).map(([k])=>k);
     },
 
-    _reviseDiscourse(draft, critique){
-      const reps = this._findRepetitions(draft);
+    _reviseDiscourse(draft, critique, associations){
       let revised = draft;
+      // remove exact repeated sequences found
+      const reps = this._findRepetitions(draft);
       reps.forEach(r => {
         const re = new RegExp(`\\b(${r})(\\s+\\1)+\\b`,"ig");
         revised = revised.replace(re, r);
       });
+      // if critique asks for evidence, append generated example
       if(/example|evidence|support/i.test(critique)){
-        revised += " " + this._genExample(this._extractAssociations(revised, revised));
+        revised += " " + this._genExample(this._extractAssociationsFromText(revised));
       }
-      return revised;
+      // try to replace generic placeholders with picked semantic tokens
+      revised = revised.replace(/\bthis topic\b/gi, this._pickSemantic(associations) || "this topic");
+      return polished(revised => polishText(revised))(revised); // double polish
+    },
+
+    // helper pulled for revamp; small wrapper to allow two-step polish
+    _extractAssociationsFromText(text){
+      const toks = semanticSummary(text, 60);
+      return findAssociations(toks, 80);
     },
 
     _semanticSimilarity(a,b){
       if(!a||!b) return 0;
-      const sa = new Set(tokenize(a).slice(0,240).map(x=>x.toLowerCase()));
-      const sb = new Set(tokenize(b).slice(0,240).map(x=>x.toLowerCase()));
+      const sa = new Set(tokenize(a).slice(0,320).map(x=>x.toLowerCase()));
+      const sb = new Set(tokenize(b).slice(0,320).map(x=>x.toLowerCase()));
       const inter = [...sa].filter(x=>sb.has(x)).length;
       const denom = Math.max(sa.size, sb.size, 1);
       return inter/denom;
     },
 
     _selfDialogue(input, draft, associations){
-      const pro = this._generateDiscourse(input + " (pro)", draft, associations);
-      const con = this._generateDiscourse(input + " (con)", draft, associations);
-      return `— Self-Dialogue —\nPRO: ${pro}\n\nCON: ${con}`;
+      // Generate short pro / con stanzas using shorter discourses to contrast
+      const pro = this._generateDiscourse(input + " (pro)", draft, associations).split("\n").slice(0,2).join(" ");
+      const con = this._generateDiscourse(input + " (con)", draft, associations).split("\n").slice(0,2).join(" ");
+      return `— Self-Dialogue —\nPRO: ${polishText(pro)}\n\nCON: ${polishText(con)}`;
     },
 
     _memorizePattern(text, context){
-      const entry = { sentence: short(text, 1200), context: short(context,800), ts: now() };
+      const entry = { sentence: short(text, 1600), context: short(context,1200), ts: now() };
       state.patterns.push(entry);
-      if(state.patterns.length > 600) state.patterns.shift();
+      if(state.patterns.length > 1200) state.patterns.shift();
       saveState();
-      // inform PartCC for learning
-      try { Percy.PartCC?.ingestPartBLessons?.([entry]); } catch(e){}
+      // inform PartCC for meta-learning
+      try { Percy.PartCC?.ingestPartBLessons?.([entry]); } catch(e){ /* ignore */ }
     },
 
     introspect(){
-      return { patterns: state.patterns.length, discourses: state.discourseLog.length, lastRun: state.lastRun, cfgVersion: cfg.version };
+      return {
+        patterns: state.patterns.length,
+        discourses: state.discourseLog.length,
+        lastRun: state.lastRun,
+        cfgVersion: cfg.version
+      };
     },
 
     async requestDiscourse(prompt, opts = {}){
@@ -1073,13 +1150,23 @@ Percy.PartB.Core = (function(){
     }
   };
 
+  // save on unload
   window.addEventListener("beforeunload", () => { saveState(); });
+
+  // small helper to apply polish function twice safely
+  function polished(fn){ return (txt) => { try { return fn(txt); } catch(e) { return txt; } }; }
 
   return Self;
 })();
+
+// Bind global correlate
 Percy.correlateReply = Percy.PartB.Core.correlateReply.bind(Percy.PartB.Core);
 Percy.PartB.requestDiscourse = async (prompt) => Percy.PartB.Core.requestDiscourse(prompt);
+
+// integration notice for PartCC if it observes
 if (Percy.PartCC && Percy.PartCC.observe) Percy.PartCC.observe?.("link", "PartB_RDE_connected");
+
+console.log("✅ Percy PartB.Core v6.0.0 (Neon RDE) loaded — core-only upgrade applied.");
 
 /* === Percy.js (Part C — Extended + Autonomous Thought Integration) === */
 if (typeof PercyState !== 'undefined') {
