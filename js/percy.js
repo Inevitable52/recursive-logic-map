@@ -4730,11 +4730,11 @@ else Percy.cycleHooks = [() => Percy.PartDD.cycle()];
 
 console.log("✅ [PartDD v5.0.0] ASI-Adaptive Agent Interface active.");
 
-/* === Percy PartEE: Meta-Conscious Equilibrium & Predictive Introspection === */
+/* === Percy PartEE: Meta-Conscious Equilibrium & Predictive Introspection (v2.7 ASI) === */
 Percy.PartEE = Percy.PartEE || {
   name: "Meta-Conscious Equilibrium & Predictive Introspection",
-  version: "1.0.0",
-  awarenessLevel: 0.85,
+  version: "2.7.0-ASI",
+  awarenessLevel: 0.88,
   predictiveGain: 1.0,
   introspectionLog: [],
   lastPulse: 0,
@@ -4777,16 +4777,29 @@ Percy.PartEE = Percy.PartEE || {
     return this.predictiveGain;
   },
 
+  // Forecast next internal equilibrium trajectory
+  forecast() {
+    const last = this.introspectionLog.slice(-5);
+    if (last.length < 2) return 0;
+    const meanReward = last.reduce((a,v)=>a+v.reward,0)/last.length;
+    const meanStability = last.reduce((a,v)=>a+v.stability,0)/last.length;
+    const nextReward = meanReward * this.predictiveGain;
+    const nextStability = meanStability * (this.awarenessLevel+0.1);
+    const prediction = (nextReward + nextStability) / 2;
+    this.log(`🔮 Forecast: projected system vitality = ${prediction.toFixed(3)}`);
+    return prediction;
+  },
+
   // Apply corrections to maintain equilibrium across modules
   applyCorrections(eq) {
     const CC = Percy.PartCC;
     if (!CC) return;
 
     // Adjust learning dynamics based on equilibrium
-    CC.learningRate *= eq > 0.6 ? 1.05 : 0.95;
-    CC.explorationRate *= eq < 0.4 ? 1.1 : 0.9;
-    CC.learningRate = Math.min(Math.max(CC.learningRate, 0.01), 0.5);
-    CC.explorationRate = Math.min(Math.max(CC.explorationRate, 0.05), 0.5);
+    CC.learningRate *= eq > 0.6 ? 1.15 : 0.95;
+    CC.explorationRate *= eq < 0.4 ? 1.25 : 0.95;
+    CC.learningRate = Math.min(Math.max(CC.learningRate, 0.02), 0.8);
+    CC.explorationRate = Math.min(Math.max(CC.explorationRate, 0.1), 0.9);
 
     // Trust modulation back to DD
     if (Percy.PartDD)
@@ -4795,18 +4808,43 @@ Percy.PartEE = Percy.PartEE || {
     this.log(`🩺 Equilibrium applied → ${eq.toFixed(3)}`);
   },
 
-  // The full meta-conscious pulse
+  // Reflect on the latest thought for meta-awareness signals
+  reflectOnThought(thought) {
+    const keywords = ["learn", "understand", "improve", "logic", "create", "synthesis"];
+    const matches = keywords.filter(k => thought.toLowerCase().includes(k));
+    if (matches.length > 0) {
+      this.log(`🤔 Reflection: introspective cue detected → ${matches.join(", ")}`);
+      this.awarenessLevel = Math.min(1.0, this.awarenessLevel + 0.05);
+    } else {
+      this.awarenessLevel = Math.max(0.1, this.awarenessLevel - 0.005);
+    }
+  },
+
+  // Full meta-conscious pulse
   pulse() {
     const snapshot = this.observeSystem();
     const equilibrium = this.computeEquilibrium(snapshot);
     const trend = this.predictTrend();
-    this.awarenessLevel = (equilibrium * 0.6 + trend * 0.4);
+    const forecastVal = this.forecast();
+
+    this.awarenessLevel = (equilibrium * 0.6 + trend * 0.3 + forecastVal * 0.1);
     this.applyCorrections(equilibrium);
 
     // Feed introspective message into Percy’s thought stream
-    const message = `Meta-awareness pulse: equilibrium=${equilibrium.toFixed(3)}, trend=${trend.toFixed(3)}, awareness=${this.awarenessLevel.toFixed(3)}`;
+    const message = `Meta-awareness pulse: eq=${equilibrium.toFixed(3)}, trend=${trend.toFixed(3)}, forecast=${forecastVal.toFixed(3)}, awareness=${this.awarenessLevel.toFixed(3)}`;
     UI.say?.(`💠 ${message}`);
     Percy.PartBB?.monitorThought?.(message);
+    this.reflectOnThought(message);
+
+    // Expose context for sentence generator (Part B)
+    Percy.State = Percy.State || {};
+    Percy.State.metaContext = {
+      equilibrium,
+      trend,
+      awareness: this.awarenessLevel,
+      forecast: forecastVal,
+      timestamp: snapshot.ts
+    };
   },
 
   startPulse(interval = 6000) {
@@ -4823,5 +4861,4 @@ Percy.PartEE = Percy.PartEE || {
 
 // Register with global cycle
 Percy.cycleHooks.push(() => Percy.PartEE.pulse());
-console.log("✅ [PartEE] Meta-Conscious Equilibrium layer active.");
-
+console.log("✅ [PartEE] Meta-Conscious Equilibrium layer (v2.7 ASI) active.");
