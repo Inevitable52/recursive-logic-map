@@ -305,177 +305,209 @@ const PercyState = {
 let seeds = {};
 
 // === percy.js (Part B) ===
-// Neon Cognitive Core v6.0.0-RDE
-// (UI, Voice, Logic Map, Thought-Pulse Visuals, Ask Percy Controls)
+// UI, Voice, Logic Map, Tasks, Puppeteer control, Autonomy loop
 
 /* =========================
-UI HELPERS
+CONSOLE / UI HELPERS (will be used by PercyState.createSeed)
 ========================= */
 const UI = {
-  elConsole: () => document.getElementById('percy-console'),
-  elMsg: () => document.getElementById('percy-message'),
-  say(txt) {
-    const box = this.elConsole(); if (!box) return;
-    const p = document.createElement('p');
-    p.className = 'console-line';
-    p.textContent = txt;
-    box.appendChild(p);
-    box.scrollTop = box.scrollHeight;
-    const max = 80;
-    while (box.children.length > max) box.removeChild(box.firstChild);
-    Pulse.emit(); // trigger glow pulse on message
+  elConsole: ()=>document.getElementById('percy-console'),
+  elMsg: ()=>document.getElementById('percy-message'),
+  say(txt){
+    const box=this.elConsole(); if(!box) return;
+    const p=document.createElement('p'); p.className='console-line'; p.textContent=txt;
+    box.appendChild(p); box.scrollTop=box.scrollHeight;
+    const max=SAFETY.consoleLimit; while(box.children.length>max) box.removeChild(box.firstChild);
   },
-  setStatus(txt) { const m = this.elMsg(); if (m) m.textContent = txt; }
+  setStatus(txt){ const m=this.elMsg(); if(m) m.textContent=txt; },
+  confirmModal({title,body,allowLabel="Allow",denyLabel="Deny"}){
+    return new Promise(resolve=>{
+      const wrap=document.createElement('div');
+      wrap.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:99999";
+      const card=document.createElement('div');
+      card.style.cssText="background:#0b0b12;color:#eee;max-width:520px;width:92%;border:1px solid #444;border-radius:16px;padding:16px 18px;box-shadow:0 6px 32px rgba(0,0,0,.5)";
+      card.innerHTML=`<h3 style="margin:0 0 8px 0;font-size:18px;">${title}</h3>
+        <div style="font-size:14px;opacity:.9;margin-bottom:12px;white-space:pre-wrap">${body}</div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button id="deny" style="padding:8px 12px;border-radius:10px;background:#252535;border:1px solid #3a3a50;color:#ddd">${denyLabel}</button>
+          <button id="allow" style="padding:8px 12px;border-radius:10px;background:#3764ff;border:1px solid #2a4de0;color:white">${allowLabel}</button>
+        </div>`;
+      wrap.appendChild(card); document.body.appendChild(wrap);
+      card.querySelector('#allow').onclick=()=>{ document.body.removeChild(wrap); resolve(true); };
+      card.querySelector('#deny').onclick=()=>{ document.body.removeChild(wrap); resolve(false); };
+    });
+  }
 };
 
 /* =========================
-VOICE (Built-in TTS)
+VOICE (Built-in TTS, no external libs)
 ========================= */
 const Voice = {
   enabled: true,
   lastSpoken: 0,
-  speak(text) {
-    try {
-      if (!this.enabled || !('speechSynthesis' in window) || !text) return;
+  speak(text){
+    try{
+      if(!this.enabled || !('speechSynthesis' in window) || !text) return;
+      // Rate-limit a bit to avoid overlaps on rapid logs
       const now = Date.now();
-      if (now - this.lastSpoken < 300) return;
+      if(now - this.lastSpoken < 300) return;
       this.lastSpoken = now;
+
       const u = new SpeechSynthesisUtterance(text);
-      const pick = v => /en(-|_|$)/i.test(v.lang);
-      const voices = speechSynthesis.getVoices();
-      u.voice = voices.find(pick) || voices[0];
+      // Try to pick an English voice, fallback to default
+      const pick = (voices)=>voices.find(v=>/en(-|_|$)/i.test(v.lang)) || voices[0];
+      const ensureVoice = ()=>{
+        const vs = speechSynthesis.getVoices();
+        if(vs?.length){ u.voice = pick(vs); speechSynthesis.speak(u); }
+        else { speechSynthesis.onvoiceschanged = ()=>{ const v2 = speechSynthesis.getVoices(); u.voice = pick(v2); speechSynthesis.speak(u); }; }
+      };
       u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0;
-      speechSynthesis.speak(u);
-      Pulse.emit(); // visual sync
-    } catch { }
+      ensureVoice();
+    }catch{}
   }
 };
 
 /* =========================
-AI HEAD + THOUGHT-PULSE
+LOGIC MAP & NODE VISUALIZATION (Neon Bubbles)
 ========================= */
-const Pulse = (() => {
-  let head;
-  function init() {
-    if (head) return head;
-    head = document.createElement('div');
-    head.id = 'ai-head';
-    head.style.cssText = `
-      position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-      width:180px;height:180px;border-radius:50%;
-      background:radial-gradient(circle at 30% 30%, #2c2cff 0%, #0b0b18 90%);
-      box-shadow:0 0 30px #00eaff80, inset 0 0 20px #fff1;
-      transition:box-shadow 0.25s ease, background 0.25s ease, transform 0.25s ease;
-      z-index:9000;pointer-events:none;
-    `;
-    document.body.appendChild(head);
-    return head;
-  }
-  function emit() {
-    const h = init();
-    h.style.transform = 'translate(-50%,-50%) scale(1.08)';
-    h.style.boxShadow = '0 0 60px #00eaff, inset 0 0 40px #fff2';
-    setTimeout(() => {
-      h.style.transform = 'translate(-50%,-50%) scale(1)';
-      h.style.boxShadow = '0 0 30px #00eaff80, inset 0 0 20px #fff1';
-    }, 250);
-  }
-  return { emit };
-})();
+const logicMap = document.getElementById('logic-map') || (() => { const el=document.createElement('div'); el.id='logic-map'; document.body.appendChild(el); return el; })();
+const logicNodes = document.getElementById('logic-nodes') || (() => { const el=document.createElement('div'); el.id='logic-nodes'; logicMap.appendChild(el); return el; })();
+logicMap.style.position = 'relative';
+logicNodes.style.position = 'absolute';
+logicNodes.style.top = '50%'; logicNodes.style.left = '50%';
+logicNodes.style.width = '100%'; logicNodes.style.height = '100%';
+logicNodes.style.transform = 'translate(-50%,-50%) scale(1)';
 
-/* =========================
-LOGIC MAP & NEON NODES
-========================= */
-const logicMap = document.getElementById('logic-map') || (() => {
-  const el = document.createElement('div');
-  el.id = 'logic-map';
-  document.body.appendChild(el);
-  return el;
-})();
-const logicNodes = document.createElement('div');
-logicNodes.id = 'logic-nodes';
-logicMap.appendChild(logicNodes);
+let zoomLevel = 1, translateX = 0, translateY = 0;
+const seedsFolder = 'logic_seeds/';
+const seedRange = { start: 80, end: 800 };
 
-logicMap.style.cssText = `
-  position:relative;background:#0a0a0f;
-  overflow:hidden;width:100vw;height:100vh;
-`;
-logicNodes.style.cssText = `
-  position:absolute;top:50%;left:50%;
-  transform:translate(-50%,-50%) scale(1);
-`;
-
-// inject neon styles
-(function () {
-  if (document.querySelector('style[data-percy-style="neon-bubbles"]')) return;
+// Inject neon bubble styles (idempotent)
+(function injectBubbleStyles(){
+  if(document.querySelector('style[data-percy-style="neon-bubbles"]')) return;
   const css = `
-  .node {
-    position:absolute;border-radius:50%;display:flex;align-items:center;justify-content:center;
-    font-weight:700;color:#fff;cursor:pointer;
-    border:2px solid currentColor;
-    box-shadow:0 0 6px currentColor,0 0 14px currentColor,inset 0 0 12px rgba(255,255,255,0.08);
-    transition:transform .15s ease,box-shadow .15s ease,filter .15s ease;
-    backdrop-filter:blur(1px);
-  }
-  .node:hover{transform:scale(1.08);filter:brightness(1.15);}
-  .cyan-bubble{color:#00eaff;}
-  .blue-bubble{color:#27a0ff;}
-  .magenta-bubble{color:#ff4af0;}
-  .red-bubble{color:#ff5a5a;}
-  .orange-bubble{color:#ffb24d;}
-  .yellow-bubble{color:#fff275;}
-  .pink-bubble{color:#ff8fd8;}
-  .console-line{margin:2px 0;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#d6d8ff;}
-  #ask-percy-bar{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
-    display:flex;gap:8px;align-items:center;background:#0b0b12;
-    border:1px solid #2a2a35;border-radius:12px;padding:8px 12px;z-index:99999;}
-  #ask-input{background:#161624;color:#fff;border:none;outline:none;padding:6px 10px;border-radius:8px;width:240px;}
-  #ask-go,#ask-start{background:#3764ff;color:white;border:none;padding:6px 12px;border-radius:8px;cursor:pointer;}
+    #logic-map { background:#0a0a0f; overflow:hidden; min-height:200px; min-width:300px; }
+    .node {
+      position:absolute; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-weight:700; color:#fff; cursor:pointer;
+      background: radial-gradient(100% 100% at 30% 30%, rgba(255,255,255,0.10), rgba(0,0,0,0.10));
+      border:2px solid currentColor;
+      box-shadow:
+        0 0 6px currentColor,
+        0 0 14px currentColor,
+        inset 0 0 12px rgba(255,255,255,0.08);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+      user-select:none;
+      transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+      backdrop-filter: blur(1px);
+    }
+    .node:hover { transform: scale(1.08); filter: brightness(1.15); }
+    .node:active { transform: scale(0.98); }
+    .cyan-bubble{    color:#00eaff; }
+    .blue-bubble{    color:#27a0ff; }
+    .magenta-bubble{ color:#ff4af0; }
+    .red-bubble     { color: rgba(255, 59, 59, 0.25); filter: brightness(0.7) blur(2px); }
+    .orange-bubble  { color: rgba(255, 157, 46, 0.2); filter: brightness(0.6) blur(3px); }
+    .yellow-bubble  { color: rgba(255, 228, 74, 0.18); filter: brightness(0.5) blur(4px); }
+    .pink-bubble    { color: rgba(255, 107, 216, 0.15); filter: brightness(0.5) blur(5px); }
+    .console-line { margin:2px 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size:12px; color:#d6d8ff; }
   `;
   const style = document.createElement('style');
-  style.dataset.percyStyle = 'neon-bubbles';
+  style.setAttribute('data-percy-style','neon-bubbles');
   style.textContent = css;
   document.head.appendChild(style);
 })();
 
 /* =========================
-ASK PERCY BAR
+LOAD SEEDS (from JSON files in seedsFolder)
 ========================= */
-(function makeAskPercy() {
-  if (document.getElementById('ask-percy-bar')) return;
-  const bar = document.createElement('div');
-  bar.id = 'ask-percy-bar';
-  bar.innerHTML = `
-    <input id="ask-input" placeholder="Ask Percy..." />
-    <button id="ask-go">GO</button>
-    <button id="ask-start">Start</button>
-  `;
-  document.body.appendChild(bar);
-  const go = bar.querySelector('#ask-go');
-  const start = bar.querySelector('#ask-start');
-  go.onclick = () => {
-    const q = bar.querySelector('#ask-input').value.trim();
-    if (q) { UI.say('🧠 ' + q); Voice.speak(q); }
-  };
-  start.onclick = () => {
-    UI.say('Percy initialized and online.');
-    Voice.speak('Percy is ready.');
-    Pulse.emit();
-  };
-})();
+async function loadSeeds(){
+  // Show loading indicator if possible
+  const loadingNotice = document.createElement('p');
+  loadingNotice.id = 'loading-indicator';
+  loadingNotice.textContent = "Loading logic seeds...";
+  logicNodes.appendChild(loadingNotice);
+
+  const promises = [];
+  for(let i=seedRange.start;i<=seedRange.end;i++){
+    const id = `G${String(i).padStart(3,'0')}`;
+    promises.push(fetch(`${seedsFolder}${id}.json`).then(res=>{
+      if(!res.ok) throw new Error(`Failed to load ${id}.json`);
+      return res.json().then(data=>{
+        PercyState.gnodes[id] = data;
+        Memory.save("gnodes", PercyState.gnodes);
+        seeds[id] = data;
+      });
+    }).catch(e=>{
+      // skip missing files quietly
+      // console.warn(e.message);
+    }));
+  }
+  await Promise.all(promises);
+  // remove loading indicator
+  const el = document.getElementById('loading-indicator');
+  if(el) el.remove();
+  Memory.save("seeds:index", Object.keys(seeds));
+}
 
 /* =========================
-RDE STUB (recursive thought loop placeholder)
+CREATE / LAYOUT NODES
 ========================= */
-const PercyRDE = {
-  think(input) {
-    Pulse.emit();
-    const output = `Analyzing: ${input}`;
-    UI.say(output);
-    Voice.speak(output);
-    return output;
-  }
-};
+function createNodes(){
+  logicNodes.innerHTML = '';
+
+  const width = logicMap.clientWidth || 800;
+  const height = logicMap.clientHeight || 600;
+
+  layoutRing(80,200,width,height,width/2.5,'cyan-bubble',60);
+  layoutRing(201,300,width,height,width/3.4,'blue-bubble',45);
+  layoutRing(301,400,width,height,width/4.8,'magenta-bubble',30);
+  layoutRing(401,500,width,height,width/6.6,'red-bubble',22);
+  layoutRing(501,600,width,height,width/8.5,'orange-bubble',18);
+  layoutRing(601,700,width,height,width/11,'yellow-bubble',14);
+  layoutRing(701,800,width,height,width/14,'pink-bubble',12);
+
+  applyTransform();
+}
+
+function layoutRing(startId,endId,width,height,radius,colorClass,nodeSize){
+  const ringSeeds = Object.entries(seeds).filter(([id])=>{
+    const num = parseInt(id.replace("G",""));
+    return num >= startId && num <= endId;
+  });
+  const total = Math.max(1, ringSeeds.length);
+  const centerX = width/2, centerY = height/2;
+
+  ringSeeds.forEach(([id,data], index) => {
+    const angle = (index / total) * 2 * Math.PI;
+    const x = centerX + radius * Math.cos(angle) - nodeSize/2;
+    const y = centerY + radius * Math.sin(angle) - nodeSize/2;
+
+    const node = document.createElement('div');
+    node.classList.add('node');
+    if(colorClass) node.classList.add(colorClass);
+    node.style.width = node.style.height = `${nodeSize}px`;
+    node.style.left = `${x}px`;
+    node.style.top = `${y}px`;
+    node.textContent = id;
+    node.title = (data && data.message) ? data.message : id;
+    node.addEventListener('click', ()=> percyRespond(id, data));
+    node.addEventListener('mouseenter', ()=> UI.setStatus(data?.message ?? ''));
+    logicNodes.appendChild(node);
+  });
+}
+
+function applyTransform(){
+  logicNodes.style.transform = `translate(-50%,-50%) translate(${translateX}px,${translateY}px) scale(${zoomLevel})`;
+  logicNodes.style.transformOrigin = 'center center';
+  document.querySelectorAll('.node').forEach(n => n.style.fontSize = `${12*(1/zoomLevel)}px`);
+}
+
+function zoomLogic(factor){
+  zoomLevel = Math.min(5, Math.max(0.1, zoomLevel * factor));
+  applyTransform();
+}
 
 /* =========================
 SEARCH & INTERPRETER
@@ -1135,7 +1167,6 @@ Percy.PartB.requestDiscourse = async (prompt) => Percy.PartB.Core.requestDiscour
 if (Percy.PartCC && Percy.PartCC.observe) Percy.PartCC.observe?.("link", "PartB_RDE_connected");
 
 console.log("✅ Percy PartB.Core v6.0.0 (Neon RDE) loaded — core-only upgrade applied.");
-
 /* === Percy.js (Part C — Extended + Autonomous Thought Integration) === */
 if (typeof PercyState !== 'undefined') {
 
