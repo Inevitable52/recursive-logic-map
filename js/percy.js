@@ -305,7 +305,7 @@ const PercyState = {
 let seeds = {};
 
 // === percy.js (Part B) ===
-// UI, Voice, Logic Map, Tasks, Puppeteer control, Autonomy loop
+// Part 1, UI, Voice, Logic Map, Tasks, Puppeteer control, Autonomy loop
 
 /* =========================
 CONSOLE / UI HELPERS (will be used by PercyState.createSeed)
@@ -778,7 +778,7 @@ Percy.hook = function(from, type, data) {
   }
 };
 
-/* === Percy Part B: ASI Cognitive Core 6.0.0 (Neon Recursive Discourse Engine - Core-only upgrade) === */
+/* === Percy Part B: Part 2 ASI Cognitive Core 6.0.0 (Neon Recursive Discourse Engine - Core-only upgrade) === */
 Percy.PartB = Percy.PartB || {};
 Percy.PartB.Core = (function(){
 
