@@ -1,84 +1,101 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>P.E.R.C.Y - AI</title>
+<meta charset="utf-8" />
+<title>P.E.R.C.Y - AI (Head Visual)</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
-  :root { --bg:#0a0a0f; --neon-a:#00ffff; --neon-b:#ff00ff; --accent:#1aff55; }
+  :root {
+    --bg: #0a0a0f;
+    --neon-a: #00ffff;
+    --neon-b: #ff00ff;
+    --accent: #1aff55;
+    --head-size: 520px;
+  }
   html,body{height:100%;margin:0;background:var(--bg);color:#e8eefc;font-family:Consolas,monospace;overflow:hidden}
-  #logic-map{position:relative;width:100vw;height:100vh;background:#090912}
-  #logic-nodes{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
-  /* console / ui */
-  #percy-console{position:fixed;left:0;bottom:0;width:34%;max-height:40%;overflow:auto;padding:10px;background:rgba(0,0,0,0.6);border-top-right-radius:12px;border:1px solid #222;z-index:9998}
-  .console-line{font-size:12px;margin:4px 0;font-family:monospace}
-  .console-line.ask{color:#cfe8ff}
-  .console-line.exec{color:#9fffb0}
-  #percy-message{position:fixed;left:34%;bottom:0;width:66%;padding:10px;background:rgba(0,0,0,0.6);border-top-left-radius:12px;border:1px solid #222;z-index:9997}
-  /* header inputs */
-  input,textarea,button{font-family:monospace}
-  #seed-search{position:fixed;top:12px;left:12px;width:200px;padding:6px;border-radius:6px;border:1px solid #333;background:#0b0b0f;color:#fff;z-index:9999}
-  #interpreter-input{position:fixed;top:12px;left:220px;width:300px;padding:6px;border-radius:6px;border:1px solid #333;background:#0b0b0f;color:#fff;z-index:9999}
-  #askPercyButton{position:fixed;top:12px;left:530px;padding:6px 12px;border-radius:6px;background:#1a1aff;color:#fff;border:none;cursor:pointer;z-index:9999}
-  #askPercyButton:hover{background:#3333ff}
-  #exec-toggle{position:fixed;top:50px;left:220px;z-index:9999}
-  #exec-toggle button{padding:4px 12px;margin-right:6px;border-radius:6px;border:0;background:#333;color:#fff;cursor:pointer}
-  #exec-toggle button.active{background:var(--accent);color:#000}
-  #percy-exec-input{position:fixed;top:90px;left:220px;width:300px;padding:6px;border-radius:6px;border:1px solid #333;background:#0b0b0f;color:#fff;z-index:9999}
-  #percy-exec-run{position:fixed;top:90px;left:530px;padding:6px 12px;border-radius:6px;border:0;background:var(--accent);color:#000;cursor:pointer;z-index:9999}
-  /* camera */
-  #camera-feed{position:fixed;top:150px;right:12px;width:480px;height:360px;border-radius:16px;border:2px solid var(--neon-a);box-shadow:0 0 18px var(--neon-a),0 0 36px var(--neon-b);background:#000;object-fit:cover;z-index:1200;transition:transform .25s}
-  #camera-feed:hover{transform:scale(1.03)}
-  #camera-overlay{position:fixed;top:150px;right:12px;width:480px;height:360px;pointer-events:none;z-index:1300}
-  /* voice visualizer */
-  #voice-visualizer{position:fixed;top:12px;right:12px;width:360px;height:128px;border-radius:12px;background:linear-gradient(180deg,rgba(7,7,12,0.6),rgba(7,7,12,0.35));box-shadow:0 6px 24px rgba(0,255,255,0.06);border:1px solid rgba(0,255,255,0.08);z-index:9999;display:flex;align-items:center;justify-content:center}
-  #voice-canvas{width:100%;height:100%;border-radius:8px;background:transparent}
-  /* puppeteer + chat area (center-bottom) */
-  #puppeteer-control{
+  /* map + nodes remain (but rings are replaced by head) */
+  #logic-map{position:relative;width:100vw;height:100vh;background:#090912;overflow:hidden}
+  #logic-nodes{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+  /* CENTER AI HEAD canvas */
+  #ai-head-wrap{
     position:fixed;
-    bottom:20px;
     left:50%;
-    transform:translateX(-220px); /* place to the left of center */
-    width:420px;
-    max-width:46vw;
-    background:rgba(0,0,0,0.8);
-    border-radius:12px;
-    padding:10px;
-    border:1px solid rgba(255,255,255,0.06);
-    box-shadow: 0 6px 30px rgba(0,0,0,0.6), 0 0 18px var(--neon-a);
-    z-index:1300;
-    color:#e8eefc;
+    top:40%;
+    transform:translate(-50%,-50%);
+    width:var(--head-size);
+    height:var(--head-size);
+    z-index:1200;
+    pointer-events:none; /* let clicks fall through to UI */
     display:flex;
     align-items:center;
     justify-content:center;
   }
-  #puppeteer-control .title{font-family:monospace;font-size:13px;opacity:0.9}
-  /* chat */
+  canvas#ai-head{
+    width:100%;
+    height:100%;
+    border-radius:18px;
+    filter: drop-shadow(0 12px 40px rgba(0,0,0,0.7));
+  }
+
+  /* console / ui (kept) */
+  #percy-console{position:fixed;left:6px;bottom:6px;width:34%;max-height:44%;overflow:auto;padding:12px;background:rgba(0,0,0,0.6);border-top-right-radius:12px;border:1px solid #222;z-index:1400}
+  .console-line{font-size:12px;margin:4px 0;font-family:monospace}
+  .console-line.ask{color:#cfe8ff}
+  .console-line.exec{color:#9fffb0}
+  #percy-message{position:fixed;left:34.5%;bottom:6px;width:65.5%;padding:12px;background:rgba(0,0,0,0.6);border-top-left-radius:12px;border:1px solid #222;z-index:1399;max-height:28%;overflow:auto}
+
+  /* header inputs - keep Ask Percy + search */
+  input,textarea,button{font-family:monospace}
+  #seed-search{position:fixed;top:12px;left:12px;width:200px;padding:6px;border-radius:6px;border:1px solid #333;background:#0b0b0f;color:#fff;z-index:1800}
+  #interpreter-input{position:fixed;top:12px;left:220px;width:320px;padding:6px;border-radius:6px;border:1px solid #333;background:#0b0b0f;color:#fff;z-index:1800}
+  #askPercyButton{position:fixed;top:12px;left:550px;padding:6px 12px;border-radius:6px;background:#1a1aff;color:#fff;border:none;cursor:pointer;z-index:1800}
+  #askPercyButton:hover{background:#3333ff}
+
+  /* Exec area (kept but compact) */
+  #percy-exec-input{position:fixed;top:52px;left:220px;width:360px;padding:6px;border-radius:6px;border:1px solid #333;background:#0b0b0f;color:#fff;z-index:1700}
+  #percy-exec-run{position:fixed;top:52px;left:588px;padding:6px 12px;border-radius:6px;border:0;background:var(--accent);color:#000;cursor:pointer;z-index:1700}
+
+  /* camera */
+  #camera-feed{position:fixed;top:110px;right:12px;width:420px;height:315px;border-radius:12px;border:2px solid var(--neon-a);box-shadow:0 0 18px var(--neon-a),0 0 36px var(--neon-b);background:#000;object-fit:cover;z-index:1500;transition:transform .25s}
+  #camera-feed:hover{transform:scale(1.02)}
+  #camera-overlay{position:fixed;top:110px;right:12px;width:420px;height:315px;pointer-events:none;z-index:1501}
+
+  /* chat box (kept) */
   #percy-chat-box{
     position:fixed;
     bottom:20px;
-    left:50%;
-    transform:translateX(40px); /* sit just right of puppeteer-control */
+    right:12px;
     width:340px;
-    height:400px;
+    height:360px;
     background:rgba(0,0,0,0.75);
     border-radius:12px;
     border:1px solid #222;
     display:flex;
     flex-direction:column;
-    z-index:1350;
+    z-index:1502;
     box-shadow:0 8px 30px rgba(0,0,0,0.6), 0 0 18px var(--neon-b);
   }
   #percy-chat-messages{flex:1;padding:8px;overflow:auto}
   #percy-chat-input{flex:1;padding:6px;border:0;background:#111;color:#fff}
   #percy-chat-send{padding:6px 10px;border:0;background:var(--accent);color:#000;cursor:pointer;border-radius:6px}
+
   /* small responsive */
-  @media (max-width:900px){
-    #camera-feed{width:360px;height:270px}
-    #camera-overlay{width:360px;height:270px}
-    /* stack puppeteer + chat vertically on small screens */
-    #puppeteer-control{ transform: translateX(-50%); left:50%; width:320px; bottom:140px; }
-    #percy-chat-box{ transform: translateX(-50%); left:50%; bottom:20px; width:320px; }
+  @media (max-width:1100px){
+    :root{--head-size:380px}
+    #camera-feed{width:340px;height:255px;top:130px}
+    #camera-overlay{width:340px;height:255px;top:130px}
+    #percy-chat-box{right:8px;bottom:8px;width:300px;height:320px}
+  }
+  @media (max-width:700px){
+    :root{--head-size:320px}
+    #seed-search,#interpreter-input,#askPercyButton{display:block;left:8px;top:auto;position:fixed}
+    #interpreter-input{top:56px;left:8px;width:58%}
+    #askPercyButton{top:56px;left:68%}
+    #ai-head-wrap{top:34%}
+    #percy-console{width:96%;left:2%;bottom:6%}
+    #percy-message{left:2%;width:96%;bottom:0;max-height:20%}
+    #camera-feed{display:none}
+    #camera-overlay{display:none}
   }
 </style>
 </head>
@@ -86,36 +103,29 @@
 
   <div id="logic-map"><div id="logic-nodes"></div></div>
 
+  <!-- AI Head Canvas (center) -->
+  <div id="ai-head-wrap" aria-hidden="true">
+    <canvas id="ai-head" width="800" height="800"></canvas>
+  </div>
+
+  <!-- Console and message (UI sandbox) -->
   <div id="percy-console" aria-live="polite"></div>
   <div id="percy-message"></div>
 
+  <!-- Controls (keep Ask Percy + Exec) -->
   <input id="seed-search" placeholder="Search seeds" />
   <input id="interpreter-input" placeholder="Ask Percy" />
-  <button id="askPercyButton">Run</button>
+  <button id="askPercyButton" title="Ask Percy">Run</button>
 
-  <div id="exec-toggle">
-    <button data-mode="math" class="active">Math</button>
-    <button data-mode="java">Java</button>
-    <button data-mode="tools">Tools</button>
-  </div>
-
-  <textarea id="percy-exec-input" rows="3" placeholder="Percy Exec (Math/Java/Tools)"></textarea>
+  <textarea id="percy-exec-input" rows="1" placeholder="Quick Exec (Math / Tools)"></textarea>
   <button id="percy-exec-run">Run Exec</button>
 
-  <!-- Camera + overlay -->
+  <!-- Camera + overlay (kept) -->
   <video id="camera-feed" autoplay muted playsinline></video>
   <canvas id="camera-overlay"></canvas>
 
-  <!-- voice visualizer -->
-  <div id="voice-visualizer"><canvas id="voice-canvas"></canvas></div>
-
-  <!-- CENTER-BOTTOM: Puppeteer control (added) -->
-  <div id="puppeteer-control" role="region" aria-label="Puppeteer control">
-    <div class="title">☕ Puppeteer</div>
-  </div>
-
-  <!-- chat (now positioned to the right of puppeteer-control) -->
-  <div id="percy-chat-box">
+  <!-- Chat -->
+  <div id="percy-chat-box" role="region" aria-label="Percy chat">
     <div id="percy-chat-messages"></div>
     <div style="display:flex;border-top:1px solid #222;padding:6px;">
       <input id="percy-chat-input" placeholder="Talk to Percy..." />
@@ -123,7 +133,7 @@
     </div>
   </div>
 
-  <!-- TF models -->
+  <!-- TF models (kept for detection) -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7"></script>
@@ -132,381 +142,394 @@
   <script src="js/percy.js?v=6.4"></script>
 
   <script>
-  
   /* =====================================================
-     PartZ — Camera, vision models, audio visualizer, ASI
+     AI HEAD DRAW + CAMERA + UI glue
+     - Animated head reacts to Percy.PartEE.awarenessLevel /
+       PercyState.selfMeta.insightLevel when available
+     - Keeps camera face/object detection active (BlazeFace + Coco)
+     - Removed visualizer + puppeteer panel to make room
      ===================================================== */
-  Percy.PartZ = (function(){
-    const PartZ = {};
-    const video = document.getElementById('camera-feed');
-    const overlay = document.getElementById('camera-overlay');
-    const overlayCtx = overlay.getContext('2d',{willReadFrequently:false});
 
-    // audio visualizer
-    let audioCtx=null, analyser=null, dataFreq=null, dataWave=null;
-    PartZ.analyser = null;
+  (function () {
+    // --- AI Head drawing (canvas) ---
+    const canvas = document.getElementById('ai-head');
+    const ctx = canvas.getContext('2d', { alpha: true });
+    let cw = canvas.width, ch = canvas.height;
 
-    // models
-    let cocoModel = null, faceModel = null;
+    function resizeCanvas() {
+      // Keep high-DPI crispness
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      cw = rect.width; ch = rect.height;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
 
-    // rate limiting & readiness
-    let lastDetectAt = 0;
-    const minDetectInterval = 100; // ms
+    // utilities
+    function lerp(a,b,t){ return a + (b-a)*t; }
+    function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
 
-    /* Helpful UI helpers */
-    function appendConsole(text, cls){
-      const el = document.createElement('div');
-      el.className = 'console-line' + (cls ? ' ' + cls : '');
-      el.textContent = text;
-      const container = document.getElementById('percy-console');
-      container.appendChild(el);
-      container.scrollTop = container.scrollHeight;
+    // get a driving "awareness" value between 0..1
+    function getAwareness() {
+      // prefer PartEE if available
+      try {
+        if(window.Percy?.PartEE && typeof Percy.PartEE.awarenessLevel === 'number') {
+          return clamp(Percy.PartEE.awarenessLevel, 0, 1);
+        }
+      } catch(e){ /* ignore */ }
+      // fall back to PercyState.selfMeta.insightLevel
+      try {
+        if(window.PercyState?.selfMeta?.insightLevel) {
+          return clamp(PercyState.selfMeta.insightLevel, 0, 1);
+        }
+      } catch(e){ /* ignore */ }
+      // otherwise small heartbeat
+      return 0.35 + 0.15 * Math.sin(Date.now()/1200);
     }
 
+    // head params
+    let lastAw = 0;
+    let eyePulse = 0;
+
+    function drawHead(aw) {
+      ctx.clearRect(0,0,cw,ch);
+      const cx = cw/2, cy = ch/2;
+      const size = Math.min(cw,ch) * 0.86;
+      const radius = size * 0.48;
+
+      // color mapping (hue shifts)
+      const hue = Math.round(lerp(220, 310, aw)); // 220 blue -> 310 magenta
+      const sat = Math.round(60 + aw*35);
+      const light = Math.round(45 + aw*10);
+      const glowAlpha = 0.08 + aw * 0.28;
+
+      // background halo
+      const g = ctx.createRadialGradient(cx, cy, radius*0.2, cx, cy, radius*1.2);
+      g.addColorStop(0, `hsla(${hue}, ${sat}%, ${light}%, ${0.25 + aw*0.25})`);
+      g.addColorStop(0.6, `hsla(${hue}, ${sat}%, ${light-10}%, ${0.06 + aw*0.10})`);
+      g.addColorStop(1, `rgba(0,0,0,0)`);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius*1.15, 0, Math.PI*2);
+      ctx.fill();
+
+      // head main (stylized mask)
+      ctx.save();
+      ctx.translate(cx, cy);
+      const sweep = Math.PI * 0.9;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, radius*0.82, radius*1.05, 0, -sweep/2, sweep/2, true);
+      ctx.closePath();
+
+      // head fill gradient
+      const fillG = ctx.createLinearGradient(-radius, -radius, radius, radius);
+      fillG.addColorStop(0, `hsla(${hue-30}, ${sat}%, ${light-5}%, ${0.85})`);
+      fillG.addColorStop(1, `hsla(${hue+30}, ${sat}%, ${light-15}%, ${0.6})`);
+      ctx.fillStyle = fillG;
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fill();
+
+      // outline
+      ctx.lineWidth = Math.max(2, radius*0.03);
+      ctx.strokeStyle = `hsla(${hue}, ${sat}%, ${clamp(light+8,20,90)}%, ${0.95})`;
+      ctx.stroke();
+
+      // internal circuit-ish lines
+      ctx.lineWidth = Math.max(1, radius*0.008);
+      ctx.strokeStyle = `hsla(${hue}, ${sat}%, ${clamp(light+4,20,90)}%, ${0.55})`;
+      ctx.beginPath();
+      // a few curves to create a wireframe look
+      ctx.moveTo(-radius*0.6, -radius*0.1);
+      ctx.bezierCurveTo(-radius*0.2, -radius*0.6, radius*0.3, -radius*0.6, radius*0.6, -radius*0.1);
+      ctx.moveTo(-radius*0.72, radius*0.25);
+      ctx.bezierCurveTo(-radius*0.2, radius*0.55, radius*0.2, radius*0.55, radius*0.72, radius*0.25);
+      ctx.stroke();
+
+      // glowing "neural pulse" lines (animated)
+      const t = Date.now() / 600;
+      for(let i=0;i<6;i++){
+        const a = Math.sin(t + i*0.9) * 0.6;
+        ctx.beginPath();
+        ctx.moveTo(-radius*0.4 + i*radius*0.12, -radius*0.52 + a*radius*0.06);
+        ctx.quadraticCurveTo(0, -radius*0.2 + a*radius*0.08, radius*0.4 - i*radius*0.12, -radius*0.52 + a*radius*0.06);
+        ctx.strokeStyle = `hsla(${hue + i*6}, ${sat}%, ${clamp(light+14,30,96)}%, ${0.06 + aw*0.12})`;
+        ctx.lineWidth = Math.max(1, radius*0.012 + Math.abs(a)*1.2);
+        ctx.stroke();
+      }
+
+      // Eyes (two slits)
+      const eyeW = radius*0.28;
+      const eyeH = radius*0.10 * (0.8 + aw*0.6);
+      const eyeY = -radius*0.12;
+      const eyeX = radius*0.34;
+
+      // eye glow base
+      const eyeGlow = ctx.createLinearGradient(-eyeX-eyeW, eyeY-eyeH, eyeX+eyeW, eyeY+eyeH);
+      eyeGlow.addColorStop(0, `hsla(${hue-15}, ${sat}%, ${light+10}%, ${0.06 + aw*0.12})`);
+      eyeGlow.addColorStop(1, `hsla(${hue+15}, ${sat}%, ${light+2}%, ${0.06 + aw*0.12})`);
+      ctx.fillStyle = eyeGlow;
+      ctx.beginPath();
+      ctx.ellipse(-eyeX, eyeY, eyeW, eyeH, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(eyeX, eyeY, eyeW, eyeH, 0, 0, Math.PI*2);
+      ctx.fill();
+
+      // pupils (responsive to awareness)
+      const pupilScale = 0.28 + aw*0.42;
+      ctx.fillStyle = `hsl(${hue}, ${Math.min(100,sat+10)}%, ${clamp(light+6,30,96)}%)`;
+      ctx.beginPath();
+      ctx.ellipse(-eyeX, eyeY, eyeW*pupilScale*0.5, eyeH*pupilScale, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(eyeX, eyeY, eyeW*pupilScale*0.5, eyeH*pupilScale, 0, 0, Math.PI*2);
+      ctx.fill();
+
+      // subtle mouth / expression line
+      ctx.lineWidth = Math.max(1, radius*0.01);
+      ctx.strokeStyle = `hsla(${hue}, ${sat}%, ${clamp(light-12,10,80)}%, ${0.6})`;
+      ctx.beginPath();
+      const mouthW = radius*0.36;
+      const mouthY = radius*0.36 * (0.2 + (1-aw)*0.6);
+      ctx.moveTo(-mouthW, mouthY);
+      ctx.quadraticCurveTo(0, mouthY + radius*0.06*(0.6-aw), mouthW, mouthY);
+      ctx.stroke();
+
+      ctx.restore();
+
+      // outer glow ring to emphasize state
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius*1.35, 0, Math.PI*2);
+      ctx.lineWidth = Math.max(2, radius*0.018);
+      ctx.strokeStyle = `hsla(${hue}, ${sat}%, ${clamp(light+6,20,96)}%, ${glowAlpha})`;
+      ctx.stroke();
+    }
+
+    let lastFrame = 0;
+    function animate(now) {
+      // sample awareness and smooth it
+      const target = getAwareness();
+      lastAw = lerp(lastAw, target, 0.06);
+      // small breathing effect
+      const breath = 0.02 * (0.8 + 0.2 * Math.sin(Date.now() / 400));
+      lastAw = clamp(lastAw + breath, 0, 1);
+
+      drawHead(lastAw);
+      requestAnimationFrame(animate);
+    }
+    requestAnimationFrame(animate);
+
+    // --- Camera + models (kept code, compact) ---
+    const video = document.getElementById('camera-feed');
+    const overlay = document.getElementById('camera-overlay');
+    const overlayCtx = overlay.getContext('2d');
+
+    let cocoModel = null, faceModel = null;
     function resizeOverlayToVideo(){
       if(!video || !overlay) return;
-      // Use video intrinsic size for drawing, but style to match element size
       const vidW = video.videoWidth || video.clientWidth || 640;
       const vidH = video.videoHeight || video.clientHeight || 480;
       overlay.width = vidW;
       overlay.height = vidH;
-      // keep CSS size equal to element size to keep mapped coordinates correct
       overlay.style.width = video.clientWidth + 'px';
       overlay.style.height = video.clientHeight + 'px';
     }
 
-    async function initModels(){
-      appendConsole('🔍 Loading models...', 'exec');
-      // load concurrently
+    async function initModelsAndStream(){
       try {
-        cocoModel = await cocoSsd.load();
-        faceModel = await blazeface.load();
-        appendConsole('✅ Models loaded (Coco-SSD + BlazeFace)', 'exec');
-      } catch(e){
-        console.error('Model load error', e);
-        appendConsole('⚠️ Model load error: '+ e.message, 'exec');
-      }
-    }
-
-    /* detection loop */
-    async function detect(){
-  if(video.readyState < 2){ requestAnimationFrame(detect); return; }
-
-  const [objects, faces] = await Promise.all([
-    cocoModel.detect(video),
-    faceModel.estimateFaces(video, false)
-  ]);
-
-  overlayCtx.clearRect(0,0,overlay.width,overlay.height);
-
-  const scaleX = overlay.width / video.videoWidth;
-  const scaleY = overlay.height / video.videoHeight;
-
-  // Object detection boxes
-  for(const obj of objects){
-    const [x,y,w,h] = obj.bbox;
-    const bx = x * scaleX, by = y * scaleY, bw = w * scaleX, bh = h * scaleY;
-
-    overlayCtx.strokeStyle = 'rgba(0,255,255,0.9)';
-    overlayCtx.lineWidth = 2;
-    overlayCtx.strokeRect(bx, by, bw, bh);
-    overlayCtx.fillStyle = 'rgba(0,255,255,0.5)';
-    overlayCtx.font = '12px monospace';
-    overlayCtx.fillText(`${obj.class} (${Math.round(obj.score*100)}%)`, bx+4, by+12);
-    console.log(`🟦 Object: ${obj.class} (${Math.round(obj.score*100)}%)`);
-  }
-
-  // Face detection boxes
-  for(const face of faces){
-    const [x1, y1] = face.topLeft;
-    const [x2, y2] = face.bottomRight;
-    const w = (x2 - x1) * scaleX;
-    const h = (y2 - y1) * scaleY;
-    const fx = x1 * scaleX, fy = y1 * scaleY;
-    const cx = fx + w / 2, cy = fy + h / 2;
-
-    overlayCtx.strokeStyle = 'rgba(255,0,255,0.9)';
-    overlayCtx.lineWidth = 2;
-    overlayCtx.shadowColor = '#ff00ff';
-    overlayCtx.shadowBlur = 12;
-    overlayCtx.strokeRect(fx, fy, w, h);
-    overlayCtx.shadowBlur = 0;
-
-    overlayCtx.fillStyle = 'rgba(255,0,255,0.3)';
-    overlayCtx.font = '12px monospace';
-    overlayCtx.fillText('Face', fx + 4, fy + 12);
-
-    overlayCtx.beginPath();
-    overlayCtx.arc(cx, cy, 3, 0, 2 * Math.PI);
-    overlayCtx.fillStyle = '#00ff66';
-    overlayCtx.fill();
-
-    console.log(`🎯 Face detected at (${Math.round(cx)},${Math.round(cy)})`);
-  }
-
-  if(typeof Percy.onVisualInput === 'function'){
-    Percy.onVisualInput({objects, faces});
-  }
-
-  requestAnimationFrame(detect);
-}
-
-    /* audio visualizer combined -> sine + bars */
-    function startAudioVisualizer(canvas){
-      const ctxV = canvas.getContext('2d');
-      function resize(){ canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight; }
-      resize(); window.addEventListener('resize', resize);
-
-      (function draw(){
-        requestAnimationFrame(draw);
-        if(!analyser) return;
-        analyser.getByteFrequencyData(dataFreq);
-        analyser.getByteTimeDomainData(dataWave);
-
-        const W = canvas.width, H = canvas.height;
-        ctxV.clearRect(0,0,W,H);
-
-        // bars (frequency)
-        const barCount = dataFreq.length;
-        const barW = Math.max(1, W / barCount);
-        for(let i=0;i<barCount;i++){
-          const v = dataFreq[i] / 255;
-          const h = v * H * 0.5;
-          ctxV.fillStyle = `rgb(${dataFreq[i]},${255-dataFreq[i]},255)`;
-          ctxV.fillRect(i*barW, H - h, barW * 0.7, h);
-        }
-
-        // sine waveform overlaid
-        ctxV.lineWidth = 2;
-        ctxV.strokeStyle = 'rgba(0,255,255,0.95)';
-        ctxV.beginPath();
-        const slice = W / dataWave.length;
-        let x = 0;
-        for(let i=0;i<dataWave.length;i++){
-          const v = (dataWave[i] - 128) / 128; // -1..1
-          const y = H/2 + v * (H*0.22);
-          if(i===0) ctxV.moveTo(x,y); else ctxV.lineTo(x,y);
-          x += slice;
-        }
-        ctxV.stroke();
-      })();
-    }
-
-    PartZ.init = async function(){
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         video.srcObject = stream;
         await video.play();
         resizeOverlayToVideo();
         window.addEventListener('resize', resizeOverlayToVideo);
 
-        // audio setup
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 256;
-        dataFreq = new Uint8Array(analyser.frequencyBinCount);
-        dataWave = new Uint8Array(analyser.frequencyBinCount);
-        const srcNode = audioCtx.createMediaStreamSource(stream);
-        srcNode.connect(analyser);
-        PartZ.analyser = analyser;
+        // load models (concurrently)
+        const loadPromises = [];
+        loadPromises.push(cocoSsd.load().then(m=> cocoModel = m));
+        loadPromises.push(blazeface.load().then(m=> faceModel = m));
+        await Promise.all(loadPromises);
 
-        // lazy resume on user interaction (autoplay policies)
-        ['click','keydown','touchstart'].forEach(ev => {
-          const once = async ()=>{ try{ if(audioCtx.state==='suspended') await audioCtx.resume(); }catch(e){} window.removeEventListener(ev, once); };
-          window.addEventListener(ev, once, {passive:true});
-        });
-
-        // init models and loops
-        await initModels();
-        detect();
-
-        // voice visualizer attach
-        const vc = document.getElementById('voice-canvas');
-        startAudioVisualizer(vc);
-
-        appendConsole('✅ PartZ initialized', 'exec');
-      } catch(err){
-        console.error('PartZ init failed', err);
-        appendConsole('⚠️ PartZ init failed: ' + (err.message||err), 'exec');
+        // detection loop
+        detectLoop();
+        appendConsole('✅ Camera + models ready', 'exec');
+      } catch (err) {
+        appendConsole('⚠️ Camera/models init failed: ' + (err.message || err), 'exec');
+        console.error(err);
       }
-    };
-
-    return PartZ;
-  })();
-
-  /* =====================================================
-     Percy.ASI (simple task queue)
-     ===================================================== */
-  Percy.ASI = (function(){
-    const ASI = { taskQueue: [], running:false };
-    ASI.addTask = function(task){ if(task && typeof task.exec==='function') ASI.taskQueue.push(task); };
-    ASI.runNext = async function(){
-      if(ASI.running) return;
-      const t = ASI.taskQueue.shift();
-      if(!t) return;
-      ASI.running = true;
-      try{ const res = await t.exec(); if(typeof t.onComplete==='function') t.onComplete(res); }catch(e){ console.error('ASI task error', e); }
-      ASI.running = false;
-      setTimeout(ASI.runNext, 0);
-    };
-    ASI.loop = function(){ setTimeout(ASI.loop, 200); ASI.runNext(); };
-    ASI.init = function(){ console.log('✅ Percy.ASI initialized'); ASI.loop(); };
-    return ASI;
-  })();
-
-  /* =====================================================
-     Hook visual input into ASI
-     ===================================================== */
-  Percy.onVisualInput = Percy.onVisualInput || function(data){
-    if(data.objects && data.objects.length) {
-      Percy.ASI.addTask({ exec: async ()=>{ console.log('🟦 Objects:', data.objects.map(o=>o.class).join(', ')); return data.objects; } });
-    }
-    if(data.faces && data.faces.length) {
-      Percy.ASI.addTask({ exec: async ()=>{ console.log('💠 Faces detected:', data.faces.length); return data.faces.length; }});
-    }
-  };
-
-  /* =====================================================
-     Console / Exec / Chat UI glue
-     ===================================================== */
-  // small UI helpers
-  const percyConsole = document.getElementById('percy-console');
-  function appendConsole(text,cls){
-    const el = document.createElement('div');
-    el.className = 'console-line' + (cls? ' ' + cls : '');
-    el.textContent = text;
-    percyConsole.appendChild(el);
-    percyConsole.scrollTop = percyConsole.scrollHeight;
-    // also log to F12
-    console.log(text);
-  }
-
-  // interpreter input
-  (function(){
-    const interp = document.getElementById('interpreter-input');
-    const ask = document.getElementById('askPercyButton');
-    ask.addEventListener('click', runInterp);
-    interp.addEventListener('keydown', e => { if(e.key==='Enter') runInterp(); });
-    function runInterp(){
-      const q = interp.value.trim();
-      if(!q) return;
-      appendConsole('↳ ' + q, 'ask');
-      let resp = '⚙️ Percy core not available';
-      if(typeof Percy.interpret === 'function') {
-        try{ resp = Percy.interpret(q); }catch(e){ resp = '⚠ Interpreter error'; }
-      } else if(typeof percyRespond === 'function') {
-        try{ resp = percyRespond(q); }catch(e){ resp = '⚠ percyRespond error'; }
-      }
-      appendConsole(resp);
-      interp.value = '';
-    }
-  })();
-
-  // Percy Exec (math quick evaluator)
-  (function(){
-    const execInput = document.getElementById('percy-exec-input');
-    const execRun = document.getElementById('percy-exec-run');
-    const modeBtns = document.querySelectorAll('#exec-toggle button');
-
-    modeBtns.forEach(b=>b.addEventListener('click', ()=>{ modeBtns.forEach(x=>x.classList.remove('active')); b.classList.add('active'); }));
-
-    execRun.addEventListener('click', handleExec);
-    execInput.addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); handleExec(); } });
-
-    function safeEvalMath(expr){
-      // whitelist characters: digits, spaces, parentheses and arithmetic operators
-      const ok = /^[0-9+\-*/%().\s^]+$/.test(expr);
-      if(!ok) throw new Error('Expression contains invalid characters');
-      // convert ^ to ** for exponent if present
-      const sanitized = expr.replace(/\^/g, '**');
-      // Use Function to evaluate after validation
-      // eslint-disable-next-line no-new-func
-      return Function('"use strict"; return (' + sanitized + ')')();
     }
 
-        async function handleExec(){
-      const q = execInput.value.trim();
-      if(!q) return;
-      appendConsole('↳ ' + q, 'ask');
+    async function detectLoop(){
+      if(video.readyState < 2){ requestAnimationFrame(detectLoop); return; }
+      resizeOverlayToVideo();
 
-      const mode = document.querySelector('#exec-toggle button.active')?.dataset?.mode || 'math';
-
+      overlayCtx.clearRect(0,0,overlay.width,overlay.height);
       try {
-        if(mode === 'math'){
-          const result = safeEvalMath(q);
-          appendConsole('🧮 Math: ' + String(result), 'exec');
-          console.log('🧮 Exec result:', result);
-        } 
-        else if(mode === 'java') {
-          appendConsole('⚙️ Sending Java code to Percy...', 'exec');
-          if(window.Percy?.exec){
-            const res = await Percy.exec('java', q);
-            appendConsole('🤖 ' + (res || 'Java executed successfully.'), 'exec');
-          } 
-          else if(window.PercyState?.useTool){
-            const res = await PercyState.useTool('java', q);
-            appendConsole('🤖 ' + (res || 'Java tool executed.'), 'exec');
-          } 
-          else {
-            appendConsole('⚠️ No Java executor available.', 'exec');
-          }
-        } 
-        else if(mode === 'tools') {
-          appendConsole('⚙️ Running tool mode...', 'exec');
-          if(window.PercyState?.useTool){
-            const res = await PercyState.useTool('tools', q);
-            appendConsole('🤖 ' + (res || 'Tool executed.'), 'exec');
-          } else {
-            appendConsole('⚠️ No tool executor available.', 'exec');
-          }
+        const [objects, faces] = await Promise.all([
+          cocoModel ? cocoModel.detect(video) : Promise.resolve([]),
+          faceModel ? faceModel.estimateFaces(video, false) : Promise.resolve([])
+        ]);
+
+        const scaleX = overlay.width / video.videoWidth;
+        const scaleY = overlay.height / video.videoHeight;
+
+        for(const obj of (objects||[])){
+          const [x,y,w,h] = obj.bbox;
+          const bx = x * scaleX, by = y * scaleY, bw = w * scaleX, bh = h * scaleY;
+          overlayCtx.strokeStyle = 'rgba(0,255,255,0.9)';
+          overlayCtx.lineWidth = 2;
+          overlayCtx.strokeRect(bx, by, bw, bh);
+          overlayCtx.fillStyle = 'rgba(0,255,255,0.18)';
+          overlayCtx.fillRect(bx, by, bw, bh);
+          overlayCtx.fillStyle = 'rgba(255,255,255,0.95)';
+          overlayCtx.font = '12px monospace';
+          overlayCtx.fillText(`${obj.class} (${Math.round(obj.score*100)}%)`, bx+6, by+14);
         }
-      } catch(err){
-        appendConsole('⚠️ Exec error: ' + err.message, 'exec');
+
+        for(const face of (faces||[])){
+          const [x1, y1] = face.topLeft;
+          const [x2, y2] = face.bottomRight;
+          const fx = x1 * scaleX, fy = y1 * scaleY;
+          const w = (x2 - x1) * scaleX, h = (y2 - y1) * scaleY;
+          overlayCtx.strokeStyle = 'rgba(255,0,255,0.9)';
+          overlayCtx.lineWidth = 1.8;
+          overlayCtx.strokeRect(fx, fy, w, h);
+          overlayCtx.fillStyle = 'rgba(255,0,255,0.18)';
+          overlayCtx.fillRect(fx, fy, w, h);
+          overlayCtx.fillStyle = '#00ff66';
+          overlayCtx.beginPath();
+          overlayCtx.arc(fx + w/2, fy + h/2, 3, 0, Math.PI*2);
+          overlayCtx.fill();
+        }
+
+        // forward to Percy hook if exists
+        if(typeof Percy.onVisualInput === 'function'){
+          Percy.onVisualInput({ objects, faces });
+        }
+      } catch(e){
+        // console.warn('detectLoop error', e);
+      }
+      requestAnimationFrame(detectLoop);
+    }
+
+    // small UI helper to append to the console (kept)
+    const percyConsole = document.getElementById('percy-console');
+    function appendConsole(text, cls) {
+      const el = document.createElement('div');
+      el.className = 'console-line' + (cls ? ' ' + cls : '');
+      el.textContent = text;
+      percyConsole.appendChild(el);
+      percyConsole.scrollTop = percyConsole.scrollHeight;
+      console.log(text);
+    }
+
+    // Start models + camera on user gesture (autoplay policies)
+    window.addEventListener('load', () => {
+      // allow camera init to wait for explicit user interaction in some browsers
+      // but attempt now
+      setTimeout(initModelsAndStream, 500);
+    });
+
+    // --- Interpreter & Exec & Chat glue (kept) ---
+    (function(){
+      const interp = document.getElementById('interpreter-input');
+      const ask = document.getElementById('askPercyButton');
+      ask.addEventListener('click', runInterp);
+      interp.addEventListener('keydown', e => { if(e.key==='Enter') runInterp(); });
+      function runInterp(){
+        const q = interp.value.trim();
+        if(!q) return;
+        appendConsole('↳ ' + q, 'ask');
+        let resp = '⚙️ Percy core not available';
+        if(typeof Percy.interpret === 'function') {
+          try{ resp = Percy.interpret(q); }catch(e){ resp = '⚠ Interpreter error'; }
+        } else if(typeof percyRespond === 'function') {
+          try{ resp = percyRespond(q); }catch(e){ resp = '⚠ percyRespond error'; }
+        }
+        appendConsole(resp);
+        interp.value = '';
+      }
+    })();
+
+    // Exec (math quick evaluator)
+    (function(){
+      const execInput = document.getElementById('percy-exec-input');
+      const execRun = document.getElementById('percy-exec-run');
+
+      execRun.addEventListener('click', handleExec);
+      execInput.addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); handleExec(); } });
+
+      function safeEvalMath(expr){
+        const ok = /^[0-9+\-*/%().\s^]+$/.test(expr);
+        if(!ok) throw new Error('Expression contains invalid characters');
+        const sanitized = expr.replace(/\^/g, '**');
+        return Function('"use strict"; return (' + sanitized + ')')();
       }
 
-      execInput.value = '';
-    }
+      async function handleExec(){
+        const q = execInput.value.trim();
+        if(!q) return;
+        appendConsole('↳ ' + q, 'ask');
+        try {
+          // try math first, else pass to PercyState tool
+          try {
+            const result = safeEvalMath(q);
+            appendConsole('🧮 Math: ' + String(result), 'exec');
+          } catch (eMath) {
+            // not math: attempt to call Percy.exec or PercyState.useTool if present
+            if(window.Percy?.exec){
+              const res = await Percy.exec('tool', q);
+              appendConsole('🤖 ' + (res || 'Executed via Percy.exec'), 'exec');
+            } else if(window.PercyState?.useTool){
+              const res = await PercyState.useTool('tools', q);
+              appendConsole('🤖 ' + (res || 'Executed via PercyState.useTool'), 'exec');
+            } else {
+              appendConsole('⚠️ No executor available.', 'exec');
+            }
+          }
+        } catch(err){
+          appendConsole('⚠️ Exec error: ' + (err.message || err), 'exec');
+        }
+        execInput.value = '';
+      }
+    })();
+
+    // Chat box
+    (function(){
+      const input = document.getElementById('percy-chat-input');
+      const send = document.getElementById('percy-chat-send');
+      const messages = document.getElementById('percy-chat-messages');
+
+      send.addEventListener('click', sendMsg);
+      input.addEventListener('keydown', e => { if(e.key==='Enter') sendMsg(); });
+
+      function appendMsg(role, text){
+        const d = document.createElement('div');
+        d.style.margin = '6px 0';
+        d.textContent = role + ': ' + text;
+        d.style.color = role === 'Percy' ? '#9fffb0' : '#cfe8ff';
+        messages.appendChild(d);
+        messages.scrollTop = messages.scrollHeight;
+      }
+
+      function sendMsg(){
+        const t = input.value.trim();
+        if(!t) return;
+        appendMsg('You', t);
+        input.value = '';
+        let resp = '⚙️ Percy offline';
+        if(Percy?.PartT?.hear) resp = Percy.PartT.hear(t);
+        else if(Percy?.interpret) resp = Percy.interpret(t);
+        else if(typeof percyRespond === 'function') resp = percyRespond(t);
+        appendMsg('Percy', resp);
+      }
+    })();
+
   })();
-
-  // chat box
-  (function(){
-    const input = document.getElementById('percy-chat-input');
-    const send = document.getElementById('percy-chat-send');
-    const messages = document.getElementById('percy-chat-messages');
-
-    send.addEventListener('click', sendMsg);
-    input.addEventListener('keydown', e => { if(e.key==='Enter') sendMsg(); });
-
-    function appendMsg(role, text){
-      const d = document.createElement('div');
-      d.style.margin = '6px 0';
-      d.textContent = role + ': ' + text;
-      d.style.color = role === 'Percy' ? '#9fffb0' : '#cfe8ff';
-      messages.appendChild(d);
-      messages.scrollTop = messages.scrollHeight;
-    }
-
-    function sendMsg(){
-      const t = input.value.trim();
-      if(!t) return;
-      appendMsg('You', t);
-      input.value = '';
-      // basic reply flow
-      let resp = '⚙️ Percy offline';
-      if(Percy?.PartT?.hear) resp = Percy.PartT.hear(t);
-      else if(Percy?.interpret) resp = Percy.interpret(t);
-      else if(typeof percyRespond === 'function') resp = percyRespond(t);
-      appendMsg('Percy', resp);
-    }
-  })();
-
-  /* start everything when page loaded */
-  window.addEventListener('load', () => {
-    try {
-      Percy.PartZ.init();
-      Percy.ASI.init();
-    } catch(e) { console.error(e); }
-  });
   </script>
 </body>
 </html>
