@@ -407,10 +407,10 @@ const seedRange = { start: 80, end: 800 };
     .cyan-bubble{    color:#00eaff; }
     .blue-bubble{    color:#27a0ff; }
     .magenta-bubble{ color:#ff4af0; }
-    .red-bubble{     color:#ff3b3b; }
-    .orange-bubble{  color:#ff9d2e; }
-    .yellow-bubble{  color:#ffe44a; }
-    .pink-bubble{    color:#ff6bd8; }
+    .red-bubble     { color: rgba(255, 59, 59, 0.25); filter: brightness(0.7) blur(2px); }
+    .orange-bubble  { color: rgba(255, 157, 46, 0.2); filter: brightness(0.6) blur(3px); }
+    .yellow-bubble  { color: rgba(255, 228, 74, 0.18); filter: brightness(0.5) blur(4px); }
+    .pink-bubble    { color: rgba(255, 107, 216, 0.15); filter: brightness(0.5) blur(5px); }
     .console-line { margin:2px 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size:12px; color:#d6d8ff; }
   `;
   const style = document.createElement('style');
