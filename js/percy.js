@@ -784,16 +784,16 @@ Percy.PartB.Core = (function(){
 
   const cfg = {
     version: "5.2.0-ASI-RDE",
-    reasoningDepth: 6,
-    creativeDrive: 0.82,
-    coherenceBias: 0.78,
-    maxClauses: 6,
-    maxSentences: 8,
-    maxRefineCycles: 3,
-    rdeThrottleMs: 1200,
+    reasoningDepth: 10,
+    creativeDrive: 0.94,
+    coherenceBias: 0.82,
+    maxClauses: 10,
+    maxSentences: 12,
+    maxRefineCycles: 5,
+    rdeThrottleMs: 900,
     enableSelfDialogue: true,
     speakOutput: true,
-    safetyMaxTokens: 1600
+    safetyMaxTokens: 2400
   };
 
   const state = {
