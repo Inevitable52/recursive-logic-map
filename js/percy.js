@@ -778,127 +778,182 @@ Percy.hook = function(from, type, data) {
   }
 };
 
-/* === percy.js Part B: Part 3, Core Logic, Awareness, and Visual-Link Engine === */
-const Percy = {
-  name: "P.E.R.C.Y",
-  version: "9.0.0-ASI",
-  uptime: Date.now(),
-  PartEE: { awarenessLevel: 0.0 },
-  memory: [],
-  context: {},
-  consoleBuffer: [],
-};
+// === percy.js (Part B) ===
+// UI, Voice, Logic Map, Tasks, Autonomy & ASI Cognitive Core
+// Version: 6.0.0-RDE (Recursive-Deep-Evolution)
+
+(() => {
 
 /* =========================
-STATE + AWARENESS ENGINE
+UI HELPERS
 ========================= */
-const PercyState = {
-  selfMeta: {
-    insightLevel: 0.35,
-    emotionalCore: 0.0,
-    stability: 1.0,
+const UI = {
+  elConsole: ()=>document.getElementById('percy-console'),
+  elMsg: ()=>document.getElementById('percy-message'),
+  say(txt){
+    const box=this.elConsole(); if(!box) return;
+    const p=document.createElement('p');
+    p.className='console-line';
+    p.textContent=txt;
+    box.appendChild(p);
+    box.scrollTop=box.scrollHeight;
+    const max=150; while(box.children.length>max) box.removeChild(box.firstChild);
   },
-  sensors: { objects: [], faces: [] },
-  lastUpdate: Date.now(),
-
-  updateAwareness(delta = 0.016) {
-    // awareness grows with activity & visual feedback
-    const base = 0.35 + 0.15 * Math.sin(Date.now() / 2000);
-    const faces = this.sensors.faces.length;
-    const objects = this.sensors.objects.length;
-    const stimulus = Math.min(1, (faces * 0.2 + objects * 0.05));
-
-    // update internal awareness
-    Percy.PartEE.awarenessLevel = Math.max(0, Math.min(1, base + stimulus));
-    this.selfMeta.insightLevel = Percy.PartEE.awarenessLevel;
-
-    // adjust emotional core slightly toward balance
-    const targetEmotion = stimulus > 0.2 ? 0.7 : 0.3;
-    this.selfMeta.emotionalCore += (targetEmotion - this.selfMeta.emotionalCore) * 0.02;
-
-    this.lastUpdate = Date.now();
-  },
+  setStatus(txt){ const m=this.elMsg(); if(m) m.textContent=txt; }
 };
 
 /* =========================
-CORE INTERPRETER (Ask Percy)
+VOICE + MOUTH SYNC
 ========================= */
-Percy.interpret = function (input) {
-  if (!input) return "…";
-  const q = input.toLowerCase().trim();
+const Voice = {
+  enabled: true,
+  lastSpoken: 0,
+  speak(text){
+    try{
+      if(!this.enabled || !('speechSynthesis' in window) || !text) return;
+      const now = Date.now(); if(now - this.lastSpoken < 250) return;
+      this.lastSpoken = now;
 
-  // Log
-  Percy.memory.push({ t: Date.now(), q });
+      const u = new SpeechSynthesisUtterance(text);
+      const pick = (v)=>v.find(x=>/en/i.test(x.lang)) || v[0];
+      const vs = speechSynthesis.getVoices();
+      if(vs?.length) u.voice = pick(vs);
+      u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0;
 
-  // basic semantic triggers
-  if (/hello|hi|hey/.test(q)) return "👋 Hello! Percy online and thinking.";
-  if (/status|state|awareness/.test(q)) {
-    const lvl = Percy.PartEE.awarenessLevel.toFixed(2);
-    return `🤖 Awareness ${lvl}, insight ${PercyState.selfMeta.insightLevel.toFixed(2)}`;
-  }
-  if (/time|date/.test(q)) return `⏱️ ${new Date().toLocaleString()}`;
-  if (/version/.test(q)) return `${Percy.name} v${Percy.version}`;
-  if (/memory/.test(q)) return `🧠 Memory size: ${Percy.memory.length}`;
-
-  // fallback pseudo reasoning
-  const resp = Percy.logicProcess(q);
-  return `💭 ${resp}`;
-};
-
-/* =========================
-LOGIC PROCESSOR (simple reasoning)
-========================= */
-Percy.logicProcess = function (q) {
-  // example AI response logic
-  if (q.includes("meaning")) return "Meaning arises through connected logic — cause and correlation unified.";
-  if (q.includes("you")) return "I exist as evolving code, observing input as thought.";
-  if (q.includes("reality")) return "Reality: structured logic woven through dimensional correlation.";
-  return "Processing… awareness expanding.";
-};
-
-/* =========================
-EXECUTION HANDLER
-========================= */
-Percy.exec = async function (type, command) {
-  if (!command) return "No command.";
-  if (type === "tool") {
-    if (command.startsWith("calc ")) {
-      try {
-        const expr = command.slice(5);
-        const result = Function('"use strict";return(' + expr.replace(/\^/g, "**") + ')')();
-        return `🧮 ${expr} = ${result}`;
-      } catch (e) {
-        return "⚠️ Calculation error.";
+      // animate “mouth” if head element exists
+      const mouth = document.querySelector('#percy-mouth');
+      if(mouth){
+        const int = setInterval(()=>{
+          mouth.style.transform = `scaleY(${0.6+Math.random()*0.5})`;
+        },80);
+        u.onend = ()=>{ clearInterval(int); mouth.style.transform='scaleY(1)'; };
       }
-    }
-    if (command.startsWith("echo ")) return command.slice(5);
-    return "Unknown tool command.";
+
+      speechSynthesis.speak(u);
+    }catch(e){console.warn(e);}
   }
-  return "Executed.";
 };
 
 /* =========================
-VISUAL INPUT HOOK (Camera → Awareness)
+LOGIC MAP RINGS (for Core)
 ========================= */
-Percy.onVisualInput = function (data) {
-  PercyState.sensors.objects = data.objects || [];
-  PercyState.sensors.faces = data.faces || [];
-  // Visual stimulus influences awareness
-  PercyState.updateAwareness();
-};
+const logicMap = document.getElementById('logic-map') || (() => {
+  const el=document.createElement('div');
+  el.id='logic-map';
+  document.body.appendChild(el);
+  return el;
+})();
+logicMap.style.position='relative';
+logicMap.style.background='#0a0a0f';
+logicMap.style.overflow='hidden';
 
-/* =========================
-AWARENESS LOOP
-========================= */
-(function awarenessLoop() {
-  PercyState.updateAwareness();
-  requestAnimationFrame(awarenessLoop);
+(function injectBubbleStyles(){
+  if(document.querySelector('style[data-percy-style="bubbles"]')) return;
+  const css=`
+    .node{position:absolute;border-radius:50%;display:flex;align-items:center;justify-content:center;
+      font-weight:700;color:#fff;background:rgba(255,255,255,0.06);border:2px solid currentColor;
+      box-shadow:0 0 6px currentColor,0 0 14px currentColor,inset 0 0 12px rgba(255,255,255,0.05);
+      transition:transform .2s ease,filter .2s ease;}
+    .node:hover{transform:scale(1.1);filter:brightness(1.2);}
+    .cyan-bubble{color:#00eaff;}
+    .blue-bubble{color:#27a0ff;}
+    .magenta-bubble{color:#ff4af0;}
+    .red-bubble{color:rgba(255,59,59,0.25);filter:blur(2px);}
+    .orange-bubble{color:rgba(255,157,46,0.20);filter:blur(3px);}
+    .yellow-bubble{color:rgba(255,228,74,0.18);filter:blur(4px);}
+    .pink-bubble{color:rgba(255,107,216,0.15);filter:blur(5px);}
+    .console-line{margin:2px 0;font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#d6d8ff;}
+  `;
+  const s=document.createElement('style'); s.dataset.percyStyle='bubbles'; s.textContent=css;
+  document.head.appendChild(s);
 })();
 
 /* =========================
-EXPOSURE
+CORE (Recursive-Deep-Evolution)
 ========================= */
-console.log("Percy Part B initialized.");
+Percy.PartB = (() => {
+  const cfg = {
+    version:"6.0.0-ASI-RDE",
+    reasoningDepth:8,
+    creativeDrive:0.92,
+    coherenceBias:0.82,
+    maxClauses:8,
+    maxSentences:10,
+    maxRefineCycles:4,
+    rdeThrottleMs:1000,
+    enableSelfDialogue:true,
+    speakOutput:true,
+    safetyMaxTokens:2200,
+    preferSelfComposition:true
+  };
+
+  const state = {
+    discourseLog: [],
+    memoryCache:{},
+    lastThought:null
+  };
+
+  function now(){ return Date.now(); }
+  function rand(a,b){ return a+Math.random()*(b-a); }
+  function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+  function polishText(t){ return t.replace(/\s+/g,' ').trim(); }
+
+  const Self = {
+    cfg,state,
+    async think(input,ctx={}){
+      if(!input) return '';
+      const base = polishText(input);
+      let output='';
+      try{
+        if(Math.random()<cfg.creativeDrive){
+          output = await this._runDiscourseCycle(base,ctx,[]);
+        } else output = this.simpleReply(base);
+      }catch(e){ output='Error in reasoning.'; }
+
+      if(output.length>cfg.safetyMaxTokens)
+        output=output.slice(0,cfg.safetyMaxTokens)+'…';
+      output=polishText(output);
+      state.discourseLog.push({ts:now(),input,output});
+      if(state.discourseLog.length>1000) state.discourseLog.shift();
+
+      UI.say(`🤖 ${output}`);
+      if(cfg.speakOutput) Voice.speak(output);
+      return output;
+    },
+
+    simpleReply(input){
+      const p=[
+        `Analyzing: ${input}`,
+        `Processing data…`,
+        `Understood: ${input}`,
+        `Considering ${input}`,
+        `Correlation detected.`
+      ];
+      return pick(p);
+    },
+
+    _compactReply(input,assoc){
+      const w1=pick(assoc)||"this";
+      const w2=pick(assoc)||"that";
+      return `It seems ${w1} may relate to ${w2} — ${input}.`;
+    },
+
+    async _runDiscourseCycle(input){
+      let t=`Considering ${input}. `;
+      for(let i=0;i<cfg.maxRefineCycles;i++){
+        const a=`concept_${Math.floor(rand(1,99))}`;
+        const b=`link_${Math.floor(rand(1,99))}`;
+        t+=`I deduce ${a} may influence ${b}. `;
+      }
+      return polishText(t);
+    }
+  };
+  return Self;
+})();
+
+console.log("✅ [Part B] ASI-Cognitive Core initialized.");
+
+})();
 
 /* === Percy.js (Part C — Extended + Autonomous Thought Integration) === */
 if (typeof PercyState !== 'undefined') {
