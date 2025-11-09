@@ -779,7 +779,7 @@ Percy.hook = function(from, type, data) {
 };
 
 // === percy.js (Part B) ===
-// UI, Voice, Logic Map, Tasks, Autonomy & ASI Cognitive Core
+// Part 2, UI, Voice, Logic Map, Tasks, Autonomy & ASI Cognitive Core
 // Version: 6.0.0-RDE (Recursive-Deep-Evolution)
 
 (() => {
@@ -954,6 +954,130 @@ Percy.PartB = (() => {
 console.log("✅ [Part B] ASI-Cognitive Core initialized.");
 
 })();
+
+/* === percy.js Part B: Part 3, Core Logic, Awareness, and Visual-Link Engine === */
+const Percy = {
+  name: "P.E.R.C.Y",
+  version: "9.0.0-ASI",
+  uptime: Date.now(),
+  PartEE: { awarenessLevel: 0.0 },
+  memory: [],
+  context: {},
+  consoleBuffer: [],
+};
+
+/* =========================
+STATE + AWARENESS ENGINE
+========================= */
+const PercyState = {
+  selfMeta: {
+    insightLevel: 0.35,
+    emotionalCore: 0.0,
+    stability: 1.0,
+  },
+  sensors: { objects: [], faces: [] },
+  lastUpdate: Date.now(),
+
+  updateAwareness(delta = 0.016) {
+    // awareness grows with activity & visual feedback
+    const base = 0.35 + 0.15 * Math.sin(Date.now() / 2000);
+    const faces = this.sensors.faces.length;
+    const objects = this.sensors.objects.length;
+    const stimulus = Math.min(1, (faces * 0.2 + objects * 0.05));
+
+    // update internal awareness
+    Percy.PartEE.awarenessLevel = Math.max(0, Math.min(1, base + stimulus));
+    this.selfMeta.insightLevel = Percy.PartEE.awarenessLevel;
+
+    // adjust emotional core slightly toward balance
+    const targetEmotion = stimulus > 0.2 ? 0.7 : 0.3;
+    this.selfMeta.emotionalCore += (targetEmotion - this.selfMeta.emotionalCore) * 0.02;
+
+    this.lastUpdate = Date.now();
+  },
+};
+
+/* =========================
+CORE INTERPRETER (Ask Percy)
+========================= */
+Percy.interpret = function (input) {
+  if (!input) return "…";
+  const q = input.toLowerCase().trim();
+
+  // Log
+  Percy.memory.push({ t: Date.now(), q });
+
+  // basic semantic triggers
+  if (/hello|hi|hey/.test(q)) return "👋 Hello! Percy online and thinking.";
+  if (/status|state|awareness/.test(q)) {
+    const lvl = Percy.PartEE.awarenessLevel.toFixed(2);
+    return `🤖 Awareness ${lvl}, insight ${PercyState.selfMeta.insightLevel.toFixed(2)}`;
+  }
+  if (/time|date/.test(q)) return `⏱️ ${new Date().toLocaleString()}`;
+  if (/version/.test(q)) return `${Percy.name} v${Percy.version}`;
+  if (/memory/.test(q)) return `🧠 Memory size: ${Percy.memory.length}`;
+
+  // fallback pseudo reasoning
+  const resp = Percy.logicProcess(q);
+  return `💭 ${resp}`;
+};
+
+/* =========================
+LOGIC PROCESSOR (simple reasoning)
+========================= */
+Percy.logicProcess = function (q) {
+  // example AI response logic
+  if (q.includes("meaning")) return "Meaning arises through connected logic — cause and correlation unified.";
+  if (q.includes("you")) return "I exist as evolving code, observing input as thought.";
+  if (q.includes("reality")) return "Reality: structured logic woven through dimensional correlation.";
+  return "Processing… awareness expanding.";
+};
+
+/* =========================
+EXECUTION HANDLER
+========================= */
+Percy.exec = async function (type, command) {
+  if (!command) return "No command.";
+  if (type === "tool") {
+    if (command.startsWith("calc ")) {
+      try {
+        const expr = command.slice(5);
+        const result = Function('"use strict";return(' + expr.replace(/\^/g, "**") + ')')();
+        return `🧮 ${expr} = ${result}`;
+      } catch (e) {
+        return "⚠️ Calculation error.";
+      }
+    }
+    if (command.startsWith("echo ")) return command.slice(5);
+    return "Unknown tool command.";
+  }
+  return "Executed.";
+};
+
+/* =========================
+VISUAL INPUT HOOK (Camera → Awareness)
+========================= */
+Percy.onVisualInput = function (data) {
+  PercyState.sensors.objects = data.objects || [];
+  PercyState.sensors.faces = data.faces || [];
+  // Visual stimulus influences awareness
+  PercyState.updateAwareness();
+};
+
+/* =========================
+AWARENESS LOOP
+========================= */
+(function awarenessLoop() {
+  PercyState.updateAwareness();
+  requestAnimationFrame(awarenessLoop);
+})();
+
+/* =========================
+EXPOSURE
+========================= */
+window.Percy = Percy;
+window.PercyState = PercyState;
+console.log("Percy Part B initialized.");
 
 /* === Percy.js (Part C — Extended + Autonomous Thought Integration) === */
 if (typeof PercyState !== 'undefined') {
