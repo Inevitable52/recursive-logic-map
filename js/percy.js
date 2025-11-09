@@ -779,8 +779,8 @@ Percy.hook = function(from, type, data) {
 };
 
 // === percy.js (Part B) ===
-// UI, Voice, Logic Map, Tasks, Autonomy & ASI Cognitive Core
-// Version: 6.0.0-RDE (Recursive-Deep-Evolution)
+// Part 2, UI, Voice, Logic Map, Tasks, Autonomy & ASI Cognitive Core
+// Version: 6.1.0-RDE (Recursive-Deep-Evolution + AI Face Integration)
 
 (() => {
 
@@ -803,7 +803,61 @@ const UI = {
 };
 
 /* =========================
-VOICE + MOUTH SYNC
+AI FACE + VOICE SYNC
+========================= */
+const Face = {
+  element: document.getElementById("percy-head"),
+  eyes: null,
+  mouth: null,
+  mood: "calm",
+
+  init() {
+    if (!this.element) return;
+    this.eyes = this.element.querySelector(".eyes");
+    this.mouth = this.element.querySelector(".mouth");
+  },
+
+  animateMouth(open) {
+    if (!this.mouth) return;
+    this.mouth.style.transform = open ? "scaleY(1.8)" : "scaleY(1)";
+  },
+
+  blink() {
+    if (!this.eyes) return;
+    this.eyes.style.transform = "scaleY(0.1)";
+    setTimeout(() => (this.eyes.style.transform = "scaleY(1)"), 120);
+  },
+
+  setMood(m) {
+    this.mood = m;
+    if (!this.element) return;
+    const colors = {
+      calm: "#00eaff",
+      thinking: "#27a0ff",
+      analyzing: "#ffe44a",
+      focused: "#ff9d2e",
+      excited: "#ff4af0",
+      alert: "#ff3b3b"
+    };
+    this.element.style.boxShadow = `0 0 35px ${colors[m] || "#00eaff"}`;
+  },
+
+  speakSync(text) {
+    if (!this.mouth) return;
+    let i = 0;
+    const interval = setInterval(() => {
+      this.animateMouth(i % 2 === 0);
+      if (i++ > text.length * 0.4) {
+        clearInterval(interval);
+        this.animateMouth(false);
+      }
+    }, 100);
+  }
+};
+Face.init();
+
+/* =========================
+VOICE SYSTEM (Linked to Face)
 ========================= */
 const Voice = {
   enabled: true,
@@ -820,15 +874,19 @@ const Voice = {
       if(vs?.length) u.voice = pick(vs);
       u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0;
 
-      // animate “mouth” if head element exists
-      const mouth = document.querySelector('#percy-mouth');
-      if(mouth){
-        const int = setInterval(()=>{
-          mouth.style.transform = `scaleY(${0.6+Math.random()*0.5})`;
-        },80);
-        u.onend = ()=>{ clearInterval(int); mouth.style.transform='scaleY(1)'; };
-      }
+      // sync AI head
+      if (Face) Face.speakSync(text);
+      const moodCycle = ["thinking","analyzing","focused","excited"];
+      Face.setMood(moodCycle[Math.floor(Math.random()*moodCycle.length)]);
 
+      // occasional blink
+      let blinkCount = 0;
+      const blinkTimer = setInterval(()=>{
+        if(Math.random()>0.7) Face.blink();
+        if(++blinkCount > text.length*0.3) clearInterval(blinkTimer);
+      },250);
+
+      u.onend = ()=>{ Face.animateMouth(false); Face.setMood("calm"); };
       speechSynthesis.speak(u);
     }catch(e){console.warn(e);}
   }
@@ -863,6 +921,26 @@ logicMap.style.overflow='hidden';
     .yellow-bubble{color:rgba(255,228,74,0.18);filter:blur(4px);}
     .pink-bubble{color:rgba(255,107,216,0.15);filter:blur(5px);}
     .console-line{margin:2px 0;font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#d6d8ff;}
+    /* AI Head */
+    #percy-head{
+      width:160px;height:200px;margin:30px auto;position:relative;border-radius:50%;
+      background:radial-gradient(circle at 30% 30%,#111,#000);
+      box-shadow:0 0 25px rgba(0,200,255,0.4);
+      transition:box-shadow 0.5s ease-in-out;
+    }
+    #percy-head .eyes{
+      width:100%;height:20px;position:absolute;top:60px;
+      display:flex;justify-content:space-around;transition:transform 0.2s;
+    }
+    #percy-head .eyes::before,
+    #percy-head .eyes::after{
+      content:'';width:20px;height:20px;border-radius:50%;background:#00eaff;
+    }
+    #percy-head .mouth{
+      width:40px;height:10px;background:#ff4af0;border-radius:20px;
+      position:absolute;bottom:40px;left:50%;transform:translateX(-50%) scaleY(1);
+      transition:transform 0.15s ease-in-out;
+    }
   `;
   const s=document.createElement('style'); s.dataset.percyStyle='bubbles'; s.textContent=css;
   document.head.appendChild(s);
@@ -873,7 +951,7 @@ CORE (Recursive-Deep-Evolution)
 ========================= */
 Percy.PartB = (() => {
   const cfg = {
-    version:"6.0.0-ASI-RDE",
+    version:"6.1.0-ASI-RDE",
     reasoningDepth:8,
     creativeDrive:0.92,
     coherenceBias:0.82,
@@ -951,7 +1029,7 @@ Percy.PartB = (() => {
   return Self;
 })();
 
-console.log("✅ [Part B] ASI-Cognitive Core initialized.");
+console.log("✅ [Part B] ASI-Cognitive Core + Face Active.");
 
 })();
 
