@@ -898,8 +898,6 @@ AWARENESS LOOP
 /* =========================
 EXPOSURE
 ========================= */
-window.Percy = Percy;
-window.PercyState = PercyState;
 console.log("Percy Part B initialized.");
 
 /* === Percy.js (Part C — Extended + Autonomous Thought Integration) === */
