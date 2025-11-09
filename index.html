@@ -138,52 +138,77 @@
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7"></script>
   
-  <!-- === PERCY AI HEAD (Reactive Visual) === -->
+  <!-- === AI HEAD VISUAL (Structured Glow) === -->
 <div id="percy-head-container">
   <div id="percy-head">
+    <div class="head-layer base"></div>
+    <div class="head-layer inner"></div>
+
     <div id="percy-eyes">
       <div class="eye left"></div>
       <div class="eye right"></div>
     </div>
+
     <div id="percy-mouth"></div>
   </div>
 </div>
 
 <style>
+  /* ===== STRUCTURED AI HEAD ===== */
   #percy-head-container {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 300px;
-    height: 340px;
+    width: 320px;
+    height: 360px;
     pointer-events: none;
+    filter: drop-shadow(0 0 30px rgba(255,0,255,0.4))
+            drop-shadow(0 0 60px rgba(0,255,255,0.2));
   }
 
   #percy-head {
+    position: relative;
     width: 100%;
     height: 100%;
-    border-radius: 50% / 55%;
-    background: radial-gradient(circle at 40% 40%, rgba(255,0,255,0.5), rgba(255,0,128,0.25), rgba(0,0,0,0));
-    box-shadow: 0 0 40px 15px rgba(255,0,255,0.25), inset 0 0 20px rgba(255,255,255,0.05);
-    position: relative;
-    transition: transform 0.2s ease-in-out;
+    border-radius: 50% / 56%;
+    overflow: hidden;
   }
 
+  /* Base contour (defines skull shape) */
+  .head-layer.base {
+    position: absolute;
+    inset: 0;
+    border-radius: 50% / 56%;
+    background: radial-gradient(circle at 40% 40%, rgba(0,0,0,0.4), rgba(20,20,30,0.9));
+    border: 2px solid rgba(255,255,255,0.08);
+    box-shadow: inset 0 0 60px rgba(255,0,255,0.2), 0 0 20px rgba(0,255,255,0.15);
+  }
+
+  /* Inner light gradient for subtle dimensional depth */
+  .head-layer.inner {
+    position: absolute;
+    inset: 0;
+    border-radius: 50% / 56%;
+    background: radial-gradient(circle at 45% 45%, rgba(255,0,255,0.15), rgba(0,255,255,0.05), transparent 80%);
+    mix-blend-mode: screen;
+  }
+
+  /* Eyes */
   #percy-eyes {
     position: absolute;
-    top: 30%;
+    top: 28%;
     width: 100%;
     display: flex;
     justify-content: space-around;
   }
 
   .eye {
-    width: 40px;
-    height: 40px;
-    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.9), rgba(255,128,255,0.6));
+    width: 42px;
+    height: 42px;
+    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.95), rgba(255,0,255,0.7));
     border-radius: 50%;
-    box-shadow: 0 0 15px rgba(255,255,255,0.6);
+    box-shadow: 0 0 25px rgba(255,0,255,0.6), inset 0 0 10px rgba(255,255,255,0.3);
     animation: blink 6s infinite;
   }
 
@@ -192,15 +217,17 @@
     95% { transform: scaleY(0.1); }
   }
 
+  /* Mouth */
   #percy-mouth {
     position: absolute;
-    bottom: 25%;
+    bottom: 23%;
     left: 50%;
-    width: 100px;
-    height: 20px;
-    background: radial-gradient(circle at 50% 50%, rgba(255,200,255,0.8), rgba(255,100,200,0.3));
-    border-radius: 0 0 50px 50px;
+    width: 110px;
+    height: 22px;
     transform: translateX(-50%) scaleY(1);
+    background: radial-gradient(circle at 50% 50%, rgba(255,150,255,0.8), rgba(255,0,200,0.3));
+    border-radius: 0 0 60px 60px;
+    box-shadow: 0 0 18px rgba(255,0,255,0.5);
     transition: transform 0.1s ease-in-out;
   }
 </style>
