@@ -122,7 +122,7 @@
     background: radial-gradient(circle at 50% 50%, #ff6fbf, #ff0077);
     border-radius: 50% / 50%;
     box-shadow: 0 0 12px rgba(255,0,255,0.6);
-    transition: height 0.1s ease-in-out;
+    transition: height 0.08s ease-in-out;
   }
 
   /* === Console + UI === */
@@ -189,12 +189,17 @@
   const mouth = document.getElementById("percy-mouth");
   let anim;
 
-  async function speakPercy(text) {
+  function getVoice() {
+    const voices = speechSynthesis.getVoices();
+    return voices.find(v => /Google|Microsoft|Samantha|Daniel/i.test(v.name)) || voices[0];
+  }
+
+  function speakPercy(text) {
     const utter = new SpeechSynthesisUtterance(text);
     utter.rate = 1;
-    utter.pitch = 1.1;
+    utter.pitch = 1.05;
     utter.volume = 1;
-    utter.voice = speechSynthesis.getVoices().find(v => v.name.includes("Google") || v.name.includes("Microsoft")) || null;
+    utter.voice = getVoice();
     utter.onstart = startMouthAnimation;
     utter.onend = stopMouthAnimation;
     speechSynthesis.speak(utter);
@@ -206,7 +211,7 @@
 
     function loop() {
       if (mouth.dataset.active !== "true") return;
-      const newHeight = mouth.offsetHeight * (0.7 + Math.random() * 0.6);
+      const newHeight = 8 + Math.random() * 24;
       mouth.style.height = `${newHeight}px`;
       anim = requestAnimationFrame(loop);
     }
@@ -216,8 +221,11 @@
   function stopMouthAnimation() {
     mouth.dataset.active = "false";
     cancelAnimationFrame(anim);
-    mouth.style.height = `${mouth.parentElement.offsetHeight * 0.08}px`;
+    mouth.style.height = "8%";
   }
+
+  // Example Test:
+  // speakPercy("Hello Fabian, I am Percy speaking with a synchronized mouth.");
 </script>
 
 <!-- Console + UI -->
@@ -226,7 +234,7 @@
 
 <input id="seed-search" placeholder="Search seeds" />
 <input id="interpreter-input" placeholder="Ask Percy" />
-<button id="askPercyButton">GO</button>
+<button id="askPercyButton" onclick="speakPercy(document.getElementById('interpreter-input').value)">GO</button>
 
 <textarea id="percy-exec-input" rows="1" placeholder="Quick Exec (Math / Tools)"></textarea>
 <button id="percy-exec-run">Start</button>
