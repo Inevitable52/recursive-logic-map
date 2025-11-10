@@ -780,9 +780,33 @@ Percy.hook = function(from, type, data) {
 
 // === percy.js (Part B, Part 2) ===
 // ASI Cognitive Core + Neon AI Head Integration
-// Version: 8.3.3-AIHead-Sync
+// Version: 8.3.3-AIHead-Sync-AutoLoad
 
 (() => {
+
+/* =========================
+AUTO-LOAD THREE.JS IF MISSING
+========================= */
+(async () => {
+  if (typeof THREE === "undefined") {
+    console.warn("⚠️ THREE.js not detected. Loading dynamically...");
+    await new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js";
+      s.onload = () => {
+        console.log("✅ THREE.js dynamically loaded.");
+        resolve();
+      };
+      s.onerror = () => {
+        console.error("❌ Failed to load THREE.js.");
+        reject();
+      };
+      document.head.appendChild(s);
+    });
+  } else {
+    console.log("✅ THREE.js already available.");
+  }
+})();
 
 /* =========================
 UI HELPERS
@@ -818,6 +842,7 @@ const Face = {
   },
   mood: "calm",
   pulseIntensity: 0.0,
+  moodCycle: ["calm", "thinking", "analyzing", "focused", "happy", "excited"],
 
   link3DHead(mesh) {
     this.headMesh = mesh;
@@ -969,7 +994,7 @@ Percy.PartB = (() => {
   return Self;
 })();
 
-console.log("✅ [Part B] ASI-Cognitive Core + AI Head Sync Active.");
+console.log("✅ [Part B] ASI-Cognitive Core + AI Head Sync Active (AutoLoad Ready).");
 
 })();
 
