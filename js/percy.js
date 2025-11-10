@@ -806,48 +806,58 @@ const UI = {
 AI HEAD (Dynamic Mood & Voice Sync)
 ========================= */
 const Face = {
-  element: document.getElementById("ai-head"),
-  face: document.getElementById("ai-face"),
-  mood: "calm",
-  moodCycle: ["thinking","analyzing","focused","excited"],
+  headMesh: null,
   moods: {
-    calm: "#00ffff",
-    thinking: "#a020f0",
-    alert: "#ff2a2a",
-    happy: "#ffd700",
-    analyzing: "#27a0ff",
-    focused: "#ff9d2e",
-    excited: "#ff4af0"
+    calm: 0x00ffff,
+    thinking: 0xa020f0,
+    alert: 0xff2a2a,
+    happy: 0xffd700,
+    analyzing: 0x27a0ff,
+    focused: 0xff9d2e,
+    excited: 0xff4af0
+  },
+  mood: "calm",
+  pulseIntensity: 0.0,
+
+  link3DHead(mesh) {
+    this.headMesh = mesh;
+    this.setMood("calm");
   },
 
   setMood(m) {
-    if (!this.element) return;
     this.mood = m;
-    const color = this.moods[m] || "#00ffff";
-    this.element.style.boxShadow = `0 0 50px ${color}, inset 0 0 70px ${color}`;
-    if (this.face) this.face.style.textShadow = `0 0 15px ${color}`;
+    if (this.headMesh) {
+      const color = this.moods[m] || 0x00ffff;
+      this.headMesh.material.color.setHex(color);
+    }
   },
 
   pulse() {
-    if (!this.element) return;
-    this.element.style.transform = "translate(-50%, -50%) scale(1.05)";
-    setTimeout(() => {
-      this.element.style.transform = "translate(-50%, -50%) scale(1)";
-    }, 400);
+    if (!this.headMesh) return;
+    this.pulseIntensity = 0.25;
   },
 
   speakSync(text) {
-    if (!this.face) return;
+    if (!this.headMesh) return;
     let i = 0;
     const interval = setInterval(() => {
-      this.face.style.transform = (i % 2 === 0)
-        ? "scale(1.03)"
-        : "scale(1.0)";
+      const scale = 1 + 0.02 * Math.sin(i * 2);
+      this.headMesh.scale.set(scale, scale, scale);
       if (i++ > text.length * 0.4) {
         clearInterval(interval);
-        this.face.style.transform = "scale(1)";
+        this.headMesh.scale.set(1, 1, 1);
       }
-    }, 120);
+    }, 100);
+  },
+
+  updateFrame() {
+    if (!this.headMesh) return;
+    if (this.pulseIntensity > 0) {
+      const s = 1 + this.pulseIntensity;
+      this.headMesh.scale.set(s, s, s);
+      this.pulseIntensity *= 0.9;
+      if (this.pulseIntensity < 0.01) this.headMesh.scale.set(1, 1, 1);
+    }
   }
 };
 
