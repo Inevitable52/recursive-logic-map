@@ -124,6 +124,99 @@
   </div>
 </div>
 
+<style>
+  #percy-head-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 300px;
+    position: relative;
+  }
+
+  #percy-head {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #333, #111);
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+  }
+
+  #percy-eyes {
+    position: absolute;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    justify-content: space-between;
+    width: 80px;
+  }
+
+  .eye {
+    width: 25px;
+    height: 25px;
+    background: cyan;
+    border-radius: 50%;
+    box-shadow: 0 0 8px cyan;
+  }
+
+  #percy-mouth {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    width: 50px;
+    height: 8px;
+    background: #ff4081;
+    border-radius: 10px;
+    transform: translateX(-50%);
+    transition: height 0.1s ease;
+  }
+</style>
+
+<script>
+  // === Dynamic Mouth Animation via Speech Output ===
+  const mouth = document.getElementById("percy-mouth");
+
+  async function speakPercy(text) {
+    // Create speech synthesis utterance
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.rate = 1;
+    utter.pitch = 1.1;
+    utter.volume = 1;
+    utter.voice = speechSynthesis.getVoices().find(v => v.name.includes("Google") || v.name.includes("Microsoft")) || null;
+
+    // Animate mouth while speaking
+    utter.onstart = () => startMouthAnimation();
+    utter.onend = () => stopMouthAnimation();
+
+    // Speak text
+    speechSynthesis.speak(utter);
+  }
+
+  function startMouthAnimation() {
+    if (mouth.dataset.active === "true") return;
+    mouth.dataset.active = "true";
+
+    let anim;
+    function loop() {
+      if (mouth.dataset.active !== "true") return;
+      const newHeight = 8 + Math.random() * 20; // simulate mouth movement amplitude
+      mouth.style.height = `${newHeight}px`;
+      anim = requestAnimationFrame(loop);
+    }
+    loop();
+  }
+
+  function stopMouthAnimation() {
+    mouth.dataset.active = "false";
+    cancelAnimationFrame(anim);
+    mouth.style.height = "8px";
+  }
+
+  // Example test line (you can remove or replace with Percy’s actual output)
+  // speakPercy("Hello, I am Percy. My mouth now moves while I talk!");
+</script>
+
 <!-- Console + UI -->
 <div id="percy-console"></div>
 <div id="percy-message"></div>
