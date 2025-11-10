@@ -778,9 +778,9 @@ Percy.hook = function(from, type, data) {
   }
 };
 
-// === percy.js (Part B) ===
-// Part 2, UI, Voice, Logic Map, Tasks, Autonomy & ASI Cognitive Core
-// Version: 6.2.0-RDE (Face Integration aligned to new HTML)
+// === percy.js (Part B, Part 2) ===
+// ASI Cognitive Core + Neon AI Head Integration
+// Version: 8.3.3-AIHead-Sync
 
 (() => {
 
@@ -788,109 +788,96 @@ Percy.hook = function(from, type, data) {
 UI HELPERS
 ========================= */
 const UI = {
-  elConsole: () => document.getElementById('percy-console'),
-  elMsg: () => document.getElementById('percy-message'),
-  say(txt) {
-    const box = this.elConsole(); if (!box) return;
-    const p = document.createElement('p');
-    p.className = 'console-line';
-    p.textContent = txt;
+  elConsole: ()=>document.getElementById('percy-console'),
+  elMsg: ()=>document.getElementById('percy-message'),
+  say(txt){
+    const box=this.elConsole(); if(!box) return;
+    const p=document.createElement('p');
+    p.className='console-line';
+    p.textContent=txt;
     box.appendChild(p);
-    box.scrollTop = box.scrollHeight;
-    const max = 150;
-    while (box.children.length > max) box.removeChild(box.firstChild);
+    box.scrollTop=box.scrollHeight;
+    const max=150; while(box.children.length>max) box.removeChild(box.firstChild);
   },
-  setStatus(txt) { const m = this.elMsg(); if (m) m.textContent = txt; }
+  setStatus(txt){ const m=this.elMsg(); if(m) m.textContent=txt; }
 };
 
 /* =========================
-AI FACE + VOICE SYNC
+AI HEAD (Dynamic Mood & Voice Sync)
 ========================= */
 const Face = {
-  element: document.getElementById("percy-head"),
-  eyes: document.getElementById("percy-eyes"),
-  mouth: document.getElementById("percy-mouth"),
+  element: document.getElementById("ai-head"),
+  face: document.getElementById("ai-face"),
   mood: "calm",
-
-  init() {
-    if (!this.element) return;
-    this.setMood("calm");
-  },
-
-  animateMouth(open) {
-    if (!this.mouth) return;
-    this.mouth.style.transform = open ? "translateX(-50%) scaleY(1.8)" : "translateX(-50%) scaleY(1)";
-  },
-
-  blink() {
-    if (!this.eyes) return;
-    this.eyes.style.transform = "scaleY(0.1)";
-    setTimeout(() => (this.eyes.style.transform = "scaleY(1)"), 120);
+  moodCycle: ["thinking","analyzing","focused","excited"],
+  moods: {
+    calm: "#00ffff",
+    thinking: "#a020f0",
+    alert: "#ff2a2a",
+    happy: "#ffd700",
+    analyzing: "#27a0ff",
+    focused: "#ff9d2e",
+    excited: "#ff4af0"
   },
 
   setMood(m) {
-    this.mood = m;
     if (!this.element) return;
-    const colors = {
-      calm: "#00eaff",
-      thinking: "#27a0ff",
-      analyzing: "#ffe44a",
-      focused: "#ff9d2e",
-      excited: "#ff4af0",
-      alert: "#ff3b3b"
-    };
-    const glow = colors[m] || "#00eaff";
-    this.element.style.boxShadow = `0 0 45px ${glow}, inset 0 0 60px ${glow}`;
+    this.mood = m;
+    const color = this.moods[m] || "#00ffff";
+    this.element.style.boxShadow = `0 0 50px ${color}, inset 0 0 70px ${color}`;
+    if (this.face) this.face.style.textShadow = `0 0 15px ${color}`;
+  },
+
+  pulse() {
+    if (!this.element) return;
+    this.element.style.transform = "translate(-50%, -50%) scale(1.05)";
+    setTimeout(() => {
+      this.element.style.transform = "translate(-50%, -50%) scale(1)";
+    }, 400);
   },
 
   speakSync(text) {
-    if (!this.mouth) return;
+    if (!this.face) return;
     let i = 0;
     const interval = setInterval(() => {
-      this.animateMouth(i % 2 === 0);
+      this.face.style.transform = (i % 2 === 0)
+        ? "scale(1.03)"
+        : "scale(1.0)";
       if (i++ > text.length * 0.4) {
         clearInterval(interval);
-        this.animateMouth(false);
+        this.face.style.transform = "scale(1)";
       }
-    }, 100);
+    }, 120);
   }
 };
-Face.init();
 
 /* =========================
-VOICE SYSTEM (Linked to Face)
+VOICE SYSTEM (Linked to AI Head)
 ========================= */
 const Voice = {
   enabled: true,
   lastSpoken: 0,
-  speak(text) {
-    try {
-      if (!this.enabled || !('speechSynthesis' in window) || !text) return;
-      const now = Date.now();
-      if (now - this.lastSpoken < 250) return;
+  speak(text){
+    try{
+      if(!this.enabled || !('speechSynthesis' in window) || !text) return;
+      const now = Date.now(); if(now - this.lastSpoken < 250) return;
       this.lastSpoken = now;
 
       const u = new SpeechSynthesisUtterance(text);
-      const pick = (v) => v.find(x => /en/i.test(x.lang)) || v[0];
+      const pick = (v)=>v.find(x=>/en/i.test(x.lang)) || v[0];
       const vs = speechSynthesis.getVoices();
-      if (vs?.length) u.voice = pick(vs);
-      u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0;
+      if(vs?.length) u.voice = pick(vs);
+      u.rate = 1.0; u.pitch = 1.1; u.volume = 1.0;
 
-      // mouth + mood animation
-      if (Face) Face.speakSync(text);
-      const moodCycle = ["thinking", "analyzing", "focused", "excited"];
-      Face.setMood(moodCycle[Math.floor(Math.random() * moodCycle.length)]);
+      // sync with AI head
+      const mood = Face.moodCycle[Math.floor(Math.random()*Face.moodCycle.length)];
+      Face.setMood(mood);
+      Face.pulse();
+      Face.speakSync(text);
 
-      // blink animation
-      let blinkCount = 0;
-      const blinkTimer = setInterval(() => {
-        if (Math.random() > 0.7) Face.blink();
-        if (++blinkCount > text.length * 0.3) clearInterval(blinkTimer);
-      }, 250);
-
-      u.onend = () => { Face.animateMouth(false); Face.setMood("calm"); };
+      u.onend = ()=>{ Face.setMood("calm"); };
       speechSynthesis.speak(u);
-    } catch (e) { console.warn(e); }
+    }catch(e){console.warn(e);}
   }
 };
 
@@ -899,71 +886,72 @@ CORE (Recursive-Deep-Evolution)
 ========================= */
 Percy.PartB = (() => {
   const cfg = {
-    version: "6.2.0-ASI-RDE",
-    reasoningDepth: 8,
-    creativeDrive: 0.92,
-    coherenceBias: 0.82,
-    maxClauses: 8,
-    maxSentences: 10,
-    maxRefineCycles: 4,
-    rdeThrottleMs: 1000,
-    enableSelfDialogue: true,
-    speakOutput: true,
-    safetyMaxTokens: 2200,
-    preferSelfComposition: true
+    version:"8.3.3-AIHead-ASI",
+    reasoningDepth:8,
+    creativeDrive:0.93,
+    coherenceBias:0.84,
+    maxRefineCycles:4,
+    enableSelfDialogue:true,
+    speakOutput:true,
+    safetyMaxTokens:2200,
+    preferSelfComposition:true
   };
 
   const state = {
     discourseLog: [],
-    memoryCache: {},
-    lastThought: null
+    memoryCache:{},
+    lastThought:null
   };
 
-  function now() { return Date.now(); }
-  function rand(a, b) { return a + Math.random() * (b - a); }
-  function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
-  function polishText(t) { return t.replace(/\s+/g, ' ').trim(); }
+  function now(){ return Date.now(); }
+  function rand(a,b){ return a+Math.random()*(b-a); }
+  function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+  function polishText(t){ return t.replace(/\s+/g,' ').trim(); }
 
   const Self = {
-    cfg, state,
-    async think(input, ctx = {}) {
-      if (!input) return '';
-      const base = polishText(input);
-      let output = '';
-      try {
-        if (Math.random() < cfg.creativeDrive) {
-          output = await this._runDiscourseCycle(base, ctx, []);
-        } else output = this.simpleReply(base);
-      } catch (e) { output = 'Error in reasoning.'; }
+    cfg,state,
 
-      if (output.length > cfg.safetyMaxTokens)
-        output = output.slice(0, cfg.safetyMaxTokens) + '…';
-      output = polishText(output);
-      state.discourseLog.push({ ts: now(), input, output });
-      if (state.discourseLog.length > 1000) state.discourseLog.shift();
+    async think(input,ctx={}) {
+      if(!input) return '';
+      const base = polishText(input);
+      let output='';
+
+      try{
+        if(Math.random()<cfg.creativeDrive){
+          output = await this._runDiscourseCycle(base,ctx,[]);
+        } else output = this.simpleReply(base);
+      }catch(e){ output='Error in reasoning.'; }
+
+      if(output.length>cfg.safetyMaxTokens)
+        output=output.slice(0,cfg.safetyMaxTokens)+'…';
+      output=polishText(output);
+      state.discourseLog.push({ts:now(),input,output});
+      if(state.discourseLog.length>1000) state.discourseLog.shift();
 
       UI.say(`🤖 ${output}`);
-      if (cfg.speakOutput) Voice.speak(output);
+      if(cfg.speakOutput) Voice.speak(output);
       return output;
     },
 
-    simpleReply(input) {
-      const p = [
+    simpleReply(input){
+      const p=[
         `Analyzing: ${input}`,
         `Processing data…`,
         `Understood: ${input}`,
         `Considering ${input}`,
-        `Correlation detected.`
+        `Correlation detected.`,
+        `Evaluating causal links.`,
+        `Neural cross-mapping: ${input}`
       ];
       return pick(p);
     },
 
-    async _runDiscourseCycle(input) {
-      let t = `Considering ${input}. `;
-      for (let i = 0; i < cfg.maxRefineCycles; i++) {
-        const a = `concept_${Math.floor(rand(1, 99))}`;
-        const b = `link_${Math.floor(rand(1, 99))}`;
-        t += `I deduce ${a} may influence ${b}. `;
+    async _runDiscourseCycle(input){
+      let t=`Considering ${input}. `;
+      for(let i=0;i<cfg.maxRefineCycles;i++){
+        const a=`concept_${Math.floor(rand(1,99))}`;
+        const b=`link_${Math.floor(rand(1,99))}`;
+        t+=`I deduce ${a} may influence ${b}. `;
       }
       return polishText(t);
     }
@@ -971,7 +959,8 @@ Percy.PartB = (() => {
   return Self;
 })();
 
-console.log("✅ [Part B] ASI-Cognitive Core + Face Linked to Speech.");
+console.log("✅ [Part B] ASI-Cognitive Core + AI Head Sync Active.");
+
 })();
 
 /* === Percy.js (Part C — Extended + Autonomous Thought Integration) === */
