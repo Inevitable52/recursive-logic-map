@@ -86,14 +86,22 @@
 <!-- === 3D Neon AI Head === -->
 <canvas id="ai-head-canvas"></canvas>
 
-<!-- Speech + Mouth Sync Script -->
-<script>
-  let renderer, scene, camera, headMesh, glowMaterial, analyser;
-  let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+<!-- === Libraries === -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7"></script>
 
-  // === Initialize Three.js Head ===
+<!-- === Head + Speech Integration === -->
+<script>
+  let renderer, scene, camera, headMesh, glowMesh;
+
   function init3DHead() {
-    renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('ai-head-canvas'), alpha: true, antialias: true });
+    renderer = new THREE.WebGLRenderer({
+      canvas: document.getElementById('ai-head-canvas'),
+      alpha: true,
+      antialias: true
+    });
     renderer.setSize(540, 540);
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
@@ -104,19 +112,18 @@
       color: 0x00ffff,
       wireframe: true,
       transparent: true,
-      opacity: 0.5
+      opacity: 0.55
     });
-
     headMesh = new THREE.Mesh(geometry, wireMaterial);
     scene.add(headMesh);
 
-    const glow = new THREE.MeshBasicMaterial({
+    const glowMaterial = new THREE.MeshBasicMaterial({
       color: 0xff00ff,
       wireframe: true,
       transparent: true,
-      opacity: 0.15
+      opacity: 0.18
     });
-    const glowMesh = new THREE.Mesh(geometry, glow);
+    glowMesh = new THREE.Mesh(geometry, glowMaterial);
     glowMesh.scale.set(1.05, 1.05, 1.05);
     scene.add(glowMesh);
 
@@ -126,10 +133,11 @@
   function animate3DHead() {
     requestAnimationFrame(animate3DHead);
     headMesh.rotation.y += 0.002;
+    if (typeof Face !== "undefined") Face.updateFrame();
     renderer.render(scene, camera);
   }
 
-  // === Speech Mouth Movement Simulation ===
+  // === Percy Speech Simulation ===
   const synth = window.speechSynthesis;
 
   function getVoice() {
@@ -138,18 +146,27 @@
   }
 
   function speakPercy(text) {
+    if (!text) return;
     const utter = new SpeechSynthesisUtterance(text);
     utter.rate = 1;
     utter.pitch = 1.05;
     utter.volume = 1;
     utter.voice = getVoice();
-    utter.onstart = () => { headMesh.material.opacity = 0.9; };
-    utter.onend = () => { headMesh.material.opacity = 0.5; };
+    utter.onstart = () => {
+      if (typeof Face !== "undefined") Face.speakSync(text);
+    };
+    utter.onend = () => {
+      if (typeof Face !== "undefined") Face.pulse();
+    };
     synth.speak(utter);
   }
 
   window.addEventListener('load', () => {
     init3DHead();
+    // Link headMesh to Percy.Face system
+    setTimeout(() => {
+      if (typeof Face !== "undefined" && headMesh) Face.link3DHead(headMesh);
+    }, 1000);
   });
 </script>
 
@@ -175,11 +192,7 @@
   </div>
 </div>
 
-<!-- === Libraries === -->
-<script src="https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7"></script>
 <script src="js/percy.js?v=6.4"></script>
 </body>
 </html>
+
