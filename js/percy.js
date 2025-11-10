@@ -792,7 +792,7 @@ AUTO-LOAD THREE.JS IF MISSING
     console.warn("⚠️ THREE.js not detected. Loading dynamically...");
     await new Promise((resolve, reject) => {
       const s = document.createElement("script");
-      s.src = "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js";
+      s.src = "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js";
       s.onload = () => {
         console.log("✅ THREE.js dynamically loaded.");
         resolve();
