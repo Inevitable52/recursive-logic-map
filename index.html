@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>P.E.R.C.Y - AI (Head Visual)</title>
+<title>P.E.R.C.Y - Humanized AI Face</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
   :root {
@@ -12,122 +12,182 @@
     --accent: #1aff55;
     --head-size: 420px;
   }
-  html,body{height:100%;margin:0;background:var(--bg);color:#e8eefc;font-family:Consolas,monospace;overflow:hidden}
-  #logic-map{position:relative;width:100vw;height:100vh;background:#090912;overflow:hidden}
 
-  /* === CENTER AI HEAD === */
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: var(--bg);
+    font-family: Consolas, monospace;
+    overflow: hidden;
+    color: #e8eefc;
+  }
+
+  #logic-map {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background: #090912;
+    overflow: hidden;
+  }
+
+  /* === Humanized AI HEAD === */
   #percy-head-container {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     width: var(--head-size);
-    height: calc(var(--head-size) * 1.1);
+    height: calc(var(--head-size) * 1.2);
     pointer-events: none;
+    z-index: 1000;
     filter: drop-shadow(0 0 25px rgba(255,0,255,0.4))
             drop-shadow(0 0 50px rgba(0,255,255,0.3));
-    z-index: 1000;
   }
 
   #percy-head {
     position: relative;
     width: 100%;
     height: 100%;
-    border-radius: 50% / 56%;
-    overflow: hidden;
-    background: radial-gradient(circle at 40% 40%, rgba(20,20,30,0.9), rgba(5,5,10,1));
+    border-radius: 50% / 55%;
+    background: radial-gradient(circle at 50% 40%, #22222b, #08080f);
     border: 2px solid rgba(255,255,255,0.05);
+    box-shadow: 0 0 30px rgba(0,255,255,0.2), inset 0 0 20px rgba(255,0,255,0.05);
+    overflow: hidden;
   }
 
   .head-layer.inner {
     position: absolute;
     inset: 0;
-    border-radius: 50% / 56%;
-    background: radial-gradient(circle at 45% 45%, rgba(255,0,255,0.15), rgba(0,255,255,0.05), transparent 80%);
+    border-radius: 50% / 55%;
+    background: radial-gradient(circle at 50% 45%, rgba(255,255,255,0.05), transparent 70%);
     mix-blend-mode: screen;
   }
 
   #percy-eyes {
     position: absolute;
-    top: 28%;
-    width: 100%;
+    top: 35%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between;
   }
+
   .eye {
-    width: 42px;
-    height: 42px;
-    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.95), rgba(255,0,255,0.7));
+    position: relative;
+    width: 20%;
+    padding-bottom: 20%;
     border-radius: 50%;
-    box-shadow: 0 0 25px rgba(255,0,255,0.6), inset 0 0 10px rgba(255,255,255,0.3);
-    animation: blink 6s infinite;
+    background: radial-gradient(circle at 50% 50%, #fff 35%, #222 100%);
+    box-shadow: 0 0 20px rgba(0,255,255,0.5);
+    overflow: hidden;
   }
-  @keyframes blink {0%,90%,100%{transform:scaleY(1);}95%{transform:scaleY(0.1);}}
+
+  .pupil {
+    position: absolute;
+    top: 35%;
+    left: 35%;
+    width: 30%;
+    height: 30%;
+    background: #000;
+    border-radius: 50%;
+    box-shadow: 0 0 6px rgba(0,0,0,0.6);
+  }
+
+  .eyelid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    border-radius: 50%;
+    transform: scaleY(0);
+    transform-origin: top;
+    animation: blink 5s infinite;
+  }
+
+  @keyframes blink {
+    0%, 92%, 100% { transform: scaleY(0); }
+    95% { transform: scaleY(1); }
+  }
 
   #percy-mouth {
     position: absolute;
-    bottom: 23%;
+    bottom: 18%;
     left: 50%;
-    width: 110px;
-    height: 22px;
-    transform: translateX(-50%) scaleY(1);
-    background: radial-gradient(circle at 50% 50%, rgba(255,150,255,0.8), rgba(255,0,200,0.3));
-    border-radius: 0 0 60px 60px;
-    box-shadow: 0 0 18px rgba(255,0,255,0.5);
-    transition: transform 0.1s ease-in-out;
+    width: 40%;
+    height: 8%;
+    transform: translateX(-50%);
+    background: radial-gradient(circle at 50% 50%, #ff6fbf, #ff0077);
+    border-radius: 50% / 50%;
+    box-shadow: 0 0 12px rgba(255,0,255,0.6);
+    transition: height 0.1s ease-in-out;
   }
 
   /* === Console + UI === */
-  #percy-console{position:fixed;left:6px;bottom:6px;width:34%;max-height:44%;overflow:auto;padding:12px;background:rgba(0,0,0,0.6);border-top-right-radius:12px;border:1px solid #222;z-index:1400}
-  .console-line{font-size:12px;margin:4px 0;font-family:monospace}
-  .console-line.ask{color:#cfe8ff}
-  .console-line.exec{color:#9fffb0}
-  #percy-message{position:fixed;left:34.5%;bottom:6px;width:65.5%;padding:12px;background:rgba(0,0,0,0.6);border-top-left-radius:12px;border:1px solid #222;z-index:1399;max-height:28%;overflow:auto}
-
-  input,textarea,button{font-family:monospace}
-  #seed-search{position:fixed;top:12px;left:12px;width:200px;padding:6px;border-radius:6px;border:1px solid #333;background:#0b0b0f;color:#fff;z-index:1800}
-  #interpreter-input{position:fixed;top:12px;left:220px;width:320px;padding:6px;border-radius:6px;border:1px solid #333;background:#0b0b0f;color:#fff;z-index:1800}
-  #askPercyButton{position:fixed;top:12px;left:550px;padding:6px 12px;border-radius:6px;background:#1a1aff;color:#fff;border:none;cursor:pointer;z-index:1800}
-  #askPercyButton:hover{background:#3333ff}
-
-  #percy-exec-input{position:fixed;top:52px;left:220px;width:360px;padding:6px;border-radius:6px;border:1px solid #333;background:#0b0b0f;color:#fff;z-index:1700}
-  #percy-exec-run{position:fixed;top:52px;left:588px;padding:6px 12px;border-radius:6px;border:0;background:var(--accent);color:#000;cursor:pointer;z-index:1700}
-
-  #camera-feed{position:fixed;top:110px;right:12px;width:420px;height:315px;border-radius:12px;border:2px solid var(--neon-a);box-shadow:0 0 18px var(--neon-a),0 0 36px var(--neon-b);background:#000;object-fit:cover;z-index:1500;transition:transform .25s}
-  #camera-feed:hover{transform:scale(1.02)}
-  #camera-overlay{position:fixed;top:110px;right:12px;width:420px;height:315px;pointer-events:none;z-index:1501}
-
-  #percy-chat-box{
-    position:fixed;bottom:20px;right:12px;width:340px;height:360px;
-    background:rgba(0,0,0,0.75);border-radius:12px;border:1px solid #222;
-    display:flex;flex-direction:column;z-index:1502;
-    box-shadow:0 8px 30px rgba(0,0,0,0.6),0 0 18px var(--neon-b);
+  #percy-console {
+    position: fixed; left: 6px; bottom: 6px; width: 34%; max-height: 44%; overflow: auto;
+    padding: 12px; background: rgba(0,0,0,0.6); border-top-right-radius: 12px; border: 1px solid #222; z-index: 1400;
   }
-  #percy-chat-messages{flex:1;padding:8px;overflow:auto}
-  #percy-chat-input{flex:1;padding:6px;border:0;background:#111;color:#fff}
-  #percy-chat-send{padding:6px 10px;border:0;background:var(--accent);color:#000;cursor:pointer;border-radius:6px}
+  .console-line { font-size: 12px; margin: 4px 0; font-family: monospace; }
+  .console-line.ask { color: #cfe8ff; }
+  .console-line.exec { color: #9fffb0; }
+  #percy-message {
+    position: fixed; left: 34.5%; bottom: 6px; width: 65.5%; padding: 12px;
+    background: rgba(0,0,0,0.6); border-top-left-radius: 12px; border: 1px solid #222; z-index: 1399;
+    max-height: 28%; overflow: auto;
+  }
+
+  input, textarea, button { font-family: monospace; }
+  #seed-search { position: fixed; top: 12px; left: 12px; width: 200px; padding: 6px; border-radius: 6px; border:1px solid #333; background: #0b0b0f; color:#fff; z-index:1800; }
+  #interpreter-input { position: fixed; top: 12px; left: 220px; width: 320px; padding:6px; border-radius:6px; border:1px solid #333; background:#0b0b0f; color:#fff; z-index:1800; }
+  #askPercyButton { position: fixed; top:12px; left:550px; padding:6px 12px; border-radius:6px; background:#1a1aff; color:#fff; border:none; cursor:pointer; z-index:1800; }
+  #askPercyButton:hover { background:#3333ff; }
+
+  #percy-exec-input { position: fixed; top:52px; left:220px; width:360px; padding:6px; border-radius:6px; border:1px solid #333; background:#0b0b0f; color:#fff; z-index:1700; }
+  #percy-exec-run { position: fixed; top:52px; left:588px; padding:6px 12px; border-radius:6px; border:0; background:var(--accent); color:#000; cursor:pointer; z-index:1700; }
+
+  #camera-feed { position: fixed; top:110px; right:12px; width:420px; height:315px; border-radius:12px; border:2px solid var(--neon-a); box-shadow:0 0 18px var(--neon-a),0 0 36px var(--neon-b); background:#000; object-fit:cover; z-index:1500; transition: transform .25s; }
+  #camera-feed:hover { transform: scale(1.02); }
+  #camera-overlay { position: fixed; top:110px; right:12px; width:420px; height:315px; pointer-events:none; z-index:1501; }
+
+  #percy-chat-box {
+    position: fixed; bottom:20px; right:12px; width:340px; height:360px;
+    background: rgba(0,0,0,0.75); border-radius:12px; border:1px solid #222;
+    display: flex; flex-direction: column; z-index:1502;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6), 0 0 18px var(--neon-b);
+  }
+  #percy-chat-messages { flex:1; padding:8px; overflow:auto; }
+  #percy-chat-input { flex:1; padding:6px; border:0; background:#111; color:#fff; }
+  #percy-chat-send { padding:6px 10px; border:0; background:var(--accent); color:#000; cursor:pointer; border-radius:6px; }
 </style>
 </head>
 <body>
 
 <div id="logic-map"><div id="logic-nodes"></div></div>
 
-<!-- AI HEAD -->
+<!-- Humanized AI HEAD -->
 <div id="percy-head-container">
   <div id="percy-head">
     <div class="head-layer inner"></div>
     <div id="percy-eyes">
-      <div class="eye left"></div>
-      <div class="eye right"></div>
+      <div class="eye">
+        <div class="pupil"></div>
+        <div class="eyelid"></div>
+      </div>
+      <div class="eye">
+        <div class="pupil"></div>
+        <div class="eyelid"></div>
+      </div>
     </div>
     <div id="percy-mouth"></div>
   </div>
 </div>
 
 <script>
-  // === Dynamic Mouth Animation via Speech Output ===
   const mouth = document.getElementById("percy-mouth");
-  let anim; // make it accessible globally
+  let anim;
 
   async function speakPercy(text) {
     const utter = new SpeechSynthesisUtterance(text);
@@ -135,8 +195,8 @@
     utter.pitch = 1.1;
     utter.volume = 1;
     utter.voice = speechSynthesis.getVoices().find(v => v.name.includes("Google") || v.name.includes("Microsoft")) || null;
-    utter.onstart = () => startMouthAnimation();
-    utter.onend = () => stopMouthAnimation();
+    utter.onstart = startMouthAnimation;
+    utter.onend = stopMouthAnimation;
     speechSynthesis.speak(utter);
   }
 
@@ -146,7 +206,7 @@
 
     function loop() {
       if (mouth.dataset.active !== "true") return;
-      const newHeight = 22 + Math.random() * 20;
+      const newHeight = mouth.offsetHeight * (0.7 + Math.random() * 0.6);
       mouth.style.height = `${newHeight}px`;
       anim = requestAnimationFrame(loop);
     }
@@ -156,10 +216,8 @@
   function stopMouthAnimation() {
     mouth.dataset.active = "false";
     cancelAnimationFrame(anim);
-    mouth.style.height = "22px";
+    mouth.style.height = `${mouth.parentElement.offsetHeight * 0.08}px`;
   }
-
-  // speakPercy("Hello! I am Percy.");
 </script>
 
 <!-- Console + UI -->
