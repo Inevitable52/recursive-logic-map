@@ -29,7 +29,6 @@
     overflow: hidden;
   }
 
-  /* === 3D Head Canvas === */
   #ai-head-canvas {
     position: absolute;
     top: 50%;
@@ -40,7 +39,6 @@
     z-index: 1000;
   }
 
-  /* === Console + UI === */
   #percy-console {
     position: fixed; left: 6px; bottom: 6px; width: 34%; max-height: 44%; overflow: auto;
     padding: 12px; background: rgba(0,0,0,0.6); border-top-right-radius: 12px; border: 1px solid #222; z-index: 1400;
@@ -83,100 +81,15 @@
 
 <div id="logic-map"><div id="logic-nodes"></div></div>
 
-<!-- === 3D Neon AI Head === -->
+<!-- 3D Neon AI Head -->
 <canvas id="ai-head-canvas"></canvas>
 
-<!-- === Libraries === -->
-<script src="https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7"></script>
-
-<!-- === Head + Speech Integration === -->
-<script>
-  let renderer, scene, camera, headMesh, glowMesh;
-
-  function init3DHead() {
-    renderer = new THREE.WebGLRenderer({
-      canvas: document.getElementById('ai-head-canvas'),
-      alpha: true,
-      antialias: true
-    });
-    renderer.setSize(540, 540);
-    scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
-    camera.position.z = 2.3;
-
-    const geometry = new THREE.SphereGeometry(0.9, 64, 64);
-    const wireMaterial = new THREE.MeshBasicMaterial({
-      color: 0x00ffff,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.55
-    });
-    headMesh = new THREE.Mesh(geometry, wireMaterial);
-    scene.add(headMesh);
-
-    const glowMaterial = new THREE.MeshBasicMaterial({
-      color: 0xff00ff,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.18
-    });
-    glowMesh = new THREE.Mesh(geometry, glowMaterial);
-    glowMesh.scale.set(1.05, 1.05, 1.05);
-    scene.add(glowMesh);
-
-    animate3DHead();
-  }
-
-  function animate3DHead() {
-    requestAnimationFrame(animate3DHead);
-    headMesh.rotation.y += 0.002;
-    if (typeof Face !== "undefined") Face.updateFrame();
-    renderer.render(scene, camera);
-  }
-
-  // === Percy Speech Simulation ===
-  const synth = window.speechSynthesis;
-
-  function getVoice() {
-    const voices = synth.getVoices();
-    return voices.find(v => /Google|Microsoft|Samantha|Daniel/i.test(v.name)) || voices[0];
-  }
-
-  function speakPercy(text) {
-    if (!text) return;
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.rate = 1;
-    utter.pitch = 1.05;
-    utter.volume = 1;
-    utter.voice = getVoice();
-    utter.onstart = () => {
-      if (typeof Face !== "undefined") Face.speakSync(text);
-    };
-    utter.onend = () => {
-      if (typeof Face !== "undefined") Face.pulse();
-    };
-    synth.speak(utter);
-  }
-
-  window.addEventListener('load', () => {
-    init3DHead();
-    // Link headMesh to Percy.Face system
-    setTimeout(() => {
-      if (typeof Face !== "undefined" && headMesh) Face.link3DHead(headMesh);
-    }, 1000);
-  });
-</script>
-
-<!-- Console + UI -->
 <div id="percy-console"></div>
 <div id="percy-message"></div>
 
 <input id="seed-search" placeholder="Search seeds" />
 <input id="interpreter-input" placeholder="Ask Percy" />
-<button id="askPercyButton" onclick="speakPercy(document.getElementById('interpreter-input').value)">GO</button>
+<button id="askPercyButton">GO</button>
 
 <textarea id="percy-exec-input" rows="1" placeholder="Quick Exec (Math / Tools)"></textarea>
 <button id="percy-exec-run">Start</button>
@@ -192,7 +105,84 @@
   </div>
 </div>
 
+<!-- === Libraries (Now Load Before the Script) === -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7"></script>
 <script src="js/percy.js?v=6.4"></script>
+
+<!-- === 3D Head Script (AFTER THREE is loaded) === -->
+<script>
+window.addEventListener('load', () => {
+  if (typeof THREE === 'undefined') {
+    console.error('THREE.js failed to load!');
+    return;
+  }
+
+  let renderer, scene, camera, headMesh;
+  const synth = window.speechSynthesis;
+
+  function init3DHead() {
+    const canvas = document.getElementById('ai-head-canvas');
+    renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setSize(540, 540);
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+    camera.position.z = 2.3;
+
+    const geometry = new THREE.SphereGeometry(0.9, 64, 64);
+    const wireMaterial = new THREE.MeshBasicMaterial({
+      color: 0x00ffff,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.5
+    });
+    headMesh = new THREE.Mesh(geometry, wireMaterial);
+    scene.add(headMesh);
+
+    const glowMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff00ff,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.15
+    });
+    const glowMesh = new THREE.Mesh(geometry, glowMaterial);
+    glowMesh.scale.set(1.05, 1.05, 1.05);
+    scene.add(glowMesh);
+
+    animate3DHead();
+  }
+
+  function animate3DHead() {
+    requestAnimationFrame(animate3DHead);
+    headMesh.rotation.y += 0.002;
+    renderer.render(scene, camera);
+  }
+
+  function getVoice() {
+    const voices = synth.getVoices();
+    return voices.find(v => /Google|Microsoft|Samantha|Daniel/i.test(v.name)) || voices[0];
+  }
+
+  function speakPercy(text) {
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.rate = 1;
+    utter.pitch = 1.05;
+    utter.volume = 1;
+    utter.voice = getVoice();
+    utter.onstart = () => headMesh.material.opacity = 0.9;
+    utter.onend = () => headMesh.material.opacity = 0.5;
+    synth.speak(utter);
+  }
+
+  document.getElementById('askPercyButton').addEventListener('click', () => {
+    const text = document.getElementById('interpreter-input').value.trim();
+    if (text) speakPercy(text);
+  });
+
+  init3DHead();
+});
+</script>
 </body>
 </html>
-
