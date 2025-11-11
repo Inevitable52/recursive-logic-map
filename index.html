@@ -110,13 +110,13 @@
   import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
   window.THREE = THREE; // Keep compatibility with older percy.js code
 
-  import * as tf from "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.esm.js";
-  import * as cocoSsd from "https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.esm.js";
-  import * as blazeface from "https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7/dist/blazeface.esm.js";
-
+  // ✅ TensorFlow: fixed and optional — only load if you need it
+  import * as tf from "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.16.0/dist/tf.min.js";
   window.tf = tf;
-  window.cocoSsd = cocoSsd;
-  window.blazeface = blazeface;
+
+  // Optional vision modules — comment these out for now
+  // import * as cocoSsd from "https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js";
+  // import * as blazeface from "https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7/dist/blazeface.min.js";
 
   window.addEventListener("DOMContentLoaded", () => {
     if (typeof init3DHead === "function") init3DHead();
