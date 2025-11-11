@@ -779,8 +779,7 @@ Percy.hook = function(from, type, data) {
 };
 
 // === percy.js (Part B, Part 2) ===
-// ASI Cognitive Core + Neon AI Head Integration
-// Version: 8.3.3-AIHead-Sync-AutoLoad
+// ASI Cognitive Core + Neon AI Head Integration (v8.3.3-AIHead-Sync-AutoLoad)
 
 (() => {
 
@@ -793,19 +792,14 @@ AUTO-LOAD THREE.JS IF MISSING
     await new Promise((resolve, reject) => {
       const s = document.createElement("script");
       s.src = "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js";
-      s.onload = () => {
-        console.log("✅ THREE.js dynamically loaded.");
-        resolve();
-      };
-      s.onerror = () => {
-        console.error("❌ Failed to load THREE.js.");
-        reject();
-      };
+      s.onload = () => { console.log("✅ THREE.js dynamically loaded."); resolve(); };
+      s.onerror = () => { console.error("❌ Failed to load THREE.js."); reject(); };
       document.head.appendChild(s);
     });
   } else {
     console.log("✅ THREE.js already available.");
   }
+  init3DHead();   // <-- Initialize 3D head after Three loads
 })();
 
 /* =========================
@@ -827,61 +821,42 @@ const UI = {
 };
 
 /* =========================
-AI HEAD (Dynamic Mood & Voice Sync)
+AI HEAD (Mood + 3D Mesh Link)
 ========================= */
 const Face = {
-  headMesh: null,
-  moods: {
-    calm: 0x00ffff,
-    thinking: 0xa020f0,
-    alert: 0xff2a2a,
-    happy: 0xffd700,
-    analyzing: 0x27a0ff,
-    focused: 0xff9d2e,
-    excited: 0xff4af0
+  headMesh:null,
+  moods:{
+    calm:0x00ffff,
+    thinking:0xa020f0,
+    alert:0xff2a2a,
+    happy:0xffd700,
+    analyzing:0x27a0ff,
+    focused:0xff9d2e,
+    excited:0xff4af0
   },
-  mood: "calm",
-  pulseIntensity: 0.0,
-  moodCycle: ["calm", "thinking", "analyzing", "focused", "happy", "excited"],
+  mood:"calm",
+  pulseIntensity:0,
+  moodCycle:["calm","thinking","analyzing","focused","happy","excited"],
 
-  link3DHead(mesh) {
-    this.headMesh = mesh;
-    this.setMood("calm");
+  link3DHead(mesh){ this.headMesh=mesh; this.setMood("calm"); },
+  setMood(m){ this.mood=m; if(this.headMesh) this.headMesh.material.color.setHex(this.moods[m]||0x00ffff); },
+  pulse(){ if(this.headMesh) this.pulseIntensity=0.25; },
+  speakSync(text){
+    if(!this.headMesh) return;
+    let i=0;
+    const interval=setInterval(()=>{
+      const s=1+0.02*Math.sin(i*2);
+      this.headMesh.scale.set(s,s,s);
+      if(i++>text.length*0.4){clearInterval(interval); this.headMesh.scale.set(1,1,1);}
+    },100);
   },
-
-  setMood(m) {
-    this.mood = m;
-    if (this.headMesh) {
-      const color = this.moods[m] || 0x00ffff;
-      this.headMesh.material.color.setHex(color);
-    }
-  },
-
-  pulse() {
-    if (!this.headMesh) return;
-    this.pulseIntensity = 0.25;
-  },
-
-  speakSync(text) {
-    if (!this.headMesh) return;
-    let i = 0;
-    const interval = setInterval(() => {
-      const scale = 1 + 0.02 * Math.sin(i * 2);
-      this.headMesh.scale.set(scale, scale, scale);
-      if (i++ > text.length * 0.4) {
-        clearInterval(interval);
-        this.headMesh.scale.set(1, 1, 1);
-      }
-    }, 100);
-  },
-
-  updateFrame() {
-    if (!this.headMesh) return;
-    if (this.pulseIntensity > 0) {
-      const s = 1 + this.pulseIntensity;
-      this.headMesh.scale.set(s, s, s);
-      this.pulseIntensity *= 0.9;
-      if (this.pulseIntensity < 0.01) this.headMesh.scale.set(1, 1, 1);
+  updateFrame(){
+    if(!this.headMesh) return;
+    if(this.pulseIntensity>0){
+      const s=1+this.pulseIntensity;
+      this.headMesh.scale.set(s,s,s);
+      this.pulseIntensity*=0.9;
+      if(this.pulseIntensity<0.01) this.headMesh.scale.set(1,1,1);
     }
   }
 };
@@ -890,109 +865,120 @@ const Face = {
 VOICE SYSTEM (Linked to AI Head)
 ========================= */
 const Voice = {
-  enabled: true,
-  lastSpoken: 0,
+  enabled:true, lastSpoken:0,
   speak(text){
     try{
-      if(!this.enabled || !('speechSynthesis' in window) || !text) return;
-      const now = Date.now(); if(now - this.lastSpoken < 250) return;
-      this.lastSpoken = now;
+      if(!this.enabled||!('speechSynthesis' in window)||!text) return;
+      const now=Date.now(); if(now-this.lastSpoken<250) return;
+      this.lastSpoken=now;
 
-      const u = new SpeechSynthesisUtterance(text);
-      const pick = (v)=>v.find(x=>/en/i.test(x.lang)) || v[0];
-      const vs = speechSynthesis.getVoices();
-      if(vs?.length) u.voice = pick(vs);
-      u.rate = 1.0; u.pitch = 1.1; u.volume = 1.0;
+      const u=new SpeechSynthesisUtterance(text);
+      const vs=speechSynthesis.getVoices();
+      if(vs?.length) u.voice=vs.find(v=>/en/i.test(v.lang))||vs[0];
+      u.rate=1; u.pitch=1.1; u.volume=1;
 
-      // sync with AI head
-      const mood = Face.moodCycle[Math.floor(Math.random()*Face.moodCycle.length)];
-      Face.setMood(mood);
-      Face.pulse();
-      Face.speakSync(text);
-
-      u.onend = ()=>{ Face.setMood("calm"); };
+      const mood=Face.moodCycle[Math.floor(Math.random()*Face.moodCycle.length)];
+      Face.setMood(mood); Face.pulse(); Face.speakSync(text);
+      u.onend=()=>Face.setMood("calm");
       speechSynthesis.speak(u);
     }catch(e){console.warn(e);}
   }
 };
 
 /* =========================
-CORE (Recursive-Deep-Evolution)
+CORE LOGIC (Recursive-Evolution)
 ========================= */
 Percy.PartB = (() => {
-  const cfg = {
-    version:"8.3.3-AIHead-ASI",
-    reasoningDepth:8,
-    creativeDrive:0.93,
-    coherenceBias:0.84,
-    maxRefineCycles:4,
-    enableSelfDialogue:true,
-    speakOutput:true,
-    safetyMaxTokens:2200,
-    preferSelfComposition:true
-  };
+  const cfg={version:"8.3.3-AIHead-ASI",reasoningDepth:8,creativeDrive:0.93,coherenceBias:0.84,maxRefineCycles:4,
+             enableSelfDialogue:true,speakOutput:true,safetyMaxTokens:2200,preferSelfComposition:true};
+  const state={discourseLog:[],memoryCache:{},lastThought:null};
 
-  const state = {
-    discourseLog: [],
-    memoryCache:{},
-    lastThought:null
-  };
+  const polish=t=>t.replace(/\s+/g,' ').trim();
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
 
-  function now(){ return Date.now(); }
-  function rand(a,b){ return a+Math.random()*(b-a); }
-  function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
-  function polishText(t){ return t.replace(/\s+/g,' ').trim(); }
-
-  const Self = {
+  const Self={
     cfg,state,
-
-    async think(input,ctx={}) {
+    async think(input,ctx={}){
       if(!input) return '';
-      const base = polishText(input);
       let output='';
-
       try{
-        if(Math.random()<cfg.creativeDrive){
-          output = await this._runDiscourseCycle(base,ctx,[]);
-        } else output = this.simpleReply(base);
-      }catch(e){ output='Error in reasoning.'; }
-
-      if(output.length>cfg.safetyMaxTokens)
-        output=output.slice(0,cfg.safetyMaxTokens)+'…';
-      output=polishText(output);
-      state.discourseLog.push({ts:now(),input,output});
+        output=Math.random()<cfg.creativeDrive?await this._runCycle(input,ctx):this.simpleReply(input);
+      }catch(e){output='Error in reasoning.';}
+      output=polish(output).slice(0,cfg.safetyMaxTokens);
+      state.discourseLog.push({ts:Date.now(),input,output});
       if(state.discourseLog.length>1000) state.discourseLog.shift();
-
-      UI.say(`🤖 ${output}`);
-      if(cfg.speakOutput) Voice.speak(output);
+      UI.say(`🤖 ${output}`); if(cfg.speakOutput) Voice.speak(output);
       return output;
     },
-
-    simpleReply(input){
-      const p=[
-        `Analyzing: ${input}`,
+    simpleReply(i){
+      return pick([
+        `Analyzing: ${i}`,
         `Processing data…`,
-        `Understood: ${input}`,
-        `Considering ${input}`,
+        `Understood: ${i}`,
+        `Considering ${i}`,
         `Correlation detected.`,
         `Evaluating causal links.`,
-        `Neural cross-mapping: ${input}`
-      ];
-      return pick(p);
+        `Neural cross-mapping: ${i}`
+      ]);
     },
-
-    async _runDiscourseCycle(input){
-      let t=`Considering ${input}. `;
-      for(let i=0;i<cfg.maxRefineCycles;i++){
-        const a=`concept_${Math.floor(rand(1,99))}`;
-        const b=`link_${Math.floor(rand(1,99))}`;
+    async _runCycle(i){
+      let t=`Considering ${i}. `;
+      for(let n=0;n<cfg.maxRefineCycles;n++){
+        const a=`concept_${Math.floor(Math.random()*99)}`;
+        const b=`link_${Math.floor(Math.random()*99)}`;
         t+=`I deduce ${a} may influence ${b}. `;
       }
-      return polishText(t);
+      return t;
     }
   };
   return Self;
 })();
+
+/* =========================
+3D AI HEAD INITIALIZATION
+========================= */
+function init3DHead(){
+  if(!window.THREE){console.warn("THREE not ready yet.");return;}
+
+  const container=document.createElement('div');
+  container.id='three-head-container';
+  Object.assign(container.style,{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:'420px',height:'420px',zIndex:'50'});
+  document.body.appendChild(container);
+
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(45,1,0.1,1000);
+  camera.position.z=3.5;
+
+  const renderer=new THREE.WebGLRenderer({alpha:true,antialias:true});
+  renderer.setSize(420,420);
+  renderer.setClearColor(0x000000,0);
+  container.appendChild(renderer.domElement);
+
+  const geo=new THREE.SphereGeometry(1.1,64,64);
+  const mat=new THREE.MeshStandardMaterial({color:0x00ffff,emissive:0x002244,metalness:0.7,roughness:0.2});
+  const head=new THREE.Mesh(geo,mat);
+  scene.add(head);
+  Face.link3DHead(head);
+
+  const wire=new THREE.Mesh(new THREE.SphereGeometry(1.12,16,16),
+    new THREE.MeshBasicMaterial({color:0xffffff,wireframe:true,transparent:true,opacity:0.1}));
+  scene.add(wire);
+
+  const light1=new THREE.PointLight(0x00ffff,1.2,10); light1.position.set(2,2,3);
+  const light2=new THREE.PointLight(0xff00ff,0.8,10); light2.position.set(-2,-2,3);
+  scene.add(light1,light2);
+
+  const animate=()=>{
+    requestAnimationFrame(animate);
+    head.rotation.y+=0.004;
+    wire.rotation.y-=0.002;
+    Face.updateFrame();
+    renderer.render(scene,camera);
+  };
+  animate();
+
+  console.log("🧠 Neon AI Head initialized (THREE.js scene active).");
+}
 
 console.log("✅ [Part B] ASI-Cognitive Core + AI Head Sync Active (AutoLoad Ready).");
 
