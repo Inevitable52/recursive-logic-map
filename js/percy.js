@@ -386,35 +386,43 @@ const seedRange = { start: 80, end: 800 };
   if(document.querySelector('style[data-percy-style="neon-bubbles"]')) return;
   const css = `
     #logic-map { 
-      background:#0a0a0f; 
+      background:#050509; 
       overflow:hidden; 
       min-height:200px; 
       min-width:300px; 
     }
+
     .node {
       position:absolute; 
       border-radius:50%;
       display:flex; 
       align-items:center; 
       justify-content:center;
-      font-weight:700; 
-      color:#0095b6; 
+      font-weight:600; 
+      color:#007b9e;
       cursor:pointer;
-      background: radial-gradient(100% 100% at 30% 30%, rgba(0,149,182,0.06), rgba(0,0,0,0.05));
-      border:2px solid rgba(0,149,182,0.3);
+      background: radial-gradient(100% 100% at 40% 40%, rgba(0,123,158,0.05), rgba(0,0,0,0.08));
+      border:2px solid rgba(0,123,158,0.25);
       box-shadow:
-        0 0 4px rgba(0,149,182,0.25),
-        0 0 10px rgba(0,149,182,0.15),
-        inset 0 0 10px rgba(255,255,255,0.03);
-      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        0 0 4px rgba(0,123,158,0.15),
+        0 0 8px rgba(0,123,158,0.10),
+        inset 0 0 10px rgba(255,255,255,0.02);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.4);
       user-select:none;
-      transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+      transition: transform .25s ease, box-shadow .25s ease, filter .25s ease;
       backdrop-filter: blur(1px);
+      animation: neon-breath 6s ease-in-out infinite;
     }
-    .node:hover { transform: scale(1.08); filter: brightness(1.15); }
+
+    @keyframes neon-breath {
+      0%, 100% { box-shadow: 0 0 4px rgba(0,123,158,0.10), inset 0 0 10px rgba(255,255,255,0.02); }
+      50% { box-shadow: 0 0 12px rgba(0,123,158,0.25), inset 0 0 14px rgba(255,255,255,0.03); }
+    }
+
+    .node:hover { transform: scale(1.08); filter: brightness(1.1); }
     .node:active { transform: scale(0.95); }
 
-    /* Unified dark neon palette (deep cyan-teal tone) */
+    /* All unified under one darker neon scheme */
     .cyan-bubble,
     .blue-bubble,
     .magenta-bubble,
@@ -422,15 +430,15 @@ const seedRange = { start: 80, end: 800 };
     .orange-bubble,
     .yellow-bubble,
     .pink-bubble {
-      color: #0095b6;
-      filter: brightness(0.85);
+      color:#007b9e;
+      filter: brightness(0.75);
     }
 
     .console-line { 
       margin:2px 0; 
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; 
       font-size:12px; 
-      color:#66d2e0; 
+      color:#3aa6b9; 
     }
   `;
   const style = document.createElement('style');
