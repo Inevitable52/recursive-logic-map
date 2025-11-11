@@ -398,23 +398,23 @@ const seedRange = { start: 80, end: 800 };
       align-items:center; 
       justify-content:center;
       font-weight:700; 
-      color:#0ff; 
+      color:#0095b6; 
       cursor:pointer;
-      background: radial-gradient(100% 100% at 30% 30%, rgba(0,255,255,0.08), rgba(0,0,0,0.05));
-      border:2px solid rgba(0,255,255,0.35);
+      background: radial-gradient(100% 100% at 30% 30%, rgba(0,149,182,0.06), rgba(0,0,0,0.05));
+      border:2px solid rgba(0,149,182,0.3);
       box-shadow:
-        0 0 6px rgba(0,255,255,0.35),
-        0 0 14px rgba(0,255,255,0.25),
-        inset 0 0 12px rgba(255,255,255,0.05);
-      text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+        0 0 4px rgba(0,149,182,0.25),
+        0 0 10px rgba(0,149,182,0.15),
+        inset 0 0 10px rgba(255,255,255,0.03);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
       user-select:none;
       transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
       backdrop-filter: blur(1px);
     }
-    .node:hover { transform: scale(1.08); filter: brightness(1.25); }
+    .node:hover { transform: scale(1.08); filter: brightness(1.15); }
     .node:active { transform: scale(0.95); }
 
-    /* Unified single neon palette (dark cyan glow) */
+    /* Unified dark neon palette (deep cyan-teal tone) */
     .cyan-bubble,
     .blue-bubble,
     .magenta-bubble,
@@ -422,15 +422,15 @@ const seedRange = { start: 80, end: 800 };
     .orange-bubble,
     .yellow-bubble,
     .pink-bubble {
-      color: #0ff;
-      filter: brightness(0.9);
+      color: #0095b6;
+      filter: brightness(0.85);
     }
 
     .console-line { 
       margin:2px 0; 
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; 
       font-size:12px; 
-      color:#8ef7ff; 
+      color:#66d2e0; 
     }
   `;
   const style = document.createElement('style');
