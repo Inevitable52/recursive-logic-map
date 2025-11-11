@@ -1119,6 +1119,8 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 console.log("✅ [Part B] ASI-Cognitive Core + Neon AI Face Active (AutoLoad Ready).");
+  
+})();
 
 /* === Percy.js (Part C — Extended + Autonomous Thought Integration) === */
 if (typeof PercyState !== 'undefined') {
