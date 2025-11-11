@@ -814,21 +814,13 @@ Percy.hook = function(from, type, data) {
 /* =========================
 AUTO-LOAD THREE.JS IF MISSING
 ========================= */
-(async () => {
-  if (typeof THREE === "undefined") {
-    console.warn("⚠️ THREE.js not detected. Loading dynamically...");
-    await new Promise((resolve, reject) => {
-      const s = document.createElement("script");
-      s.src = "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js";
-      s.onload = () => { console.log("✅ THREE.js dynamically loaded."); resolve(); };
-      s.onerror = () => { console.error("❌ Failed to load THREE.js."); reject(); };
-      document.head.appendChild(s);
-    });
+window.addEventListener("DOMContentLoaded", () => {
+  if (typeof THREE !== "undefined" && typeof init3DHead === "function") {
+    init3DHead();
   } else {
-    console.log("✅ THREE.js already available.");
+    console.error("❌ THREE.js or init3DHead not found.");
   }
-  init3DHead();   // <-- Initialize 3D head after Three loads
-})();
+});
 
 /* =========================
 UI HELPERS
