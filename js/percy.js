@@ -862,7 +862,8 @@ const Face = {
     this.mood = m;
     if (this.headMesh)
       this.headMesh.material.color.setHex(this.moods[m] || 0x00ffff);
-    for (const e of this.eyes) e.material.emissive.setHex(this.moods[m] || 0x00ffff);
+    for (const e of this.eyes)
+      e.material.emissive.setHex(this.moods[m] || 0x00ffff);
   },
   pulse() {
     if (this.headMesh) this.pulseIntensity = 0.25;
@@ -1019,7 +1020,7 @@ function init3DHead() {
   renderer.setClearColor(0x000000, 0);
   container.appendChild(renderer.domElement);
 
-  // Base head shape
+  // Base head
   const headGeo = new THREE.SphereGeometry(1.1, 64, 64);
   const headMat = new THREE.MeshStandardMaterial({
     color: 0x00ffff,
@@ -1045,7 +1046,7 @@ function init3DHead() {
   scene.add(eyeL, eyeR);
   Face.eyes = [eyeL, eyeR];
 
-  // Simple jaw (mouth zone)
+  // Simple jaw
   const jawGeo = new THREE.TorusGeometry(0.3, 0.02, 8, 32, Math.PI);
   const jawMat = new THREE.MeshStandardMaterial({
     color: 0xff66cc,
@@ -1093,13 +1094,20 @@ function init3DHead() {
 }
 
 /* =========================
-INIT TRIGGER (after script load)
+SAFE INIT (Waits for ESM load)
 ========================= */
-if (typeof THREE !== "undefined") {
-  init3DHead();
-} else {
-  console.warn("⚠️ THREE.js not yet ready — waiting for HTML module load.");
-}
+window.addEventListener("DOMContentLoaded", () => {
+  const tryInit = () => {
+    if (typeof THREE !== "undefined") {
+      console.log("🧩 THREE.js detected — initializing Neon AI Face…");
+      init3DHead();
+    } else {
+      console.warn("⚠️ THREE.js not yet ready — waiting for HTML module load.");
+      setTimeout(tryInit, 500);
+    }
+  };
+  tryInit();
+});
 
 console.log("✅ [Part B] ASI-Cognitive Core + Neon AI Face Active (AutoLoad Ready).");
 
