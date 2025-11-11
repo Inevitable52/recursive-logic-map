@@ -382,36 +382,56 @@ let zoomLevel = 1, translateX = 0, translateY = 0;
 const seedsFolder = 'logic_seeds/';
 const seedRange = { start: 80, end: 800 };
 
-// Inject neon bubble styles (idempotent)
 (function injectBubbleStyles(){
   if(document.querySelector('style[data-percy-style="neon-bubbles"]')) return;
   const css = `
-    #logic-map { background:#0a0a0f; overflow:hidden; min-height:200px; min-width:300px; }
+    #logic-map { 
+      background:#0a0a0f; 
+      overflow:hidden; 
+      min-height:200px; 
+      min-width:300px; 
+    }
     .node {
-      position:absolute; border-radius:50%;
-      display:flex; align-items:center; justify-content:center;
-      font-weight:700; color:#fff; cursor:pointer;
-      background: radial-gradient(100% 100% at 30% 30%, rgba(255,255,255,0.10), rgba(0,0,0,0.10));
-      border:2px solid currentColor;
+      position:absolute; 
+      border-radius:50%;
+      display:flex; 
+      align-items:center; 
+      justify-content:center;
+      font-weight:700; 
+      color:#0ff; 
+      cursor:pointer;
+      background: radial-gradient(100% 100% at 30% 30%, rgba(0,255,255,0.08), rgba(0,0,0,0.05));
+      border:2px solid rgba(0,255,255,0.35);
       box-shadow:
-        0 0 6px currentColor,
-        0 0 14px currentColor,
-        inset 0 0 12px rgba(255,255,255,0.08);
+        0 0 6px rgba(0,255,255,0.35),
+        0 0 14px rgba(0,255,255,0.25),
+        inset 0 0 12px rgba(255,255,255,0.05);
       text-shadow: 0 1px 2px rgba(0,0,0,0.6);
       user-select:none;
       transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
       backdrop-filter: blur(1px);
     }
-    .node:hover { transform: scale(1.08); filter: brightness(1.15); }
-    .node:active { transform: scale(0.98); }
-    .cyan-bubble{    color:#00eaff; }
-    .blue-bubble{    color:#27a0ff; }
-    .magenta-bubble{ color:#ff4af0; }
-    .red-bubble     { color: rgba(255, 59, 59, 0.25); filter: brightness(0.7) blur(2px); }
-    .orange-bubble  { color: rgba(255, 157, 46, 0.2); filter: brightness(0.6) blur(3px); }
-    .yellow-bubble  { color: rgba(255, 228, 74, 0.18); filter: brightness(0.5) blur(4px); }
-    .pink-bubble    { color: rgba(255, 107, 216, 0.15); filter: brightness(0.5) blur(5px); }
-    .console-line { margin:2px 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size:12px; color:#d6d8ff; }
+    .node:hover { transform: scale(1.08); filter: brightness(1.25); }
+    .node:active { transform: scale(0.95); }
+
+    /* Unified single neon palette (dark cyan glow) */
+    .cyan-bubble,
+    .blue-bubble,
+    .magenta-bubble,
+    .red-bubble,
+    .orange-bubble,
+    .yellow-bubble,
+    .pink-bubble {
+      color: #0ff;
+      filter: brightness(0.9);
+    }
+
+    .console-line { 
+      margin:2px 0; 
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; 
+      font-size:12px; 
+      color:#8ef7ff; 
+    }
   `;
   const style = document.createElement('style');
   style.setAttribute('data-percy-style','neon-bubbles');
