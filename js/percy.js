@@ -862,8 +862,9 @@ const Face = {
     this.mood = m;
     if (this.headMesh)
       this.headMesh.material.color.setHex(this.moods[m] || 0x00ffff);
-    for (const e of this.eyes)
-      e.material.emissive.setHex(this.moods[m] || 0x00ffff);
+    for (const eye of this.eyes) {
+      if (eye.material) eye.material.emissive.setHex(this.moods[m] || 0x00ffff);
+    }
   },
   pulse() {
     if (this.headMesh) this.pulseIntensity = 0.25;
@@ -1020,67 +1021,75 @@ function init3DHead() {
   renderer.setClearColor(0x000000, 0);
   container.appendChild(renderer.domElement);
 
-  // Base head
-  const headGeo = new THREE.SphereGeometry(1.1, 64, 64);
-  const headMat = new THREE.MeshStandardMaterial({
+  // --- Head Core ---
+  const headGeo = new THREE.SphereGeometry(1.0, 64, 64);
+  const headMat = new THREE.MeshPhysicalMaterial({
     color: 0x00ffff,
     emissive: 0x001122,
-    metalness: 0.75,
-    roughness: 0.25,
+    metalness: 0.8,
+    roughness: 0.2,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.05,
   });
   const head = new THREE.Mesh(headGeo, headMat);
   scene.add(head);
   Face.link3DHead(head);
 
-  // Eyes
-  const eyeGeo = new THREE.SphereGeometry(0.08, 16, 16);
-  const eyeMat = new THREE.MeshStandardMaterial({
-    color: 0xffffff,
-    emissive: 0x00ffff,
-    emissiveIntensity: 0.7,
+  // --- Eyes ---
+  const eyeGeo = new THREE.SphereGeometry(0.09, 24, 24);
+  const eyeWhite = new THREE.MeshStandardMaterial({ color: 0xffffff });
+  const pupilMat = new THREE.MeshStandardMaterial({
+    color: 0x000000,
+    emissive: 0x000000,
   });
-  const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-  const eyeR = new THREE.Mesh(eyeGeo.clone(), eyeMat.clone());
-  eyeL.position.set(-0.35, 0.2, 1.0);
-  eyeR.position.set(0.35, 0.2, 1.0);
-  scene.add(eyeL, eyeR);
-  Face.eyes = [eyeL, eyeR];
 
-  // Simple jaw
-  const jawGeo = new THREE.TorusGeometry(0.3, 0.02, 8, 32, Math.PI);
-  const jawMat = new THREE.MeshStandardMaterial({
+  function createEye(x) {
+    const group = new THREE.Group();
+    const eyeball = new THREE.Mesh(eyeGeo, eyeWhite);
+    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.04, 12, 12), pupilMat);
+    pupil.position.z = 0.09;
+    group.add(eyeball, pupil);
+    group.position.set(x, 0.2, 0.9);
+    scene.add(group);
+    return group;
+  }
+  Face.eyes = [createEye(-0.35), createEye(0.35)];
+
+  // --- Mouth / Jaw ---
+  const mouthGeo = new THREE.TorusGeometry(0.25, 0.04, 12, 32, Math.PI);
+  const mouthMat = new THREE.MeshStandardMaterial({
     color: 0xff66cc,
-    emissive: 0x220033,
-    metalness: 0.8,
-    roughness: 0.3,
+    emissive: 0x330033,
+    metalness: 0.9,
+    roughness: 0.2,
   });
-  const jaw = new THREE.Mesh(jawGeo, jawMat);
-  jaw.position.set(0, -0.45, 0.85);
-  jaw.rotation.x = -0.15;
-  scene.add(jaw);
-  Face.jaw = jaw;
+  const mouth = new THREE.Mesh(mouthGeo, mouthMat);
+  mouth.position.set(0, -0.4, 0.9);
+  mouth.rotation.x = -0.4;
+  scene.add(mouth);
+  Face.jaw = mouth;
 
-  // Wire overlay
+  // --- Subtle Neon Wire Overlay ---
   const wire = new THREE.Mesh(
-    new THREE.SphereGeometry(1.12, 16, 16),
+    new THREE.SphereGeometry(1.12, 24, 24),
     new THREE.MeshBasicMaterial({
-      color: 0xffffff,
+      color: 0x00ffff,
       wireframe: true,
       transparent: true,
-      opacity: 0.1,
+      opacity: 0.08,
     })
   );
   scene.add(wire);
 
-  // Lighting
-  const light1 = new THREE.PointLight(0x00ffff, 1.2, 10);
+  // --- Lighting ---
+  const light1 = new THREE.PointLight(0x00ffff, 1.4, 10);
   light1.position.set(2, 2, 3);
-  const light2 = new THREE.PointLight(0xff00ff, 0.8, 10);
+  const light2 = new THREE.PointLight(0xff00ff, 1.0, 10);
   light2.position.set(-2, -2, 3);
-  const ambient = new THREE.AmbientLight(0x222222, 0.8);
+  const ambient = new THREE.AmbientLight(0x111111, 0.9);
   scene.add(light1, light2, ambient);
 
-  // Animation loop
+  // --- Animation ---
   const animate = () => {
     requestAnimationFrame(animate);
     head.rotation.y += 0.004;
@@ -1110,8 +1119,6 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 console.log("✅ [Part B] ASI-Cognitive Core + Neon AI Face Active (AutoLoad Ready).");
-
-})();
 
 /* === Percy.js (Part C — Extended + Autonomous Thought Integration) === */
 if (typeof PercyState !== 'undefined') {
