@@ -1,120 +1,246 @@
-/* === Percy Phase 8.3.3-AIHead CSS (Futuristic Neon Core Edition) === */
+/* === Percy Phase 8.3.3 CSS (Futuristic Neon Glow Edition - Corrected) === */
 
 body {
     margin: 0;
-    font-family: "Orbitron", Arial, sans-serif;
-    background: radial-gradient(circle at 50% 40%, #0d0d16 0%, #000 100%);
+    font-family: Arial, sans-serif;
+    background: #0a0a0f;
     color: white;
     overflow: hidden;
 }
 
-/* === AI Head (Dynamic Avatar Zone) === */
-#ai-head {
+/* === Logic Map & Nodes Container === */
+#logic-map {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: visible; /* allows bubbles to float outside nodes */
+}
+
+#logic-nodes {
     position: absolute;
-    top: 48%;
+    top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
-    width: 320px;
-    height: 320px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 50% 40%, #141422, #090911 80%);
-    box-shadow: 0 0 40px #0ff, inset 0 0 60px rgba(255, 0, 255, 0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 900;
-    transition: all 0.6s ease;
+    width: 100%;
+    height: 100%;
+    transform: translate(-50%, -50%) scale(1);
+    transform-origin: center center;
+    transition: transform 0.2s ease-out;
+    will-change: transform;
+    display: block;
 }
 
-#ai-head.mood-calm    { box-shadow: 0 0 50px #00ffff, inset 0 0 70px #00ffff; }
-#ai-head.mood-thinking { box-shadow: 0 0 50px #a020f0, inset 0 0 70px #a020f0; }
-#ai-head.mood-alert   { box-shadow: 0 0 50px #ff2a2a, inset 0 0 70px #ff2a2a; }
-#ai-head.mood-happy   { box-shadow: 0 0 50px #ffd700, inset 0 0 70px #ffd700; }
-
-#ai-face {
-    width: 85%;
-    height: 85%;
+/* === Node Styles (Neon Glow Bubbles) === */
+.node {
+    position: absolute;
     border-radius: 50%;
-    background: radial-gradient(circle at 50% 45%, #222 0%, #111 100%);
     display: flex;
-    align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
-    text-shadow: 0 0 8px #0ff;
-}
-
-/* === Ask Percy Chat Box === */
-#percy-chat-box {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 400px;
-    background: rgba(0, 0, 0, 0.75);
-    border-radius: 10px;
-    box-shadow: 0 0 15px #00ffff, 0 0 30px #ff00ff;
-    z-index: 1100;
-    color: #fff;
+    align-items: center;
+    text-align: center;
+    cursor: pointer;
+    font-weight: 500;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, z-index 0.2s ease, left 0.25s ease, top 0.25s ease;
+    white-space: nowrap;
     overflow: hidden;
-    backdrop-filter: blur(6px);
+    padding: 4px 6px;
+    min-width: 14px;
+    min-height: 14px;
+    max-width: 80px;
+    max-height: 80px;
+    z-index: 1;
+    font-size: unset; /* controlled dynamically by JS */
+    user-select: none;
+    color: white;
+    background: rgba(0,0,0,0.15);
+    border: 2px solid currentColor;
+    box-shadow: 0 0 12px currentColor, 0 0 24px currentColor, 0 0 36px currentColor;
 }
 
-/* === Console (Sandbox Output) === */
-#percy-console {
-    position: fixed;
-    bottom: 140px;
+/* Node Hover Effects */
+.node:hover {
+    transform: scale(1.35);
+    box-shadow: 0 0 24px currentColor, 0 0 48px currentColor, 0 0 72px currentColor;
+    z-index: 100;
+}
+
+/* Neon Ring Colors */
+.blue-ring      { color: #4A90E2; }
+.purple-ring    { color: #CDA4FF; }
+.red-ring       { color: #FF6B6B; }
+.crimson-ring   { color: #DC143C; }
+.gold-ring      { color: #FFD700; }
+.neon-pink-ring { color: #FF6EC7; }
+.teal-ring      { color: #1DE9B6; }
+
+/* Tooltip via title attribute */
+.node::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 125%;
     left: 50%;
     transform: translateX(-50%);
-    width: 420px;
-    max-height: 150px;
-    background: rgba(20, 20, 20, 0.9);
-    overflow-y: auto;
-    font-size: 0.8rem;
-    padding: 6px 10px;
-    box-shadow: 0 0 10px #0ff, 0 0 20px #f0f;
-    border-radius: 10px;
+    background: rgba(0,0,0,0.85);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    opacity: 0;
+    pointer-events: none;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-width: 220px;
+    transition: opacity 0.15s ease-in-out;
     z-index: 1000;
 }
+.node:hover::after { opacity: 1; }
 
-.console-line {
-    margin: 4px 0;
-    color: #9ef;
-    font-family: monospace;
+/* Locked / ULT Node Highlight */
+.node.locked {
+    border: 2px solid #FFD700;
+    box-shadow: 0 0 24px #FFD700, 0 0 48px #FFD700, 0 0 72px #FFD700;
 }
 
-/* === Status Message === */
+/* Zoom-Scaling Helpers */
+#logic-nodes.zoomed .node {
+    transition: transform 0.15s ease, font-size 0.15s ease;
+}
+
+/* === Console Styling === */
+#percy-console {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    max-height: 180px;
+    background: rgba(20,20,20,0.95);
+    overflow-y: auto;
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    box-shadow: 0 -3px 10px rgba(0,0,0,0.6);
+    z-index: 1000;
+}
+.console-line { margin: 2px 0; }
+
+/* Status Message */
 #percy-message {
     position: fixed;
     top: 10px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0,0,0,0.6);
     padding: 6px 12px;
     border-radius: 8px;
     font-size: 0.85rem;
-    z-index: 1200;
-    box-shadow: 0 0 10px #0ff;
+    z-index: 1000;
 }
 
-/* === Floating Bubbles (Background ambiance) === */
+/* === Floating Bubbles === */
 .bubble {
     position: absolute;
     border-radius: 50%;
-    opacity: 0.3;
+    opacity: 0.4;
     pointer-events: none;
+    z-index: 2;
     background: radial-gradient(circle at 30% 30%, #27a0ff, transparent);
     mix-blend-mode: screen;
-    z-index: 2;
-    animation: float 12s infinite ease-in-out;
 }
 
-@keyframes float {
-    0% { transform: translateY(0); opacity: 0.4; }
-    50% { transform: translateY(-40px); opacity: 0.7; }
-    100% { transform: translateY(0); opacity: 0.4; }
+/* === Voice Visualizer Bars === */
+#voice-visualizer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    padding: 6px;
+    background: rgba(13,13,21,0.9);
+    border-top: 1px solid #333;
+    z-index: 950;
 }
 
-/* === Hide Unused Elements === */
-#logic-map, #logic-nodes, #voice-visualizer, #percyCam, #puppeteer-control {
-    display: none !important;
+.bar {
+    width: 8px;
+    border-radius: 3px;
+    background: linear-gradient(to top, red, orange, yellow, lime, cyan);
+    filter: drop-shadow(0 0 6px #0ff) drop-shadow(0 0 12px #0ff);
+    animation: bounce 1s infinite ease-in-out;
+}
+@keyframes bounce {
+    0%, 100% { height: 15px; }
+    50% { height: 120px; }
+}
+
+/* === Voice Sinewave Canvas === */
+#voice-visualizer canvas {
+    flex: 1;
+    height: 90px;
+    display: block;
+    background: transparent;
+    filter: drop-shadow(0 0 8px #0ff) drop-shadow(0 0 16px magenta);
+}
+
+/* === PercyCam (Vision Feed) === */
+#percyCam {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 480px;
+    height: 360px;
+    border-radius: 16px;
+    border: 2px solid #00ffff;
+    box-shadow:
+        0 0 12px #00ffff,
+        0 0 24px #00ffff,
+        0 0 36px #ff00ff;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 1200;
+    object-fit: cover;
+    transition: all 0.3s ease-in-out;
+}
+#percyCam:hover {
+    transform: scale(1.05);
+    box-shadow:
+        0 0 18px #00ffff,
+        0 0 36px #00ffff,
+        0 0 54px #ff00ff;
+}
+#percyCam.fullscreen {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
+    z-index: 2000;
+}
+
+/* === Puppeteer Control Panel === */
+#puppeteer-control {
+    position: fixed;
+    bottom: 100px;
+    left: 45%;
+    transform: translateX(-45%);
+    width: 320px;
+    background: rgba(0, 0, 0, 0.75);
+    border-radius: 12px;
+    padding: 8px;
+    box-shadow: 0 0 12px #00ffff, 0 0 24px #ff00ff;
+    z-index: 1300;
+}
+
+/* === Talk to Percy Chat Box (Unified - fixed center-bottom next to Puppeteer) === */
+#percy-chat-box {
+    position: fixed;
+    bottom: 20px;
+    left: 55%;
+    transform: translateX(-45%);
+    width: 340px;
+    background: rgba(0, 0, 0, 0.75);
+    border-radius: 10px;
+    box-shadow: 0 0 12px #00ffff, 0 0 24px #ff00ff;
+    z-index: 1350; /* above Puppeteer (1300) */
+    color: #fff;
+    overflow: hidden;
+    backdrop-filter: blur(6px);
 }
