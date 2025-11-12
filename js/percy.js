@@ -286,32 +286,61 @@ const seedRange = { start: 80, end: 800 };
 (function injectBubbleStyles(){
   if(document.querySelector('style[data-percy-style="neon-bubbles"]')) return;
   const css = `
-    #logic-map { background:#0a0a0f; overflow:hidden; min-height:200px; min-width:300px; }
-    .node {
-      position:absolute; border-radius:50%;
-      display:flex; align-items:center; justify-content:center;
-      font-weight:700; color:#fff; cursor:pointer;
-      background: radial-gradient(100% 100% at 30% 30%, rgba(255,255,255,0.10), rgba(0,0,0,0.10));
-      border:2px solid currentColor;
-      box-shadow:
-        0 0 6px currentColor,
-        0 0 14px currentColor,
-        inset 0 0 12px rgba(255,255,255,0.08);
-      text-shadow: 0 1px 2px rgba(0,0,0,0.6);
-      user-select:none;
-      transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
-      backdrop-filter: blur(1px);
+    #logic-map { 
+      background:#050509; 
+      overflow:hidden; 
+      min-height:200px; 
+      min-width:300px; 
     }
-    .node:hover { transform: scale(1.08); filter: brightness(1.15); }
-    .node:active { transform: scale(0.98); }
-    .cyan-bubble{    color:#00eaff; }
-    .blue-bubble{    color:#27a0ff; }
-    .magenta-bubble{ color:#ff4af0; }
-    .red-bubble{     color:#ff3b3b; }
-    .orange-bubble{  color:#ff9d2e; }
-    .yellow-bubble{  color:#ffe44a; }
-    .pink-bubble{    color:#ff6bd8; }
-    .console-line { margin:2px 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size:12px; color:#d6d8ff; }
+
+    .node {
+      position:absolute; 
+      border-radius:50%;
+      display:flex; 
+      align-items:center; 
+      justify-content:center;
+      font-weight:600; 
+      color:#007b9e;
+      cursor:pointer;
+      background: radial-gradient(100% 100% at 40% 40%, rgba(0,123,158,0.05), rgba(0,0,0,0.08));
+      border:2px solid rgba(0,123,158,0.25);
+      box-shadow:
+        0 0 4px rgba(0,123,158,0.15),
+        0 0 8px rgba(0,123,158,0.10),
+        inset 0 0 10px rgba(255,255,255,0.02);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+      user-select:none;
+      transition: transform .25s ease, box-shadow .25s ease, filter .25s ease;
+      backdrop-filter: blur(1px);
+      animation: neon-breath 6s ease-in-out infinite;
+    }
+
+    @keyframes neon-breath {
+      0%, 100% { box-shadow: 0 0 4px rgba(0,123,158,0.10), inset 0 0 10px rgba(255,255,255,0.02); }
+      50% { box-shadow: 0 0 12px rgba(0,123,158,0.25), inset 0 0 14px rgba(255,255,255,0.03); }
+    }
+
+    .node:hover { transform: scale(1.08); filter: brightness(1.1); }
+    .node:active { transform: scale(0.95); }
+
+    /* All unified under one darker neon scheme */
+    .cyan-bubble,
+    .blue-bubble,
+    .magenta-bubble,
+    .red-bubble,
+    .orange-bubble,
+    .yellow-bubble,
+    .pink-bubble {
+      color:#007b9e;
+      filter: brightness(0.75);
+    }
+
+    .console-line { 
+      margin:2px 0; 
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; 
+      font-size:12px; 
+      color:#3aa6b9; 
+    }
   `;
   const style = document.createElement('style');
   style.setAttribute('data-percy-style','neon-bubbles');
