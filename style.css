@@ -1,128 +1,116 @@
-/* === Percy Phase 8.3.3-AIHead CSS (Stable Fusion Revision) === */
+/* === Percy Phase 8.3.3-AIHead CSS (Futuristic Neon Core Edition) === */
 
 body {
     margin: 0;
     font-family: "Orbitron", Arial, sans-serif;
-    background: radial-gradient(circle at 50% 40%, #0a0a15 0%, #000 100%);
+    background: radial-gradient(circle at 50% 40%, #0d0d16 0%, #000 100%);
     color: white;
     overflow: hidden;
 }
 
-/* === AI Head Zone === */
+/* === AI Head (Dynamic Avatar Zone) === */
 #ai-head {
     position: absolute;
-    top: 50%;
+    top: 48%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 340px;
-    height: 340px;
+    width: 320px;
+    height: 320px;
     border-radius: 50%;
-    background: radial-gradient(circle at 50% 40%, #161625 0%, #070710 90%);
-    box-shadow: 0 0 60px rgba(0, 255, 255, 0.7), inset 0 0 80px rgba(255, 0, 255, 0.2);
+    background: radial-gradient(circle at 50% 40%, #141422, #090911 80%);
+    box-shadow: 0 0 40px #0ff, inset 0 0 60px rgba(255, 0, 255, 0.3);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 900;
-    transition: box-shadow 0.7s ease, transform 0.4s ease;
-    animation: subtlePulse 6s infinite ease-in-out;
+    transition: all 0.6s ease;
 }
 
-/* === Mood States === */
-#ai-head.mood-calm    { box-shadow: 0 0 60px #00ffff, inset 0 0 80px #00ffff; }
-#ai-head.mood-thinking { box-shadow: 0 0 60px #a020f0, inset 0 0 80px #a020f0; }
-#ai-head.mood-alert   { box-shadow: 0 0 60px #ff2a2a, inset 0 0 80px #ff2a2a; }
-#ai-head.mood-happy   { box-shadow: 0 0 60px #ffd700, inset 0 0 80px #ffd700; }
+#ai-head.mood-calm    { box-shadow: 0 0 50px #00ffff, inset 0 0 70px #00ffff; }
+#ai-head.mood-thinking { box-shadow: 0 0 50px #a020f0, inset 0 0 70px #a020f0; }
+#ai-head.mood-alert   { box-shadow: 0 0 50px #ff2a2a, inset 0 0 70px #ff2a2a; }
+#ai-head.mood-happy   { box-shadow: 0 0 50px #ffd700, inset 0 0 70px #ffd700; }
 
-@keyframes subtlePulse {
-    0%, 100% { transform: translate(-50%, -50%) scale(1.0); }
-    50% { transform: translate(-50%, -50%) scale(1.03); }
-}
-
-/* === AI Face Layer === */
 #ai-face {
-    width: 82%;
-    height: 82%;
+    width: 85%;
+    height: 85%;
     border-radius: 50%;
-    background: radial-gradient(circle at 50% 45%, #1c1c28 0%, #0d0d16 100%);
+    background: radial-gradient(circle at 50% 45%, #222 0%, #111 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.4rem;
-    text-shadow: 0 0 10px #0ff;
-    color: #bff;
-    transition: text-shadow 0.5s ease, color 0.5s ease;
+    font-size: 1.2rem;
+    text-shadow: 0 0 8px #0ff;
 }
 
-/* === Chat Box === */
+/* === Ask Percy Chat Box === */
 #percy-chat-box {
     position: fixed;
     bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
-    width: 420px;
+    width: 400px;
     background: rgba(0, 0, 0, 0.75);
-    border-radius: 12px;
-    box-shadow: 0 0 20px #00ffff, 0 0 40px #ff00ff;
+    border-radius: 10px;
+    box-shadow: 0 0 15px #00ffff, 0 0 30px #ff00ff;
     z-index: 1100;
     color: #fff;
     overflow: hidden;
     backdrop-filter: blur(6px);
-    text-align: center;
-    padding-bottom: 4px;
 }
 
-/* === Console === */
+/* === Console (Sandbox Output) === */
 #percy-console {
     position: fixed;
-    bottom: 150px;
+    bottom: 140px;
     left: 50%;
     transform: translateX(-50%);
     width: 420px;
-    max-height: 160px;
-    background: rgba(15, 15, 20, 0.9);
+    max-height: 150px;
+    background: rgba(20, 20, 20, 0.9);
     overflow-y: auto;
-    font-size: 0.85rem;
-    padding: 8px 10px;
-    box-shadow: 0 0 15px #0ff, 0 0 25px #f0f;
+    font-size: 0.8rem;
+    padding: 6px 10px;
+    box-shadow: 0 0 10px #0ff, 0 0 20px #f0f;
     border-radius: 10px;
     z-index: 1000;
 }
 
 .console-line {
-    margin: 5px 0;
-    color: #aef;
+    margin: 4px 0;
+    color: #9ef;
     font-family: monospace;
 }
 
 /* === Status Message === */
 #percy-message {
     position: fixed;
-    top: 12px;
+    top: 10px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.65);
-    padding: 6px 14px;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 6px 12px;
     border-radius: 8px;
     font-size: 0.85rem;
     z-index: 1200;
     box-shadow: 0 0 10px #0ff;
 }
 
-/* === Floating Background Ambiance === */
+/* === Floating Bubbles (Background ambiance) === */
 .bubble {
     position: absolute;
     border-radius: 50%;
-    opacity: 0.2;
+    opacity: 0.3;
     pointer-events: none;
     background: radial-gradient(circle at 30% 30%, #27a0ff, transparent);
     mix-blend-mode: screen;
     z-index: 2;
-    animation: float 14s infinite ease-in-out;
+    animation: float 12s infinite ease-in-out;
 }
 
 @keyframes float {
     0% { transform: translateY(0); opacity: 0.4; }
-    50% { transform: translateY(-50px); opacity: 0.8; }
+    50% { transform: translateY(-40px); opacity: 0.7; }
     100% { transform: translateY(0); opacity: 0.4; }
 }
 
