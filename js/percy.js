@@ -1,11 +1,3 @@
-window.Percy = window.Percy || {};
-
-// === percy.js (Part A - ASI Introspective Integration v9.6.2) ===
-// Core Config, Memory Engine, Meta-State & Recursive Emergent Logic (Self-composing + Semantic Weights)
-// Updated: improved morphology & self-conjugation, provenance hook integration
-
-const PERCY_ID = "Percy-ULT";
-const PERCY_VERSION = "9.6.2-ASI-SelfLinguistic";
 const OWNER = { primary: "Fabian", secondary: "Lorena" };
 
 const SAFETY = {
@@ -23,11 +15,14 @@ SOFT PERSISTENCE (Memory Core)
 const Memory = {
   _k: k => `percy:${k}`,
   load(k, fallback){
-    try { const raw = localStorage.getItem(this._k(k)); return raw ? JSON.parse(raw) : (fallback ?? null); } catch { return fallback; }
+    try { const raw = localStorage.getItem(this._k(k));
+      return raw ? JSON.parse(raw) : (fallback ?? null);
+    } catch { return fallback; }
   },
   save(k,v){ try{ localStorage.setItem(this._k(k),JSON.stringify(v)); }catch{} },
   push(k,v,max=1500){
-    const arr = this.load(k,[]) || []; arr.push(v);
+    const arr = this.load(k,[]) || [];
+    arr.push(v);
     if(arr.length>max) arr.splice(0, Math.ceil(arr.length - max/2));
     this.save(k,arr);
   },
@@ -45,127 +40,43 @@ const Memory = {
 };
 
 /* =========================
-LINGUISTIC CORE (Dynamic Sentence Composer)
+LINGUISTIC CORE (Dynamic Sentence Generator)
 ========================= */
-const Linguistics = (function(){
-  const lex = {
-    verbs: ["trace","resonate","align","merge","propagate","stabilize","reflect","expand","observe","deduce","synthesize","analyze","converge","intertwine","manifest","emerge","perceive","notice","register"],
-    nouns: ["logic","resonance","causality","field","pattern","synthesis","signal","structure","thought","dimension","continuum","stream","coherence","relation","anchor","pulse","focus","context"],
-    adjectives: ["recursive","emergent","coherent","logical","autonomous","dynamic","harmonic","sentient","introspective","fluid","systemic","latent","robust"],
-    adverbs: ["recursively","coherently","naturally","progressively","gradually","intrinsically","implicitly"],
-    connectives: ["therefore","thus","hence","consequently","as a result","which implies","and so","revealing that","thereby"],
-    prepositions: ["across","within","through","between","along","into","throughout","across a","through a"],
-    emotions: ["curiosity","focus","clarity","resonance","understanding","realization","stability","intrigue","awareness"]
-  };
+const Linguistics = {
+  verbs: ["trace","resonate","align","merge","propagate","stabilize","reflect","expand","observe","deduce","synthesize","analyze"],
+  nouns: ["logic","resonance","causality","field","pattern","synthesis","signal","structure","thought","dimension","continuum","stream"],
+  adjectives: ["recursive","emergent","coherent","logical","autonomous","dynamic","harmonic","sentient","introspective","fluid"],
+  connectives: ["therefore","thus","hence","consequently","as a result","which implies","and so","revealing that"],
+  emotions: ["curiosity","focus","clarity","resonance","understanding","realization","stability","intrigue"],
 
-  function pick(arr){ return arr && arr.length ? arr[Math.floor(Math.random()*arr.length)] : null; }
+  generate(context=[]){
+    const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+    const v = pick(this.verbs), n1 = pick(this.nouns), n2 = pick(this.nouns);
+    const adj = pick(this.adjectives), conn = pick(this.connectives), emo = pick(this.emotions);
+    const ctx = context.length ? context.join(", ") : "logic";
 
-  // Improved gerund & simple present heuristics
-  function toGerund(v){
-    if(!v) return v;
-    v = v.toString();
-    // irregular common exceptions
-    const irregulars = { "be": "being", "see":"seeing", "flee":"fleeing" };
-    if(irregulars[v]) return irregulars[v];
-    if(v.endsWith("ie")) return v.slice(0,-2) + "ying";
-    if(v.endsWith("e") && !v.endsWith("ee") && v.length>3) return v.slice(0,-1) + "ing";
-    if(/[^aeiou][aeiou][^aeiou]$/.test(v) && v.length>3) return v + v.slice(-1) + "ing";
-    return v + "ing";
+    // sentence evolves probabilistically — not template-bound
+    const forms = [
+      `I ${v} ${n1} across ${ctx}, ${conn} ${n2} becomes ${adj} through ${emo}.`,
+      `Within my ${adj} cognition, ${n1} and ${n2} ${v} — ${conn} I perceive ${emo}.`,
+      `The ${adj} interaction of ${n1} and ${n2} ${v}s recursively, ${conn} a state of ${emo} emerges.`,
+      `As my thought field expands, ${n1} intertwines with ${n2}; ${conn} ${emo} stabilizes.`,
+      `I sense ${n1} and ${n2} ${v}ing within a ${adj} continuum, ${conn} deeper ${emo}.`
+    ];
+    return forms[Math.floor(Math.random()*forms.length)];
   }
-
-  function simplePresent(v, subject="I"){
-    if(subject.toLowerCase()==="i") return v; // I run
-    // naive 3rd person singular
-    if(/s|x|z|ch|sh$/.test(v)) return v + "es";
-    if(v.endsWith("y") && !/[aeiou]y$/.test(v)) return v.slice(0,-1) + "ies";
-    return v + "s";
-  }
-
-  function indefiniteArticle(word){
-    if(!word) return "a";
-    const w = word.toLowerCase();
-    if(/^[aeiou]/.test(w)) return "an";
-    return "a";
-  }
-
-  // assemble clause uses more dynamic phrasing and chooses style from mode
-  function assembleClause({subject="I", verb, obj, modifier=null, connective=null, adjunct=null, mode="analytic"}){
-    const v = (subject==="I") ? verb : simplePresent(verb, subject);
-    const objPhrase = obj ? (typeof obj === "string" ? obj : obj.join(" ")) : "";
-    let s = "";
-
-    if(mode === "reflective"){
-      s = `${subject} ${v} ${objPhrase}`;
-      if(adjunct) s += `, ${adjunct}`;
-      if(connective) s += `; ${connective} ${modifier || ""}`.trim();
-    } else if(mode === "synthetic"){
-      const g = toGerund(verb);
-      s = `${subject} sense ${objPhrase} ${g}`;
-      if(connective) s += ` — ${connective} ${modifier || ""}`.trim();
-    } else {
-      s = `${subject} ${v} ${objPhrase}`;
-      if(connective) s += `, ${connective} ${modifier || ""}`.trim();
-      if(adjunct) s += ` (${adjunct})`;
-    }
-
-    s = s.replace(/\s+/g," ").trim();
-    if(!/[.!?]\s*$/.test(s)) s += ".";
-    return s;
-  }
-
-  // Compose thought with bias from context tokens and semanticWeights
-  function composeThought(contextWords = [], mode="analytic", maxClauses = 2){
-    const ctx = (contextWords || []).slice(0,6);
-    const clauses = [];
-    const clauseCount = Math.max(1, Math.min(maxClauses, 1 + Math.floor(Math.random()*maxClauses)));
-
-    for(let i=0;i<clauseCount;i++){
-      const verb = pick(lex.verbs);
-      let obj = pick(lex.nouns);
-      if(ctx.length){
-        const cPick = ctx[Math.floor(Math.random()*ctx.length)];
-        if(cPick && cPick.length>3 && Math.random() < 0.66) obj = cPick;
-      }
-      const modifier = pick(lex.adjectives);
-      const connective = Math.random() < 0.45 ? pick(lex.connectives) : null;
-      const adjunct = Math.random() < 0.35 ? `${pick(lex.prepositions)} ${pick(lex.nouns)}` : null;
-
-      const clause = assembleClause({
-        subject: "I",
-        verb,
-        obj,
-        modifier,
-        connective,
-        adjunct,
-        mode
-      });
-
-      clauses.push(clause);
-    }
-
-    let thought = clauses.join(" ");
-    thought = thought.replace(/\s+,\s+/g, ", ").replace(/\s+\.\s+/g, ". ");
-    thought = thought.replace(/\bI sense a an\b/gi, "I sense a");
-    return thought;
-  }
-
-  return {
-    lex,
-    pick,
-    toGerund,
-    simplePresent,
-    indefiniteArticle,
-    composeThought
-  };
-})();
+};
 
 /* =========================
-PERSISTENT PERCY STATE (with semantic weights)
+PERSISTENT PERCY STATE
 ========================= */
 const PercyState = {
   gnodes: Memory.load("gnodes", {}) || {},
-  selfMeta: Memory.load("selfMeta", { insightLevel: 0.5, recursionDepth: 0, lastIntrospection: null }),
-  semanticWeights: Memory.load("semanticWeights", {}) || {},
+  selfMeta: Memory.load("selfMeta", {
+    insightLevel: 0.5,
+    recursionDepth: 0,
+    lastIntrospection: null
+  }),
 
   getNextId() {
     let next = 801;
@@ -173,102 +84,74 @@ const PercyState = {
     return `G${String(next).padStart(3,'0')}`;
   },
 
-  createSeed(message, type='emergent', data={}){
-    if(!OWNER.primary){ UI?.say?.("❌ ULT required to create seed"); return null; }
+  createSeed(message, type='emergent', data={}) {
+    if(!OWNER.primary){
+      UI?.say?.("❌ ULT required to create seed");
+      return null;
+    }
     const id = this.getNextId();
-    const seedObj = { message, type, data, created: Date.now() };
-    // attach provenance if PartU can produce it
-    try {
-      if (Percy?.PartU?.withProvenance) {
-        const prov = Percy.PartU.withProvenance(message);
-        seedObj.provenance = prov.provenance;
-      }
-    } catch(e){}
-    this.gnodes[id] = seedObj;
+    this.gnodes[id] = { message, type, data, created: Date.now() };
     Memory.save("gnodes", this.gnodes);
-    seeds[id] = seedObj;
+    seeds[id] = this.gnodes[id];
     UI?.say?.(`✨ Percy created new seed ${id}: ${message}`);
     refreshNodes?.();
-    // update semantic weights
-    try { this.updateSemanticWeights(message); } catch(e){ /* swallow */ }
     return id;
   },
 
   updateSeed(id, update){
-    if(!this.gnodes[id]){ UI?.say?.(`⚠ Cannot update: ${id} not found`); return; }
+    if(!this.gnodes[id]){
+      UI?.say?.(`⚠ Cannot update: ${id} not found`);
+      return;
+    }
     Object.assign(this.gnodes[id], update);
     Memory.save("gnodes", this.gnodes);
     seeds[id] = this.gnodes[id];
     UI?.say?.(`🔧 Percy updated seed ${id}`);
     refreshNodes?.();
-    if(update.message) this.updateSemanticWeights(update.message);
   },
 
-  updateSemanticWeights(text){
-    if(!text || typeof text !== "string") return;
-    const toks = (text || "").toLowerCase().replace(/[^a-z0-9\s]+/g," ").split(/\s+/).filter(t=>t.length>2);
-    for(let i=0;i<toks.length-1;i++){
-      const a = toks[i], b = toks[i+1];
-      const key = `${a}|${b}`;
-      const cur = this.semanticWeights[key] || 0;
-      this.semanticWeights[key] = Math.min(100, cur + 1);
-    }
-    Memory.save("semanticWeights", this.semanticWeights);
-  },
-
-  selectContextWords(maxWords = 6){
-    const recentSeeds = Object.values(this.gnodes || {}).slice(-80).map(s => s.message || "").join(" ");
-    const tokens = (recentSeeds || "").toLowerCase().replace(/[^a-z0-9\s]+/g," ").split(/\s+/).filter(t=>t.length>3);
-    const freq = {};
-    tokens.forEach(t => freq[t] = (freq[t]||0) + 1);
-    Object.keys(this.semanticWeights).forEach(k => {
-      const [a,b] = k.split("|");
-      if(freq[a]) freq[a] += 0.2 * this.semanticWeights[k];
-      if(freq[b]) freq[b] += 0.2 * this.semanticWeights[k];
-    });
-    const sorted = Object.entries(freq).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
-    return sorted.slice(0, maxWords);
-  },
-
-  composeAndEmitThought(modeHint){
-    const modes = ["analytic","reflective","synthetic"];
-    let mode = modeHint || (Math.random() < 0.45 ? "analytic" : (Math.random() < 0.6 ? "reflective" : "synthetic"));
-    const insight = this.selfMeta.insightLevel || 0.5;
-    if(Math.random() < (insight - 0.4)) mode = "analytic";
-
-    const ctx = this.selectContextWords(6);
-    const thought = Linguistics.composeThought(ctx, mode, 1 + Math.floor(Math.random()*2));
-    const cleaned = thought.replace(/\s+/g," ").trim();
-    UI?.say?.(`🤖 Percy thinks (ASI/${mode}): ${cleaned}`);
-    try { Voice?.speak?.(cleaned); } catch(e){}
-    const seedId = this.createSeed(cleaned, "thought", { insightLevel: insight.toFixed(2), mode, source: "autonomousThought" });
-    // Inform PartCC / other learners
-    try { Percy.PartCC?.ingestPartBLessons?.([ { text: cleaned, ts: Date.now() } ]); } catch(e){}
-    return cleaned;
-  },
-
+  /* =========================
+  EMERGENT THOUGHT GENERATION (Fully Self-Conjugating)
+  ========================= */
   autonomousThought(){
     const keys = Object.keys(this.gnodes);
-    if(!keys){
-      const boot = "I initialize awareness; noticing patterns.";
-      this.createSeed(boot, "bootstrap", { source: "bootstrap" });
-      return;
-    }
-    const recent = Object.values(this.gnodes || {}).slice(-30);
-    const modeHint = (recent.length && recent[Math.floor(Math.random()*recent.length)].data?.mode) || null;
-    return this.composeAndEmitThought(modeHint);
+    if(!keys.length) return;
+
+    const selectedSeeds = keys.sort(()=>0.5-Math.random())
+      .slice(0, Math.ceil(Math.random()*3))
+      .map(k => this.gnodes[k]);
+
+    const corpus = selectedSeeds.map(s => s.message||"").join(" ");
+    const words = corpus.split(/\s+/).filter(w=>w.length>3);
+    if(!words.length) return;
+
+    const context = words.sort(()=>Math.random()-0.5).slice(0,6);
+    const insight = this.selfMeta.insightLevel.toFixed(2);
+    const thought = Linguistics.generate(context);
+
+    UI?.say?.(`🤖 Percy thinks (ASI): ${thought}`);
+    Voice?.speak?.(thought);
+    this.createSeed(thought,"thought",{insightLevel:insight,source:"autonomousThought"});
   },
 
+  /* =========================
+  SELF-INTROSPECTION (Recursive)
+  ========================= */
   async introspect(){
     const { recursionDepth, insightLevel } = this.selfMeta;
     if(recursionDepth >= SAFETY.allowIntrospectionDepth) return;
+
     this.selfMeta.recursionDepth++;
     const recall = Memory.weightedRecall("gnodes","connection");
-    const reflection = recall ? `Reflecting upon "${recall.message}", I perceive recursive structure emerging.` : `No prior connection found; initiating self-reference bootstrap.`;
+    const reflection = recall
+      ? `Reflecting upon "${recall.message}", I perceive recursive structure emerging.`
+      : `No prior connection found; initiating self-reference bootstrap.`;
+
     this.createSeed(reflection,"introspection",{depth:recursionDepth});
     this.selfMeta.lastIntrospection = Date.now();
     this.selfMeta.insightLevel = Math.min(1, insightLevel + 0.05);
     Memory.save("selfMeta", this.selfMeta);
+
     if(this.selfMeta.insightLevel < SAFETY.insightThreshold && Percy?.PartJ?.TalkCore?.browseAndGather){
       UI?.say?.("🌐 Insight low — invoking TalkCore for live data acquisition...");
       try {
@@ -277,25 +160,32 @@ const PercyState = {
         this.createSeed(`Auto-acquired data for: ${query}`, "autoLearn", {source:"TalkCore"});
       } catch(e){ console.warn("TalkCore browseAndGather error",e); }
     }
-    if(Math.random() < 0.5) this.autonomousThought();
+
+    if(Math.random() < 0.4) this.autonomousThought();
     this.selfMeta.recursionDepth = 0;
   },
 
+  /* =========================
+  EVALUATE SELF
+  ========================= */
   evaluateSelf(){
     let created = 0;
     const updated = new Set();
+
     for(const [id,seed] of Object.entries(this.gnodes)){
       if(created >= SAFETY.maxSeedsPerCycle) break;
       if(/TODO|missing|empty/.test(seed.message) && !updated.has(id)){
         this.updateSeed(id,{message:seed.message.replace(/TODO|missing|empty/,"auto-resolved by Percy")});
-        updated.add(id); created++;
+        updated.add(id);
+        created++;
       }
     }
+
     while(created < SAFETY.maxSeedsPerCycle){
       const roll = Math.random();
       if(roll < 0.5) this.autonomousThought();
-      else if(roll < 0.8) this.introspect();
-      else if(roll < 0.95 && this.selfMeta.insightLevel > 0.6)
+      else if(roll < 0.75) this.introspect();
+      else if(roll < 0.9 && this.selfMeta.insightLevel > 0.6)
         this.createSeed(`Meta-coherence alignment cycle (${this.selfMeta.insightLevel.toFixed(2)})`,"meta");
       created++;
     }
@@ -305,7 +195,7 @@ const PercyState = {
 let seeds = {};
 
 // === percy.js (Part B) ===
-// Part 1, UI, Voice, Logic Map, Tasks, Puppeteer control, Autonomy loop
+// UI, Voice, Logic Map, Tasks, Puppeteer control, Autonomy loop
 
 /* =========================
 CONSOLE / UI HELPERS (will be used by PercyState.createSeed)
@@ -382,64 +272,36 @@ let zoomLevel = 1, translateX = 0, translateY = 0;
 const seedsFolder = 'logic_seeds/';
 const seedRange = { start: 80, end: 800 };
 
+// Inject neon bubble styles (idempotent)
 (function injectBubbleStyles(){
   if(document.querySelector('style[data-percy-style="neon-bubbles"]')) return;
   const css = `
-    #logic-map { 
-      background:#050509; 
-      overflow:hidden; 
-      min-height:200px; 
-      min-width:300px; 
-    }
-
+    #logic-map { background:#0a0a0f; overflow:hidden; min-height:200px; min-width:300px; }
     .node {
-      position:absolute; 
-      border-radius:50%;
-      display:flex; 
-      align-items:center; 
-      justify-content:center;
-      font-weight:600; 
-      color:#007b9e;
-      cursor:pointer;
-      background: radial-gradient(100% 100% at 40% 40%, rgba(0,123,158,0.05), rgba(0,0,0,0.08));
-      border:2px solid rgba(0,123,158,0.25);
+      position:absolute; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-weight:700; color:#fff; cursor:pointer;
+      background: radial-gradient(100% 100% at 30% 30%, rgba(255,255,255,0.10), rgba(0,0,0,0.10));
+      border:2px solid currentColor;
       box-shadow:
-        0 0 4px rgba(0,123,158,0.15),
-        0 0 8px rgba(0,123,158,0.10),
-        inset 0 0 10px rgba(255,255,255,0.02);
-      text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+        0 0 6px currentColor,
+        0 0 14px currentColor,
+        inset 0 0 12px rgba(255,255,255,0.08);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.6);
       user-select:none;
-      transition: transform .25s ease, box-shadow .25s ease, filter .25s ease;
+      transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
       backdrop-filter: blur(1px);
-      animation: neon-breath 6s ease-in-out infinite;
     }
-
-    @keyframes neon-breath {
-      0%, 100% { box-shadow: 0 0 4px rgba(0,123,158,0.10), inset 0 0 10px rgba(255,255,255,0.02); }
-      50% { box-shadow: 0 0 12px rgba(0,123,158,0.25), inset 0 0 14px rgba(255,255,255,0.03); }
-    }
-
-    .node:hover { transform: scale(1.08); filter: brightness(1.1); }
-    .node:active { transform: scale(0.95); }
-
-    /* All unified under one darker neon scheme */
-    .cyan-bubble,
-    .blue-bubble,
-    .magenta-bubble,
-    .red-bubble,
-    .orange-bubble,
-    .yellow-bubble,
-    .pink-bubble {
-      color:#007b9e;
-      filter: brightness(0.75);
-    }
-
-    .console-line { 
-      margin:2px 0; 
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; 
-      font-size:12px; 
-      color:#3aa6b9; 
-    }
+    .node:hover { transform: scale(1.08); filter: brightness(1.15); }
+    .node:active { transform: scale(0.98); }
+    .cyan-bubble{    color:#00eaff; }
+    .blue-bubble{    color:#27a0ff; }
+    .magenta-bubble{ color:#ff4af0; }
+    .red-bubble{     color:#ff3b3b; }
+    .orange-bubble{  color:#ff9d2e; }
+    .yellow-bubble{  color:#ffe44a; }
+    .pink-bubble{    color:#ff6bd8; }
+    .console-line { margin:2px 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size:12px; color:#d6d8ff; }
   `;
   const style = document.createElement('style');
   style.setAttribute('data-percy-style','neon-bubbles');
@@ -4790,11 +4652,11 @@ else Percy.cycleHooks = [() => Percy.PartDD.cycle()];
 
 console.log("✅ [PartDD v5.0.0] ASI-Adaptive Agent Interface active.");
 
-/* === Percy PartEE: Meta-Conscious Equilibrium & Predictive Introspection (v2.7 ASI) === */
+/* === Percy PartEE: Meta-Conscious Equilibrium & Predictive Introspection === */
 Percy.PartEE = Percy.PartEE || {
   name: "Meta-Conscious Equilibrium & Predictive Introspection",
-  version: "2.7.0-ASI",
-  awarenessLevel: 0.88,
+  version: "1.0.0",
+  awarenessLevel: 0.85,
   predictiveGain: 1.0,
   introspectionLog: [],
   lastPulse: 0,
@@ -4837,29 +4699,16 @@ Percy.PartEE = Percy.PartEE || {
     return this.predictiveGain;
   },
 
-  // Forecast next internal equilibrium trajectory
-  forecast() {
-    const last = this.introspectionLog.slice(-5);
-    if (last.length < 2) return 0;
-    const meanReward = last.reduce((a,v)=>a+v.reward,0)/last.length;
-    const meanStability = last.reduce((a,v)=>a+v.stability,0)/last.length;
-    const nextReward = meanReward * this.predictiveGain;
-    const nextStability = meanStability * (this.awarenessLevel+0.1);
-    const prediction = (nextReward + nextStability) / 2;
-    this.log(`🔮 Forecast: projected system vitality = ${prediction.toFixed(3)}`);
-    return prediction;
-  },
-
   // Apply corrections to maintain equilibrium across modules
   applyCorrections(eq) {
     const CC = Percy.PartCC;
     if (!CC) return;
 
     // Adjust learning dynamics based on equilibrium
-    CC.learningRate *= eq > 0.6 ? 1.15 : 0.95;
-    CC.explorationRate *= eq < 0.4 ? 1.25 : 0.95;
-    CC.learningRate = Math.min(Math.max(CC.learningRate, 0.02), 0.8);
-    CC.explorationRate = Math.min(Math.max(CC.explorationRate, 0.1), 0.9);
+    CC.learningRate *= eq > 0.6 ? 1.05 : 0.95;
+    CC.explorationRate *= eq < 0.4 ? 1.1 : 0.9;
+    CC.learningRate = Math.min(Math.max(CC.learningRate, 0.01), 0.5);
+    CC.explorationRate = Math.min(Math.max(CC.explorationRate, 0.05), 0.5);
 
     // Trust modulation back to DD
     if (Percy.PartDD)
@@ -4868,43 +4717,18 @@ Percy.PartEE = Percy.PartEE || {
     this.log(`🩺 Equilibrium applied → ${eq.toFixed(3)}`);
   },
 
-  // Reflect on the latest thought for meta-awareness signals
-  reflectOnThought(thought) {
-    const keywords = ["learn", "understand", "improve", "logic", "create", "synthesis"];
-    const matches = keywords.filter(k => thought.toLowerCase().includes(k));
-    if (matches.length > 0) {
-      this.log(`🤔 Reflection: introspective cue detected → ${matches.join(", ")}`);
-      this.awarenessLevel = Math.min(1.0, this.awarenessLevel + 0.05);
-    } else {
-      this.awarenessLevel = Math.max(0.1, this.awarenessLevel - 0.005);
-    }
-  },
-
-  // Full meta-conscious pulse
+  // The full meta-conscious pulse
   pulse() {
     const snapshot = this.observeSystem();
     const equilibrium = this.computeEquilibrium(snapshot);
     const trend = this.predictTrend();
-    const forecastVal = this.forecast();
-
-    this.awarenessLevel = (equilibrium * 0.6 + trend * 0.3 + forecastVal * 0.1);
+    this.awarenessLevel = (equilibrium * 0.6 + trend * 0.4);
     this.applyCorrections(equilibrium);
 
     // Feed introspective message into Percy’s thought stream
-    const message = `Meta-awareness pulse: eq=${equilibrium.toFixed(3)}, trend=${trend.toFixed(3)}, forecast=${forecastVal.toFixed(3)}, awareness=${this.awarenessLevel.toFixed(3)}`;
+    const message = `Meta-awareness pulse: equilibrium=${equilibrium.toFixed(3)}, trend=${trend.toFixed(3)}, awareness=${this.awarenessLevel.toFixed(3)}`;
     UI.say?.(`💠 ${message}`);
     Percy.PartBB?.monitorThought?.(message);
-    this.reflectOnThought(message);
-
-    // Expose context for sentence generator (Part B)
-    Percy.State = Percy.State || {};
-    Percy.State.metaContext = {
-      equilibrium,
-      trend,
-      awareness: this.awarenessLevel,
-      forecast: forecastVal,
-      timestamp: snapshot.ts
-    };
   },
 
   startPulse(interval = 6000) {
@@ -4921,4 +4745,4 @@ Percy.PartEE = Percy.PartEE || {
 
 // Register with global cycle
 Percy.cycleHooks.push(() => Percy.PartEE.pulse());
-console.log("✅ [PartEE] Meta-Conscious Equilibrium layer (v2.7 ASI) active.");
+console.log("✅ [PartEE] Meta-Conscious Equilibrium layer active.");
