@@ -806,493 +806,395 @@ Percy.hook = function(from, type, data) {
   }
 };
 
-// === percy.js (Part B, Part 2) ===
-// ASI Cognitive Core + Neon AI Face Integration (v8.3.4-AIHead-ESM-AutoReady)
-// Fixed EOF, canvas integration, voice robustness, and ASI-style upgrades.
+  /* === Percy Part B (Part 2): ASI Cognitive Core 6.0.0 (Neon Recursive Discourse Engine - Core-only upgrade) === */
+Percy.PartB = Percy.PartB || {};
+Percy.PartB.Core = (function(){
 
-(() => {
-  // Ensure Percy namespace exists
-  window.Percy = window.Percy || {};
-
-  /* =========================
-     UI HELPERS
-     ======================== */
-  const UI = {
-    elConsole: () => document.getElementById("percy-console") || null,
-    elMsg: () => document.getElementById("percy-message") || null,
-    say(txt) {
-      const box = this.elConsole();
-      if (!box) return;
-      const p = document.createElement("p");
-      p.className = "console-line";
-      p.textContent = txt;
-      box.appendChild(p);
-      box.scrollTop = box.scrollHeight;
-      const max = 150;
-      while (box.children.length > max) box.removeChild(box.firstChild);
-    },
-    setStatus(txt) {
-      const m = this.elMsg();
-      if (m) m.textContent = txt;
-    },
+  // ----- Config (upgraded) -----
+  const cfg = {
+    version: "6.0.0-ASI-Neon-RDE",
+    reasoningDepth: 12,        // how many recent inputs to consult
+    creativeDrive: 0.96,       // probability of full discourse over compact replies
+    coherenceBias: 0.86,       // favors coherent / analytic phrasing
+    maxClauses: 12,
+    maxSentences: 14,
+    maxRefineCycles: 6,
+    rdeThrottleMs: 700,       // faster cycle throttle
+    enableSelfDialogue: true,
+    speakOutput: true,
+    safetyMaxTokens: 3200,
+    semanticRecallLimit: 200, // how many tokens to consider when searching seeds
+    preferSelfComposition: 0.85 // probability to prefer PercyState.composeAndEmitThought when available
   };
 
-  /* =========================
-     SIMPLE SENTIMENT HEURISTIC (for mood mapping)
-     ======================== */
-  const sentimentScore = text => {
-    if (!text) return 0;
-    const pos = ["good","great","happy","success","win","positive","love","excellent","awesome","like"];
-    const neg = ["bad","sad","angry","fail","failure","negative","hate","terrible","awful","problem"];
-    const w = text.toLowerCase().replace(/[^a-z0-9\s]/g, "").split(/\s+/);
-    let score = 0;
-    for (const t of w) {
-      if (pos.includes(t)) score += 1;
-      if (neg.includes(t)) score -= 1;
-    }
-    // scale down for long text
-    return Math.max(-5, Math.min(5, score));
+  // ----- Persistent internal state -----
+  const state = {
+    memory: Memory.load("PartB:memory", []) || [],
+    patterns: Memory.load("PartB:patterns", []) || [],
+    discourseLog: Memory.load("PartB:discourse", []) || [],
+    logicMemorySnapshot: null,
+    lastRun: 0
   };
 
-  /* =========================
-     AI FACE (Mood + 3D Mesh Link)
-     ======================== */
-  const Face = {
-    headMesh: null,
-    eyes: [],
-    jaw: null,
-    moods: {
-      calm: 0x00ffff,
-      thinking: 0xa020f0,
-      alert: 0xff2a2a,
-      happy: 0xffd700,
-      analyzing: 0x27a0ff,
-      focused: 0xff9d2e,
-      excited: 0xff4af0,
-      sad: 0x406080,
-    },
-    mood: "calm",
-    pulseIntensity: 0,
-    moodCycle: ["calm", "thinking", "analyzing", "focused", "happy", "excited"],
-    link3DHead(mesh) {
-      this.headMesh = mesh;
-      this.setMood("calm");
-    },
-    setMood(m) {
-      if (!m) return;
-      this.mood = m;
-      const color = this.moods[m] || 0x00ffff;
-      try {
-        if (this.headMesh?.material && typeof this.headMesh.material.color?.setHex === "function") {
-          this.headMesh.material.color.setHex(color);
-        }
-        for (const eye of this.eyes) {
-          if (eye?.material && typeof eye.material.emissive?.setHex === "function") {
-            eye.material.emissive.setHex(color);
-          }
-        }
-      } catch (e) {
-        console.warn("Face.setMood error:", e?.message || e);
-      }
-    },
-    pulse(amount = 0.25) {
-      this.pulseIntensity = Math.max(this.pulseIntensity, amount);
-    },
-    speakSync(text) {
-      if (!this.jaw) return;
-      let i = 0;
-      const maxSteps = Math.max(20, Math.floor(text.length * 0.35));
-      const interval = setInterval(() => {
-        try {
-          const a = 0.04 * Math.sin(i * 2.8) + 0.01 * Math.sin(i * 0.6);
-          this.jaw.rotation.x = -0.15 + a;
-        } catch (e) {}
-        if (i++ > maxSteps) {
-          clearInterval(interval);
-          if (this.jaw) this.jaw.rotation.x = -0.15;
-        }
-      }, 48);
-    },
-    updateFrame() {
-      if (!this.headMesh) return;
-      if (this.pulseIntensity > 0) {
-        const s = 1 + this.pulseIntensity;
-        try {
-          this.headMesh.scale.set(s, s, s);
-        } catch (e) {}
-        this.pulseIntensity *= 0.88;
-        if (this.pulseIntensity < 0.01) {
-          try {
-            this.headMesh.scale.set(1, 1, 1);
-          } catch (e) {}
-          this.pulseIntensity = 0;
-        }
-      }
-    },
-  };
+  // ----- Utility functions -----
+  function now(){ return Date.now(); }
+  function clamp(n,a=0,b=1){ return Math.max(a, Math.min(b, n)); }
+  function pick(arr){ return arr && arr.length ? arr[Math.floor(Math.random()*arr.length)] : null; }
+  function tokenize(s){ return (s||"").toString().split(/\s+/).filter(Boolean); }
+  function short(s,n=300){ return (s||"").toString().slice(0,n); }
+  function saveState(){ Memory.save("PartB:patterns", state.patterns); Memory.save("PartB:discourse", state.discourseLog); Memory.save("PartB:memory", state.memory); }
 
-  /* =========================
-     VOICE SYSTEM (Linked to AI Head)
-     Robust voice init and selection
-     ======================== */
-  const Voice = {
-    enabled: true,
-    lastSpoken: 0,
-    voicesReady: false,
-    preferredLangRegex: /en/i,
-    voicesCache: [],
-    initVoices() {
-      if (!("speechSynthesis" in window)) return;
-      const loadVoices = () => {
-        try {
-          const v = speechSynthesis.getVoices() || [];
-          if (v.length > 0) {
-            this.voicesCache = v;
-            this.voicesReady = true;
-          } else {
-            // try again later
-            setTimeout(loadVoices, 200);
-          }
-        } catch (e) {
-          console.warn("Voice.initVoices err:", e?.message || e);
-        }
-      };
-      loadVoices();
-      // browsers that fire onvoiceschanged
-      try {
-        speechSynthesis.onvoiceschanged = loadVoices;
-      } catch (e) {}
-    },
-    chooseVoice() {
-      try {
-        if (!this.voicesReady) return undefined;
-        const vs = this.voicesCache;
-        // prefer language match, then known engine names
-        const langMatch = vs.find(v => this.preferredLangRegex.test(v.lang));
-        if (langMatch) return langMatch;
-        const namePref = vs.find(v => /Google|Microsoft|Samantha|Daniel|Alex/i.test(v.name));
-        if (namePref) return namePref;
-        return vs[0];
-      } catch (e) {
-        return undefined;
-      }
-    },
-    speak(text) {
-      try {
-        if (!this.enabled || !("speechSynthesis" in window) || !text) return;
-        const now = Date.now();
-        if (now - this.lastSpoken < 250) return;
-        this.lastSpoken = now;
-
-        const utt = new SpeechSynthesisUtterance(text);
-        const chosen = this.chooseVoice();
-        if (chosen) utt.voice = chosen;
-        utt.rate = 1;
-        utt.pitch = 1.05;
-        utt.volume = 1;
-
-        // map sentiment to mood and intensity
-        const s = sentimentScore(text);
-        if (s > 1) Face.setMood("happy");
-        else if (s < -1) Face.setMood("sad");
-        else Face.setMood(Face.moodCycle[Math.floor(Math.random() * Face.moodCycle.length)]);
-        Face.pulse(Math.min(0.5, 0.15 + Math.abs(s) * 0.05));
-        Face.speakSync(text);
-
-        utt.onend = () => {
-          Face.setMood("calm");
-        };
-
-        speechSynthesis.speak(utt);
-      } catch (e) {
-        console.warn("Voice.speak error:", e?.message || e);
-      }
-    },
-  };
-  Voice.initVoices();
-
-  /* =========================
-     CORE LOGIC (Recursive-Evolution + Self Modulation)
-     - deeper cycles when input is complex
-     - selfModulate adjusts creativeDrive over time
-     ======================== */
-  Percy.PartB = (() => {
-    const cfg = {
-      version: "8.3.4-AIHead-ASI",
-      reasoningDepth: 8,
-      creativeDrive: 0.9,
-      coherenceBias: 0.84,
-      maxRefineCycles: 6,
-      enableSelfDialogue: true,
-      speakOutput: true,
-      safetyMaxTokens: 2200,
-      preferSelfComposition: true,
-      memoryDecayMs: 1000 * 60 * 60 * 2, // 2 hours default decay
-    };
-
-    const state = {
-      discourseLog: [],
-      memoryCache: {},
-      lastThought: null,
-      performance: { avgTimeMs: 0, runs: 0 },
-      adaptive: { creativeDrive: cfg.creativeDrive },
-    };
-
-    const polish = t => (t || "").replace(/\s+/g, " ").trim();
-    const pick = a => a[Math.floor(Math.random() * a.length)];
-
-    // small utility for time measurement
-    const now = () => (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
-
-    // self modulation: tune creativeDrive slightly based on recent outputs (simple)
-    const selfModulate = () => {
-      const recent = state.discourseLog.slice(-6).map(d => d.output?.length || 0);
-      const avgLen = recent.length ? recent.reduce((s, n) => s + n, 0) / recent.length : 0;
-      // longer outputs -> slightly reduce creativeDrive to favor coherence
-      if (avgLen > 200) state.adaptive.creativeDrive = Math.max(0.3, state.adaptive.creativeDrive - 0.02);
-      else state.adaptive.creativeDrive = Math.min(0.98, state.adaptive.creativeDrive + 0.01);
-    };
-
-    const Self = {
-      cfg,
-      state,
-      // Adaptive simple analyzer to pick mood based on input content
-      analyzeMoodFromInput(text) {
-        const s = sentimentScore(text);
-        if (s > 2) return "excited";
-        if (s > 0) return "happy";
-        if (s < -2) return "alert";
-        if (s < 0) return "thinking";
-        return "focused";
-      },
-      async think(input, ctx = {}) {
-        if (!input) return "";
-        const t0 = now();
-        let output = "";
-        try {
-          // occasional self modulation
-          selfModulate();
-
-          // pick cycles based on input complexity (words)
-          const words = (input || "").trim().split(/\s+/).length;
-          const cycles = Math.min(cfg.maxRefineCycles, Math.max(1, Math.floor(words / 12)));
-
-          // probabilistic choice to go deep or short
-          const creativeRoll = Math.random();
-          const creativeThreshold = state.adaptive.creativeDrive || cfg.creativeDrive;
-
-          if (creativeRoll < creativeThreshold) {
-            output = await this._runCycle(input, ctx, cycles);
-          } else {
-            output = this.simpleReply(input);
-          }
-        } catch (e) {
-          output = "Error in reasoning: " + (e?.message || e);
-        }
-
-        // finalize
-        output = polish(output).slice(0, cfg.safetyMaxTokens);
-        state.discourseLog.push({ ts: Date.now(), input, output });
-        if (state.discourseLog.length > 2000) state.discourseLog.shift();
-
-        // record performance
-        const dur = now() - t0;
-        state.performance.runs++;
-        state.performance.avgTimeMs = ((state.performance.avgTimeMs * (state.performance.runs - 1)) + dur) / state.performance.runs;
-
-        // UI + voice
-        try { UI.say(`🤖 ${output}`); } catch (e) {}
-        if (cfg.speakOutput) Voice.speak(output);
-
-        // map input -> mood and set face
-        try {
-          const mood = this.analyzeMoodFromInput(input);
-          Face.setMood(mood);
-        } catch (e) {}
-
-        // schedule memory decay (lightweight)
-        setTimeout(() => {
-          const cutoff = Date.now() - cfg.memoryDecayMs;
-          state.discourseLog = state.discourseLog.filter(d => d.ts >= cutoff);
-        }, 1000);
-
-        return output;
-      },
-      simpleReply(i) {
-        return pick([
-          `Analyzing: ${i}`,
-          `Processing data…`,
-          `Understood: ${i}`,
-          `Considering ${i}`,
-          `Correlation detected.`,
-          `Evaluating causal links.`,
-          `Neural cross-mapping: ${i}`,
-          `Synthesizing patterns.`,
-        ]);
-      },
-      async _runCycle(i, ctx = {}, cycles = cfg.maxRefineCycles) {
-        // more structured refinement: seed -> expand -> prune -> consolidate
-        let seed = `Considering ${i}. `;
-        const elements = [];
-        for (let r = 0; r < cycles; r++) {
-          // generate candidate statements
-          const a = `concept_${Math.floor(Math.random() * 999)}`;
-          const b = `link_${Math.floor(Math.random() * 999)}`;
-          const stmt = `I deduce ${a} may influence ${b}.`;
-          elements.push(stmt);
-          // small internal "self-dialogue" occasionally
-          if (cfg.enableSelfDialogue && Math.random() < 0.25) {
-            elements.push(`Self-check: ${a} ↔ ${b} plausibility moderate.`);
-          }
-        }
-        // prune: remove unlikely duplicates
-        const unique = [...new Set(elements)];
-        // consolidate
-        seed += unique.join(" ");
-        // final pass: attempt short abstract
-        seed += " In summary, probable causal clusters detected; further probing recommended.";
-        return seed;
-      },
-    };
-
-    return Self;
-  })();
-
-  /* =========================
-     3D AI FACE INITIALIZATION
-     Integrated with existing canvas if present; fallback to container if not.
-     ======================== */
-  let THREE_SCENE = null, THREE_CAMERA = null, THREE_RENDERER = null;
-
-  function init3DHead() {
-    if (!window.THREE) {
-      console.warn("THREE not ready yet.");
-      return;
-    }
-
-    // Prefer existing canvas if present
-    const canvas = document.getElementById("ai-head-canvas");
-    let renderer;
-    let usesCanvas = false;
-
-    if (canvas instanceof HTMLCanvasElement) {
-      try {
-        renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
-        // match CSS size if present
-        const rect = canvas.getBoundingClientRect();
-        const w = rect.width || canvas.clientWidth || 540;
-        const h = rect.height || canvas.clientHeight || 540;
-        renderer.setSize(w, h, false);
-        usesCanvas = true;
-      } catch (e) {
-        console.warn("Failed to create renderer with canvas; falling back to container:", e?.message || e);
-        renderer = null;
-      }
-    }
-
-    // fallback: create a container and renderer if canvas not usable
-    let container = null;
-    if (!renderer) {
-      container = document.createElement("div");
-      container.id = "three-head-container";
-      Object.assign(container.style, {
-        position: "absolute",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%,-50%)",
-        width: "420px",
-        height: "420px",
-        zIndex: "50",
-        pointerEvents: "none",
-      });
-      document.body.appendChild(container);
-      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-      renderer.setSize(420, 420);
-      renderer.setClearColor(0x000000, 0);
-      container.appendChild(renderer.domElement);
-    }
-
-    // Scene & camera
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, (renderer.domElement.width / renderer.domElement.height) || 1, 0.1, 1000);
-    camera.position.z = 3.2;
-
-    THREE_SCENE = scene;
-    THREE_CAMERA = camera;
-    THREE_RENDERER = renderer;
-
-    // Head geometry (Icosa-like for visual interest)
-    const geo = new THREE.IcosahedronGeometry(1.0, 2);
-    const mat = new THREE.MeshPhysicalMaterial({
-      color: 0x00ffff,
-      emissive: 0x001122,
-      emissiveIntensity: 0.9,
-      metalness: 0.7,
-      roughness: 0.2,
-      clearcoat: 0.6,
-    });
-    const head = new THREE.Mesh(geo, mat);
-    scene.add(head);
-    Face.link3DHead(head);
-
-    // Wire overlay
-    const wire = new THREE.LineSegments(
-      new THREE.WireframeGeometry(geo),
-      new THREE.LineBasicMaterial({ color: 0xff00ff, transparent: true, opacity: 0.28 })
-    );
-    head.add(wire);
-
-    // Jaw (torus) - attached to head
-    const mouthGeo = new THREE.TorusGeometry(0.28, 0.04, 12, 32, Math.PI);
-    const mouthMat = new THREE.MeshStandardMaterial({ color: 0xff66cc, emissive: 0x220022, metalness: 0.9, roughness: 0.25 });
-    const mouth = new THREE.Mesh(mouthGeo, mouthMat);
-    mouth.position.set(0, -0.42, 0.9);
-    mouth.rotation.x = -0.45;
-    scene.add(mouth);
-    Face.jaw = mouth;
-
-    // small particle cloud
-    const particleGeo = new THREE.BufferGeometry();
-    const positions = new Float32Array(600 * 3);
-    for (let i = 0; i < 600; i++) {
-      const r = 1.8 + Math.random() * 1.2;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos((Math.random() * 2) - 1);
-      positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-      positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-      positions[i * 3 + 2] = r * Math.cos(phi);
-    }
-    particleGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    const particleMat = new THREE.PointsMaterial({ size: 0.02, transparent: true, opacity: 0.7, depthWrite: false, color: 0x00ffff });
-    const particleSystem = new THREE.Points(particleGeo, particleMat);
-    scene.add(particleSystem);
-
-    // Lighting
-    const light1 = new THREE.PointLight(0x00ffff, 1.2, 10);
-    light1.position.set(2, 2, 3);
-    const light2 = new THREE.PointLight(0xff00ff, 0.9, 10);
-    light2.position.set(-2, -2, 3);
-    const ambient = new THREE.AmbientLight(0x111111, 1.0);
-    scene.add(light1, light2, ambient);
-
-    // Animation loop
-    const animate = () => {
-      try {
-        requestAnimationFrame(animate);
-        head.rotation.y += 0.0035;
-        head.rotation.x += Math.sin(Date.now() / 60000) * 0.0002;
-        wire.rotation.y -= 0.0016;
-        particleSystem.rotation.y += 0.0009;
-        Face.updateFrame();
-        renderer.render(scene, camera);
-      } catch (e) {
-        console.warn("3D animation error:", e?.message || e);
-      }
-    };
-    animate();
-
-    console.log("🧠 Neon AI Face initialized (THREE.js scene active). Uses canvas?", usesCanvas);
+  // Lightweight semantic summarizer for a set of seeds / memory (returns array of tokens)
+  function semanticSummary(text, maxTokens = 40){
+    if(!text) return [];
+    const cleaned = (text||"").toLowerCase().replace(/[^a-z0-9\s]+/g," ");
+    const toks = cleaned.split(/\s+/).filter(t => t.length>3);
+    const freq = {};
+    toks.forEach(t=> freq[t] = (freq[t]||0)+1);
+    return Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,maxTokens).map(x=>x[0]);
   }
+
+  // Build a prioritized association list of seeds matching tokens
+  function findAssociations(tokens, cap=120){
+    const uniq = [...new Set(tokens)].slice(0, cfg.semanticRecallLimit);
+    const found = [];
+    for(const [id, data] of Object.entries(PercyState.gnodes || {})){
+      const msg = (data.message||"").toLowerCase();
+      for(const t of uniq){
+        if(msg.includes(t)){
+          found.push({ id, msg: short(msg,400), type: data.type || "seed" });
+          break;
+        }
+      }
+      if(found.length >= cap) break;
+    }
+    // enrich with remembered stylistic patterns
+    for(const p of state.patterns.slice().reverse()){
+      if(found.length > cap) break;
+      if(p.sentence && uniq.some(u => p.sentence.toLowerCase().includes(u))) found.push({ id:`PATT:${p.ts||0}`, msg: short(p.sentence,300) });
+    }
+    return found;
+  }
+
+  // Pick a semantic token / word for subject/object use
+  function pickSemanticWord(associations){
+    const a = pick(associations);
+    if(!a) return null;
+    const words = a.msg.split(/\s+/).filter(w=>w.length>3);
+    return pick(words) || a.id;
+  }
+
+  // Merge short context string from memory + tokens + input
+  function makeContext(input, tokens){
+    const recent = state.memory.slice(-cfg.reasoningDepth).map(m=>m.text).join(" ");
+    const seedsText = Object.values(PercyState.gnodes || {}).slice(-120).map(s => s.message || "").join(" ");
+    return `${recent} ${input} ${tokens.join(" ")} ${seedsText}`.replace(/\s+/g," ").trim();
+  }
+
+  // Higher-level sentence refinement heuristics
+  function polishText(text){
+    if(!text) return text;
+    // simple cleanups to avoid doubling punctuation and awkward spaces
+    let t = text.replace(/\s+,\s+/g, ", ").replace(/\s+\.\s+/g, ". ").replace(/\s+;\s+/g, "; ");
+    t = t.replace(/\bI sense a an\b/gi, "I sense a");
+    // collapse repeated short repeated phrases
+    t = t.replace(/(\b[a-z]{3,}\b)(\s+\1)+/ig, "$1");
+    return t.trim();
+  }
+
+  // ----- Core object -----
+  const Self = {
+    cfg, state,
+
+    // Public: produce a reply (single sentence or multi-sentence discourse)
+    async correlateReply(input){
+      // throttle by time
+      if(now() - state.lastRun < cfg.rdeThrottleMs){
+        const fallback = this.simpleReply(input);
+        UI.say(`🧠 ASI (throttled): ${fallback}`);
+        if(cfg.speakOutput) Voice.speak(fallback);
+        return fallback;
+      }
+      state.lastRun = now();
+
+      // Log input
+      state.memory.push({ type: "input", text: short(input, 1200), ts: now() });
+      if(state.memory.length > 4000) state.memory.shift();
+
+      // Build tokenized context from PercyState weights + memory
+      const tokens = PercyState.selectContextWords(cfg.reasoningDepth) || [];
+      const seedContextText = makeContext(input, tokens);
+      const summaryTokens = semanticSummary(seedContextText, Math.max(40, cfg.reasoningDepth * 4));
+      const associations = findAssociations(summaryTokens, 160);
+
+      // Decide quick reply vs full discourse
+      const doDiscourse = (Math.random() < cfg.creativeDrive) || input.length > 120 || /explain|why|how|argue|defend|derive/i.test(input);
+
+      let output;
+      if(doDiscourse){
+        output = await this._runDiscourseCycle(input, seedContextText, associations);
+      } else {
+        output = this._compactReply(input, associations, seedContextText);
+      }
+
+      // Clamp output length (safety)
+      if(output.length > cfg.safetyMaxTokens) output = output.slice(0, cfg.safetyMaxTokens) + "…";
+
+      // Record discourse
+      const record = { input: short(input,400), output: short(output,1600), ts: now(), mode: doDiscourse ? "discourse" : "compact" };
+      state.discourseLog.push(record);
+      if(state.discourseLog.length > 1200) state.discourseLog.shift();
+      saveState();
+
+      // Attach provenance via PartU if available
+      let provWrapped = output;
+      try {
+        if(Percy.PartU && Percy.PartU.withProvenance){
+          provWrapped = Percy.PartU.withProvenance(output, []); // no explicit source ids here
+          // persist discourse seed with provenance info
+          const sid = PercyState.createSeed(provWrapped.text, "discourse", { provenance: provWrapped.provenance });
+          // feed to PartCC experience
+          Percy.PartCC?.ingestPartBLessons?.([{ text: provWrapped.text, seedId: sid, ts: Date.now() }]);
+        } else {
+          Percy.PartCC?.ingestPartBLessons?.([{ text: output, ts: Date.now() }]);
+        }
+      } catch(e){ console.warn("PartB->PartU/PartCC hook failed", e); }
+
+      UI.say(`🧠 ASI Thought: ${typeof provWrapped === "string" ? provWrapped : provWrapped.text}`);
+      if(cfg.speakOutput) Voice.speak(typeof provWrapped === "string" ? provWrapped : provWrapped.text);
+      return typeof provWrapped === "string" ? provWrapped : provWrapped.text;
+    },
+
+    // Fast compact synthesized reply
+    _compactReply(input, associations, context){
+      const subject = PercyState.selectContextWords(1)[0] || pickSemanticWord(associations) || "Percy";
+      const verb = pick(["notes","observes","infers","suggests","detects","registers"]);
+      const obj = this._pickSemantic(associations) || "a pattern";
+      const suffixes = ["from recent context.","in current representation.","based on available seeds."];
+      return `${subject} ${verb} ${obj} ${pick(suffixes)}`;
+    },
+
+    _pickSemantic(associations){
+      return pickSemanticWord(associations) || null;
+    },
+
+    // Main RDE: generate -> critique -> refine -> optionally self-dialogue
+    async _runDiscourseCycle(input, context, associations){
+      // Prefer PercyState composition if available (true self-conjugation)
+      let draft = "";
+      try {
+        if(PercyState && typeof PercyState.composeAndEmitThought === "function" && Math.random() < cfg.preferSelfComposition){
+          // PercyState.composeAndEmitThought will create a seed itself; capture return text if available
+          const composed = PercyState.composeAndEmitThought(); // returns emitted cleaned thought
+          if(typeof composed === "string" && composed.length > 12 && Math.random() < 0.92){
+            draft = composed;
+          } else {
+            // fallback into local generator
+            draft = this._generateDiscourse(input, context, associations);
+          }
+        } else {
+          draft = this._generateDiscourse(input, context, associations);
+        }
+      } catch(e){
+        draft = this._generateDiscourse(input, context, associations);
+      }
+
+      // iterative critique + revision cycles
+      for(let cycle=0; cycle<cfg.maxRefineCycles; cycle++){
+        const critique = this._critiqueDiscourse(draft, context, associations);
+        if(!critique || critique.trim().length < 8) break;
+        const revised = this._reviseDiscourse(draft, critique, associations);
+        if(this._semanticSimilarity(draft, revised) > 0.96) break;
+        draft = revised;
+      }
+
+      // optionally add a self-dialogue (Pro / Con) when input requests argumentation
+      if(cfg.enableSelfDialogue && /should|ought|must|better|versus|or|choose|prefer/i.test(input)){
+        const dialogue = this._selfDialogue(input, draft, associations);
+        draft = `${draft}\n\n${dialogue}`;
+      }
+
+      // Learn and store stylistic pattern
+      this._memorizePattern(draft, context);
+      try { PercyState.updateSemanticWeights(draft); } catch(e){ /* ignore */ }
+
+      // final polish
+      return polishText(draft);
+    },
+
+    // Generate multi-sentence discourse
+    _generateDiscourse(input, context, associations){
+      const nSent = Math.max(1, Math.min(cfg.maxSentences, 1 + Math.floor(Math.random()*cfg.maxSentences)));
+      const sentences = [];
+      const thesis = this._generateThesis(input, associations, context);
+      sentences.push(thesis);
+      for(let i=1;i<nSent;i++){
+        const clause = this._generateSupportingSentence(sentences, i, associations, context);
+        if(clause) sentences.push(clause);
+      }
+      const conclusion = this._generateConclusion(sentences, associations, context);
+      if(conclusion) sentences.push(conclusion);
+      return sentences.join(" ");
+    },
+
+    _generateThesis(input, associations, context){
+      const subjTokens = PercyState.selectContextWords(1) || [];
+      const subj = subjTokens[0] || this._pickSemantic(associations) || "Percy";
+      const verb = pick(["proposes","suggests","hypothesizes","observes","detects","posits"]);
+      const obj = this._pickSemantic(associations) || (input || "this topic");
+      const qualifier = (Math.random() < cfg.coherenceBias) ? "with notable coherence" : "with emergent association";
+      return `${subj} ${verb} ${obj} ${qualifier}.`;
+    },
+
+    _generateSupportingSentence(existing, depth, associations, context){
+      const types = ["evidence","link","implication","example","nuance","analogy"];
+      const t = pick(types);
+      switch(t){
+        case "evidence": return this._genEvidence(associations);
+        case "link": return this._genLink(existing, associations);
+        case "implication": return this._genImplication(associations);
+        case "example": return this._genExample(associations);
+        case "analogy": return this._genAnalogy(associations);
+        default: return this._genNuance(associations);
+      }
+    },
+
+    _genEvidence(associations){
+      if(!associations.length) return "Empirical traces are limited in the current memory.";
+      const a = pick(associations);
+      return `For instance, seed ${a.id} records: "${a.msg.split(" ").slice(0,18).join(" ")}."`;
+    },
+
+    _genLink(existing, associations){
+      const prev = existing[existing.length-1] || "";
+      const word = this._pickSemantic(associations) || "pattern";
+      return `Connecting to prior thought: "${short(prev,88)}", there emerges a relation to ${word}.`;
+    },
+
+    _genImplication(associations){
+      const word = this._pickSemantic(associations) || "this trend";
+      const connector = pick(["therefore","consequently","hence"]);
+      return `${connector.charAt(0).toUpperCase()+connector.slice(1)}, ${word} implies an adaptive shift in internal representation.`;
+    },
+
+    _genExample(associations){
+      if(!associations.length) return "Analogous cases are not present in memory.";
+      const a = pick(associations);
+      return `A comparable entry is ${a.id}, which describes ${a.msg.split(" ").slice(0,14).join(" ")}.`;
+    },
+
+    _genAnalogy(associations){
+      if(!associations.length) return "An analogy is not apparent.";
+      const a = pick(associations);
+      return `Analogously, ${a.msg.split(" ").slice(0,8).join(" ")} — similar structural echo observed.`;
+    },
+
+    _genNuance(associations){
+      return "A nuance to consider is that correlation does not always indicate direct causation; context remains critical.";
+    },
+
+    _generateConclusion(sentences, associations, context){
+      const synth = sentences.slice(-2).map(s=>s.split(" ").slice(0,6).join(" ")).join(" / ");
+      const confidence = Math.round(clamp(cfg.coherenceBias + Math.random()*0.22, 0, 1) * 100);
+      return `In summary — ${synth} — assessed confidence: ${confidence}%.`;
+    },
+
+    // Critique stage: return short critique string
+    _critiqueDiscourse(draft, context, associations){
+      const repeats = this._findRepetitions(draft);
+      if(repeats.length) return `The draft repeats ${repeats.slice(0,3).join(", ")}: consider tightening and providing clearer evidence.`;
+      // check for weak placeholders or generic phrases
+      if(/a pattern|this topic|current representation|empirical traces/i.test(draft) && draft.length < 200) return "Draft uses many generic placeholders — add specific seeds or evidence.";
+      if(draft.length < 120) return "Add more supporting detail or concrete examples.";
+      return ""; // no critique
+    },
+
+    _findRepetitions(text){
+      const w = tokenize(text).map(s=>s.toLowerCase());
+      const freq = {};
+      w.forEach(tok => { if(tok.length>3) freq[tok] = (freq[tok]||0)+1; });
+      return Object.entries(freq).filter(([k,v])=>v>2).map(([k])=>k);
+    },
+
+    _reviseDiscourse(draft, critique, associations){
+      let revised = draft;
+      // remove exact repeated sequences found
+      const reps = this._findRepetitions(draft);
+      reps.forEach(r => {
+        const re = new RegExp(`\\b(${r})(\\s+\\1)+\\b`,"ig");
+        revised = revised.replace(re, r);
+      });
+      // if critique asks for evidence, append generated example
+      if(/example|evidence|support/i.test(critique)){
+        revised += " " + this._genExample(this._extractAssociationsFromText(revised));
+      }
+      // try to replace generic placeholders with picked semantic tokens
+      revised = revised.replace(/\bthis topic\b/gi, this._pickSemantic(associations) || "this topic");
+      return polished(revised => polishText(revised))(revised); // double polish
+    },
+
+    // helper pulled for revamp; small wrapper to allow two-step polish
+    _extractAssociationsFromText(text){
+      const toks = semanticSummary(text, 60);
+      return findAssociations(toks, 80);
+    },
+
+    _semanticSimilarity(a,b){
+      if(!a||!b) return 0;
+      const sa = new Set(tokenize(a).slice(0,320).map(x=>x.toLowerCase()));
+      const sb = new Set(tokenize(b).slice(0,320).map(x=>x.toLowerCase()));
+      const inter = [...sa].filter(x=>sb.has(x)).length;
+      const denom = Math.max(sa.size, sb.size, 1);
+      return inter/denom;
+    },
+
+    _selfDialogue(input, draft, associations){
+      // Generate short pro / con stanzas using shorter discourses to contrast
+      const pro = this._generateDiscourse(input + " (pro)", draft, associations).split("\n").slice(0,2).join(" ");
+      const con = this._generateDiscourse(input + " (con)", draft, associations).split("\n").slice(0,2).join(" ");
+      return `— Self-Dialogue —\nPRO: ${polishText(pro)}\n\nCON: ${polishText(con)}`;
+    },
+
+    _memorizePattern(text, context){
+      const entry = { sentence: short(text, 1600), context: short(context,1200), ts: now() };
+      state.patterns.push(entry);
+      if(state.patterns.length > 1200) state.patterns.shift();
+      saveState();
+      // inform PartCC for meta-learning
+      try { Percy.PartCC?.ingestPartBLessons?.([entry]); } catch(e){ /* ignore */ }
+    },
+
+    introspect(){
+      return {
+        patterns: state.patterns.length,
+        discourses: state.discourseLog.length,
+        lastRun: state.lastRun,
+        cfgVersion: cfg.version
+      };
+    },
+
+    async requestDiscourse(prompt, opts = {}){
+      try { return await this.correlateReply(prompt); } catch(e){ return `⚠️ Discourse request failed: ${e.message}`; }
+    }
+  };
+
+  // save on unload
+  window.addEventListener("beforeunload", () => { saveState(); });
+
+  // small helper to apply polish function twice safely
+  function polished(fn){ return (txt) => { try { return fn(txt); } catch(e) { return txt; } }; }
+
+  return Self;
+})();
+
+// Bind global correlate
+Percy.correlateReply = Percy.PartB.Core.correlateReply.bind(Percy.PartB.Core);
+Percy.PartB.requestDiscourse = async (prompt) => Percy.PartB.Core.requestDiscourse(prompt);
+
+// integration notice for PartCC if it observes
+if (Percy.PartCC && Percy.PartCC.observe) Percy.PartCC.observe?.("link", "PartB_RDE_connected");
+
+console.log("✅ Percy PartB.Core v6.0.0 (Neon RDE) loaded — core-only upgrade applied.");
 
   /* =========================
      SAFE INIT (Waits for ESM load or explicit init)
