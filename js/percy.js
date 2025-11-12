@@ -1,3 +1,13 @@
+window.Percy = window.Percy || {};
+
+// === percy.js (Part A - ASI Introspective Integration v9.6.0) ===
+// Core Config, Memory Engine, Meta-State & Recursive Emergent Logic (Integrated with TalkCore+)
+
+/* =========================
+CONFIG & ULT AUTHORITY
+========================= */
+const PERCY_ID = "Percy-ULT";
+const PERCY_VERSION = "9.6.0-ASI-SelfLinguistic";
 const OWNER = { primary: "Fabian", secondary: "Lorena" };
 
 const SAFETY = {
