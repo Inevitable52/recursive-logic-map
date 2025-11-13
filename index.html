@@ -376,5 +376,75 @@ window.addEventListener('load', ()=>{ try{ Percy.PartZ.init(); }catch(e){ consol
   animate();
 })();
 </script>
+
+  <script>
+// =====================================
+// Percy Exec Button Handler (Math/Java/Tools)
+// =====================================
+(() => {
+  const runBtn = document.getElementById('percy-exec-run');
+  const input = document.getElementById('percy-exec-input');
+  const consoleEl = document.getElementById('percy-console');
+  const modeButtons = document.querySelectorAll('#exec-toggle button');
+  let currentMode = 'math';
+
+  // track mode switching
+  modeButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      modeButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentMode = btn.dataset.mode;
+      appendConsole(`⚙️ Mode switched to: ${currentMode}`, 'exec');
+    });
+  });
+
+  function appendConsole(text, cls){
+    const el = document.createElement('div');
+    el.className = 'console-line' + (cls ? ' ' + cls : '');
+    el.textContent = text;
+    consoleEl.appendChild(el);
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
+
+  // Safe math evaluator (already defined in Percy? but we ensure fallback)
+  function safeEvalMath(expr){
+    try {
+      if (!/^[0-9+\-*/().%^ ]+$/.test(expr)) throw new Error('Unsafe expression');
+      // eslint-disable-next-line no-new-func
+      const result = Function('"use strict";return (' + expr + ')')();
+      return result;
+    } catch (err){
+      throw new Error('Math error: ' + err.message);
+    }
+  }
+
+  runBtn.addEventListener('click', () => {
+    const code = input.value.trim();
+    if(!code) return;
+
+    appendConsole(`> ${code}`, 'ask');
+
+    try {
+      if(currentMode === 'math'){
+        const result = safeEvalMath(code);
+        appendConsole(`= ${result}`, 'exec');
+      }
+      else if(currentMode === 'java'){
+        appendConsole('☕ Simulated Java Mode: running...', 'exec');
+        // placeholder - real Java execution would require a backend
+        appendConsole(`Java logic placeholder: ${code}`, 'exec');
+      }
+      else if(currentMode === 'tools'){
+        appendConsole('🧰 Tools Mode Active', 'exec');
+        // you can add tool commands here (e.g., date, system info)
+        if(code.toLowerCase() === 'date') appendConsole(new Date().toString(), 'exec');
+        else appendConsole(`Tool command not recognized: ${code}`, 'exec');
+      }
+    } catch(err){
+      appendConsole('❌ ' + err.message, 'exec');
+    }
+  });
+})();
+</script>
 </body>
 </html>
