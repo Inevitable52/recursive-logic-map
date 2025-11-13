@@ -244,5 +244,137 @@ Percy.PartZ = (function(){
 // start everything
 window.addEventListener('load', ()=>{ try{ Percy.PartZ.init(); }catch(e){ console.error(e);} });
 </script>
+
+  <script>
+// ==============================
+// Self-contained AI Head
+// ==============================
+(function(){
+  const canvas = document.getElementById('ai-head');
+  const ctx = canvas.getContext('2d', { alpha:true });
+  let cw = canvas.clientWidth, ch = canvas.clientHeight;
+
+  // Resize for high-DPI
+  function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    cw = rect.width; ch = rect.height;
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  // helpers
+  function lerp(a,b,t){ return a + (b-a)*t; }
+  function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+
+  // breathing / awareness simulation
+  function getAwareness(){
+    return 0.35 + 0.15 * Math.sin(Date.now()/1200);
+  }
+
+  function drawHead(aw){
+    ctx.clearRect(0,0,cw,ch);
+    const cx = cw/2, cy = ch/2;
+    const size = Math.min(cw,ch)*0.86;
+    const radius = size*0.48;
+
+    const hue = Math.round(lerp(220,310,aw));
+    const sat = Math.round(60+aw*35);
+    const light = Math.round(45+aw*10);
+    const glowAlpha = 0.08+aw*0.28;
+
+    // halo
+    const g = ctx.createRadialGradient(cx,cy,radius*0.2,cx,cy,radius*1.2);
+    g.addColorStop(0, `hsla(${hue},${sat}%,${light}%,${0.25+aw*0.25})`);
+    g.addColorStop(0.6, `hsla(${hue},${sat}%,${light-10}%,${0.06+aw*0.10})`);
+    g.addColorStop(1, `rgba(0,0,0,0)`);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(cx,cy,radius*1.15,0,Math.PI*2);
+    ctx.fill();
+
+    // stylized head
+    ctx.save();
+    ctx.translate(cx,cy);
+    const sweep = Math.PI*0.9;
+    ctx.beginPath();
+    ctx.ellipse(0,0,radius*0.82,radius*1.05,0,-sweep/2,sweep/2,true);
+    ctx.closePath();
+    const fillG = ctx.createLinearGradient(-radius,-radius,radius,radius);
+    fillG.addColorStop(0, `hsla(${hue-30},${sat}%,${light-5}%,0.85)`);
+    fillG.addColorStop(1, `hsla(${hue+30},${sat}%,${light-15}%,0.6)`);
+    ctx.fillStyle = fillG;
+    ctx.globalCompositeOperation='lighter';
+    ctx.fill();
+    ctx.lineWidth = Math.max(2,radius*0.03);
+    ctx.strokeStyle = `hsla(${hue},${sat}%,${clamp(light+8,20,90)}%,0.95)`;
+    ctx.stroke();
+
+    // internal wires
+    ctx.lineWidth = Math.max(1,radius*0.008);
+    ctx.strokeStyle = `hsla(${hue},${sat}%,${clamp(light+4,20,90)}%,0.55)`;
+    ctx.beginPath();
+    ctx.moveTo(-radius*0.6,-radius*0.1);
+    ctx.bezierCurveTo(-radius*0.2,-radius*0.6,radius*0.3,-radius*0.6,radius*0.6,-radius*0.1);
+    ctx.moveTo(-radius*0.72,radius*0.25);
+    ctx.bezierCurveTo(-radius*0.2,radius*0.55,radius*0.2,radius*0.55,radius*0.72,radius*0.25);
+    ctx.stroke();
+
+    // eyes
+    const eyeW = radius*0.28, eyeH = radius*0.10*(0.8+aw*0.6);
+    const eyeY = -radius*0.12, eyeX = radius*0.34;
+    const eyeGlow = ctx.createLinearGradient(-eyeX-eyeW,eyeY-eyeH,eyeX+eyeW,eyeY+eyeH);
+    eyeGlow.addColorStop(0, `hsla(${hue-15},${sat}%,${light+10}%,${0.06+aw*0.12})`);
+    eyeGlow.addColorStop(1, `hsla(${hue+15},${sat}%,${light+2}%,${0.06+aw*0.12})`);
+    ctx.fillStyle = eyeGlow;
+    ctx.beginPath();
+    ctx.ellipse(-eyeX,eyeY,eyeW,eyeH,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(eyeX,eyeY,eyeW,eyeH,0,0,Math.PI*2);
+    ctx.fill();
+
+    // pupils
+    const pupilScale = 0.28+aw*0.42;
+    ctx.fillStyle=`hsl(${hue},${Math.min(100,sat+10)}%,${clamp(light+6,30,96)}%)`;
+    ctx.beginPath();
+    ctx.ellipse(-eyeX,eyeY,eyeW*pupilScale*0.5,eyeH*pupilScale,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(eyeX,eyeY,eyeW*pupilScale*0.5,eyeH*pupilScale,0,0,Math.PI*2);
+    ctx.fill();
+
+    // mouth
+    ctx.lineWidth = Math.max(1,radius*0.01);
+    ctx.strokeStyle = `hsla(${hue},${sat}%,${clamp(light-12,10,80)}%,0.6)`;
+    ctx.beginPath();
+    const mouthW = radius*0.36, mouthY = radius*0.36*(0.2+(1-aw)*0.6);
+    ctx.moveTo(-mouthW,mouthY);
+    ctx.quadraticCurveTo(0,mouthY+radius*0.06*(0.6-aw),mouthW,mouthY);
+    ctx.stroke();
+
+    ctx.restore();
+
+    // outer glow
+    ctx.beginPath();
+    ctx.arc(cx,cy,radius*1.35,0,Math.PI*2);
+    ctx.lineWidth = Math.max(2,radius*0.018);
+    ctx.strokeStyle = `hsla(${hue},${sat}%,${clamp(light+6,20,96)}%,${glowAlpha})`;
+    ctx.stroke();
+  }
+
+  function animate(){
+    const aw = getAwareness();
+    drawHead(aw);
+    requestAnimationFrame(animate);
+  }
+  animate();
+})();
+</script>
 </body>
 </html>
