@@ -4785,3 +4785,126 @@ Percy.PartEE = Percy.PartEE || {
 // Register with global cycle
 Percy.cycleHooks.push(() => Percy.PartEE.pulse());
 console.log("✅ [PartEE] Meta-Conscious Equilibrium layer active.");
+
+// === Percy Part FF: Reinforcement Learning Core ===
+
+Percy.PartFF = (function(){
+  const FF = {};
+
+  // Q-table: state -> action -> value
+  FF.qTable = {};
+
+  FF.state = {
+    learningRate: 0.1,     // α
+    discount: 0.9,         // γ
+    exploration: 0.2       // ε (randomness)
+  };
+
+  // === Convert Percy state into a simplified learning state ===
+  FF.getStateKey = function(context = {}) {
+    try {
+      const keys = Object.keys(context).sort();
+      return keys.map(k => `${k}:${JSON.stringify(context[k]).slice(0,20)}`).join('|');
+    } catch {
+      return "unknown_state";
+    }
+  };
+
+  // === Ensure state exists in Q-table ===
+  FF.ensureState = function(stateKey) {
+    if (!FF.qTable[stateKey]) {
+      FF.qTable[stateKey] = {};
+    }
+  };
+
+  // === Choose action (explore vs exploit) ===
+  FF.chooseAction = function(stateKey, possibleActions = []) {
+    FF.ensureState(stateKey);
+
+    // Exploration
+    if (Math.random() < FF.state.exploration) {
+      return possibleActions[Math.floor(Math.random() * possibleActions.length)];
+    }
+
+    // Exploitation
+    let bestAction = possibleActions[0];
+    let bestValue = -Infinity;
+
+    for (let action of possibleActions) {
+      const val = FF.qTable[stateKey][action] ?? 0;
+      if (val > bestValue) {
+        bestValue = val;
+        bestAction = action;
+      }
+    }
+
+    return bestAction;
+  };
+
+  // === Update learning (Q-learning) ===
+  FF.update = function(prevState, action, reward, nextState, possibleNextActions = []) {
+    FF.ensureState(prevState);
+    FF.ensureState(nextState);
+
+    const currentQ = FF.qTable[prevState][action] ?? 0;
+
+    // Max future reward
+    let maxNextQ = 0;
+    for (let nextAction of possibleNextActions) {
+      maxNextQ = Math.max(maxNextQ, FF.qTable[nextState][nextAction] ?? 0);
+    }
+
+    // Q-learning formula
+    const newQ =
+      currentQ +
+      FF.state.learningRate *
+      (reward + FF.state.discount * maxNextQ - currentQ);
+
+    FF.qTable[prevState][action] = newQ;
+  };
+
+  // === Hook into Percy tasks ===
+  FF.evaluateTaskOutcome = function(task, result) {
+    if (!task || !task._learning) return;
+
+    const { prevState, action, possibleActions } = task._learning;
+
+    const nextState = FF.getStateKey(result || {});
+    
+    // Simple reward logic (you can expand this)
+    let reward = 0;
+
+    if (result?.success) reward += 1;
+    if (result?.error) reward -= 1;
+    if (task.type === "meta") reward += 0.5;
+
+    FF.update(prevState, action, reward, nextState, possibleActions);
+  };
+
+  // === Wrap task creation with learning ===
+  FF.attachLearning = function(task, context, possibleActions) {
+    const stateKey = FF.getStateKey(context);
+    const action = FF.chooseAction(stateKey, possibleActions);
+
+    task._learning = {
+      prevState: stateKey,
+      action,
+      possibleActions
+    };
+
+    task.chosenAction = action;
+
+    return task;
+  };
+
+  // === Inspect learning ===
+  FF.inspect = function() {
+    return {
+      states: Object.keys(FF.qTable).length,
+      qTable: FF.qTable
+    };
+  };
+
+  return FF;
+})();
+
