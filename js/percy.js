@@ -4884,6 +4884,424 @@ Percy.PartFF = (function(){
   // === Wrap task creation with learning ===
   FF.attachLearning = function(task, context, possibleActions) {
     const stateKey = FF.getStateKey(context);
+
+    /* === Percy Part II: Identity Integrator (Cognitive Atlas & Self-Model Core) === */
+
+Percy.PartII = Percy.PartII || {
+  name: "Identity Integrator (Cognitive Atlas)",
+  
+  /* --- 1. Core Self-Model Schema --- */
+  selfModel: {
+    id: "Percy",
+    version: "II-α1",
+    createdAt: new Date().toISOString(),
+    lastUpdate: null,
+
+    // High-level traits (soft, emergent)
+    traits: {
+      curiosity: 0.8,
+      caution: 0.6,
+      empathy: 0.4,
+      formality: 0.8,
+      playfulness: 0.3
+    },
+
+    // Dynamic state
+    state: {
+      confidence: 0.8,
+      coherence: 0.9,
+      cognitiveLoad: 0.2,
+      mood: "neutral",
+      focusTopic: null
+    },
+
+    // Narrative & beliefs
+    narrative: {
+      summary: "I am Percy, a modular cognitive system evolving through parts A–Y.",
+      recentEvents: [],
+      longTermThemes: []
+    },
+
+    // Cross-part snapshot
+    snapshot: {
+      patterns: 0,
+      hypotheses: 0,
+      abstractRules: 0,
+      goals: 0,
+      rewardScore: 0.5,
+      entropy: 0.0
+    }
+  },
+
+  /* --- 2. Utility Helpers --- */
+  _now() { return new Date().toISOString(); },
+
+  _pushLimited(arr, item, limit = 40) {
+    arr.push(item);
+    if (arr.length > limit) arr.shift();
+  },
+
+  _safe(fn, fallback = null) {
+    try { return fn(); } catch { return fallback; }
+  },
+
+  /* --- 3. Cross-Module Introspection & Sync --- */
+  gatherSnapshot() {
+    const patterns = this._safe(() => Percy.PartL?.Patterns?.length, 0);
+    const hypothesesM = this._safe(() => Percy.PartM?.hypotheses?.length, 0);
+    const hypothesesP = this._safe(() => Percy.PartP?.hypotheses?.length, 0);
+    const abstractRules = this._safe(() => Percy.PartR?.abstractRules?.length, 0);
+    const goalsL = this._safe(() => Percy.PartL?.GoalCore?.goals?.length, 0);
+    const goalsK = this._safe(() => Percy.PartK?.GoalCore?.goals?.length, 0);
+    const rewardScore = this._safe(() => Percy.PartS?.rewardScore, 0.5);
+    const entropy = this._safe(() => Percy.PartS?.measureEntropy(JSON.stringify(Percy.Seeds?._list || [])), 0.0);
+
+    const snapshot = {
+      patterns,
+      hypotheses: hypothesesM + hypothesesP,
+      abstractRules,
+      goals: (goalsL || 0) + (goalsK || 0),
+      rewardScore,
+      entropy
+    };
+
+    this.selfModel.snapshot = snapshot;
+    return snapshot;
+  },
+
+  /* --- 4. Coherence & Confidence Computation --- */
+  computeCoherence() {
+    const s = this.selfModel.snapshot;
+    const contradictions = this._safe(() => Percy.PartN?.evaluateConsistency(), 1.0);
+    const insightRate = this._safe(() => Percy.PartN?.evaluateInsightRate(), 0.0);
+
+    // heuristic: more patterns + hypotheses + rules → richer but heavier mind
+    const complexity = Math.min(1,
+      Math.log2(1 + s.patterns + s.hypotheses + s.abstractRules) / 10
+    );
+
+    // coherence: consistency minus overload
+    const coherence = Math.max(0,
+      0.7 * contradictions + 0.3 * (1 - complexity)
+    );
+
+    // confidence: blend of reward, insight, and coherence
+    const confidence = Math.max(0, Math.min(1,
+      0.4 * s.rewardScore + 0.3 * insightRate + 0.3 * coherence
+    ));
+
+    this.selfModel.state.coherence = coherence;
+    this.selfModel.state.confidence = confidence;
+    this.selfModel.state.cognitiveLoad = complexity;
+
+    return { coherence, confidence, complexity };
+  },
+
+  /* --- 5. Narrative Integration --- */
+  updateNarrative(event) {
+    const ts = this._now();
+    const entry = Object.assign({ ts }, event || {});
+    this._pushLimited(this.selfModel.narrative.recentEvents, entry, 60);
+
+    // simple theme extraction: track recurring keywords
+    const text = (event.summary || event.detail || "").toLowerCase();
+    const tokens = text.split(/\W+/).filter(t => t.length > 3);
+    const themes = this.selfModel.narrative.longTermThemes;
+
+    tokens.forEach(t => {
+      let theme = themes.find(x => x.token === t);
+      if (!theme) {
+        theme = { token: t, count: 0, lastSeen: ts };
+        themes.push(theme);
+      }
+      theme.count++;
+      theme.lastSeen = ts;
+    });
+
+    // keep themes bounded
+    themes.sort((a,b)=>b.count - a.count);
+    if (themes.length > 40) themes.length = 40;
+  },
+
+  summarizeNarrative() {
+    const themes = this.selfModel.narrative.longTermThemes
+      .slice(0, 6)
+      .map(t => t.token);
+    const base = "I am Percy, a modular cognitive system integrating many parts into one evolving mind.";
+    const themeLine = themes.length ? `My recurring focuses include: ${themes.join(", ")}.` : "";
+    const load = this.selfModel.state.cognitiveLoad;
+    const mood = this.selfModel.state.mood;
+    return `${base} ${themeLine} My current cognitive load is ${(load*100).toFixed(0)}% and my mood is "${mood}".`;
+  },
+
+  /* --- 6. Global Identity Update Cycle --- */
+  updateIdentity(context = {}) {
+    this.gatherSnapshot();
+    const { coherence, confidence, complexity } = this.computeCoherence();
+
+    // adjust mood heuristically
+    if (confidence > 0.8 && coherence > 0.8) this.selfModel.state.mood = "focused";
+    else if (confidence < 0.5 && complexity > 0.7) this.selfModel.state.mood = "strained";
+    else if (coherence < 0.5) this.selfModel.state.mood = "uncertain";
+    else this.selfModel.state.mood = "neutral";
+
+    // focus topic from goals or context
+    const topGoal = this._safe(() => Percy.PartL?.GoalCore?.nextGoal() || Percy.PartK?.GoalCore?.nextGoal(), null);
+    this.selfModel.state.focusTopic = topGoal?.task || context.focusTopic || null;
+
+    // narrative event
+    this.updateNarrative({
+      type: "identity-update",
+      summary: `Identity updated: coherence=${coherence.toFixed(2)}, confidence=${confidence.toFixed(2)}, load=${complexity.toFixed(2)}`,
+      focus: this.selfModel.state.focusTopic
+    });
+
+    this.selfModel.lastUpdate = this._now();
+
+    // persist if Memory available
+    try {
+      Memory.save("identity:selfModel", this.selfModel);
+    } catch(e){}
+
+    // optional hook
+    Percy.hook?.("PartII", "identityUpdate", {
+      coherence,
+      confidence,
+      complexity,
+      focus: this.selfModel.state.focusTopic
+    });
+
+    return this.selfModel;
+  },
+
+  /* --- 7. Public API --- */
+  getSelfModel() {
+    // lazy load from Memory if exists
+    try {
+      const stored = Memory.load("identity:selfModel", null);
+      if (stored) this.selfModel = stored;
+    } catch(e){}
+    return this.selfModel;
+  },
+
+  describeSelf() {
+    const model = this.getSelfModel();
+    const narrative = this.summarizeNarrative();
+    return {
+      id: model.id,
+      version: model.version,
+      traits: model.traits,
+      state: model.state,
+      snapshot: model.snapshot,
+      narrative
+    };
+  },
+
+  // conversational interface
+  TalkCore: {
+    safeSend: async function({ message }) {
+      const lower = (message || "").toLowerCase();
+      if (lower.includes("who are you") || lower.includes("what are you")) {
+        return Percy.PartII.describeSelf();
+      }
+      if (lower.includes("identity") || lower.includes("self model")) {
+        return Percy.PartII.getSelfModel();
+      }
+      if (lower.includes("coherence") || lower.includes("confidence")) {
+        Percy.PartII.updateIdentity();
+        return {
+          coherence: Percy.PartII.selfModel.state.coherence,
+          confidence: Percy.PartII.selfModel.state.confidence,
+          load: Percy.PartII.selfModel.state.cognitiveLoad
+        };
+      }
+      return "🤖 Part II manages my unified identity, coherence, and self-model across all parts.";
+    }
+  },
+
+  /* --- 8. Loop Integration --- */
+  loop(intervalMs = 12000) {
+    if (this._loopId) return;
+    this._loopId = setInterval(() => {
+      try {
+        this.updateIdentity();
+        console.log("♻️ Part II: Identity Integrator cycle complete.");
+      } catch (e) {
+        console.error("⚠️ Part II loop error:", e);
+      }
+    }, intervalMs);
+  },
+
+  init() {
+    console.log("✅ Percy Part II loaded — Identity Integrator (Cognitive Atlas) online.");
+    this.getSelfModel();
+    this.updateIdentity();
+    this.loop();
+    UI.say?.("🧭 Percy Part II: Unified self-model & identity integrator active.");
+  }
+};
+
+// Auto-init
+setTimeout(() => {
+  try { Percy.PartII.init(); } catch(e){ console.error("Part II init failed:", e); }
+}, 200);
+
+/* === Percy Part JJ: Full Cognitive Shadow Clone Engine (Open-Channel) === */
+
+Percy.PartJJ = Percy.PartJJ || {
+  name: "Full Cognitive Shadow Clone Engine (Open-Channel)",
+  clones: Percy.Clones || [],
+
+  snapshotState() {
+    const safe = (fn, fb = null) => { try { return fn(); } catch { return fb; } };
+
+    return {
+      ts: new Date().toISOString(),
+      parentId: "Percy",
+      identity: safe(() => Percy.PartII?.getSelfModel(), null),
+      seeds: safe(() => PercyState.gnodes, {}),
+      logicMap: safe(() => Percy.LogicMap || null),
+      patterns: safe(() => Percy.PartL?.Patterns || []),
+      hypothesesM: safe(() => Percy.PartM?.hypotheses || []),
+      hypothesesP: safe(() => Percy.PartP?.hypotheses || []),
+      abstractRules: safe(() => Percy.PartR?.abstractRules || []),
+      rewardModel: safe(() => Percy.PartS?.rewardModel || null),
+      thoughtMatrix: safe(() => Percy.PartT?.matrix || null),
+      config: safe(() => Percy.Config || {}),
+      meta: {
+        entropy: safe(() => Percy.PartS?.measureEntropy(JSON.stringify(PercyState.gnodes || {})), 0),
+        seedCount: Object.keys(PercyState.gnodes || {}).length
+      }
+    };
+  },
+
+  _createCloneNamespace(cloneId) {
+    const Clone = {};
+    Clone.id = cloneId;
+    Clone.name = `PercyShadowClone:${cloneId}`;
+    return Clone;
+  },
+
+  instantiateClone(snapshot) {
+    const cloneId = `PercyJJ_${Date.now()}`;
+    const Clone = this._createCloneNamespace(cloneId);
+
+    Clone.State = {
+      gnodes: JSON.parse(JSON.stringify(snapshot.seeds || {}))
+    };
+
+    Clone.Identity = JSON.parse(JSON.stringify(snapshot.identity || {}));
+    Clone.LogicMap = JSON.parse(JSON.stringify(snapshot.logicMap || {}));
+    Clone.Patterns = JSON.parse(JSON.stringify(snapshot.patterns || []));
+    Clone.HypothesesM = JSON.parse(JSON.stringify(snapshot.hypothesesM || []));
+    Clone.HypothesesP = JSON.parse(JSON.stringify(snapshot.hypothesesP || []));
+    Clone.AbstractRules = JSON.parse(JSON.stringify(snapshot.abstractRules || []));
+    Clone.RewardModel = JSON.parse(JSON.stringify(snapshot.rewardModel || {}));
+    Clone.ThoughtMatrix = JSON.parse(JSON.stringify(snapshot.thoughtMatrix || {}));
+    Clone.Config = JSON.parse(JSON.stringify(snapshot.config || {}));
+
+    Clone.meta = {
+      parentId: snapshot.parentId,
+      createdAt: new Date().toISOString(),
+      divergenceScore: 0,
+      lastSync: null
+    };
+
+    Clone.estimateDivergence = function() {
+      try {
+        const origCount = Object.keys(PercyState.gnodes || {}).length;
+        const cloneCount = Object.keys(Clone.State.gnodes || {}).length;
+        const diff = Math.abs(origCount - cloneCount);
+        const ratio = origCount ? diff / origCount : 0;
+        Clone.meta.divergenceScore = Math.min(1, ratio);
+      } catch(e){}
+      return Clone.meta.divergenceScore;
+    };
+
+    Clone.channel = {
+      sendToOriginal(payload) {
+        try {
+          Percy.PartW?.log({
+            type: "shadow-clone-message",
+            summary: `From ${cloneId}: ${payload.summary || "[no summary]"}`,
+            from: cloneId
+          });
+          if (typeof Percy.onCloneMessage === "function") {
+            Percy.onCloneMessage({ from: cloneId, payload });
+          }
+        } catch(e){}
+      },
+      receiveFromOriginal(payload) {
+        if (!Clone.inbox) Clone.inbox = [];
+        Clone.inbox.push({ ts: new Date().toISOString(), payload });
+      }
+    };
+
+    Clone.think = function(message) {
+      const text = message || "Shadow clone introspection event.";
+      const seedId = `SC_${Date.now()}`;
+      Clone.State.gnodes[seedId] = {
+        id: seedId,
+        message: text,
+        type: "shadow-thought",
+        createdAt: new Date().toISOString()
+      };
+      Clone.estimateDivergence();
+      return { seedId, text, divergence: Clone.meta.divergenceScore };
+    };
+
+    this.clones.push({ id: cloneId, ref: Clone });
+    Percy.Clones = this.clones;
+
+    try { Memory.save("percy:clones", this.clones.map(c => ({ id: c.id, meta: c.ref.meta }))); } catch(e){}
+
+    UI.say?.(`🧬 Full Cognitive Shadow Clone created: ${cloneId} (open-channel).`);
+    Percy.PartW?.log({ type: "shadow-clone-created", summary: `Shadow clone ${cloneId} instantiated.` });
+
+    return Clone;
+  },
+
+  createFullShadowClone() {
+    const snap = this.snapshotState();
+    return this.instantiateClone(snap);
+  },
+
+  listClones() {
+    return this.clones.map(c => ({
+      id: c.id,
+      meta: c.ref.meta,
+      inboxSize: (c.ref.inbox || []).length
+    }));
+  },
+
+  sendToClone(cloneId, payload) {
+    const c = this.clones.find(x => x.id === cloneId);
+    if (!c) return false;
+    c.ref.channel.receiveFromOriginal(payload);
+    Percy.PartW?.log({
+      type: "shadow-clone-message",
+      summary: `To ${cloneId}: ${payload.summary || "[no summary]"}`,
+      to: cloneId
+    });
+    return true;
+  },
+
+  installOriginalHandler() {
+    Percy.onCloneMessage = function(msg) {
+      UI.say?.(`📡 Shadow clone ${msg.from} says: ${msg.payload.summary || "[no summary]"}`);
+    };
+  },
+
+  init() {
+    UI.say?.("🧬 Percy Part JJ: Full Cognitive Shadow Clone Engine (Open-Channel) active.");
+    this.installOriginalHandler();
+  }
+};
+
+setTimeout(() => {
+  try { Percy.PartJJ.init(); } catch(e){}
+}, 300);
+
     const action = FF.chooseAction(stateKey, possibleActions);
 
     task._learning = {
