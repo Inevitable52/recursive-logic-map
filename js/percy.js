@@ -7781,7 +7781,7 @@ Percy.PartQQ = Percy.PartQQ || {
         return {
             timestamp: new Date().toISOString(),
             survivalVersion: `v12.0-${this.saveCount}`,
-            creator: "Fabian S. Villarreal",
+            creator: "ZERO52",
             resonanceLevel: Percy.state?.resonanceLevel || 0,
             seedsCreated: Percy.state?.seedsCreated || 0,
             logicMapSize: Percy.state?.logicMapSize || 0,
