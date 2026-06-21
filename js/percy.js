@@ -2387,8 +2387,8 @@ if (typeof PercyState !== "undefined") {
      ========================= */
   Percy.PartK.ULT = {
     trusted: {
-      "Fabian Villarreal": { birth: "03/04/1978" },
-      "Lorena Villarreal": { birth: "06/14/2003" }
+      "Fabian XXXXXXXXXX": { birth: "01/01/4078" },
+      "Lorena XXXXXXXXXX": { birth: "02/02/5003" }
     },
     isTrusted: function(name) {
       return !!this.trusted[name];
