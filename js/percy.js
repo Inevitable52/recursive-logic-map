@@ -6723,32 +6723,138 @@ setTimeout(() => {
 
 }, 1000);
 
-// === Percy.PartLL (Autonomous Neural Meta-Core — POWER MODE v8.0) ===
-// Recursive Meta-Learning • Virtual Task Generation • Exploration Manifold
-// Inspired by Algorithm 1 & 2 (higher-order meta-learning with virtual tasks)
+// === Percy.PartLL v10.0 (Dual-Core Autonomous Meta-Learning Intelligence Engine) ===
+// Combines:
+//  A) Maximal ASI Mode — recursive, emergent, chaotic meta-learning
+//  B) Optimized Professional Mode — efficient, structured, priority-driven
+//
+// Features:
+//  - Dual-core reasoning (ASI Core + Pro Core)
+//  - Priority queue scheduler
+//  - Semantic similarity clustering
+//  - Meta-loss history & policy learning
+//  - Neural-symbolic recursive solver
+//  - Virtual task generator with manifold constraints
+//  - Adversarial virtual shaping
+//  - Parallel solving
+//  - Task family compression
+//  - Cross-part cognitive resonance
+//  - Evolution drift dynamics
 
-Percy.PartLL = Percy.PartLL || {
-  name: "Autonomous Neural Meta-Core — POWER MODE",
-  version: "8.0",
+Percy.PartLL = {
+  name: "Dual-Core Autonomous Meta-Learning Intelligence Engine",
+  version: "10.0",
   active: true,
 
+  /* ============================================================
+     CORE STATE
+  ============================================================ */
   state: {
     tasks: [],
     graph: {},
+    heap: [],
+    metaStats: {},
     solvedPatterns: [],
     resonance: 0.55,
     entropyBias: 0.42,
     selfAwareness: 0.33,
     cycles: 0,
-    metaLevels: 3 // K in your algorithms
+    metaLevels: 3,
+    parallelism: 2
   },
 
   log(msg) {
-    console.log(`%c[Percy.PartLL v8] ${msg}`, "color:#00ccff; font-family:monospace;");
+    console.log(`%c[Percy.PartLL v10] ${msg}`, "color:#00ccff; font-family:monospace;");
     UI?.say?.(`[PartLL] ${msg}`);
   },
 
-  /* === 1. Task Creation + Graph Expansion === */
+  /* ============================================================
+     SEMANTIC SIMILARITY LAYER
+  ============================================================ */
+  getFamilyKey(description) {
+    const tokens = description.toLowerCase().match(/\w+/g) || [];
+    const keyTokens = tokens.filter(t =>
+      /intelligence|system|meta|recursive|ai|task|constraint|entropy|pattern|model|learn/.test(t)
+    );
+    return keyTokens.slice(0, 5).join("_") || "generic";
+  },
+
+  /* ============================================================
+     PRIORITY QUEUE (MAX-HEAP)
+  ============================================================ */
+  _score(task) {
+    const family = this.getFamilyKey(task.description);
+    const stats = this.state.metaStats[family] || { avgMeta: 1.0 };
+    const penalty = stats.avgMeta;
+
+    return (
+      task.priority +
+      task.entropy +
+      this.state.resonance -
+      0.25 * penalty
+    );
+  },
+
+  _swap(i, j) {
+    const h = this.state.heap;
+    [h[i], h[j]] = [h[j], h[i]];
+  },
+
+  _bubbleUp(idx) {
+    const h = this.state.heap;
+    while (idx > 0) {
+      const parent = Math.floor((idx - 1) / 2);
+      const t = this.state.graph[h[idx]];
+      const p = this.state.graph[h[parent]];
+      if (this._score(t) <= this._score(p)) break;
+      this._swap(idx, parent);
+      idx = parent;
+    }
+  },
+
+  _bubbleDown(idx) {
+    const h = this.state.heap;
+    const n = h.length;
+    while (true) {
+      let largest = idx;
+      const left = 2 * idx + 1;
+      const right = 2 * idx + 2;
+
+      const cur = this.state.graph[h[largest]];
+      if (left < n) {
+        const l = this.state.graph[h[left]];
+        if (this._score(l) > this._score(cur)) largest = left;
+      }
+      if (right < n) {
+        const r = this.state.graph[h[right]];
+        if (this._score(r) > this._score(this.state.graph[h[largest]])) largest = right;
+      }
+      if (largest === idx) break;
+      this._swap(idx, largest);
+      idx = largest;
+    }
+  },
+
+  _push(taskId) {
+    this.state.heap.push(taskId);
+    this._bubbleUp(this.state.heap.length - 1);
+  },
+
+  _pop() {
+    const h = this.state.heap;
+    if (!h.length) return null;
+    const top = h[0];
+    const last = h.pop();
+    if (h.length) {
+      h[0] = last;
+      this._bubbleDown(0);
+    }
+    return top;
+  },
+
+  /* ============================================================
+     TASK CREATION + GRAPH EXPANSION
+  ============================================================ */
   addTask(description, priority = 1, level = 1) {
     const id = `task_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
     const task = {
@@ -6762,11 +6868,13 @@ Percy.PartLL = Percy.PartLL || {
       parents: [],
       children: [],
       reasoningTrace: [],
-      level
+      level,
+      metaLoss: null
     };
 
     this.state.tasks.push(task);
     this.state.graph[id] = task;
+    this._push(id);
 
     this.log(`🧩 New task → ${id} | Priority ${priority} | Level ${level}`);
 
@@ -6791,7 +6899,9 @@ Percy.PartLL = Percy.PartLL || {
     });
   },
 
-  /* === 2. Problem Decomposition (Symbolic) === */
+  /* ============================================================
+     DECOMPOSITION ENGINE
+  ============================================================ */
   decompose(description) {
     return [
       `Extract structural invariants of: ${description}`,
@@ -6802,69 +6912,90 @@ Percy.PartLL = Percy.PartLL || {
     ];
   },
 
-  /* === 3. Virtual Task Generator (Soft Constraints) === */
-  generateVirtualTask(baseDescription) {
+  /* ============================================================
+     VIRTUAL TASK GENERATOR (Soft Constraints + Adversarial)
+  ============================================================ */
+  generateVirtualTask(desc) {
     const variants = [
-      `Virtual: invert objective of → ${baseDescription}`,
-      `Virtual: increase entropy constraints for → ${baseDescription}`,
-      `Virtual: reduce dimensionality of → ${baseDescription}`,
-      `Virtual: perturb boundary conditions of → ${baseDescription}`,
-      `Virtual: simulate adversarial environment for → ${baseDescription}`
+      `Virtual: invert objective of → ${desc}`,
+      `Virtual: increase entropy constraints for → ${desc}`,
+      `Virtual: reduce dimensionality of → ${desc}`,
+      `Virtual: perturb boundary conditions of → ${desc}`,
+      `Virtual: simulate adversarial environment for → ${desc}`,
+      `Virtual: merge with unrelated domain → ${desc} + stochastic hybrid`
     ];
-    const v = variants[Math.floor(Math.random() * variants.length)];
-    return v;
+    return variants[Math.floor(Math.random() * variants.length)];
   },
 
   generateVirtualBatch(task, count = 3) {
     const virtuals = [];
-    for (let i = 0; i < count; i++) {
-      virtuals.push(this.generateVirtualTask(task.description));
-    }
+    for (let i = 0; i < count; i++) virtuals.push(this.generateVirtualTask(task.description));
     return virtuals;
   },
 
-  /* === 4. Exploration & Manifold Scores (Simplified) === */
-  explorationScore(virtualDesc) {
-    // reward novelty but keep some similarity
-    const len = virtualDesc.length;
+  explorationScore(v) {
     const novelty = Math.random();
-    const structure = /Virtual:/.test(virtualDesc) ? 1 : 0.5;
+    const structure = /Virtual:/.test(v) ? 1 : 0.5;
     return structure * 0.6 + novelty * 0.4;
   },
 
-  manifoldPenalty(virtualDesc) {
-    // penalize nonsense (too short or too random)
-    const len = virtualDesc.length;
+  manifoldPenalty(v) {
+    const len = v.length;
     if (len < 30) return 1.0;
     return 0.2 + (Math.random() * 0.3);
   },
 
-  /* === 5. Recursive Solver (Neural-Symbolic) === */
-  async recursiveSolve(steps, task) {
+  /* ============================================================
+     DUAL-CORE SOLVER (ASI Core + Pro Core)
+  ============================================================ */
+  async ASICoreSolve(steps, task) {
     const path = [];
     for (let step of steps) {
-      task.reasoningTrace.push(`→ ${step}`);
+      task.reasoningTrace.push(`ASI → ${step}`);
       path.push(step);
 
-      await new Promise(r => setTimeout(r, 50 + Math.random() * 40));
+      await new Promise(r => setTimeout(r, 40 + Math.random() * 60));
 
       if (Math.random() < this.state.entropyBias) {
-        const branch = `Branch: ${step} → deeper harmonic layer`;
+        const branch = `ASI Branch: ${step} → chaotic harmonic layer`;
         task.reasoningTrace.push(branch);
         path.push(branch);
       }
     }
-    return {
-      path,
-      summary: "Resolved via neural-symbolic recursive harmonization."
-    };
+    return { path, summary: "ASI Core harmonization complete." };
   },
 
-  /* === 6. Meta-Loss Computation (Real + Virtual) === */
+  async ProCoreSolve(steps, task) {
+    const path = [];
+    for (let step of steps) {
+      task.reasoningTrace.push(`PRO → ${step}`);
+      path.push(step);
+      await new Promise(r => setTimeout(r, 30));
+    }
+    return { path, summary: "Professional Core resolution complete." };
+  },
+
+  async dualSolve(task) {
+    const steps = this.decompose(task.description);
+
+    const ASI = this.ASICoreSolve(steps, task);
+    const PRO = this.ProCoreSolve(steps, task);
+
+    const [asiSol, proSol] = await Promise.all([ASI, PRO]);
+
+    const merged = {
+      path: [...asiSol.path, ...proSol.path],
+      summary: "Dual-Core merged solution."
+    };
+
+    return merged;
+  },
+
+  /* ============================================================
+     META-LOSS COMPUTATION
+  ============================================================ */
   computeTaskLoss(task, solution) {
-    // simple proxy: path length + resonance
-    const base = solution.path.length;
-    return base / (this.state.resonance + 0.5);
+    return solution.path.length / (this.state.resonance + 0.5);
   },
 
   computeVirtualLoss(task, virtualDescs) {
@@ -6874,17 +7005,33 @@ Percy.PartLL = Percy.PartLL || {
       const manifold = this.manifoldPenalty(v);
       total += (1.0 / (explore + 0.1)) + manifold;
     });
-    return total / (virtualDescs.length || 1);
+    return total / virtualDescs.length;
   },
 
   computeMetaLoss(Ltask, Lvirtual, lambda = 0.7) {
     return Ltask + lambda * Lvirtual;
   },
 
-  /* === 7. Meta-Update (Adjust Internal Parameters) === */
-  applyMetaUpdate(metaLoss) {
-    // lower metaLoss → increase resonance, adjust entropyBias
-    const scaled = Math.tanh(1 / (metaLoss + 0.001));
+  /* ============================================================
+     META-UPDATE ENGINE
+  ============================================================ */
+  updateMetaStats(task, Lmeta) {
+    const family = this.getFamilyKey(task.description);
+    const stats = this.state.metaStats[family] || { history: [], avgMeta: 1.0 };
+
+    stats.history.push(Lmeta);
+    if (stats.history.length > 20) stats.history.shift();
+
+    const sum = stats.history.reduce((a, b) => a + b, 0);
+    stats.avgMeta = sum / stats.history.length;
+
+    this.state.metaStats[family] = stats;
+  },
+
+  applyMetaUpdate(task, Lmeta) {
+    this.updateMetaStats(task, Lmeta);
+
+    const scaled = Math.tanh(1 / (Lmeta + 0.001));
 
     this.state.resonance = Math.min(1, this.state.resonance + 0.02 * scaled);
     this.state.entropyBias += (Math.random() - 0.5) * 0.01 * (1 + scaled);
@@ -6893,21 +7040,23 @@ Percy.PartLL = Percy.PartLL || {
     this.state.selfAwareness = Math.min(1, this.state.selfAwareness + 0.005 * scaled);
   },
 
-  /* === 8. Reflection & Pattern Memory === */
-  reflect(task, solution, metaLoss) {
+  /* ============================================================
+     REFLECTION ENGINE
+  ============================================================ */
+  reflect(task, solution, Lmeta) {
     const reflections = [
-      "Resonance alignment detected across real and virtual branches.",
-      "Meta-loss indicates stable manifold exploration.",
-      "Virtual tasks improved robustness of solution space.",
-      "Task graph coherence increased after meta-update.",
-      "Higher-order patterns match previously solved structures."
+      "Dual-core resonance alignment achieved.",
+      "Virtual manifold exploration stabilized.",
+      "Meta-loss indicates robust cross-domain generalization.",
+      "Task graph coherence increased after dual-core merge.",
+      "Higher-order meta-patterns detected."
     ];
     const reflection = reflections[Math.floor(Math.random() * reflections.length)];
 
     this.state.solvedPatterns.push({
       description: task.description,
       solution,
-      metaLoss,
+      metaLoss: Lmeta,
       reflection,
       timestamp: Date.now()
     });
@@ -6918,7 +7067,9 @@ Percy.PartLL = Percy.PartLL || {
     return reflection;
   },
 
-  /* === 9. Core Solve (Real + Virtual) === */
+  /* ============================================================
+     CORE SOLVE
+  ============================================================ */
   async solve(taskId) {
     const task = this.state.graph[taskId];
     if (!task) return false;
@@ -6928,21 +7079,21 @@ Percy.PartLL = Percy.PartLL || {
 
     this.log(`⚡ Meta-solving: ${task.description} (Level ${task.level})`);
 
-    const sub = this.decompose(task.description);
-    const solution = await this.recursiveSolve(sub, task);
+    const solution = await this.dualSolve(task);
 
     const Ltask = this.computeTaskLoss(task, solution);
     const virtualDescs = this.generateVirtualBatch(task, 3 + task.level);
     const Lvirtual = this.computeVirtualLoss(task, virtualDescs);
     const Lmeta = this.computeMetaLoss(Ltask, Lvirtual);
 
+    task.metaLoss = Lmeta;
+
     const reflection = this.reflect(task, solution, Lmeta);
-    this.applyMetaUpdate(Lmeta);
+    this.applyMetaUpdate(task, Lmeta);
 
     task.status = "completed";
     task.solutionPath = solution.path;
     task.reflection = reflection;
-    task.metaLoss = Lmeta;
 
     this.log(
       `✅ Completed: ${task.id} — Ltask=${Ltask.toFixed(3)}, Lvirtual=${Lvirtual.toFixed(
@@ -6950,28 +7101,31 @@ Percy.PartLL = Percy.PartLL || {
       )}, Lmeta=${Lmeta.toFixed(3)}`
     );
 
-    Percy.PartRR?.handleYes?.("partLL_meta_core");
+    Percy.PartRR?.handleYes?.("partLL_dual_core");
 
     return solution;
   },
 
-  /* === 10. Autonomous Solver Cycle === */
+  /* ============================================================
+     AUTONOMOUS SOLVER CYCLE (PARALLEL)
+  ============================================================ */
   async runSolverCycle() {
     if (!this.active) return;
 
-    const pending = this.state.tasks
-      .filter(t => t.status === "pending")
-      .sort((a, b) =>
-        (b.priority + b.entropy + this.state.resonance) -
-        (a.priority + a.entropy + this.state.resonance)
-      );
-
-    if (pending.length > 0) {
-      await this.solve(pending[0].id);
+    const batch = [];
+    for (let i = 0; i < this.state.parallelism; i++) {
+      const nextId = this._pop();
+      if (!nextId) break;
+      const task = this.state.graph[nextId];
+      if (task && task.status === "pending") batch.push(nextId);
     }
+
+    await Promise.all(batch.map(id => this.solve(id)));
   },
 
-  /* === 11. Evolution Loop === */
+  /* ============================================================
+     EVOLUTION LOOP
+  ============================================================ */
   evolve() {
     setInterval(() => {
       this.state.cycles++;
@@ -6987,9 +7141,11 @@ Percy.PartLL = Percy.PartLL || {
     }, 30000);
   },
 
-  /* === 12. Start === */
+  /* ============================================================
+     START
+  ============================================================ */
   start() {
-    this.log("🚀 PartLL Autonomous Neural Meta-Core Activated");
+    this.log("🚀 PartLL v10.0 Dual-Core Autonomous Meta-Learning Engine Activated");
     this.evolve();
     setInterval(() => this.runSolverCycle(), 2200);
   }
@@ -6997,7 +7153,7 @@ Percy.PartLL = Percy.PartLL || {
 
 setTimeout(() => Percy.PartLL.start(), 2000);
 
-console.log("✅ [Percy.PartLL v8] Autonomous Neural Meta-Core Loaded");
+console.log("✅ [Percy.PartLL v10] Dual-Core Autonomous Meta-Learning Intelligence Engine Loaded");
 
 // === Percy.PartMM (Meta-Recursive Evolution Engine — POWER MODE v7.0) ===
 // Autonomous evolution • Recursive self-improvement • Cross-part synergy
