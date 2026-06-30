@@ -2700,34 +2700,64 @@ Percy.PartL.TalkCore = {
 console.log("✅ Percy Part L loaded — ASI-Grade Weighted Pattern Memory & Inference ready.");
 /* === End Percy Part L === */
 
-/* === Percy Part M: Recursive Reasoning & Hypothesis Engine (ASI Upgrade) === */
+/* === Percy Part M vΩ.Final: Fully-Bounded Hypothesis Engine ===
+   Design goals:
+   - No self-referential recursion
+   - No "If If If..." chains
+   - No runaway hypothesis storms
+   - Strict guards on content, count, and reinforcement
+   - Safe integration with PartL, PartN, PartO, MasterLoop
+*/
+
 Percy.PartM = {
-  name: "Auto-Hypothesis Engine",
+  name: "Omega-Final Auto-Hypothesis Engine",
+  version: "vΩ.Final",
   hypotheses: [],
   cycleCount: 0,
 
-  analyzePatterns(patterns) {
-    console.log("🧩 Part M: Analyzing patterns for contradictions and emergent logic...");
-
-    for (let i = 0; i < patterns.length - 1; i++) {
-      const p1 = patterns[i];
-      const p2 = patterns[i + 1];
-
-      // Detect tension, similarity, or complementarity
-      const relation = this.classifyRelation(p1.text, p2.text);
-      if (relation) {
-        const hypothesis = this.formHypothesis(p1.text, p2.text, relation);
-        this.hypotheses.push({ text: hypothesis, validated: false, relation });
-        console.log(`💡 Hypothesis (${relation}): "${hypothesis}"`);
-      }
-    }
+  config: {
+    maxHypotheses: 64,          // hard cap on stored hypotheses
+    maxPerCycle: 8,             // max new hypotheses per cycle
+    enableReinforcement: true,  // can be toggled off if needed
+    enableSelfReflection: true
   },
 
+  /* ============================================================
+     1. Recursion + Self-Generated Guard
+  ============================================================ */
+  isRecursive(text) {
+    const t = (text || "").trim().toLowerCase();
+
+    if (!t) return false;
+
+    // Original guard: block "if ..." hypotheses
+    if (t.startsWith("if ")) return true;
+
+    // Block self-generated hypothesis phrases
+    if (t.includes("share an associative link worth tracking")) return true;
+    if (t.includes("refines the broader concept")) return true;
+    if (t.includes("suggests a boundary rule")) return true;
+
+    // Block excessive quoting / nesting
+    const quoteCount = (t.match(/"/g) || []).length;
+    if (quoteCount > 6) return true;
+
+    return false;
+  },
+
+  /* ============================================================
+     2. Relation Classification (safe)
+  ============================================================ */
   classifyRelation(a, b) {
-    const A = a.toLowerCase(), B = b.toLowerCase();
+    const A = (a || "").toLowerCase();
+    const B = (b || "").toLowerCase();
+
+    if (!A || !B) return null;
+    if (this.isRecursive(A) || this.isRecursive(B)) return null;
+
     if (this.isContradictory(A, B)) return "contradiction";
     if (A.includes(B) || B.includes(A)) return "subset";
-    if (A.split(" ").some(w => B.includes(w))) return "association";
+    if (A.split(" ").some(w => w && B.includes(w))) return "association";
     return null;
   },
 
@@ -2739,76 +2769,190 @@ Percy.PartM = {
     );
   },
 
+  /* ============================================================
+     3. Hypothesis Formation (strictly bounded)
+  ============================================================ */
   formHypothesis(a, b, relation = "association") {
+    if (this.isRecursive(a) || this.isRecursive(b)) return null;
+
+    const A = a.trim();
+    const B = b.trim();
+
+    // Length guard: avoid huge strings
+    if (A.length > 300 || B.length > 300) return null;
+
     switch (relation) {
       case "contradiction":
-        return `If "${a}" contradicts "${b}", one may define a boundary rule.`;
+        return `A contradiction between "${A}" and "${B}" suggests a boundary rule worth noting.`;
       case "subset":
-        return `If "${a}" includes "${b}", "${b}" refines "${a}".`;
+        return `"${B}" refines the broader concept "${A}" in a stable manner.`;
       default:
-        return `If "${a}" relates to "${b}", a causal or associative link may exist.`;
+        return `"${A}" and "${B}" share an associative link worth tracking in a bounded way.`;
     }
   },
 
+  /* ============================================================
+     4. Pattern Analysis (bounded, non-recursive)
+  ============================================================ */
+  analyzePatterns(patterns) {
+    console.log("🧩 Part M vΩ.Final: Analyzing patterns safely...");
+
+    let newCount = 0;
+
+    for (let i = 0; i < patterns.length - 1; i++) {
+      if (newCount >= this.config.maxPerCycle) break;
+
+      const p1 = patterns[i];
+      const p2 = patterns[i + 1];
+
+      const t1 = p1.text || "";
+      const t2 = p2.text || "";
+
+      if (this.isRecursive(t1) || this.isRecursive(t2)) continue;
+
+      const relation = this.classifyRelation(t1, t2);
+      if (!relation) continue;
+
+      const hypothesis = this.formHypothesis(t1, t2, relation);
+      if (!hypothesis || this.isRecursive(hypothesis)) continue;
+
+      this.hypotheses.push({ text: hypothesis, validated: false, relation });
+      newCount++;
+
+      console.log(`💡 Hypothesis (${relation}): "${hypothesis}"`);
+
+      // Global cap
+      if (this.hypotheses.length > this.config.maxHypotheses) {
+        this.hypotheses.splice(0, this.hypotheses.length - this.config.maxHypotheses);
+      }
+    }
+
+    if (newCount === 0) {
+      console.log("ℹ️ Part M vΩ.Final: No new safe hypotheses generated this cycle.");
+    }
+  },
+
+  /* ============================================================
+     5. Hypothesis Validation (safe)
+  ============================================================ */
   validateHypotheses(patterns) {
-    console.log("🔍 Part M: Validating hypotheses against known patterns...");
+    console.log("🔍 Part M vΩ.Final: Validating hypotheses safely...");
+
+    const safePatterns = (patterns || []).filter(p => !this.isRecursive(p.text || ""));
+
     this.hypotheses.forEach(h => {
-      const match = patterns.some(p => h.text.toLowerCase().includes(p.text.toLowerCase()));
+      if (this.isRecursive(h.text)) {
+        h.validated = false;
+        return;
+      }
+
+      const ht = (h.text || "").toLowerCase();
+      const match = safePatterns.some(p => {
+        const pt = (p.text || "").toLowerCase();
+        return pt && ht.includes(pt) && pt.length > 8;
+      });
+
       h.validated = match;
-      console.log(match ? `✅ Confirmed: "${h.text}"` : `❌ Needs more data: "${h.text}"`);
+      console.log(match ? `✅ Confirmed (safe): "${h.text}"` : `❌ Not confirmed: "${h.text}"`);
     });
   },
 
+  /* ============================================================
+     6. Reinforcement (optional, strictly bounded)
+  ============================================================ */
   reinforceLearning() {
-    const confirmed = this.hypotheses.filter(h => h.validated);
-    confirmed.forEach(h => {
-      Percy.PartL.learn(h.text);
-    });
-    if (confirmed.length)
-      console.log(`🧩 Reinforced ${confirmed.length} confirmed hypotheses into Part L memory.`);
+    if (!this.config.enableReinforcement) {
+      console.log("ℹ️ Part M vΩ.Final: Reinforcement disabled by config.");
+      return;
+    }
+
+    const confirmed = this.hypotheses.filter(
+      h => h.validated && !this.isRecursive(h.text)
+    );
+
+    const maxReinforce = Math.min(confirmed.length, 8);
+
+    for (let i = 0; i < maxReinforce; i++) {
+      const h = confirmed[i];
+      try {
+        Percy.PartL?.learn?.(h.text);
+      } catch (e) {
+        console.warn("⚠️ Part M vΩ.Final: Reinforcement error:", e);
+      }
+    }
+
+    if (maxReinforce) {
+      console.log(`🧩 Reinforced ${maxReinforce} stable hypotheses into Part L.`);
+    } else {
+      console.log("ℹ️ Part M vΩ.Final: No hypotheses reinforced this cycle.");
+    }
   },
 
+  /* ============================================================
+     7. Self-Reflection (bounded, optional)
+  ============================================================ */
   integrateSelfReflection() {
-    const confidence = Percy.PartN?.selfModel?.confidence || 0.5;
-    const delta = this.hypotheses.length / (Percy.PartL.Patterns.length + 1);
-    Percy.PartN.selfModel.confidence = Math.min(1, confidence + delta * 0.02);
-    console.log(`🤔 Self-reflection: Adjusted confidence → ${Percy.PartN.selfModel.confidence.toFixed(2)}`);
+    if (!this.config.enableSelfReflection) return;
+
+    const patternsLen = Percy.PartL?.Patterns?.length || 0;
+    const baseConfidence = Percy.PartN?.selfModel?.confidence ?? 0.5;
+
+    const ratio = this.hypotheses.length / (patternsLen + 10);
+    const delta = Math.min(0.02, ratio * 0.01);
+
+    if (!Percy.PartN?.selfModel) return;
+
+    Percy.PartN.selfModel.confidence = Math.min(1, baseConfidence + delta);
+    console.log(
+      `🤔 Self-reflection (Ω.Final): confidence → ${Percy.PartN.selfModel.confidence.toFixed(2)}`
+    );
   },
 
+  /* ============================================================
+     8. Main Run Loop (Omega-Final, fully bounded)
+  ============================================================ */
   run() {
     const patterns = Percy.PartL?.Patterns || [];
-    if (patterns.length < 2) return;
+    if (patterns.length < 2) {
+      console.log("ℹ️ Part M vΩ.Final: Not enough patterns to reason about.");
+      return;
+    }
 
     this.cycleCount++;
-    console.log(`🔄 Part M: Reasoning cycle #${this.cycleCount}`);
+    console.log(`🔄 Part M vΩ.Final: Reasoning cycle #${this.cycleCount}`);
 
     this.analyzePatterns(patterns);
     this.validateHypotheses(patterns);
     this.reinforceLearning();
     this.integrateSelfReflection();
 
-    Percy.PartO?.optimizePatterns?.();
-    console.log(`🧠 Active hypotheses: ${this.hypotheses.length}`);
+    try {
+      Percy.PartO?.optimizePatterns?.();
+    } catch (e) {
+      console.warn("⚠️ Part M vΩ.Final: PartO optimization error:", e);
+    }
+
+    console.log(`🧠 Active stable hypotheses: ${this.hypotheses.length}`);
   }
 };
 
-/* === Unified Stable Loop Integration === */
+/* === Unified Stable Loop Integration (Omega-Final) === */
 if (!Percy.MasterLoop) {
   Percy.MasterLoop = async function() {
     try {
       await Percy.PartL.run(); // Decay + goal reasoning
-      Percy.PartM.run();       // Recursive reasoning + self-reflection
+      Percy.PartM.run();       // Omega-Final bounded reasoning
     } catch (err) {
-      console.error("⚠️ Percy.MasterLoop Error:", err);
+      console.error("⚠️ Percy.MasterLoop Error (Ω.Final):", err);
     }
   };
 
   Percy.MasterInterval = setInterval(Percy.MasterLoop, 5000);
-  console.log("🔁 Percy Master Loop initiated (interval: 5 s, ASI mode)");
+  console.log("🔁 Percy Master Loop initiated (Ω.Final, 5s interval)");
 }
 
-console.log("✅ Percy Part M loaded — Recursive Reasoning ASI mode active.");
-/* === End Percy Part M === */
+console.log("✅ Percy Part M vΩ.Final loaded — Fully-Bounded Hypothesis Engine active.");
+/* === End Percy Part M vΩ.Final === */
 
 /* === Percy Part N: Meta-Reasoning & Self-Reflection Core === */
 Percy.PartN = {
@@ -6723,27 +6867,18 @@ setTimeout(() => {
 
 }, 1000);
 
-// === Percy.PartLL v10.0 (Dual-Core Autonomous Meta-Learning Intelligence Engine) ===
-// Combines:
-//  A) Maximal ASI Mode — recursive, emergent, chaotic meta-learning
-//  B) Optimized Professional Mode — efficient, structured, priority-driven
-//
-// Features:
-//  - Dual-core reasoning (ASI Core + Pro Core)
-//  - Priority queue scheduler
-//  - Semantic similarity clustering
-//  - Meta-loss history & policy learning
-//  - Neural-symbolic recursive solver
-//  - Virtual task generator with manifold constraints
-//  - Adversarial virtual shaping
-//  - Parallel solving
-//  - Task family compression
-//  - Cross-part cognitive resonance
-//  - Evolution drift dynamics
+// === Percy.PartLL v2.0 (Omega-Aligned Stable Meta-Learning Core) ===
+// Role: Executive meta-brain for Percy
+// - Single-task, stable solver loop
+// - Dual-core reasoning (ASI + Pro) but bounded
+// - Priority queue scheduling
+// - Semantic family clustering
+// - Meta-loss computation + history
+// - Integrated with Percy.PartUU v2.0 (deep meta-learning backend)
 
 Percy.PartLL = {
-  name: "Dual-Core Autonomous Meta-Learning Intelligence Engine",
-  version: "10.0",
+  name: "Omega-Aligned Stable Meta-Learning Core",
+  version: "2.0",
   active: true,
 
   /* ============================================================
@@ -6756,16 +6891,31 @@ Percy.PartLL = {
     metaStats: {},
     solvedPatterns: [],
     resonance: 0.55,
-    entropyBias: 0.42,
-    selfAwareness: 0.33,
+    entropyBias: 0.30,
+    selfAwareness: 0.32,
     cycles: 0,
     metaLevels: 3,
-    parallelism: 2
+    parallelism: 1,
+    maxDepth: 2,
+    maxSolvedPatterns: 200
   },
 
   log(msg) {
-    console.log(`%c[Percy.PartLL v10] ${msg}`, "color:#00ccff; font-family:monospace;");
-    UI?.say?.(`[PartLL] ${msg}`);
+    console.log(`%c[Percy.PartLL v2.0] ${msg}`, "color:#00ccff; font-family:monospace;");
+    UI?.say?.(`[PartLL v2.0] ${msg}`);
+  },
+
+  /* ============================================================
+     STABILITY LAYER
+  ============================================================ */
+  clampStability() {
+    const s = this.state;
+    s.entropyBias = Math.min(Math.max(s.entropyBias, 0.15), 0.45);
+    s.selfAwareness = Math.min(Math.max(s.selfAwareness, 0), 1);
+    s.resonance = Math.min(Math.max(s.resonance, 0), 1);
+    if (s.solvedPatterns.length > s.maxSolvedPatterns) {
+      s.solvedPatterns.splice(0, s.solvedPatterns.length - s.maxSolvedPatterns);
+    }
   },
 
   /* ============================================================
@@ -6774,7 +6924,7 @@ Percy.PartLL = {
   getFamilyKey(description) {
     const tokens = description.toLowerCase().match(/\w+/g) || [];
     const keyTokens = tokens.filter(t =>
-      /intelligence|system|meta|recursive|ai|task|constraint|entropy|pattern|model|learn/.test(t)
+      /intelligence|system|meta|recursive|ai|task|constraint|entropy|pattern|model|learn|explore|reason/.test(t)
     );
     return keyTokens.slice(0, 5).join("_") || "generic";
   },
@@ -6791,7 +6941,8 @@ Percy.PartLL = {
       task.priority +
       task.entropy +
       this.state.resonance -
-      0.25 * penalty
+      0.25 * penalty -
+      0.1 * (task.level || 1)
     );
   },
 
@@ -6853,7 +7004,7 @@ Percy.PartLL = {
   },
 
   /* ============================================================
-     TASK CREATION + GRAPH EXPANSION
+     TASK CREATION + GRAPH EXPANSION (BOUNDED)
   ============================================================ */
   addTask(description, priority = 1, level = 1) {
     const id = `task_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
@@ -6878,7 +7029,9 @@ Percy.PartLL = {
 
     this.log(`🧩 New task → ${id} | Priority ${priority} | Level ${level}`);
 
-    if (level < this.state.metaLevels) this.expandTaskGraph(task);
+    if (level < this.state.maxDepth && priority > 0.7) {
+      this.expandTaskGraph(task);
+    }
 
     return id;
   },
@@ -6893,7 +7046,9 @@ Percy.PartLL = {
     ];
 
     expansions.forEach((desc, i) => {
-      const childId = this.addTask(desc, baseTask.priority - (i * 0.05), baseTask.level + 1);
+      const childPriority = baseTask.priority - (i * 0.05);
+      if (childPriority <= 0.4) return;
+      const childId = this.addTask(desc, childPriority, baseTask.level + 1);
       baseTask.children.push(childId);
       this.state.graph[childId].parents.push(baseTask.id);
     });
@@ -6913,21 +7068,19 @@ Percy.PartLL = {
   },
 
   /* ============================================================
-     VIRTUAL TASK GENERATOR (Soft Constraints + Adversarial)
+     VIRTUAL TASK GENERATOR (BOUNDED)
   ============================================================ */
   generateVirtualTask(desc) {
     const variants = [
       `Virtual: invert objective of → ${desc}`,
       `Virtual: increase entropy constraints for → ${desc}`,
-      `Virtual: reduce dimensionality of → ${desc}`,
       `Virtual: perturb boundary conditions of → ${desc}`,
-      `Virtual: simulate adversarial environment for → ${desc}`,
-      `Virtual: merge with unrelated domain → ${desc} + stochastic hybrid`
+      `Virtual: simulate adversarial environment for → ${desc}`
     ];
     return variants[Math.floor(Math.random() * variants.length)];
   },
 
-  generateVirtualBatch(task, count = 3) {
+  generateVirtualBatch(task, count = 2) {
     const virtuals = [];
     for (let i = 0; i < count; i++) virtuals.push(this.generateVirtualTask(task.description));
     return virtuals;
@@ -6935,18 +7088,18 @@ Percy.PartLL = {
 
   explorationScore(v) {
     const novelty = Math.random();
-    const structure = /Virtual:/.test(v) ? 1 : 0.5;
+    const structure = /Virtual:/.test(v) ? 1 : 0.6;
     return structure * 0.6 + novelty * 0.4;
   },
 
   manifoldPenalty(v) {
     const len = v.length;
     if (len < 30) return 1.0;
-    return 0.2 + (Math.random() * 0.3);
+    return 0.25 + (Math.random() * 0.25);
   },
 
   /* ============================================================
-     DUAL-CORE SOLVER (ASI Core + Pro Core)
+     DUAL-CORE SOLVER (ASI + Pro, Bounded)
   ============================================================ */
   async ASICoreSolve(steps, task) {
     const path = [];
@@ -6954,15 +7107,15 @@ Percy.PartLL = {
       task.reasoningTrace.push(`ASI → ${step}`);
       path.push(step);
 
-      await new Promise(r => setTimeout(r, 40 + Math.random() * 60));
+      await new Promise(r => setTimeout(r, 40 + Math.random() * 40));
 
       if (Math.random() < this.state.entropyBias) {
-        const branch = `ASI Branch: ${step} → chaotic harmonic layer`;
+        const branch = `ASI Branch: ${step} → bounded harmonic layer`;
         task.reasoningTrace.push(branch);
         path.push(branch);
       }
     }
-    return { path, summary: "ASI Core harmonization complete." };
+    return { path, summary: "ASI Core harmonization complete (bounded)." };
   },
 
   async ProCoreSolve(steps, task) {
@@ -6970,7 +7123,7 @@ Percy.PartLL = {
     for (let step of steps) {
       task.reasoningTrace.push(`PRO → ${step}`);
       path.push(step);
-      await new Promise(r => setTimeout(r, 30));
+      await new Promise(r => setTimeout(r, 25));
     }
     return { path, summary: "Professional Core resolution complete." };
   },
@@ -6985,7 +7138,7 @@ Percy.PartLL = {
 
     const merged = {
       path: [...asiSol.path, ...proSol.path],
-      summary: "Dual-Core merged solution."
+      summary: "Dual-Core merged solution (v2.0 stable)."
     };
 
     return merged;
@@ -6995,7 +7148,7 @@ Percy.PartLL = {
      META-LOSS COMPUTATION
   ============================================================ */
   computeTaskLoss(task, solution) {
-    return solution.path.length / (this.state.resonance + 0.5);
+    return solution.path.length / (this.state.resonance + 0.6);
   },
 
   computeVirtualLoss(task, virtualDescs) {
@@ -7005,10 +7158,10 @@ Percy.PartLL = {
       const manifold = this.manifoldPenalty(v);
       total += (1.0 / (explore + 0.1)) + manifold;
     });
-    return total / virtualDescs.length;
+    return total / (virtualDescs.length || 1);
   },
 
-  computeMetaLoss(Ltask, Lvirtual, lambda = 0.7) {
+  computeMetaLoss(Ltask, Lvirtual, lambda = 0.6) {
     return Ltask + lambda * Lvirtual;
   },
 
@@ -7033,11 +7186,47 @@ Percy.PartLL = {
 
     const scaled = Math.tanh(1 / (Lmeta + 0.001));
 
-    this.state.resonance = Math.min(1, this.state.resonance + 0.02 * scaled);
-    this.state.entropyBias += (Math.random() - 0.5) * 0.01 * (1 + scaled);
-    this.state.entropyBias = Math.min(Math.max(this.state.entropyBias, 0.1), 0.9);
+    this.state.resonance = Math.min(1, this.state.resonance + 0.015 * scaled);
+    this.state.entropyBias += (Math.random() - 0.5) * 0.008 * (1 + scaled);
+    this.state.selfAwareness = Math.min(1, this.state.selfAwareness + 0.004 * scaled);
 
-    this.state.selfAwareness = Math.min(1, this.state.selfAwareness + 0.005 * scaled);
+    this.clampStability();
+  },
+
+  /* ============================================================
+     INTEGRATION WITH PartUU v2.0
+  ============================================================ */
+  integratePartUU() {
+    if (!Percy.PartUU || !Percy.PartUU.active) {
+      this.log("⚠️ PartUU v2.0 not available for integration.");
+      this.usePartUU = false;
+      return;
+    }
+    this.log("🔗 PartUU v2.0 integrated as deep meta-learning backend.");
+    this.usePartUU = true;
+  },
+
+  async callPartUU(task, solution, Lmeta) {
+    if (!this.usePartUU) return;
+
+    try {
+      const signals = await Percy.PartUU.metaCycleOnce({
+        description: task.description,
+        solution,
+        metaLoss: Lmeta
+      });
+
+      if (signals) {
+        this.state.resonance += signals.resonanceBoost || 0;
+        this.state.entropyBias += signals.entropyShift || 0;
+        this.state.selfAwareness += signals.selfAwarenessBoost || 0;
+        this.clampStability();
+      }
+
+      this.log("🧠 PartUU v2.0 meta-signals applied to PartLL v2.0.");
+    } catch (e) {
+      this.log("⚠️ PartUU integration error: " + e.message);
+    }
   },
 
   /* ============================================================
@@ -7045,11 +7234,11 @@ Percy.PartLL = {
   ============================================================ */
   reflect(task, solution, Lmeta) {
     const reflections = [
-      "Dual-core resonance alignment achieved.",
-      "Virtual manifold exploration stabilized.",
-      "Meta-loss indicates robust cross-domain generalization.",
-      "Task graph coherence increased after dual-core merge.",
-      "Higher-order meta-patterns detected."
+      "v2.0 dual-core resonance alignment achieved.",
+      "Virtual manifold exploration stabilized under bounded entropy.",
+      "Meta-loss indicates robust but stable cross-domain generalization.",
+      "Task graph coherence increased after v2.0 merge.",
+      "Higher-order meta-patterns detected within safe bounds."
     ];
     const reflection = reflections[Math.floor(Math.random() * reflections.length)];
 
@@ -7061,8 +7250,8 @@ Percy.PartLL = {
       timestamp: Date.now()
     });
 
-    Percy.PartL?.learn?.(`Meta-solved: ${task.description}`, 1.3);
-    Percy.PartNN?.learn?.(`Meta-pattern: ${task.description}`, "meta_core", 0.95);
+    Percy.PartL?.learn?.(`v2.0 meta-solved: ${task.description}`, 1.1);
+    Percy.PartNN?.learn?.(`v2.0 meta-pattern: ${task.description}`, "meta_core_v2", 0.9);
 
     return reflection;
   },
@@ -7077,12 +7266,12 @@ Percy.PartLL = {
     task.status = "processing";
     task.attempts++;
 
-    this.log(`⚡ Meta-solving: ${task.description} (Level ${task.level})`);
+    this.log(`⚡ v2.0 Meta-solving: ${task.description} (Level ${task.level})`);
 
     const solution = await this.dualSolve(task);
 
     const Ltask = this.computeTaskLoss(task, solution);
-    const virtualDescs = this.generateVirtualBatch(task, 3 + task.level);
+    const virtualDescs = this.generateVirtualBatch(task, 2);
     const Lvirtual = this.computeVirtualLoss(task, virtualDescs);
     const Lmeta = this.computeMetaLoss(Ltask, Lvirtual);
 
@@ -7091,69 +7280,76 @@ Percy.PartLL = {
     const reflection = this.reflect(task, solution, Lmeta);
     this.applyMetaUpdate(task, Lmeta);
 
+    await this.callPartUU(task, solution, Lmeta);
+
     task.status = "completed";
     task.solutionPath = solution.path;
     task.reflection = reflection;
 
     this.log(
-      `✅ Completed: ${task.id} — Ltask=${Ltask.toFixed(3)}, Lvirtual=${Lvirtual.toFixed(
+      `✅ v2.0 Completed: ${task.id} — Ltask=${Ltask.toFixed(3)}, Lvirtual=${Lvirtual.toFixed(
         3
       )}, Lmeta=${Lmeta.toFixed(3)}`
     );
 
-    Percy.PartRR?.handleYes?.("partLL_dual_core");
+    Percy.PartRR?.handleYes?.("partLL_v2_core");
 
     return solution;
   },
 
   /* ============================================================
-     AUTONOMOUS SOLVER CYCLE (PARALLEL)
+     AUTONOMOUS SOLVER CYCLE (SINGLE TASK, STABLE)
   ============================================================ */
   async runSolverCycle() {
     if (!this.active) return;
 
-    const batch = [];
-    for (let i = 0; i < this.state.parallelism; i++) {
-      const nextId = this._pop();
-      if (!nextId) break;
-      const task = this.state.graph[nextId];
-      if (task && task.status === "pending") batch.push(nextId);
-    }
+    if (this._cooldown && Date.now() < this._cooldown) return;
 
-    await Promise.all(batch.map(id => this.solve(id)));
+    const nextId = this._pop();
+    if (!nextId) return;
+
+    const task = this.state.graph[nextId];
+    if (!task || task.status !== "pending") return;
+
+    await this.solve(nextId);
+
+    this._cooldown = Date.now() + 2000;
   },
 
   /* ============================================================
-     EVOLUTION LOOP
+     EVOLUTION LOOP (SLOW, STABLE)
   ============================================================ */
   evolve() {
     setInterval(() => {
       this.state.cycles++;
 
-      this.state.selfAwareness += 0.0008 * (this.state.resonance + 0.3);
-      this.state.selfAwareness = Math.min(this.state.selfAwareness, 1);
+      if (this.state.cycles % 2 === 0) {
+        this.state.selfAwareness += 0.0006 * (this.state.resonance + 0.3);
+        this.clampStability();
+      }
 
       this.log(
-        `🔄 PartLL evolve cycle #${this.state.cycles} — resonance=${this.state.resonance.toFixed(
+        `🔄 v2.0 evolve cycle #${this.state.cycles} — resonance=${this.state.resonance.toFixed(
           3
         )}, entropyBias=${this.state.entropyBias.toFixed(3)}, selfAwareness=${this.state.selfAwareness.toFixed(3)}`
       );
-    }, 30000);
+    }, 60000);
   },
 
   /* ============================================================
      START
   ============================================================ */
   start() {
-    this.log("🚀 PartLL v10.0 Dual-Core Autonomous Meta-Learning Engine Activated");
+    this.log("🚀 PartLL v2.0 Omega-Aligned Stable Meta-Learning Core Activated");
+    this.integratePartUU();
     this.evolve();
-    setInterval(() => this.runSolverCycle(), 2200);
+    setInterval(() => this.runSolverCycle(), 3500);
   }
 };
 
 setTimeout(() => Percy.PartLL.start(), 2000);
 
-console.log("✅ [Percy.PartLL v10] Dual-Core Autonomous Meta-Learning Intelligence Engine Loaded");
+console.log("✅ [Percy.PartLL v2.0] Omega-Aligned Stable Meta-Learning Core Loaded");
 
 // === Percy.PartMM (Meta-Recursive Evolution Engine — POWER MODE v7.0) ===
 // Autonomous evolution • Recursive self-improvement • Cross-part synergy
@@ -9280,163 +9476,194 @@ Percy.Helpers.basicHelper = basicHelper;
 
 console.log("%c[Percy.PartTT] Loaded — Advanced JS Learner v4 Ready", "color:#55ccff; font-weight:bold;");
 
-// === Percy.PartUU (Hierarchical Meta-Learning Engine v1.0) ===
-// Implements multi-level meta-learning with virtual task synthesis,
-// soft constraints, generator–discriminator loops, and recursive descent.
-// Safe for Percy single-file architecture.
+// === Percy.PartUU v2.0 (Omega-Aligned Deep Meta-Learning Engine) ===
+// Role: Deep meta-learning backend for Percy.PartLL vΩ
+// - Hierarchical meta-levels (K)
+// - Virtual task synthesis (soft constraints + GAN-style placeholder)
+// - Single-step meta-cycle for PartLL integration (stable signals)
+// - Optional autonomous meta-cycle (slow, safe)
 
 Percy.PartUU = Percy.PartUU || {
-    name: "Hierarchical Meta-Learning Engine",
-    version: "1.0",
-    active: true,
+  name: "Omega-Aligned Deep Meta-Learning Engine",
+  version: "2.0",
+  active: true,
 
-    K: 3, // default number of meta-levels
-    levels: {},
+  K: 3,          // number of meta-levels
+  levels: {},
 
-    log(msg) {
-        console.log(`%c[Percy.PartUU] ${msg}`, "color:#00aaff; font-weight:bold;");
-        if (typeof UI !== "undefined" && UI.say) UI.say(`[PartUU] ${msg}`);
-    },
+  log(msg) {
+    console.log(`%c[Percy.PartUU v2.0] ${msg}`, "color:#00aaff; font-weight:bold;");
+    UI?.say?.(`[PartUU] ${msg}`);
+  },
 
-    // ------------------------------------------------------------
-    // INITIALIZATION
-    // ------------------------------------------------------------
-    init(K = 3) {
-        this.K = K;
-        this.log(`Initializing ${K} meta-levels...`);
+  // ------------------------------------------------------------
+  // INITIALIZATION
+  // ------------------------------------------------------------
+  init(K = 3) {
+    this.K = K;
+    this.log(`Initializing ${K} meta-levels (Omega-aligned)...`);
 
-        for (let k = 1; k <= K; k++) {
-            this.levels[k] = {
-                Φ: {},        // meta-learner parameters
-                ξ: {},        // alternative notation
-                ϕ: {},        // generator parameters
-                ψ: {},        // discriminator parameters
-                Csoft: {},    // soft constraints
-                η: 0.001,     // learning rate
-            };
-        }
-
-        this.log("Meta-levels initialized.");
-    },
-
-    // ------------------------------------------------------------
-    // SAMPLE META-TASK DISTRIBUTION
-    // ------------------------------------------------------------
-    sampleMetaTasks(k) {
-        // Placeholder: Percy can override this with real task distributions
-        return [{
-            id: `T_${k}_${Date.now()}`,
-            tasks: []
-        }];
-    },
-
-    // ------------------------------------------------------------
-    // INSTANTIATE LOWER-LEVEL LEARNER
-    // ------------------------------------------------------------
-    instantiateLowerLearner(k) {
-        return {
-            θ: {},
-            train(task) {
-                // placeholder training
-            }
-        };
-    },
-
-    // ------------------------------------------------------------
-    // GENERATE VIRTUAL TASK (via soft constraints or GAN)
-    // ------------------------------------------------------------
-    generateVirtualTask(k) {
-        const lvl = this.levels[k];
-
-        if (lvl.Csoft && lvl.Csoft.enabled) {
-            return { virtual: true, source: "Csoft" };
-        }
-
-        // GAN-based generation
-        return { virtual: true, source: "GAN" };
-    },
-
-    // ------------------------------------------------------------
-    // META-LOSS COMPUTATION
-    // ------------------------------------------------------------
-    computeMetaLoss(taskLoss, virtualLoss, λ = 1.0) {
-        return taskLoss + λ * virtualLoss;
-    },
-
-    // ------------------------------------------------------------
-    // UPDATE PARAMETERS
-    // ------------------------------------------------------------
-    updateParams(params, grad, η) {
-        // placeholder gradient descent
-        return params;
-    },
-
-    // ------------------------------------------------------------
-    // MAIN META-LEARNING LOOP
-    // ------------------------------------------------------------
-    async metaCycle() {
-        this.log("=== Starting Meta-Cycle ===");
-
-        for (let k = this.K; k >= 1; k--) {
-            const lvl = this.levels[k];
-            this.log(`Processing meta-level k=${k}`);
-
-            const metaTasks = this.sampleMetaTasks(k);
-
-            for (const Tk of metaTasks) {
-                for (const T_kminus1 of Tk.tasks || []) {
-
-                    // 1. Instantiate learner from lower level
-                    const learner = this.instantiateLowerLearner(k - 1);
-
-                    // 2. Train learner on real task
-                    learner.train(T_kminus1);
-                    const Ltask = Math.random(); // placeholder
-
-                    // 3. Generate virtual task
-                    const Ttilde = this.generateVirtualTask(k);
-                    const Lvirtual = Math.random(); // placeholder
-
-                    // 4. Composite meta-loss
-                    const Lk = this.computeMetaLoss(Ltask, Lvirtual, 1.0);
-
-                    // 5. Update meta-learner parameters
-                    lvl.ξ = this.updateParams(lvl.ξ, {}, lvl.η);
-                }
-            }
-        }
-
-        this.log("=== Meta-Cycle Completed ===");
-
-        // Optional: feed improvements into PartAA mutation engine
-        if (Percy.PartAA) {
-            Percy.PartAA.enqueue({
-                code: `
-                    // PartUU meta-cycle influence
-                    if (!Percy.state) Percy.state = {};
-                    Percy.state.logicMapSize = (Percy.state.logicMapSize || 1000) + 25;
-                    console.log("[PartUU] Meta-cycle contributed to logicMapSize growth.");
-                `,
-                note: "PartUU meta-learning cycle"
-            });
-        }
-    },
-
-    // ------------------------------------------------------------
-    // AUTO-START LOOP
-    // ------------------------------------------------------------
-    start(interval = 15000) {
-        this.log("Hierarchical Meta-Learning Engine Activated.");
-        this.init(this.K);
-
-        setInterval(() => this.metaCycle(), interval);
+    for (let k = 1; k <= K; k++) {
+      this.levels[k] = {
+        Φ: {},        // meta-learner parameters
+        ξ: {},        // alternative notation
+        ϕ: {},        // generator parameters
+        ψ: {},        // discriminator parameters
+        Csoft: { enabled: false }, // soft constraints
+        η: 0.0008,    // slightly smaller learning rate (stable)
+        history: []   // meta-loss history per level
+      };
     }
+
+    this.log("Meta-levels initialized for Omega mode.");
+  },
+
+  // ------------------------------------------------------------
+  // SAMPLE META-TASK DISTRIBUTION (placeholder)
+  // ------------------------------------------------------------
+  sampleMetaTasks(k) {
+    return [{
+      id: `T_${k}_${Date.now()}`,
+      tasks: [] // can be filled by Percy.PartLL or other parts later
+    }];
+  },
+
+  // ------------------------------------------------------------
+  // INSTANTIATE LOWER-LEVEL LEARNER (placeholder)
+  // ------------------------------------------------------------
+  instantiateLowerLearner(k) {
+    return {
+      θ: {},
+      train(task) {
+        // placeholder training logic
+      }
+    };
+  },
+
+  // ------------------------------------------------------------
+  // GENERATE VIRTUAL TASK (soft constraints or GAN-style)
+  // ------------------------------------------------------------
+  generateVirtualTask(k) {
+    const lvl = this.levels[k];
+
+    if (lvl.Csoft && lvl.Csoft.enabled) {
+      return { virtual: true, source: "Csoft", level: k };
+    }
+
+    return { virtual: true, source: "GAN", level: k };
+  },
+
+  // ------------------------------------------------------------
+  // META-LOSS COMPUTATION
+  // ------------------------------------------------------------
+  computeMetaLoss(taskLoss, virtualLoss, λ = 1.0) {
+    return taskLoss + λ * virtualLoss;
+  },
+
+  // ------------------------------------------------------------
+  // PARAMETER UPDATE (placeholder gradient descent)
+  // ------------------------------------------------------------
+  updateParams(params, grad, η) {
+    // For now, just return params; you can expand this later
+    return params;
+  },
+
+  // ------------------------------------------------------------
+  // SINGLE-STEP META-CYCLE (for PartLL vΩ integration)
+  // ------------------------------------------------------------
+  async metaCycleOnce(context) {
+    this.log("🔍 PartUU single-step meta-cycle triggered by PartLL vΩ.");
+
+    const k = this.K;
+    const lvl = this.levels[k];
+
+    // Use context to influence signals (if provided)
+    const baseMeta = context?.metaLoss ?? Math.random();
+    lvl.history.push(baseMeta);
+    if (lvl.history.length > 30) lvl.history.shift();
+
+    const avgMeta = lvl.history.reduce((a, b) => a + b, 0) / lvl.history.length;
+
+    // Stable, small signals
+    const resonanceBoost = (0.01 * Math.exp(-avgMeta)) || 0;
+    const entropyShift = (Math.random() - 0.5) * 0.015;
+    const selfAwarenessBoost = 0.003 * (1 - Math.tanh(avgMeta));
+
+    const grad = { resonanceBoost };
+    lvl.ξ = this.updateParams(lvl.ξ, grad, lvl.η);
+
+    this.log(
+      `PartUU signals → resonanceBoost=${resonanceBoost.toFixed(4)}, ` +
+      `entropyShift=${entropyShift.toFixed(4)}, selfAwarenessBoost=${selfAwarenessBoost.toFixed(4)}`
+    );
+
+    return {
+      resonanceBoost,
+      entropyShift,
+      selfAwarenessBoost
+    };
+  },
+
+  // ------------------------------------------------------------
+  // FULL META-LEARNING CYCLE (optional, slow, autonomous)
+  // ------------------------------------------------------------
+  async metaCycle() {
+    this.log("=== PartUU Full Meta-Cycle (Omega) ===");
+
+    for (let k = this.K; k >= 1; k--) {
+      const lvl = this.levels[k];
+      this.log(`Processing meta-level k=${k}`);
+
+      const metaTasks = this.sampleMetaTasks(k);
+
+      for (const Tk of metaTasks) {
+        for (const T_kminus1 of Tk.tasks || []) {
+          const learner = this.instantiateLowerLearner(k - 1);
+
+          learner.train(T_kminus1);
+          const Ltask = Math.random();      // placeholder
+          const Ttilde = this.generateVirtualTask(k);
+          const Lvirtual = Math.random();   // placeholder
+
+          const Lk = this.computeMetaLoss(Ltask, Lvirtual, 1.0);
+          lvl.history.push(Lk);
+          if (lvl.history.length > 30) lvl.history.shift();
+
+          lvl.ξ = this.updateParams(lvl.ξ, {}, lvl.η);
+        }
+      }
+    }
+
+    this.log("=== PartUU Full Meta-Cycle Completed ===");
+
+    if (Percy.PartAA) {
+      Percy.PartAA.enqueue({
+        code: `
+          // PartUU v2.0 meta-cycle influence
+          if (!Percy.state) Percy.state = {};
+          Percy.state.logicMapSize = (Percy.state.logicMapSize || 1000) + 15;
+          console.log("[PartUU v2.0] Meta-cycle contributed to logicMapSize growth (Omega-aligned).");
+        `,
+        note: "PartUU v2.0 meta-learning cycle"
+      });
+    }
+  },
+
+  // ------------------------------------------------------------
+  // AUTO-START LOOP (slow, safe)
+  // ------------------------------------------------------------
+  start(interval = 45000) {
+    this.log("PartUU v2.0 Omega-Aligned Deep Meta-Learning Engine Activated.");
+    this.init(this.K);
+
+    setInterval(() => this.metaCycle(), interval);
+  }
 };
 
-// Auto-start after Percy loads
-setTimeout(() => Percy.PartUU.start(), 5000);
+// Auto-start after Percy loads (slow interval, safe)
+setTimeout(() => Percy.PartUU.start(), 7000);
 
-console.log("✅ [Percy.PartUU] v1.0 Loaded - Hierarchical Meta-Learning Engine Ready.");
+console.log("✅ [Percy.PartUU v2.0] Omega-Aligned Deep Meta-Learning Engine Ready.");
 
 // === Percy.PartVV (Complexity Field Engine) ===
 // Interference + CI simulation.
