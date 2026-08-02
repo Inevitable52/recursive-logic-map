@@ -11112,5 +11112,345 @@ Percy.PartZZ = {
 
 UI?.say?.("🧬 Percy PartZZ (Super Percy Merger Engine) installed. Call Percy.PartZZ.mergeAll() to merge.");
 
+// === Percy.PartAAA v3.0-Omega — Network Reality Distortion Cortex (NRDC) ===
+// The most advanced safe network virtualization module for Percy.
+
+Percy.PartAAA = Percy.PartAAA || {
+  name: "Network Reality Distortion Cortex",
+  version: "3.0-Omega",
+  active: true,
+
+  /* === CONFIG === */
+  config: {
+    harPath: "network.har",
+    enableMutation: true,
+    enableLatencyInjection: true,
+    enableChaosMode: false,
+    maxLatencyMs: 1500,
+    mutationProbability: 0.15,
+    chaosProbability: 0.07,
+    defaultMockStatus: 200,
+    defaultMockContentType: "application/json",
+    anomalyThreshold: 0.82,
+    fingerprintWindow: 50,
+    seedTag: "network-trace",
+    scenarioProfiles: {
+      "default": { latency: [80, 300], chaos: 0.02, mutation: 0.05 },
+      "slow-api": { latency: [400, 1200], chaos: 0.03, mutation: 0.08 },
+      "flaky-network": { latency: [200, 1500], chaos: 0.12, mutation: 0.15 },
+      "test-lab": { latency: [50, 200], chaos: 0.01, mutation: 0.03 }
+    }
+  },
+
+  /* === STATE === */
+  state: {
+    lastHAR: null,
+    mocks: {},
+    fixtures: {},
+    mutations: [],
+    chaosEvents: [],
+    debugEvents: [],
+    fingerprints: [],
+    anomalies: [],
+    currentScenario: "default"
+  },
+
+  log(msg) {
+    console.log(`%c[Percy.PartAAA v3.0-Omega] ${msg}`, "color:#00aaff; font-family:monospace; font-weight:bold;");
+    UI?.say?.(`[PartAAA] ${msg}`);
+  },
+
+  /* === UTIL: Scenario Application === */
+  applyScenario(name) {
+    const profile = this.config.scenarioProfiles[name];
+    if (!profile) {
+      this.log(`⚠️ Scenario not found: ${name}`);
+      return;
+    }
+    this.state.currentScenario = name;
+    this.config.maxLatencyMs = profile.latency[1];
+    this.config.mutationProbability = profile.mutation;
+    this.config.chaosProbability = profile.chaos;
+    this.log(`🎛 Scenario applied → ${name} (latency=${profile.latency[0]}-${profile.latency[1]}ms, chaos=${profile.chaos}, mutation=${profile.mutation})`);
+  },
+
+  /* === 1. RECORD NETWORK TRAFFIC (HAR) === */
+  async recordTraffic(url) {
+    this.log(`📡 Recording HAR from: ${url}`);
+
+    const res = await Percy.PartPP?.run?.("recordHAR", {
+      url,
+      saveHar: this.config.harPath
+    });
+
+    if (res?.success) {
+      this.state.lastHAR = this.config.harPath;
+      this.log(`✅ HAR saved → ${this.config.harPath}`);
+
+      // Seed into PercyState
+      try {
+        const seedText = `HAR recorded from ${url}, saved at ${this.config.harPath}`;
+        PercyState?.createSeed?.(seedText, this.config.seedTag, { url, harPath: this.config.harPath });
+      } catch {}
+    } else {
+      this.log(`⚠️ HAR recording failed: ${res?.error}`);
+    }
+  },
+
+  /* === 2. REPLAY NETWORK TRAFFIC (HAR) === */
+  async replayTraffic(url) {
+    if (!this.state.lastHAR) {
+      this.log("⚠️ No HAR file recorded yet.");
+      return;
+    }
+
+    this.log(`🔁 Replaying HAR → ${this.state.lastHAR}`);
+
+    const res = await Percy.PartPP?.run?.("replayHAR", {
+      harPath: this.state.lastHAR,
+      url
+    });
+
+    if (res?.success) {
+      this.log(`🎬 HAR replay successful for: ${url}`);
+    } else {
+      this.log(`⚠️ HAR replay failed: ${res?.error}`);
+    }
+  },
+
+  /* === 3. MERGE MULTIPLE HAR FILES (Synthetic) === */
+  async mergeHAR(paths) {
+    this.log(`🧩 Merging HAR files: ${paths.join(", ")}`);
+
+    const res = await Percy.PartPP?.run?.("mergeHAR", {
+      harPaths: paths,
+      outputHar: this.config.harPath
+    });
+
+    if (res?.success) {
+      this.state.lastHAR = this.config.harPath;
+      this.log(`✅ HAR merged → ${this.config.harPath}`);
+    } else {
+      this.log(`⚠️ HAR merge failed: ${res?.error}`);
+    }
+  },
+
+  /* === 4. MOCK ROUTES === */
+  async mockRoute(pattern, body) {
+    this.log(`🧪 Mocking route: ${pattern}`);
+
+    this.state.mocks[pattern] = body;
+
+    const res = await Percy.PartPP?.run?.("mockRoute", {
+      pattern,
+      status: this.config.defaultMockStatus,
+      contentType: this.config.defaultMockContentType,
+      body: JSON.stringify(body)
+    });
+
+    if (res?.success) {
+      this.log(`🎭 Mock applied → ${pattern}`);
+    } else {
+      this.log(`⚠️ Mock failed: ${res?.error}`);
+    }
+  },
+
+  /* === 5. SYNTHETIC MOCK GENERATION (AI-Driven) === */
+  async generateMock(pattern, description) {
+    this.log(`🤖 Generating synthetic mock for: ${pattern} (${description})`);
+
+    let mockBody = { message: "Synthetic mock placeholder" };
+    try {
+      const prompt = `Generate a realistic JSON response for: ${description}`;
+      const reply = await Percy.correlateReply?.(prompt);
+      mockBody = JSON.parse(reply);
+    } catch {
+      mockBody = { description, generated: true };
+    }
+
+    await this.mockRoute(pattern, mockBody);
+    this.log(`✅ Synthetic mock generated and applied → ${pattern}`);
+  },
+
+  /* === 6. FIXTURES (Reusable Mock Sets) === */
+  async applyFixture(name, fixtureData) {
+    this.log(`📦 Applying fixture: ${name}`);
+    this.state.fixtures[name] = fixtureData;
+
+    for (const routePattern in fixtureData) {
+      await this.mockRoute(routePattern, fixtureData[routePattern]);
+    }
+
+    this.log(`🔧 Fixture applied: ${name}`);
+  },
+
+  /* === 7. LATENCY INJECTION === */
+  async injectLatency(pattern, minMs = 120, maxMs = this.config.maxLatencyMs) {
+    if (!this.config.enableLatencyInjection) {
+      this.log("⚠️ Latency injection disabled in config.");
+      return;
+    }
+
+    this.log(`🐢 Injecting latency into: ${pattern} (${minMs}-${maxMs}ms)`);
+
+    const res = await Percy.PartPP?.run?.("injectLatency", {
+      pattern,
+      minMs,
+      maxMs
+    });
+
+    if (res?.success) {
+      this.log(`⏳ Latency injection active → ${pattern}`);
+    } else {
+      this.log(`⚠️ Latency injection failed: ${res?.error}`);
+    }
+  },
+
+  /* === 8. RESPONSE MUTATION (Gray-Zone Safe) === */
+  async mutateResponse(pattern, mutatorFn) {
+    if (!this.config.enableMutation) {
+      this.log("⚠️ Mutation disabled in config.");
+      return;
+    }
+
+    this.log(`🧬 Mutating responses for: ${pattern}`);
+
+    this.state.mutations.push({ pattern, mutatorFn });
+
+    const res = await Percy.PartPP?.run?.("mutateResponse", {
+      pattern,
+      mutationProbability: this.config.mutationProbability
+    });
+
+    if (res?.success) {
+      this.log(`🌀 Mutation layer active → ${pattern}`);
+    } else {
+      this.log(`⚠️ Mutation failed: ${res?.error}`);
+    }
+  },
+
+  /* === 9. CHAOS MODE (Safe, Controlled) === */
+  async enableChaosMode() {
+    this.log("⚡ Activating CHAOS MODE (safe, controlled)");
+
+    this.config.enableChaosMode = true;
+
+    const res = await Percy.PartPP?.run?.("chaosMode", {
+      chaosProbability: this.config.chaosProbability
+    });
+
+    if (res?.success) {
+      this.log("🔥 Chaos mode active — random failures, delays, and mutations enabled.");
+    } else {
+      this.log(`⚠️ Chaos mode failed: ${res?.error}`);
+    }
+  },
+
+  async disableChaosMode() {
+    this.log("🧯 Disabling CHAOS MODE");
+    this.config.enableChaosMode = false;
+    const res = await Percy.PartPP?.run?.("chaosMode", { chaosProbability: 0 });
+    if (res?.success) {
+      this.log("✅ Chaos mode disabled.");
+    } else {
+      this.log(`⚠️ Chaos disable failed: ${res?.error}`);
+    }
+  },
+
+  /* === 10. TRAFFIC FINGERPRINTING === */
+  async fingerprintTraffic() {
+    this.log("🧬 Fingerprinting network traffic…");
+
+    const res = await Percy.PartPP?.run?.("fingerprintTraffic", {
+      windowSize: this.config.fingerprintWindow
+    });
+
+    if (res?.fingerprints) {
+      this.state.fingerprints = res.fingerprints;
+      this.log(`📊 Captured ${res.fingerprints.length} traffic fingerprints.`);
+    } else {
+      this.log("⚠️ No fingerprints captured.");
+    }
+  },
+
+  /* === 11. ANOMALY DETECTION === */
+  async detectAnomalies() {
+    this.log("🚨 Detecting network anomalies…");
+
+    const res = await Percy.PartPP?.run?.("detectAnomalies", {
+      threshold: this.config.anomalyThreshold
+    });
+
+    if (res?.anomalies) {
+      this.state.anomalies = res.anomalies;
+      this.log(`🚨 Detected ${res.anomalies.length} anomalies (threshold=${this.config.anomalyThreshold}).`);
+
+      // Seed anomalies into PercyState
+      try {
+        const text = `Network anomalies detected: ${JSON.stringify(res.anomalies).slice(0, 800)}`;
+        PercyState?.createSeed?.(text, "network-anomaly", { count: res.anomalies.length });
+      } catch {}
+    } else {
+      this.log("✅ No anomalies detected.");
+    }
+  },
+
+  /* === 12. DEBUG NETWORK === */
+  async debugNetwork() {
+    this.log("🔍 Debugging network interceptions…");
+
+    const res = await Percy.PartPP?.run?.("debugNetwork", {});
+
+    if (res?.events) {
+      this.state.debugEvents = res.events;
+      this.log(`📊 Captured ${res.events.length} network events.`);
+    } else {
+      this.log("⚠️ No network events captured.");
+    }
+  },
+
+  /* === 13. HOOKS FOR PARTDD / ASK SKYNET === */
+  async attachToSkynet() {
+    this.log("🧠 Attaching PartAAA to Ask Skynet (PartDD)…");
+
+    try {
+      Percy.PartDD = Percy.PartDD || {};
+      Percy.PartDD.networkLayer = this;
+      this.log("✅ PartAAA attached as Skynet network layer.");
+    } catch (err) {
+      this.log(`⚠️ Failed to attach to Skynet: ${err.message}`);
+    }
+  },
+
+  /* === 14. HOOKS FOR PARTPP (Playwright Bridge) === */
+  async attachToPartPP() {
+    this.log("🧠 Attaching PartAAA to PartPP (Playwright bridge)…");
+
+    try {
+      Percy.PartPP = Percy.PartPP || {};
+      Percy.PartPP.networkLayer = this;
+      this.log("✅ PartAAA attached as PartPP network layer.");
+    } catch (err) {
+      this.log(`⚠️ Failed to attach to PartPP: ${err.message}`);
+    }
+  },
+
+  /* === 15. START === */
+  start() {
+    this.log("🚀 PartAAA Network Reality Distortion Cortex Activated");
+
+    // Default scenario
+    this.applyScenario("default");
+
+    // Attach to Skynet & PartPP
+    this.attachToSkynet();
+    this.attachToPartPP();
+  }
+};
+
+/* === Auto-start === */
+setTimeout(() => Percy.PartAAA.start(), 2000);
+
+console.log("✅ [Percy.PartAAA v3.0-Omega] Network Reality Distortion Cortex Loaded");
 
 
