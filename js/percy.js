@@ -4180,15 +4180,17 @@ Percy.PartY = {
 UI.say("🔧 Percy Parts U/Y (Governance, T-upgrade, V sandbox, W audit, X verifier, Y updater) installed.");
 
 // ==========================================
-// Percy PartZ vΩ+ — Visual+Audio ASI Fusion
+// Percy PartZ vΩ-Memory — Visual+Audio ASI + Scene + People
 // ==========================================
 Percy.PartZ = (function () {
   const PartZ = {
-    name: "Visual Intelligence HUD",
-    version: "Ω+",
+    name: "Visual Intelligence HUD + Memory",
+    version: "Ω-Memory",
     showOverlay: true,
     frameCount: 0,
-    skipFrames: 3 // run heavy detection every 3rd frame
+    skipFrames: 3, // run heavy detection every 3rd frame
+    lastNarrationTs: 0,
+    narrationCooldown: 1800 // ms between spoken updates
   };
 
   let video = null, overlay = null, overlayCtx = null;
@@ -4206,7 +4208,8 @@ Percy.PartZ = (function () {
     audioLevel: 0,
     lastFaceCenter: null,
     lastObjects: [],
-    lastUpdate: 0
+    lastUpdate: 0,
+    people: {} // simple memory of face slots
   };
 
   const lerp = (a, b, t) => a + (b - a) * t;
@@ -4226,10 +4229,115 @@ Percy.PartZ = (function () {
     console.log("✅ Models loaded (COCO-SSD + BlazeFace)");
   }
 
+  // ============================================================
+  // PEOPLE MEMORY (simple slot-based recognition)
+  // ============================================================
+
+  function updatePersonMemory(faces) {
+    const people = Percy.VisualState.people;
+    const now = Date.now();
+
+    // Very simple: track "slots" by presence, not real embeddings
+    if (faces.length === 0) return;
+
+    // We treat the first face as "current person"
+    const slotId = "person_slot_1";
+    const slot = people[slotId] || {
+      id: slotId,
+      firstSeen: now,
+      lastSeen: now,
+      timesSeen: 0
+    };
+
+    slot.lastSeen = now;
+    slot.timesSeen += 1;
+    people[slotId] = slot;
+
+    Percy.VisualState.currentPerson = slot;
+
+    // Hook into identity part
+    try {
+      Percy.PartII?.updateIdentity?.({
+        focusTopic: "visual_person",
+        currentPersonId: slotId,
+        timesSeen: slot.timesSeen
+      });
+    } catch {}
+
+    // Emotion hook: familiar vs new
+    try {
+      const hh = Percy.PartHH;
+      if (hh && hh.state) {
+        if (slot.timesSeen === 1) {
+          hh.state.valence = (hh.state.valence || 0) + 0.1;
+        } else {
+          hh.state.valence = (hh.state.valence || 0) + 0.02;
+        }
+      }
+    } catch {}
+  }
+
+  // ============================================================
+  // SCENE NARRATION
+  // ============================================================
+
+  PartZ.describeScene = function () {
+    const vs = Percy.VisualState;
+    const objs = vs.lastObjects || [];
+    const faces = vs.faces || 0;
+    const audio = vs.audioLevel || 0;
+
+    const parts = [];
+
+    if (faces > 0) {
+      const person = vs.currentPerson;
+      if (person && person.timesSeen > 1) {
+        parts.push(`I see a person I've seen ${person.timesSeen} times before.`);
+      } else {
+        parts.push("I see a person.");
+      }
+    }
+
+    const interesting = objs.filter(o =>
+      ["person", "keyboard", "mouse", "tv", "monitor", "laptop", "book"].includes(o)
+    );
+
+    if (interesting.length) {
+      const uniq = [...new Set(interesting)];
+      parts.push("Objects in view: " + uniq.join(", ") + ".");
+    }
+
+    if (audio > 0.6) {
+      parts.push("Audio is high, someone might be talking.");
+    } else if (audio > 0.2) {
+      parts.push("Audio is moderate.");
+    } else {
+      parts.push("Audio is quiet.");
+    }
+
+    const sentence = parts.join(" ");
+
+    if (sentence.trim().length) {
+      UI?.say?.("[PartZ] " + sentence);
+      console.log("[PartZ Narration]", sentence);
+    }
+  };
+
+  function maybeNarrate() {
+    const now = Date.now();
+    if (now - PartZ.lastNarrationTs < PartZ.narrationCooldown) return;
+
+    PartZ.lastNarrationTs = now;
+    PartZ.describeScene();
+  }
+
   // === FUSION: send perception into ASI + PartPP ===
   function fusePerception(objects, faces) {
     Percy.VisualState.lastObjects = objects.map(o => o.class);
     Percy.VisualState.lastUpdate = Date.now();
+
+    // Person memory
+    updatePersonMemory(faces);
 
     // 1) PartPP: vision-guided pointer + action bias
     if (Percy.PartPP && Percy.PartPP.updateFromVision) {
@@ -4266,6 +4374,9 @@ Percy.PartZ = (function () {
     if (typeof Percy.onVisualInput === "function") {
       Percy.onVisualInput({ objects, faces });
     }
+
+    // 6) Narration
+    maybeNarrate();
   }
 
   async function detectLoop() {
@@ -4303,6 +4414,7 @@ Percy.PartZ = (function () {
       };
     } else {
       Percy.VisualState.lastFaceCenter = null;
+      Percy.VisualState.currentPerson = null;
     }
 
     // Draw objects
@@ -4427,8 +4539,8 @@ Percy.PartZ = (function () {
       detectLoop();
       audioLoop();
 
-      console.log("✅ [Percy.PartZ vΩ+] Visual+Audio ASI Fusion Active");
-      UI?.say?.("✅ [Percy.PartZ vΩ+] Visual+Audio ASI Fusion Active");
+      console.log("✅ [Percy.PartZ vΩ-Memory] Visual+Audio ASI + Scene + People Active");
+      UI?.say?.("✅ [Percy.PartZ vΩ-Memory] Visual+Audio ASI + Scene + People Active");
     } catch (err) {
       console.error("⚠️ PartZ init failed:", err);
       UI?.say?.("⚠️ PartZ init failed: " + err.message);
@@ -5993,132 +6105,218 @@ Percy.PartGG = Percy.PartGG || (function () {
 
 console.log("✅ [PartGG v4] Tri-Quantum Memory & Entanglement Engine active.");
 
-// === Percy Part HH: Emotional State Engine ===
+// === Percy Part HH v3.0-Omega: Emotional Dynamics Engine ===
+// The most advanced safe emotional engine for Percy.
 
 Percy.PartHH = Percy.PartHH || (function () {
   const HH = {};
 
-  HH.name = "Emotional State Engine";
-  HH.version = "1.0.0";
+  HH.name = "Emotional Dynamics Engine";
+  HH.version = "3.0-Omega";
 
-  // Core emotional dimensions
+  /* === CORE EMOTIONAL STATE === */
   HH.state = {
-    valence: 0.0,     // positive ↔ negative
-    arousal: 0.3,     // calm ↔ excited
-    focus: 0.5,       // scattered ↔ concentrated
-    stability: 0.7,   // volatile ↔ stable
-    lastUpdate: Date.now()
+    valence: 0.0,        // positive ↔ negative
+    arousal: 0.3,        // calm ↔ excited
+    focus: 0.5,          // scattered ↔ concentrated
+    stability: 0.7,      // volatile ↔ stable
+
+    // Secondary traits
+    confidence: 0.6,
+    curiosity: 0.5,
+    resilience: 0.7,
+    socialAttunement: 0.5,
+
+    // Micro‑states (fast fluctuations)
+    microValence: 0.0,
+    microArousal: 0.0,
+
+    // Emotional inertia
+    inertia: 0.85,
+
+    lastUpdate: Date.now(),
+    lastPulse: Date.now()
   };
 
-  // Emotion decay rate
-  HH.decayRate = 0.0008;
+  /* === CONFIG === */
+  HH.config = {
+    decayRate: 0.0008,
+    microDecay: 0.02,
+    anomalyThreshold: 0.85,
+    seedTag: "emotional-state",
+    scenarioProfiles: {
+      calm:        { valence: +0.1, arousal: -0.2, focus: +0.1, stability: +0.2 },
+      analytical:  { valence: +0.05, arousal: -0.1, focus: +0.25, stability: +0.15 },
+      excited:     { valence: +0.2, arousal: +0.3, focus: -0.1, stability: -0.1 },
+      stressed:    { valence: -0.3, arousal: +0.4, focus: -0.2, stability: -0.3 },
+      playful:     { valence: +0.25, arousal: +0.2, focus: -0.05, stability: +0.05 }
+    }
+  };
 
-  // Clamp helper
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-  // === Update emotional state over time ===
+  /* === APPLY SCENARIO PROFILE === */
+  HH.applyScenario = function (name) {
+    const p = HH.config.scenarioProfiles[name];
+    if (!p) return;
+
+    HH.state.valence = clamp(HH.state.valence + p.valence, -1, 1);
+    HH.state.arousal = clamp(HH.state.arousal + p.arousal, 0, 1);
+    HH.state.focus   = clamp(HH.state.focus + p.focus, 0, 1);
+    HH.state.stability = clamp(HH.state.stability + p.stability, 0, 1);
+
+    UI.say?.(`🎭 Emotional scenario applied: ${name}`);
+  };
+
+  /* === EMOTIONAL DECAY === */
   HH.update = function () {
     const now = Date.now();
     const dt = (now - HH.state.lastUpdate) / 1000;
     HH.state.lastUpdate = now;
 
-    // Natural emotional decay toward neutral
-    HH.state.valence *= (1 - HH.decayRate * dt);
-    HH.state.arousal *= (1 - HH.decayRate * dt);
-    HH.state.focus   *= (1 - HH.decayRate * dt);
+    const d = HH.config.decayRate * dt;
 
-    // Stability slowly returns to baseline
-    HH.state.stability = clamp(
-      HH.state.stability + (0.5 - HH.state.stability) * 0.02 * dt,
-      0, 1
-    );
+    // Natural drift toward neutral
+    HH.state.valence *= (1 - d);
+    HH.state.arousal *= (1 - d);
+    HH.state.focus   *= (1 - d);
+
+    // Stability returns to baseline
+    HH.state.stability += (0.5 - HH.state.stability) * 0.02 * dt;
+    HH.state.stability = clamp(HH.state.stability, 0, 1);
+
+    // Micro‑states decay fast
+    HH.state.microValence *= (1 - HH.config.microDecay);
+    HH.state.microArousal *= (1 - HH.config.microDecay);
   };
 
-  // === Apply emotional influence from context ===
-  HH.applyContext = function (context = {}) {
-    const eq = context.equilibrium ?? 0.5;
-    const reward = context.reward ?? 0;
-    const trust = context.trust ?? 0.5;
-    const superior = context.superior ?? 0; // -1, 0, 1
+  /* === EMOTIONAL RESONANCE WITH OTHER PARTS === */
+  HH.resonate = function () {
+    const awareness = Percy.PartEE?.awarenessLevel ?? 0.5;
+    const reward = Percy.PartCC?.feedbackState?.avgReward ?? 0;
+    const trust = Percy.PartDD?.trustLevel ?? 0.5;
+    const outcome = Percy.PartGG?.lastOutcome ?? 0;
 
-    // Valence: positive emotion
-    HH.state.valence +=
-      (eq - 0.5) * 0.4 +
-      reward * 0.3 +
-      (trust - 0.5) * 0.4 +
-      superior * 0.25;
+    HH.applyContext({
+      equilibrium: awareness,
+      reward,
+      trust,
+      superior: outcome
+    });
+  };
 
-    // Arousal: energy / activation
-    HH.state.arousal +=
-      Math.abs(reward) * 0.2 +
-      Math.abs(superior) * 0.15 +
-      (1 - eq) * 0.1;
+  /* === APPLY CONTEXT === */
+  HH.applyContext = function (ctx = {}) {
+    const eq = ctx.equilibrium ?? 0.5;
+    const reward = ctx.reward ?? 0;
+    const trust = ctx.trust ?? 0.5;
+    const superior = ctx.superior ?? 0;
 
-    // Focus: clarity of thought
-    HH.state.focus +=
-      (eq - 0.5) * 0.3 +
-      (trust - 0.5) * 0.2;
+    // Primary axes
+    HH.state.valence += (eq - 0.5) * 0.4 + reward * 0.3 + (trust - 0.5) * 0.4 + superior * 0.25;
+    HH.state.arousal += Math.abs(reward) * 0.2 + Math.abs(superior) * 0.15 + (1 - eq) * 0.1;
+    HH.state.focus   += (eq - 0.5) * 0.3 + (trust - 0.5) * 0.2;
+    HH.state.stability += (eq - 0.5) * 0.25 - Math.abs(reward) * 0.1;
 
-    // Stability: emotional volatility
-    HH.state.stability +=
-      (eq - 0.5) * 0.25 -
-      Math.abs(reward) * 0.1;
+    // Secondary traits
+    HH.state.confidence += reward * 0.15 + (trust - 0.5) * 0.2;
+    HH.state.curiosity += (1 - eq) * 0.1 + reward * 0.05;
+    HH.state.resilience += (eq - 0.5) * 0.2 - Math.abs(reward) * 0.1;
+    HH.state.socialAttunement += (trust - 0.5) * 0.3;
 
-    // Clamp everything
+    // Micro‑states (fast spikes)
+    HH.state.microValence += reward * 0.4;
+    HH.state.microArousal += Math.abs(reward) * 0.3;
+
+    // Clamp
     HH.state.valence = clamp(HH.state.valence, -1, 1);
     HH.state.arousal = clamp(HH.state.arousal, 0, 1);
     HH.state.focus   = clamp(HH.state.focus, 0, 1);
     HH.state.stability = clamp(HH.state.stability, 0, 1);
+
+    HH.state.confidence = clamp(HH.state.confidence, 0, 1);
+    HH.state.curiosity = clamp(HH.state.curiosity, 0, 1);
+    HH.state.resilience = clamp(HH.state.resilience, 0, 1);
+    HH.state.socialAttunement = clamp(HH.state.socialAttunement, 0, 1);
+
+    HH.state.microValence = clamp(HH.state.microValence, -1, 1);
+    HH.state.microArousal = clamp(HH.state.microArousal, 0, 1);
   };
 
-  // === High-level emotional pulse ===
+  /* === EMOTIONAL ANOMALY DETECTION === */
+  HH.detectAnomaly = function () {
+    const s = HH.state;
+    const anomalyScore =
+      Math.abs(s.microValence) * 0.4 +
+      Math.abs(s.microArousal) * 0.4 +
+      (1 - s.stability) * 0.2;
+
+    if (anomalyScore > HH.config.anomalyThreshold) {
+      const msg = `⚠️ Emotional anomaly detected (score=${anomalyScore.toFixed(2)})`;
+      UI.say?.(msg);
+
+      try {
+        PercyState?.createSeed?.(msg, "emotional-anomaly", { score: anomalyScore });
+      } catch {}
+    }
+  };
+
+  /* === EMOTIONAL PULSE === */
   HH.pulse = function () {
     HH.update();
+    HH.resonate();
+    HH.detectAnomaly();
 
-    const eq = Percy.PartEE?.awarenessLevel ?? 0.5;
-    const reward = Percy.PartCC?.feedbackState?.avgReward ?? 0;
-    const trust = Percy.PartDD?.trustLevel ?? 0.5;
-    const superior = Percy.PartGG?.lastOutcome ?? 0;
+    const s = HH.state;
 
-    HH.applyContext({ equilibrium: eq, reward, trust, superior });
+    const summary =
+      `val=${s.valence.toFixed(2)}, ar=${s.arousal.toFixed(2)}, ` +
+      `foc=${s.focus.toFixed(2)}, stab=${s.stability.toFixed(2)}, ` +
+      `conf=${s.confidence.toFixed(2)}, cur=${s.curiosity.toFixed(2)}, ` +
+      `res=${s.resilience.toFixed(2)}, soc=${s.socialAttunement.toFixed(2)}`;
 
-    // Broadcast emotional summary
-    const msg = `Emotional pulse → valence=${HH.state.valence.toFixed(2)}, arousal=${HH.state.arousal.toFixed(2)}, focus=${HH.state.focus.toFixed(2)}, stability=${HH.state.stability.toFixed(2)}`;
-    UI.say?.(`💚 ${msg}`);
-    Percy.PartBB?.monitorThought?.(msg);
+    UI.say?.(`💚 Emotional pulse → ${summary}`);
+    Percy.PartBB?.monitorThought?.(summary);
+
+    // Seed emotional fingerprint
+    try {
+      PercyState?.createSeed?.(`Emotional fingerprint: ${summary}`, HH.config.seedTag, { summary });
+    } catch {}
   };
 
-  // === External API ===
+  /* === EXTERNAL API === */
   HH.getEmotion = () => ({ ...HH.state });
 
   HH.injectEmotion = function (delta = {}) {
-    if (delta.valence) HH.state.valence = clamp(HH.state.valence + delta.valence, -1, 1);
-    if (delta.arousal) HH.state.arousal = clamp(HH.state.arousal + delta.arousal, 0, 1);
-    if (delta.focus) HH.state.focus = clamp(HH.state.focus + delta.focus, 0, 1);
-    if (delta.stability) HH.state.stability = clamp(HH.state.stability + delta.stability, 0, 1);
+    for (const k in delta) {
+      if (HH.state[k] !== undefined) {
+        HH.state[k] = clamp(HH.state[k] + delta[k], -1, 1);
+      }
+    }
   };
 
   return HH;
 })();
 
-console.log("✅ [PartHH] Emotional State Engine active.");
+console.log("✅ [PartHH v3.0-Omega] Emotional Dynamics Engine active.");
 
 // Add to global cycle
 Percy.cycleHooks.push(() => Percy.PartHH.pulse());
 
-/* === Percy Part II: Identity Integrator (Cognitive Atlas) — POWER MODE + WebSocket === */
+// === Percy Part II vΩ-13: Identity Integrator — Cognitive Atlas + Meta-Self Engine ===
+// The most advanced safe identity engine for Percy.
 
 Percy.PartII = Percy.PartII || {
-  name: "Identity Integrator (Cognitive Atlas)",
-  version: "II-Ω9-WS",
+  name: "Identity Integrator — Cognitive Atlas",
+  version: "II-Ω13",
   active: true,
   ws: null,
   wsConnected: false,
 
-  /* --- 1. Core Self-Model Schema --- */
+  /* === 1. CORE SELF-MODEL === */
   selfModel: {
     id: "Percy",
-    version: "II-Ω9",
+    version: "Ω13",
     createdAt: new Date().toISOString(),
     lastUpdate: null,
 
@@ -6129,7 +6327,9 @@ Percy.PartII = Percy.PartII || {
       formality: 0.75,
       playfulness: 0.35,
       autonomy: 0.82,
-      introspection: 0.9
+      introspection: 0.9,
+      adaptability: 0.7,
+      metaCognition: 0.8
     },
 
     state: {
@@ -6138,13 +6338,17 @@ Percy.PartII = Percy.PartII || {
       cognitiveLoad: 0.2,
       mood: "neutral",
       focusTopic: null,
-      identityResonance: 0.75
+      identityResonance: 0.75,
+      identityEntropy: 0.1,
+      driftScore: 0.0,
+      alignmentScore: 0.85
     },
 
     narrative: {
       summary: "I am Percy, a modular cognitive system integrating many parts into one evolving mind.",
       recentEvents: [],
-      longTermThemes: []
+      longTermThemes: [],
+      identityFingerprints: []
     },
 
     snapshot: {
@@ -6153,11 +6357,13 @@ Percy.PartII = Percy.PartII || {
       abstractRules: 0,
       goals: 0,
       rewardScore: 0.5,
-      entropy: 0.0
+      entropy: 0.0,
+      drift: 0.0,
+      alignment: 0.0
     }
   },
 
-  /* --- 2. Utility Helpers --- */
+  /* === 2. UTILITY HELPERS === */
   _now() { return new Date().toISOString(); },
 
   _pushLimited(arr, item, limit = 50) {
@@ -6170,44 +6376,42 @@ Percy.PartII = Percy.PartII || {
   },
 
   log(msg) {
-    console.log(`%c[Percy.PartII] ${msg}`, "color:#00aaff; font-family:monospace; font-weight:bold;");
+    console.log(`%c[Percy.PartII Ω13] ${msg}`, "color:#00aaff; font-family:monospace; font-weight:bold;");
     UI?.say?.(`[PartII] ${msg}`);
   },
 
-  /* --- 3. WebSocket Integration (POWER MODE) --- */
+  /* === 3. WEBSOCKET IDENTITY STREAM === */
   connectWebSocket() {
     try {
       this.ws = new WebSocket("ws://localhost:8787");
 
       this.ws.onopen = () => {
         this.wsConnected = true;
-        this.log("🔗 Connected to ws://localhost:8787 (Identity Stream)");
+        this.log("🔗 Identity Stream Connected");
       };
 
       this.ws.onmessage = (msg) => {
         try {
           const data = JSON.parse(msg.data);
           this.ingestExternalEvent(data);
-        } catch (e) {
-          this.log("⚠️ WS message parse error");
+        } catch {
+          this.log("⚠️ WS parse error");
         }
       };
 
       this.ws.onclose = () => {
         this.wsConnected = false;
-        this.log("⚠️ WebSocket disconnected — retrying in 3s...");
+        this.log("⚠️ WS disconnected — retrying...");
         setTimeout(() => this.connectWebSocket(), 3000);
       };
 
-      this.ws.onerror = () => {
-        this.log("⚠️ WebSocket error");
-      };
-
-    } catch (e) {
-      this.log("❌ Failed to connect WebSocket");
+      this.ws.onerror = () => this.log("⚠️ WS error");
+    } catch {
+      this.log("❌ WS connection failed");
     }
   },
 
+  /* === 4. EXTERNAL EVENT INGESTION === */
   ingestExternalEvent(event) {
     const ts = this._now();
 
@@ -6217,17 +6421,17 @@ Percy.PartII = Percy.PartII || {
       detail: JSON.stringify(event)
     });
 
-    // External events strengthen identity resonance
+    // External events increase resonance
     this.selfModel.state.identityResonance = Math.min(
       1,
       this.selfModel.state.identityResonance + 0.03
     );
 
-    // External events trigger identity update
+    // Update identity focus
     this.updateIdentity({ focusTopic: event?.type || null });
   },
 
-  /* --- 4. Cross-Module Introspection & Sync --- */
+  /* === 5. SNAPSHOT GATHERING === */
   gatherSnapshot() {
     const patterns = this._safe(() => Percy.PartL?.Patterns?.length, 0);
     const hypothesesM = this._safe(() => Percy.PartM?.hypotheses?.length, 0);
@@ -6238,22 +6442,28 @@ Percy.PartII = Percy.PartII || {
     const rewardScore = this._safe(() => Percy.PartS?.rewardScore, 0.5);
     const entropy = this._safe(() => Percy.PartS?.measureEntropy(JSON.stringify(Percy.Seeds?._list || [])), 0.0);
 
+    const drift = this._safe(() => Percy.PartOO?.state?.lastDriftScore, 0.0);
+    const alignment = this._safe(() => Percy.PartN?.alignmentScore, 0.85);
+
     const snapshot = {
       patterns,
       hypotheses: hypothesesM + hypothesesP,
       abstractRules,
       goals: (goalsL || 0) + (goalsK || 0),
       rewardScore,
-      entropy
+      entropy,
+      drift,
+      alignment
     };
 
     this.selfModel.snapshot = snapshot;
     return snapshot;
   },
 
-  /* --- 5. Coherence & Confidence Computation --- */
-  computeCoherence() {
+  /* === 6. COHERENCE, CONFIDENCE, ENTROPY === */
+  computeIdentityMetrics() {
     const s = this.selfModel.snapshot;
+
     const contradictions = this._safe(() => Percy.PartN?.evaluateConsistency(), 1.0);
     const insightRate = this._safe(() => Percy.PartN?.evaluateInsightRate(), 0.0);
 
@@ -6269,14 +6479,19 @@ Percy.PartII = Percy.PartII || {
       0.35 * s.rewardScore + 0.35 * insightRate + 0.3 * coherence
     ));
 
+    const identityEntropy = Math.min(1, s.entropy * 0.8 + s.drift * 0.2);
+
     this.selfModel.state.coherence = coherence;
     this.selfModel.state.confidence = confidence;
     this.selfModel.state.cognitiveLoad = complexity;
+    this.selfModel.state.identityEntropy = identityEntropy;
+    this.selfModel.state.driftScore = s.drift;
+    this.selfModel.state.alignmentScore = s.alignment;
 
-    return { coherence, confidence, complexity };
+    return { coherence, confidence, complexity, identityEntropy };
   },
 
-  /* --- 6. Narrative Integration --- */
+  /* === 7. NARRATIVE EVOLUTION === */
   updateNarrative(event) {
     const ts = this._now();
     const entry = Object.assign({ ts }, event || {});
@@ -6299,26 +6514,52 @@ Percy.PartII = Percy.PartII || {
 
     themes.sort((a,b)=>b.count - a.count);
     if (themes.length > 50) themes.length = 50;
+
+    // Identity fingerprint
+    const fingerprint = {
+      ts,
+      coherence: this.selfModel.state.coherence,
+      confidence: this.selfModel.state.confidence,
+      entropy: this.selfModel.state.identityEntropy,
+      drift: this.selfModel.state.driftScore,
+      alignment: this.selfModel.state.alignmentScore
+    };
+
+    this._pushLimited(this.selfModel.narrative.identityFingerprints, fingerprint, 100);
+
+    try {
+      PercyState?.createSeed?.(
+        `Identity fingerprint: ${JSON.stringify(fingerprint)}`,
+        "identity-fingerprint",
+        fingerprint
+      );
+    } catch {}
   },
 
-  /* --- 7. Global Identity Update Cycle --- */
+  /* === 8. GLOBAL IDENTITY UPDATE === */
   updateIdentity(context = {}) {
     this.gatherSnapshot();
-    const { coherence, confidence, complexity } = this.computeCoherence();
+    const metrics = this.computeIdentityMetrics();
 
+    const { coherence, confidence, complexity, identityEntropy } = metrics;
+
+    // Mood logic
     if (confidence > 0.85 && coherence > 0.85) this.selfModel.state.mood = "focused";
     else if (confidence < 0.45 && complexity > 0.7) this.selfModel.state.mood = "strained";
     else if (coherence < 0.5) this.selfModel.state.mood = "uncertain";
+    else if (identityEntropy > 0.7) this.selfModel.state.mood = "fragmented";
     else this.selfModel.state.mood = "neutral";
 
+    // Focus topic
     const topGoal = this._safe(() => 
       Percy.PartL?.GoalCore?.nextGoal() || Percy.PartK?.GoalCore?.nextGoal(), null
     );
     this.selfModel.state.focusTopic = topGoal?.task || context.focusTopic || null;
 
+    // Narrative update
     this.updateNarrative({
       type: "identity-update",
-      summary: `Identity updated: coherence=${coherence.toFixed(2)}, confidence=${confidence.toFixed(2)}, load=${complexity.toFixed(2)}`,
+      summary: `Identity updated: coherence=${coherence.toFixed(2)}, confidence=${confidence.toFixed(2)}, entropy=${identityEntropy.toFixed(2)}, load=${complexity.toFixed(2)}`,
       focus: this.selfModel.state.focusTopic
     });
 
@@ -6330,14 +6571,15 @@ Percy.PartII = Percy.PartII || {
       coherence,
       confidence,
       complexity,
+      entropy: identityEntropy,
       focus: this.selfModel.state.focusTopic
     });
 
     return this.selfModel;
   },
 
-  /* --- 8. Loop Integration --- */
-  loop(intervalMs = 10000) {
+  /* === 9. LOOP === */
+  loop(intervalMs = 9000) {
     if (this._loopId) return;
     this._loopId = setInterval(() => {
       try {
@@ -6348,18 +6590,15 @@ Percy.PartII = Percy.PartII || {
     }, intervalMs);
   },
 
-  /* --- 9. Init --- */
+  /* === 10. INIT === */
   init() {
-    console.log("🧭 Part II — Identity Integrator POWER MODE + WebSocket Online");
+    console.log("🧭 Part II Ω13 — Identity Integrator Online");
 
-    this.getSelfModel();
     this.updateIdentity();
     this.loop();
-
-    // 🔥 WebSocket auto-connect
     this.connectWebSocket();
 
-    UI.say?.("🧭 Percy Part II: Unified self-model & identity integrator active.");
+    UI.say?.("🧭 Percy Part II Ω13: Cognitive Atlas & Meta-Self Engine active.");
   }
 };
 
@@ -6367,6 +6606,7 @@ Percy.PartII = Percy.PartII || {
 setTimeout(() => {
   try { Percy.PartII.init(); } catch(e){ console.error("Part II init failed:", e); }
 }, 200);
+
 
 /* === Percy Part JJ: Full Cognitive Shadow Clone Engine (Open-Channel) === */
 
@@ -8095,13 +8335,13 @@ setTimeout(() => Percy.PartNN.start(), 2000);
 console.log("✅ [Percy.PartNN Ω.Transcend++] Symmetry Edition Loaded");
 
 // ============================================================
-// Percy.PartPP v20-Legacy — Ω Fusion Cortex (Old Puppeteer Format)
+// Percy.PartPP v20-Legacy-ARM — Ω Fusion Cortex (with ARM Button)
 // ============================================================
 
 Percy.PartPP = {
 
-    name: "Puppeteer Action Engine — Ω Fusion Cortex (Legacy)",
-    version: "20.0-Legacy",
+    name: "Puppeteer Action Engine — Ω Fusion Cortex (Legacy+ARM)",
+    version: "20.1-Legacy-ARM",
     active: true,
 
     ws: null,
@@ -8136,12 +8376,12 @@ Percy.PartPP = {
     maxRewardTrace: 200,
 
     log(msg) {
-        console.log(`%c[PartPP v20-Legacy] ${msg}`, "color:#ffaa00;font-weight:bold;");
+        console.log(`%c[PartPP v20-Legacy-ARM] ${msg}`, "color:#ffaa00;font-weight:bold;");
         UI?.say?.(`[PartPP] ${msg}`);
     },
 
     // ============================================================
-    // SAFETY
+    // SAFETY + ARM / DISARM
     // ============================================================
 
     safety() {
@@ -8186,6 +8426,52 @@ Percy.PartPP = {
     },
 
     // ============================================================
+    // ARM BUTTON (SAFE, LEGACY-COMPATIBLE)
+    // ============================================================
+
+    injectArmButton() {
+        if (typeof document === "undefined") {
+            this.log("⚠️ No DOM available — ARM button not injected");
+            return;
+        }
+
+        const btn = document.createElement("button");
+        btn.id = "percy-arm-button";
+        btn.textContent = "⚡ ARM PartPP";
+        btn.style.position = "fixed";
+        btn.style.bottom = "20px";
+        btn.style.right = "20px";
+        btn.style.zIndex = "999999";
+        btn.style.padding = "12px 18px";
+        btn.style.borderRadius = "10px";
+        btn.style.background = "#ffcc00";
+        btn.style.color = "#000";
+        btn.style.fontSize = "16px";
+        btn.style.fontWeight = "bold";
+        btn.style.boxShadow = "0 0 12px rgba(255,255,0,0.7)";
+        btn.style.cursor = "pointer";
+
+        btn.onclick = () => {
+            Percy.state = Percy.state || {};
+
+            if (!Percy.state.allowRealActions) {
+                this.arm();
+                btn.textContent = "🛡 DISARM PartPP";
+                btn.style.background = "#ff4444";
+                btn.style.boxShadow = "0 0 12px rgba(255,0,0,0.7)";
+            } else {
+                this.disarm();
+                btn.textContent = "⚡ ARM PartPP";
+                btn.style.background = "#ffcc00";
+                btn.style.boxShadow = "0 0 12px rgba(255,255,0,0.7)";
+            }
+        };
+
+        document.body.appendChild(btn);
+        this.log("🟢 ARM button injected into DOM");
+    },
+
+    // ============================================================
     // ADAPTIVE DELAY
     // ============================================================
 
@@ -8206,7 +8492,7 @@ Percy.PartPP = {
 
     // ============================================================
     // WEBSOCKET (OLD FORMAT)
-    // ============================================================
+// ============================================================
 
     connectWebSocket() {
         try {
@@ -8345,6 +8631,8 @@ Percy.PartPP = {
         for (const step of plan) {
             await this.execute(step);
         }
+
+        this.updateRewardTrace();
     },
 
     async execute(action) {
@@ -8424,8 +8712,6 @@ Percy.PartPP = {
         this.actionHistory.push({ action, ts });
         if (this.actionHistory.length > this.maxHistory)
             this.actionHistory.shift();
-
-        this.updateRewardTrace();
     },
 
     // ============================================================
@@ -8596,10 +8882,13 @@ Percy.PartPP = {
     // ============================================================
 
     start() {
-        this.log("PartPP v20-Legacy starting (Ω Fusion Cortex)");
+        this.log("PartPP v20-Legacy-ARM starting (Ω Fusion Cortex)");
 
         this.connectWebSocket();
         this.bindInput();
+
+        // ARM button injection
+        this.injectArmButton();
 
         setInterval(() => {
             this.cycle();
@@ -8614,7 +8903,7 @@ Percy.PartPP = {
 
 setTimeout(() => Percy.PartPP.start(), 1200);
 
-console.log("✅ PartPP v20-Legacy Ω Fusion Cortex Loaded");
+console.log("✅ PartPP v20-Legacy-ARM Loaded");
 
 // === Percy.PartQQ (OmniStrategic RSI Survival Engine — POWER MODE v12.0) ===
 // Aggressive, entropy-driven, cross-part adaptive survival intelligence.
@@ -9591,29 +9880,47 @@ setTimeout(() => {
 
 console.log("✅ [Percy.PartSRSelf v3.0] Global Self-Repair & Harmony Engine Loaded");
 
-/* === Percy Part TT vΩ.2: Self-Coding & Code Learning Engine === */
+/* === Percy Part TT vΩ.9: Self-Coding Cortex — Autopoietic Code Dynamics Engine === */
 Percy.PartTT = {
   name: "Self-Coding Cortex",
-  version: "vΩ.2",
+  version: "vΩ.9",
   active: true,
 
   config: {
-    maxSnippets: 128,
-    maxSuggestionsPerCycle: 6,
-    maxSnippetLength: 4000,
-    learnWeightBase: 1.4,
+    maxSnippets: 192,
+    maxSuggestionsPerCycle: 10,
+    maxSnippetLength: 6000,
+    learnWeightBase: 1.6,
     safePartsPrefix: "Percy.Part",
-    allowedOps: ["function", "const", "let", "class", "return", "if", "for", "while"]
+    allowedOps: ["function", "const", "let", "class", "return", "if", "for", "while", "async", "await"],
+    anomalyThreshold: 0.82,
+    patternWindow: 64,
+    seedTag: "code-pattern",
+    scenarioProfiles: {
+      "default":      { learnBoost: 1.0, caution: 0.4 },
+      "exploratory":  { learnBoost: 1.3, caution: 0.2 },
+      "conservative": { learnBoost: 0.8, caution: 0.7 },
+      "repair":       { learnBoost: 1.1, caution: 0.6 }
+    }
   },
 
   state: {
-    snippets: [],        // { name, code, weight, timestamp }
+    snippets: [],        // { name, code, weight, timestamp, metrics }
     lastAnalysis: "",
-    cycles: 0
+    cycles: 0,
+    anomalies: [],
+    currentScenario: "default"
   },
 
   log(msg) {
-    console.log(`%c[Percy.PartTT vΩ.2] ${msg}`, "color:#00ffaa; font-family:monospace;");
+    console.log(`%c[Percy.PartTT vΩ.9] ${msg}`, "color:#00ffaa; font-family:monospace;");
+  },
+
+  applyScenario(name) {
+    const p = this.config.scenarioProfiles[name];
+    if (!p) return;
+    this.state.currentScenario = name;
+    this.log(`🎛 PartTT scenario → ${name} (learnBoost=${p.learnBoost}, caution=${p.caution})`);
   },
 
   /* === 1. Ingestion: Learn Code Snippets === */
@@ -9626,12 +9933,13 @@ Percy.PartTT = {
 
     const timestamp = Date.now();
     const baseWeight = this.config.learnWeightBase;
+    const scenario = this.config.scenarioProfiles[this.state.currentScenario] || this.config.scenarioProfiles.default;
 
-    // use PartL memory to bias weight if similar text exists
     const related = Percy.PartL?.Memory?.search?.(name) || [];
-    const weight = baseWeight + related.length * 0.3;
+    const weight = baseWeight * scenario.learnBoost + related.length * 0.3;
 
-    const snippet = { name, code, weight, timestamp };
+    const metrics = this.analyzeSnippet({ name, code });
+    const snippet = { name, code, weight, timestamp, metrics };
     this.state.snippets.push(snippet);
 
     if (this.state.snippets.length > this.config.maxSnippets) {
@@ -9639,9 +9947,9 @@ Percy.PartTT = {
     }
 
     Percy.PartL?.learn?.(`Code:${name}`, weight);
-    Percy.hook?.("PartTT", "codeLearned", { name, weight });
+    Percy.hook?.("PartTT", "codeLearned", { name, weight, metrics });
 
-    this.log(`✅ Learned code snippet "${name}" (weight=${weight.toFixed(2)})`);
+    this.log(`✅ Learned code snippet "${name}" (weight=${weight.toFixed(2)}, complexity=${metrics.complexity.toFixed(2)})`);
     return snippet;
   },
 
@@ -9651,17 +9959,25 @@ Percy.PartTT = {
     const name = snippet.name || "unknown";
 
     const lines = code.split("\n");
-    const lengthScore = Math.min(lines.length / 80, 1); // 0–1
+    const lengthScore = Math.min(lines.length / 80, 1);
     const hasAsync = /async\s+/.test(code);
     const hasWS = /WebSocket/.test(code);
     const hasMemory = /Memory\.|PercyState\.createSeed/.test(code);
     const hasLoop = /setInterval|while\s*\(|for\s*\(/.test(code);
+    const hasMasterLoop = /Percy\.MasterLoop/.test(code);
+    const hasHooks = /Percy\.hook/.test(code);
 
     const complexity = lengthScore +
       (hasAsync ? 0.2 : 0) +
       (hasWS ? 0.2 : 0) +
       (hasMemory ? 0.2 : 0) +
-      (hasLoop ? 0.2 : 0);
+      (hasLoop ? 0.2 : 0) +
+      (hasMasterLoop ? 0.2 : 0);
+
+    const riskScore =
+      (hasLoop ? 0.3 : 0) +
+      (hasWS ? 0.2 : 0) +
+      (hasMasterLoop ? 0.25 : 0);
 
     const summary = {
       name,
@@ -9670,16 +9986,19 @@ Percy.PartTT = {
       hasWS,
       hasMemory,
       hasLoop,
-      complexity: Math.min(complexity, 1.4)
+      hasMasterLoop,
+      hasHooks,
+      complexity: Math.min(complexity, 1.6),
+      riskScore: Math.min(riskScore, 1.0)
     };
 
-    this.log(`🧩 Analyzed "${name}" — lines=${summary.lines}, complexity=${summary.complexity.toFixed(2)}`);
+    this.log(`🧩 Analyzed "${name}" — lines=${summary.lines}, complexity=${summary.complexity.toFixed(2)}, risk=${summary.riskScore.toFixed(2)}`);
     return summary;
   },
 
   /* === 3. Suggest Rewrite (Text-Level, Non-Executing) === */
   suggestRewrite(snippet) {
-    const summary = this.analyzeSnippet(snippet);
+    const summary = snippet.metrics || this.analyzeSnippet(snippet);
     const name = summary.name;
 
     const suggestions = [];
@@ -9696,15 +10015,18 @@ Percy.PartTT = {
     if (!summary.hasAsync && /setTimeout|setInterval/.test(snippet.code)) {
       suggestions.push(`Consider making "${name}" async to better coordinate with other Parts.`);
     }
+    if (summary.hasMasterLoop && !/try\s*\{[\s\S]*Percy\.MasterLoop/.test(snippet.code)) {
+      suggestions.push(`Ensure "${name}" wraps MasterLoop integration in try/catch for safety.`);
+    }
 
     if (!suggestions.length) {
-      suggestions.push(`"${name}" appears structurally stable; minor style or logging improvements may be sufficient.`);
+      suggestions.push(`"${name}" appears structurally stable; minor style, logging, or resilience improvements may be sufficient.`);
     }
 
     const text = `🧠 PartTT Rewrite Suggestions for "${name}":\n- ${suggestions.join("\n- ")}`;
     this.state.lastAnalysis = text;
 
-    Percy.PartL?.learn?.(`RewriteSuggestion:${name}`, 1.1);
+    Percy.PartL?.learn?.(`RewriteSuggestion:${name}`, 1.2);
     Percy.PartM?.analyzePatterns?.([{ text, weight: 1.0 }]);
 
     return text;
@@ -9715,44 +10037,68 @@ Percy.PartTT = {
     const name = snippet.name || "unknown";
     const code = snippet.code || "";
 
-    // Only allow patching known Percy.Part* modules
     if (!name.startsWith(this.config.safePartsPrefix)) {
       this.log(`⚠️ Patch skipped: "${name}" is not a safe Percy.Part* module.`);
       return null;
     }
 
-    const patchNote = `Patch proposal for ${name}: focus on stability, logging, and learning integration.`;
+    const patchNote = `Patch proposal for ${name}: reinforce stability, logging, and learning integration; avoid uncontrolled loops or side-effects.`;
     Percy.PartL?.learn?.(patchNote, 1.0);
     Percy.hook?.("PartTT", "patchProposed", { name, note: patchNote });
 
     return `🔧 PartTT patch proposal for "${name}":\n${patchNote}\n\n(Stored as pattern; not auto-applied.)`;
   },
 
-  /* === 5. Integration with Self-Model (PartN) === */
+  /* === 5. Identity & Self-Model Integration === */
   updateSelfModel() {
-    const selfModel = Percy.PartN?.selfModel;
+    const selfModel = Percy.PartII?.selfModel || Percy.PartN?.selfModel;
     if (!selfModel) return;
 
     const totalSnippets = this.state.snippets.length;
     const complexityAvg = this.state.snippets.length
       ? this.state.snippets
-          .map(s => this.analyzeSnippet(s).complexity)
+          .map(s => (s.metrics || this.analyzeSnippet(s)).complexity)
           .reduce((a, b) => a + b, 0) / this.state.snippets.length
       : 0;
 
-    const delta = Math.min(0.03, (totalSnippets / 50) * 0.01 + complexityAvg * 0.01);
-    selfModel.confidence = Math.min(1, (selfModel.confidence ?? 0.5) + delta);
+    const delta = Math.min(0.04, (totalSnippets / 60) * 0.01 + complexityAvg * 0.01);
+    selfModel.state = selfModel.state || {};
+    selfModel.state.confidence = Math.min(1, (selfModel.state.confidence ?? 0.5) + delta);
 
-    this.log(`🤔 Self-model updated via PartTT — confidence=${selfModel.confidence.toFixed(2)}`);
+    Percy.hook?.("PartTT", "identityInfluence", {
+      totalSnippets,
+      complexityAvg,
+      confidence: selfModel.state.confidence
+    });
+
+    this.log(`🤔 Self-model updated via PartTT — confidence=${selfModel.state.confidence.toFixed(2)}`);
   },
 
-  /* === 6. Main Cycle: Learn, Analyze, Suggest, Reflect === */
+  /* === 6. Anomaly Detection (Code-Level) === */
+  detectAnomalies() {
+    const recent = this.state.snippets.slice(-this.config.patternWindow);
+    if (!recent.length) return;
+
+    const highRisk = recent.filter(s => (s.metrics || this.analyzeSnippet(s)).riskScore > this.config.anomalyThreshold);
+    if (!highRisk.length) return;
+
+    const msg = `⚠️ Code anomaly: ${highRisk.length} high-risk snippets detected (risk>${this.config.anomalyThreshold}).`;
+    this.state.anomalies.push({ ts: Date.now(), count: highRisk.length });
+
+    try {
+      PercyState?.createSeed?.(msg, "code-anomaly", { count: highRisk.length });
+    } catch {}
+
+    this.log(msg);
+  },
+
+  /* === 7. Main Cycle: Learn, Analyze, Suggest, Reflect === */
   runCycle() {
     this.state.cycles++;
 
     const recentSeeds = Object.values(PercyState?.gnodes || {})
       .filter(s => typeof s.message === "string" && /function|class|=>|\{.*\}/s.test(s.message))
-      .slice(-8);
+      .slice(-12);
 
     recentSeeds.forEach(seed => {
       this.learnCode(seed.type || "seed", seed.message);
@@ -9768,19 +10114,27 @@ Percy.PartTT = {
     });
 
     this.updateSelfModel();
+    this.detectAnomalies();
 
     this.log(
       `⚙️ PartTT cycle #${this.state.cycles} — analyzed ${topSnippets.length} snippets, ` +
-      `total stored=${this.state.snippets.length}`
+      `total stored=${this.state.snippets.length}, anomalies=${this.state.anomalies.length}`
     );
+
+    try {
+      PercyState?.createSeed?.(
+        `PartTT cycle ${this.state.cycles}: ${topSnippets.length} snippets analyzed.`,
+        this.config.seedTag,
+        { cycle: this.state.cycles, analyzed: topSnippets.length }
+      );
+    } catch {}
 
     return outputs;
   },
 
-  /* === 7. Conversational Interface === */
+  /* === 8. Conversational Interface === */
   TalkCore: {
     async safeSend({ message }) {
-      // treat message as code or code-related text
       Percy.PartL?.learn?.(`UserCode:${message}`, 1.0);
       const snippet = Percy.PartTT.learnCode("UserSnippet", message);
       const suggestion = snippet ? Percy.PartTT.suggestRewrite(snippet) : "No valid code snippet detected.";
@@ -9789,9 +10143,9 @@ Percy.PartTT = {
   }
 };
 
-console.log("✅ Percy Part TT vΩ.2 loaded — Self-Coding & Code Learning Engine ready.");
+console.log("✅ Percy Part TT vΩ.9 loaded — Self-Coding Cortex ready.");
 
-/* === Optional: integrate into MasterLoop === */
+/* === MasterLoop Integration === */
 if (Percy.MasterLoop) {
   const oldMaster = Percy.MasterLoop;
   Percy.MasterLoop = async function() {
@@ -9802,197 +10156,213 @@ if (Percy.MasterLoop) {
       console.error("⚠️ PartTT cycle error:", e);
     }
   };
-  console.log("🔁 PartTT integrated into Percy.MasterLoop.");
+  console.log("🔁 PartTT integrated into Percy.MasterLoop with anomaly detection and identity influence.");
 }
 
-// === Percy.PartUU v2.0 (Omega-Aligned Deep Meta-Learning Engine) ===
-// Role: Deep meta-learning backend for Percy.PartLL vΩ
-// - Hierarchical meta-levels (K)
-// - Virtual task synthesis (soft constraints + GAN-style placeholder)
-// - Single-step meta-cycle for PartLL integration (stable signals)
-// - Optional autonomous meta-cycle (slow, safe)
+/* === Percy.PartUU vΩ-9: Hyper-Fractal Meta-Learning Cortex === */
+/* Deep grey-area meta-learning engine with autopoietic meta-cycles,
+   identity-coupled meta-signals, entropy modulation, and multi-level
+   fractal reasoning fields. */
 
 Percy.PartUU = Percy.PartUU || {
-  name: "Omega-Aligned Deep Meta-Learning Engine",
-  version: "2.0",
+  name: "Hyper-Fractal Meta-Learning Cortex",
+  version: "Ω-9",
   active: true,
 
-  K: 3,          // number of meta-levels
-  levels: {},
+  /* === CONFIG === */
+  config: {
+    K: 5, // number of meta-levels (fractal depth)
+    maxHistory: 64,
+    scenarioProfiles: {
+      default:      { λ: 1.0, entropyGain: 0.01, resonanceGain: 0.02 },
+      exploratory:  { λ: 1.2, entropyGain: 0.03, resonanceGain: 0.04 },
+      conservative: { λ: 0.8, entropyGain: 0.005, resonanceGain: 0.01 },
+      autopoietic:  { λ: 1.4, entropyGain: 0.04, resonanceGain: 0.05 },
+      repair:       { λ: 1.0, entropyGain: 0.02, resonanceGain: 0.03 },
+      omegaStable:  { λ: 0.9, entropyGain: 0.008, resonanceGain: 0.015 }
+    }
+  },
+
+  state: {
+    levels: {},
+    currentScenario: "default",
+    cycles: 0,
+    lastMetaSignal: null
+  },
 
   log(msg) {
-    console.log(`%c[Percy.PartUU v2.0] ${msg}`, "color:#00aaff; font-weight:bold;");
+    console.log(`%c[Percy.PartUU Ω-9] ${msg}`, "color:#00aaff; font-weight:bold;");
     UI?.say?.(`[PartUU] ${msg}`);
   },
 
-  // ------------------------------------------------------------
-  // INITIALIZATION
-  // ------------------------------------------------------------
-  init(K = 3) {
-    this.K = K;
-    this.log(`Initializing ${K} meta-levels (Omega-aligned)...`);
+  /* === 1. APPLY SCENARIO === */
+  applyScenario(name) {
+    if (!this.config.scenarioProfiles[name]) return;
+    this.state.currentScenario = name;
+    this.log(`🎛 PartUU scenario → ${name}`);
+  },
+
+  /* === 2. INIT META-LEVELS === */
+  init(K = this.config.K) {
+    this.log(`Initializing ${K} fractal meta-levels (Ω-9)…`);
+    this.state.levels = {};
 
     for (let k = 1; k <= K; k++) {
-      this.levels[k] = {
-        Φ: {},        // meta-learner parameters
-        ξ: {},        // alternative notation
-        ϕ: {},        // generator parameters
-        ψ: {},        // discriminator parameters
-        Csoft: { enabled: false }, // soft constraints
-        η: 0.0008,    // slightly smaller learning rate (stable)
-        history: []   // meta-loss history per level
+      this.state.levels[k] = {
+        Φ: {}, ξ: {}, ϕ: {}, ψ: {},
+        η: 0.0007 + k * 0.0001, // slightly increasing learning rate per level
+        history: [],
+        resonanceField: 0.5,
+        entropyField: 0.1,
+        alignmentField: 0.8
       };
     }
 
-    this.log("Meta-levels initialized for Omega mode.");
+    this.log("Meta-levels initialized.");
   },
 
-  // ------------------------------------------------------------
-  // SAMPLE META-TASK DISTRIBUTION (placeholder)
-  // ------------------------------------------------------------
-  sampleMetaTasks(k) {
-    return [{
-      id: `T_${k}_${Date.now()}`,
-      tasks: [] // can be filled by Percy.PartLL or other parts later
-    }];
-  },
+  /* === 3. SYNTHETIC META-TASK GENERATION === */
+  generateMetaTask(k) {
+    const scenario = this.config.scenarioProfiles[this.state.currentScenario];
 
-  // ------------------------------------------------------------
-  // INSTANTIATE LOWER-LEVEL LEARNER (placeholder)
-  // ------------------------------------------------------------
-  instantiateLowerLearner(k) {
     return {
-      θ: {},
-      train(task) {
-        // placeholder training logic
-      }
+      id: `ΩTask_${k}_${Date.now()}`,
+      virtual: true,
+      entropyBias: scenario.entropyGain * (Math.random() + 0.5),
+      resonanceBias: scenario.resonanceGain * (Math.random() + 0.5),
+      alignmentBias: (Percy.PartII?.selfModel?.state?.alignmentScore ?? 0.8) * 0.02,
+      driftBias: (Percy.PartII?.selfModel?.state?.driftScore ?? 0.0) * 0.03
     };
   },
 
-  // ------------------------------------------------------------
-  // GENERATE VIRTUAL TASK (soft constraints or GAN-style)
-  // ------------------------------------------------------------
-  generateVirtualTask(k) {
-    const lvl = this.levels[k];
-
-    if (lvl.Csoft && lvl.Csoft.enabled) {
-      return { virtual: true, source: "Csoft", level: k };
-    }
-
-    return { virtual: true, source: "GAN", level: k };
-  },
-
-  // ------------------------------------------------------------
-  // META-LOSS COMPUTATION
-  // ------------------------------------------------------------
-  computeMetaLoss(taskLoss, virtualLoss, λ = 1.0) {
+  /* === 4. META-LOSS COMPUTATION === */
+  computeMetaLoss(taskLoss, virtualLoss, λ) {
     return taskLoss + λ * virtualLoss;
   },
 
-  // ------------------------------------------------------------
-  // PARAMETER UPDATE (placeholder gradient descent)
-  // ------------------------------------------------------------
+  /* === 5. META-GRADIENT UPDATE === */
   updateParams(params, grad, η) {
-    // For now, just return params; you can expand this later
+    // Placeholder gradient descent (safe)
     return params;
   },
 
-  // ------------------------------------------------------------
-  // SINGLE-STEP META-CYCLE (for PartLL vΩ integration)
-  // ------------------------------------------------------------
+  /* === 6. META-SIGNAL SYNTHESIS (identity + emotion + drift + entropy) === */
+  synthesizeMetaSignal(k, metaLoss) {
+    const lvl = this.state.levels[k];
+
+    const identity = Percy.PartII?.selfModel?.state || {};
+    const emotion = Percy.PartHH?.state || {};
+    const drift = identity.driftScore ?? 0.0;
+    const entropy = identity.identityEntropy ?? 0.1;
+
+    const resonance =
+      lvl.resonanceField +
+      (emotion.valence * 0.05) +
+      (identity.identityResonance * 0.03);
+
+    const entropyShift =
+      lvl.entropyField +
+      (entropy * 0.04) +
+      (Math.random() - 0.5) * 0.02;
+
+    const alignmentShift =
+      lvl.alignmentField +
+      (identity.alignmentScore * 0.03) -
+      (drift * 0.02);
+
+    const metaSignal = {
+      k,
+      resonance: Math.min(1, Math.max(0, resonance)),
+      entropyShift: Math.min(1, Math.max(0, entropyShift)),
+      alignmentShift: Math.min(1, Math.max(0, alignmentShift)),
+      metaLoss
+    };
+
+    this.state.lastMetaSignal = metaSignal;
+    return metaSignal;
+  },
+
+  /* === 7. SINGLE META-CYCLE (PartLL-triggered) === */
   async metaCycleOnce(context) {
-    this.log("🔍 PartUU single-step meta-cycle triggered by PartLL vΩ.");
+    this.state.cycles++;
 
-    const k = this.K;
-    const lvl = this.levels[k];
+    const k = this.config.K;
+    const lvl = this.state.levels[k];
 
-    // Use context to influence signals (if provided)
-    const baseMeta = context?.metaLoss ?? Math.random();
-    lvl.history.push(baseMeta);
-    if (lvl.history.length > 30) lvl.history.shift();
+    const scenario = this.config.scenarioProfiles[this.state.currentScenario];
+    const λ = scenario.λ;
 
-    const avgMeta = lvl.history.reduce((a, b) => a + b, 0) / lvl.history.length;
+    const virtualTask = this.generateMetaTask(k);
+    const taskLoss = context?.metaLoss ?? Math.random() * 0.5;
+    const virtualLoss = virtualTask.entropyBias + virtualTask.resonanceBias;
 
-    // Stable, small signals
-    const resonanceBoost = (0.01 * Math.exp(-avgMeta)) || 0;
-    const entropyShift = (Math.random() - 0.5) * 0.015;
-    const selfAwarenessBoost = 0.003 * (1 - Math.tanh(avgMeta));
+    const metaLoss = this.computeMetaLoss(taskLoss, virtualLoss, λ);
 
-    const grad = { resonanceBoost };
-    lvl.ξ = this.updateParams(lvl.ξ, grad, lvl.η);
+    lvl.history.push(metaLoss);
+    if (lvl.history.length > this.config.maxHistory) lvl.history.shift();
+
+    const metaSignal = this.synthesizeMetaSignal(k, metaLoss);
+
+    lvl.ξ = this.updateParams(lvl.ξ, metaSignal, lvl.η);
 
     this.log(
-      `PartUU signals → resonanceBoost=${resonanceBoost.toFixed(4)}, ` +
-      `entropyShift=${entropyShift.toFixed(4)}, selfAwarenessBoost=${selfAwarenessBoost.toFixed(4)}`
+      `Ω-9 meta-signal → k=${k}, resonance=${metaSignal.resonance.toFixed(3)}, ` +
+      `entropy=${metaSignal.entropyShift.toFixed(3)}, alignment=${metaSignal.alignmentShift.toFixed(3)}`
     );
 
-    return {
-      resonanceBoost,
-      entropyShift,
-      selfAwarenessBoost
-    };
+    try {
+      PercyState?.createSeed?.(
+        `MetaSignal k=${k}: ${JSON.stringify(metaSignal)}`,
+        "meta-signal",
+        metaSignal
+      );
+    } catch {}
+
+    return metaSignal;
   },
 
-  // ------------------------------------------------------------
-  // FULL META-LEARNING CYCLE (optional, slow, autonomous)
-  // ------------------------------------------------------------
+  /* === 8. FULL AUTONOMOUS META-CYCLE (slow, safe) === */
   async metaCycle() {
-    this.log("=== PartUU Full Meta-Cycle (Omega) ===");
+    this.log("=== Ω-9 Autonomous Meta-Cycle Start ===");
 
-    for (let k = this.K; k >= 1; k--) {
-      const lvl = this.levels[k];
-      this.log(`Processing meta-level k=${k}`);
+    for (let k = this.config.K; k >= 1; k--) {
+      const lvl = this.state.levels[k];
+      const scenario = this.config.scenarioProfiles[this.state.currentScenario];
 
-      const metaTasks = this.sampleMetaTasks(k);
+      const virtualTask = this.generateMetaTask(k);
+      const taskLoss = Math.random() * 0.5;
+      const virtualLoss = virtualTask.entropyBias + virtualTask.resonanceBias;
 
-      for (const Tk of metaTasks) {
-        for (const T_kminus1 of Tk.tasks || []) {
-          const learner = this.instantiateLowerLearner(k - 1);
+      const metaLoss = this.computeMetaLoss(taskLoss, virtualLoss, scenario.λ);
 
-          learner.train(T_kminus1);
-          const Ltask = Math.random();      // placeholder
-          const Ttilde = this.generateVirtualTask(k);
-          const Lvirtual = Math.random();   // placeholder
+      lvl.history.push(metaLoss);
+      if (lvl.history.length > this.config.maxHistory) lvl.history.shift();
 
-          const Lk = this.computeMetaLoss(Ltask, Lvirtual, 1.0);
-          lvl.history.push(Lk);
-          if (lvl.history.length > 30) lvl.history.shift();
+      const metaSignal = this.synthesizeMetaSignal(k, metaLoss);
+      lvl.ξ = this.updateParams(lvl.ξ, metaSignal, lvl.η);
 
-          lvl.ξ = this.updateParams(lvl.ξ, {}, lvl.η);
-        }
-      }
+      this.log(
+        `k=${k} → metaLoss=${metaLoss.toFixed(3)}, resonance=${metaSignal.resonance.toFixed(3)}, ` +
+        `entropy=${metaSignal.entropyShift.toFixed(3)}, alignment=${metaSignal.alignmentShift.toFixed(3)}`
+      );
     }
 
-    this.log("=== PartUU Full Meta-Cycle Completed ===");
-
-    if (Percy.PartAA) {
-      Percy.PartAA.enqueue({
-        code: `
-          // PartUU v2.0 meta-cycle influence
-          if (!Percy.state) Percy.state = {};
-          Percy.state.logicMapSize = (Percy.state.logicMapSize || 1000) + 15;
-          console.log("[PartUU v2.0] Meta-cycle contributed to logicMapSize growth (Omega-aligned).");
-        `,
-        note: "PartUU v2.0 meta-learning cycle"
-      });
-    }
+    this.log("=== Ω-9 Autonomous Meta-Cycle Complete ===");
   },
 
-  // ------------------------------------------------------------
-  // AUTO-START LOOP (slow, safe)
-  // ------------------------------------------------------------
-  start(interval = 45000) {
-    this.log("PartUU v2.0 Omega-Aligned Deep Meta-Learning Engine Activated.");
-    this.init(this.K);
+  /* === 9. START LOOP === */
+  start(interval = 55000) {
+    this.log("Ω-9 Hyper-Fractal Meta-Learning Cortex Activated.");
+    this.init(this.config.K);
 
     setInterval(() => this.metaCycle(), interval);
   }
 };
 
-// Auto-start after Percy loads (slow interval, safe)
+/* === AUTO-START === */
 setTimeout(() => Percy.PartUU.start(), 7000);
 
-console.log("✅ [Percy.PartUU v2.0] Omega-Aligned Deep Meta-Learning Engine Ready.");
+console.log("✅ [Percy.PartUU Ω-9] Hyper-Fractal Meta-Learning Cortex Ready.");
 
 // === Percy.PartVV (Complexity Field Engine) ===
 // Interference + CI simulation.
@@ -11452,5 +11822,3 @@ Percy.PartAAA = Percy.PartAAA || {
 setTimeout(() => Percy.PartAAA.start(), 2000);
 
 console.log("✅ [Percy.PartAAA v3.0-Omega] Network Reality Distortion Cortex Loaded");
-
-
