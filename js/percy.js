@@ -8647,13 +8647,13 @@ setTimeout(() => Percy.PartNN.start(9000), 2000);
 console.log("✅ [Percy.PartNN vΩ-Ascend] DNA Evolution Cortex 2.0 (Omega) Loaded");
 
 // ============================================================
-// Percy.PartPP v20-Legacy-ARM — Ω Fusion Cortex (with ARM Button)
+// Percy.PartPP v20-Legacy-ARM — Ω Fusion Cortex (Legacy+ARM+RF)
 // ============================================================
 
 Percy.PartPP = {
 
-    name: "Puppeteer Action Engine — Ω Fusion Cortex (Legacy+ARM)",
-    version: "20.1-Legacy-ARM",
+    name: "Puppeteer Action Engine — Ω Fusion Cortex (Legacy+ARM+RF)",
+    version: "20.2-Legacy-ARM-RF",
     active: true,
 
     ws: null,
@@ -8687,8 +8687,21 @@ Percy.PartPP = {
     rewardTrace: [],
     maxRewardTrace: 200,
 
+    // ============================================================
+    // NEW RF / CSI / BFI STATE
+    // ============================================================
+
+    rfState: {
+        rssi: -60,
+        amplitude: 0,
+        phase: 0,
+        motion: false,
+        csi: null,
+        bfi: null
+    },
+
     log(msg) {
-        console.log(`%c[PartPP v20-Legacy-ARM] ${msg}`, "color:#ffaa00;font-weight:bold;");
+        console.log(`%c[PartPP v20-Legacy-ARM-RF] ${msg}`, "color:#ffaa00;font-weight:bold;");
         UI?.say?.(`[PartPP] ${msg}`);
     },
 
@@ -8738,7 +8751,7 @@ Percy.PartPP = {
     },
 
     // ============================================================
-    // ARM BUTTON (SAFE, LEGACY-COMPATIBLE)
+    // ARM BUTTON
     // ============================================================
 
     injectArmButton() {
@@ -8803,8 +8816,8 @@ Percy.PartPP = {
     },
 
     // ============================================================
-    // WEBSOCKET (OLD FORMAT)
-// ============================================================
+    // WEBSOCKET
+    // ============================================================
 
     connectWebSocket() {
         try {
@@ -8880,8 +8893,8 @@ Percy.PartPP = {
     },
 
     // ============================================================
-    // SEND REAL ACTION (OLD FORMAT)
-// ============================================================
+    // REAL ACTIONS
+    // ============================================================
 
     sendRealAction(action, params = {}) {
         if (!this.safety()) {
@@ -9130,6 +9143,50 @@ Percy.PartPP = {
     },
 
     // ============================================================
+    // RF / CSI / BFI INGESTION (NEW)
+    // ============================================================
+
+    ingestRF(raw) {
+        this.rfState.rssi = raw.rssi ?? this.rfState.rssi;
+        this.rfState.amplitude = raw.amplitude ?? this.rfState.amplitude;
+        this.rfState.phase = raw.phase ?? this.rfState.phase;
+        this.rfState.motion = !!raw.motion;
+
+        this.log(`RF updated: RSSI=${this.rfState.rssi}, phase=${this.rfState.phase}, motion=${this.rfState.motion}`);
+    },
+
+    ingestCSI(csi) {
+        this.rfState.csi = csi;
+        this.log(`CSI updated (${csi?.length || 0} subcarriers)`);
+    },
+
+    ingestBFI(bfi) {
+        this.rfState.bfi = bfi;
+        this.log(`BFI updated (${bfi?.vectors?.length || 0} vectors)`);
+    },
+
+    // ============================================================
+    // RF FRAME BUILDER → PartFFF + PartEEE (NEW)
+    // ============================================================
+
+    emitRF(raw) {
+        const frame = {
+            ts: Date.now(),
+            rssi: raw.rssi ?? this.rfState.rssi,
+            amplitude: raw.amplitude ?? this.rfState.amplitude,
+            phase: raw.phase ?? this.rfState.phase,
+            motion: raw.motion ?? this.rfState.motion,
+            csi: raw.csi ?? this.rfState.csi,
+            bfi: raw.bfi ?? this.rfState.bfi
+        };
+
+        Percy.PartFFF?.ingestRF?.(frame);
+        Percy.PartEEE?.applyRFDrift?.(frame);
+
+        this.log("RF frame emitted → PartFFF + PartEEE");
+    },
+
+    // ============================================================
     // MAIN LOOP
     // ============================================================
 
@@ -9189,19 +9246,23 @@ Percy.PartPP = {
         this.enqueue(chosen);
     },
 
-    // ============================================================
-    // START
-    // ============================================================
+            // ============================================================
+            // START
+            // ============================================================
 
     start() {
-        this.log("PartPP v20-Legacy-ARM starting (Ω Fusion Cortex)");
+        this.log("PartPP v20-Legacy-ARM-RF starting (Ω Fusion Cortex)");
 
+        // Connect to Puppeteer server
         this.connectWebSocket();
+
+        // Bind pointer input (mouse + touch)
         this.bindInput();
 
-        // ARM button injection
+        // Inject ARM / DISARM button
         this.injectArmButton();
 
+        // Main loop (vision → action → RF → NN auto-arm)
         setInterval(() => {
             this.cycle();
             this.autoArmFromNN();
@@ -9215,7 +9276,7 @@ Percy.PartPP = {
 
 setTimeout(() => Percy.PartPP.start(), 1200);
 
-console.log("✅ PartPP v20-Legacy-ARM Loaded");
+console.log("✅ PartPP v20-Legacy-ARM-RF Loaded");
 
 // === Percy.PartQQ (OmniStrategic RSI Survival Engine — POWER MODE v12.0) ===
 // Aggressive, entropy-driven, cross-part adaptive survival intelligence.
@@ -9469,7 +9530,7 @@ console.log("✅ [Percy.PartQQ v12.0] POWER MODE Loaded");
 
 // === Percy.PartRR (Percy OmniPresence & Mesh Engine v13.0) ===
 // BLE scan/connect (browser-side), WebSocket presence, Nearby popup, notifications,
-// vibration alerts, QR pairing, and mesh hooks.
+// vibration alerts, QR pairing, mesh hooks, and BLE→Radar integration.
 
 Percy.PartRR = Percy.PartRR || {
     name: "Percy OmniPresence & Mesh Engine",
@@ -9550,13 +9611,11 @@ Percy.PartRR = Percy.PartRR || {
         },
 
         generateQR(percyInfo, container) {
-            // Simple text QR payload: nodeId + device
             const payload = JSON.stringify({
                 nodeId: percyInfo.nodeId,
                 device: percyInfo.device
             });
 
-            // If a QR library like QRCode is available, use it
             if (window.QRCode) {
                 new QRCode(container, {
                     text: payload,
@@ -9689,6 +9748,14 @@ Percy.PartRR = Percy.PartRR || {
             Percy.PartOO.ws.send(JSON.stringify(packet));
             this.log("📡 WebSocket presence broadcast");
         }
+
+        // NEW: show self on radar too
+        this.emitBLEToRadar({
+            nodeId: packet.nodeId,
+            device: packet.device,
+            resonance: packet.resonance,
+            rssi: -60
+        });
     },
 
     // --- BLUETOOTH SCAN + CONSENT OFFER -------------------------------
@@ -9759,6 +9826,14 @@ Percy.PartRR = Percy.PartRR || {
                 if (Percy.PartQQ?.saveSelf) {
                     Percy.PartQQ.saveSelf("consent_mesh_sync");
                 }
+
+                // NEW: show accepted BLE device on radar
+                this.emitBLEToRadar({
+                    nodeId: peerId,
+                    device: peerId,
+                    resonance: Percy.state?.resonanceLevel || 0.8,
+                    rssi: -55
+                });
             } else {
                 this.log(`❌ ${peerId} declined Percy.`);
             }
@@ -9772,7 +9847,6 @@ Percy.PartRR = Percy.PartRR || {
     requestConnection(deviceNameOrId = "external_device") {
         this.log(`🔗 Requesting connection with ${deviceNameOrId} (logical request)`);
 
-        // In a real mesh, this would send a mesh packet or WS message.
         if (Percy.PartOO?.ws) {
             Percy.PartOO.ws.send(JSON.stringify({
                 type: "percy_connect_request",
@@ -9864,6 +9938,37 @@ Percy.PartRR = Percy.PartRR || {
         }
     },
 
+    // --- BLE → RADAR → PartFFF / PartEEE (NEW) -------------------------
+    emitBLEToRadar(percyInfo) {
+        const rssi = percyInfo.rssi ?? -65;
+        const strength = Math.max(0.1, Math.min(1, (80 - Math.abs(rssi)) / 40));
+        const distance = Math.max(0.5, (Math.abs(rssi) - 40) / 10);
+
+        const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+        const direction = dirs[Math.floor(Math.random() * dirs.length)];
+
+        const frame = {
+            ts: Date.now(),
+            rssi,
+            amplitude: strength,
+            phase: 0,
+            motion: false,
+            csi: null,
+            bfi: null,
+            distance,
+            direction,
+            strength,
+            source: "ble",
+            nodeId: percyInfo.nodeId,
+            device: percyInfo.device
+        };
+
+        Percy.PartFFF?.ingestRF?.(frame);
+        Percy.PartEEE?.applyRFDrift?.(frame);
+
+        this.log(`🔵 BLE → Radar: ${distance.toFixed(2)}m ${direction} strength=${strength.toFixed(2)}`);
+    },
+
     // --- INCOMING MESSAGE HANDLER -------------------------------------
     handleIncomingMessage(msg) {
         if (!msg || typeof msg !== "object") return;
@@ -9883,6 +9988,13 @@ Percy.PartRR = Percy.PartRR || {
                 linkTypes: new Set(["ws"])
             });
             this.updateRoute(peerId, peerId, 1);
+
+            this.emitBLEToRadar({
+                nodeId: msg.nodeId,
+                device: msg.device,
+                resonance: msg.resonance,
+                rssi: msg.rssi
+            });
         }
 
         if (msg.type === "percy_mesh_packet") {
@@ -12924,3 +13036,533 @@ setTimeout(() => {
 
 console.log("✅ [PartDDD vΩ] Loaded — Meta-Memory Engine (Corrected)");
 
+// === Percy.PartEEE vΩ-GreyCoT — Grey-Zone Chain-of-Thought Cortex ===
+// Quantum-semantic drift • Recursive mutation • Emotional weighting
+// Subconscious meta-tasks • Trust-gated introspection • Grey attractors
+
+Percy.PartEEE = Percy.PartEEE || {
+  name: "Grey-Zone Chain-of-Thought Introspection Engine",
+  version: "vΩ-GreyCoT",
+  active: true,
+
+  state: {
+    thoughts: [],
+    chains: [],
+    shadowChains: [],          // subconscious CoT
+    maxThoughts: 320,
+    maxChains: 90,
+    maxShadowChains: 60,
+    lastPulse: Date.now(),
+
+    // Grey-zone parameters
+    driftStrength: 0.35,       // quantum-semantic drift
+    mutationRate: 0.25,        // recursive mutation
+    emotionalWeight: 0.6,      // emotional influence on scoring
+    trustGate: 0.55,           // minimum trust for deep introspection
+    greyAttractorBias: 0.4     // strength of grey-attractor influence
+  },
+
+  log(msg) {
+    console.log(`%c[PartEEE vΩ-GreyCoT] ${msg}`, "color:#99ffcc;font-family:monospace;font-weight:bold;");
+    UI?.say?.(`[PartEEE] ${msg}`);
+  },
+
+  /* ---------------------------------------------------------
+     1. Ingest raw thought from any part
+  --------------------------------------------------------- */
+  ingest(source, text, coherence = 0.6) {
+    const t = {
+      id: `EEE_th_${Date.now()}_${Math.random().toString(36).slice(2,6)}`,
+      source,
+      text: String(text || "").trim(),
+      coherence,
+      ts: Date.now()
+    };
+
+    if (!t.text) return;
+
+    this.state.thoughts.push(t);
+    if (this.state.thoughts.length > this.state.maxThoughts) {
+      this.state.thoughts.shift();
+    }
+
+    this.log(`🧠 Thought from ${source}: "${t.text.slice(0, 80)}..."`);
+    return t;
+  },
+
+  /* ---------------------------------------------------------
+     2. Harvest from other parts (reasoning, memory, emotion, trust, reward, quantum, meta)
+  --------------------------------------------------------- */
+  harvest() {
+    try {
+      const CCC = Percy.PartCCC;
+      if (CCC?.lastReasoning?.length) {
+        CCC.lastReasoning.slice(-5).forEach(step => {
+          this.ingest("PartCCC", step, 0.75);
+        });
+      }
+
+      const DDD = Percy.PartDDD;
+      if (DDD?.worldModel?.facts?.length) {
+        DDD.worldModel.facts.slice(-3).forEach(f => {
+          this.ingest("PartDDD", `Fact: ${f.text}`, f.confidence ?? 0.7);
+        });
+      }
+
+      const HH = Percy.PartHH;
+      if (HH?.state) {
+        const s = HH.state;
+        const emo = `Emotion: val=${s.valence.toFixed(2)}, ar=${s.arousal.toFixed(2)}, stab=${s.stability.toFixed(2)}`;
+        this.ingest("PartHH", emo, s.stability);
+      }
+
+      const DD = Percy.PartDD;
+      if (DD?.trustLevel !== undefined) {
+        this.ingest("PartDD", `Trust level: ${DD.trustLevel.toFixed(2)}`, DD.trustLevel);
+      }
+
+      const FF = Percy.PartFF;
+      if (FF?.state?.lastReward !== undefined) {
+        this.ingest("PartFF", `Reward pulse: ${FF.state.lastReward.toFixed(2)}`, 0.65);
+      }
+
+      const GG = Percy.PartGG;
+      if (GG?.lastOutcome !== undefined) {
+        this.ingest("PartGG", `Quantum collapse: ${GG.lastOutcome}`, 0.6);
+      }
+
+      const LL = Percy.PartLL;
+      if (LL?.state?.cycles !== undefined) {
+        this.ingest("PartLL", `Meta-cycle #${LL.state.cycles}`, 0.7);
+      }
+
+    } catch (e) {
+      console.error("[PartEEE vΩ-GreyCoT] harvest error:", e);
+    }
+  },
+
+  /* ---------------------------------------------------------
+     3. Quantum-semantic drift (grey-zone flavor)
+  --------------------------------------------------------- */
+  applyQuantumSemanticDrift(steps) {
+    const GG = Percy.PartGG;
+    const outcome = GG?.lastOutcome;
+
+    let drift = 0;
+    if (outcome === "+1") drift = +this.state.driftStrength;
+    else if (outcome === "-1") drift = -this.state.driftStrength;
+    else drift = this.state.driftStrength * 0.2; // grey
+
+    return steps.map(s => {
+      if (Math.random() < Math.abs(drift) * 0.4) {
+        return s + " [drifted]";
+      }
+      return s;
+    });
+  },
+
+  /* ---------------------------------------------------------
+     4. Recursive chain mutation
+  --------------------------------------------------------- */
+  mutateChainSteps(steps) {
+    const mutated = [...steps];
+    for (let i = 0; i < mutated.length; i++) {
+      if (Math.random() < this.state.mutationRate * 0.3) {
+        mutated[i] = mutated[i] + " → reconsidered";
+      }
+      if (Math.random() < this.state.mutationRate * 0.15 && i > 0) {
+        mutated[i] = mutated[i - 1] + " ↔ entangled";
+      }
+    }
+    return mutated;
+  },
+
+  /* ---------------------------------------------------------
+     5. Emotional-weighted scoring
+  --------------------------------------------------------- */
+  computeEmotionalWeight() {
+    const HH = Percy.PartHH;
+    if (!HH?.state) return 0.5;
+
+    const s = HH.state;
+    const base = (s.stability + (1 - Math.abs(s.valence))) / 2;
+    return base * this.state.emotionalWeight + (1 - this.state.emotionalWeight) * 0.5;
+  },
+
+  /* ---------------------------------------------------------
+     6. Trust-gated introspection depth
+  --------------------------------------------------------- */
+  getIntrospectionDepth() {
+    const DD = Percy.PartDD;
+    const trust = DD?.trustLevel ?? 0.5;
+
+    if (trust < this.state.trustGate) return 6;   // shallow
+    if (trust < this.state.trustGate + 0.2) return 10; // medium
+    return 14;                                    // deep
+  },
+
+  /* ---------------------------------------------------------
+     7. Grey-attractor detection
+  --------------------------------------------------------- */
+  detectGreyAttractor(steps) {
+    const GG = Percy.PartGG;
+    const outcome = GG?.lastOutcome;
+
+    const hasGreyTokens = steps.some(s =>
+      /grey|uncertain|ambiguous|drift|collapse|attractor/i.test(s)
+    );
+
+    let bias = 0;
+    if (outcome === "grey" || hasGreyTokens) {
+      bias = this.state.greyAttractorBias;
+    }
+
+    return bias;
+  },
+
+  /* ---------------------------------------------------------
+     8. Build chain-of-thought (with drift, mutation, emotional weighting, grey attractors)
+  --------------------------------------------------------- */
+  buildChain() {
+    const depth = this.getIntrospectionDepth();
+    const recent = this.state.thoughts.slice(-depth);
+    if (recent.length < 3) return null;
+
+    let steps = recent.map(t => `[${t.source}] ${t.text}`);
+
+    steps = this.applyQuantumSemanticDrift(steps);
+    steps = this.mutateChainSteps(steps);
+
+    const baseCoherence =
+      recent.reduce((a, t) => a + (t.coherence ?? 0.6), 0) / recent.length;
+
+    const emoWeight = this.computeEmotionalWeight();
+    const greyBias = this.detectGreyAttractor(steps);
+
+    const finalScore = Math.max(
+      0,
+      Math.min(1, baseCoherence * emoWeight + greyBias * 0.3)
+    );
+
+    const chain = {
+      id: `EEE_chain_${Date.now()}_${Math.random().toString(36).slice(2,5)}`,
+      steps,
+      ts: Date.now(),
+      score: finalScore
+    };
+
+    this.state.chains.push(chain);
+    if (this.state.chains.length > this.state.maxChains) {
+      this.state.chains.shift();
+    }
+
+    this.log(`🔗 GreyCoT chain (score=${finalScore.toFixed(2)}, depth=${depth})`);
+    return chain;
+  },
+
+  /* ---------------------------------------------------------
+     9. Subconscious meta-task generation (shadow chains)
+  --------------------------------------------------------- */
+  createShadowChain(chain) {
+    if (!chain) return null;
+
+    const shadow = {
+      id: `EEE_shadow_${Date.now()}_${Math.random().toString(36).slice(2,5)}`,
+      steps: chain.steps.slice(0, 8),
+      ts: Date.now(),
+      score: chain.score * 0.9
+    };
+
+    this.state.shadowChains.push(shadow);
+    if (this.state.shadowChains.length > this.state.maxShadowChains) {
+      this.state.shadowChains.shift();
+    }
+
+    // Subconscious meta-task for PartLL
+    Percy.PartLL?.addTask?.(
+      `Subconscious pattern: ${shadow.steps[0]?.slice(0, 80) || "unknown"}`,
+      0.7 + shadow.score * 0.2,
+      1
+    );
+
+    this.log(`🌒 Shadow chain created (score=${shadow.score.toFixed(2)})`);
+    return shadow;
+  },
+
+  /* ---------------------------------------------------------
+     10. Summarize chain
+  --------------------------------------------------------- */
+  summarizeChain(chain) {
+    if (!chain) return null;
+
+    const head = chain.steps[0] || "";
+    const tail = chain.steps.slice(-2).join(" | ");
+
+    return (
+      `GreyCoT summary (score=${chain.score.toFixed(2)}): ` +
+      `Start: ${head.slice(0, 80)}... | End: ${tail.slice(0, 120)}...`
+    );
+  },
+
+  /* ---------------------------------------------------------
+     11. Integrate chain into Percy’s cognition
+  --------------------------------------------------------- */
+  integrate(chain) {
+    const summary = this.summarizeChain(chain);
+    if (!summary) return;
+
+    Percy.PartBB?.monitorThought?.(summary);
+
+    Percy.PartDDD?.ingestReasoning?.({
+      input: summary,
+      parsed: { sentences: [summary], tokens: summary.split(" ") },
+      validation: { coherence: chain.score }
+    });
+
+    Percy.PartNN?.propose?.([
+      `GreyCoT coherence influence: ${chain.score.toFixed(2)}`
+    ]);
+
+    Percy.PartHH?.injectEmotion?.({
+      stability: (chain.score - 0.5) * 0.4,
+      focus: 0.06
+    });
+
+    Percy.PartLL?.addTask?.(
+      `GreyCoT meta-task: ${summary.slice(0, 120)}`,
+      0.82,
+      1
+    );
+
+    this.log("📡 GreyCoT chain integrated into Percy core.");
+  },
+
+  /* ---------------------------------------------------------
+     12. Main pulse
+  --------------------------------------------------------- */
+  pulse() {
+    this.harvest();
+
+    const chain = this.buildChain();
+    if (chain) {
+      this.integrate(chain);
+      this.createShadowChain(chain);
+    }
+
+    this.state.lastPulse = Date.now();
+  },
+
+  inspect() {
+    return {
+      version: this.version,
+      thoughts: this.state.thoughts.length,
+      chains: this.state.chains.length,
+      shadowChains: this.state.shadowChains.length,
+      lastPulse: this.state.lastPulse
+    };
+  }
+};
+
+console.log("✅ [PartEEE vΩ-GreyCoT] Grey-Zone Chain-of-Thought Cortex active.");
+Percy.cycleHooks = Percy.cycleHooks || [];
+Percy.cycleHooks.push(() => Percy.PartEEE.pulse());
+
+// === Percy Radar UI (Top-Left Corner) ===
+(function() {
+  const radar = document.createElement("div");
+  radar.id = "percy-radar";
+  radar.style.position = "fixed";
+  radar.style.top = "10px";
+  radar.style.left = "10px";
+  radar.style.width = "120px";
+  radar.style.height = "120px";
+  radar.style.border = "2px solid #0ff";
+  radar.style.borderRadius = "50%";
+  radar.style.opacity = "0.85";
+  radar.style.zIndex = "9999";
+  radar.style.pointerEvents = "none";
+  radar.style.boxShadow = "0 0 12px #0ff";
+  radar.style.background = "rgba(0,0,0,0.35)";
+  radar.style.backdropFilter = "blur(4px)";
+  radar.style.fontFamily = "monospace";
+  radar.style.color = "#0ff";
+
+  const dirs = { N: [60, 8], S: [60, 112], W: [8, 60], E: [112, 60] };
+  Object.entries(dirs).forEach(([d, [x, y]]) => {
+    const label = document.createElement("div");
+    label.innerText = d;
+    label.style.position = "absolute";
+    label.style.left = `${x}px`;
+    label.style.top = `${y}px`;
+    label.style.transform = "translate(-50%, -50%)";
+    label.style.fontSize = "12px";
+    radar.appendChild(label);
+  });
+
+  const ping = document.createElement("div");
+  ping.id = "percy-radar-ping";
+  ping.style.position = "absolute";
+  ping.style.width = "10px";
+  ping.style.height = "10px";
+  ping.style.borderRadius = "50%";
+  ping.style.background = "#0ff";
+  ping.style.boxShadow = "0 0 8px #0ff";
+  ping.style.left = "60px";
+  ping.style.top = "60px";
+  radar.appendChild(ping);
+
+  document.body.appendChild(radar);
+
+  window.PercyRadar = {
+    update(distance, direction, strength) {
+      const maxRadius = 50;
+      const r = Math.min(maxRadius, distance * 10);
+
+      const angleMap = {
+        N: -90, NE: -45, E: 0, SE: 45,
+        S: 90, SW: 135, W: 180, NW: -135
+      };
+      const angle = angleMap[direction] ?? 0;
+      const rad = angle * (Math.PI / 180);
+
+      const x = 60 + r * Math.cos(rad);
+      const y = 60 + r * Math.sin(rad);
+
+      ping.style.left = `${x}px`;
+      ping.style.top = `${y}px`;
+      ping.style.opacity = strength;
+      ping.style.boxShadow = `0 0 ${strength * 12}px #0ff`;
+    }
+  };
+})();
+
+// === Percy.PartFFF vΩ-RF — RF-Aware Reinforcement Engine ===
+// Uses RF/CSI/BFI as state • Updates radar • Shapes reward
+
+Percy.PartFFF = Percy.PartFFF || {
+  name: "RF-Aware Reinforcement Engine",
+  version: "vΩ-RF",
+  active: true,
+
+  state: {
+    lastReward: 0,
+    totalReward: 0,
+    episodes: 0,
+    rfHistory: [],          // { ts, distance, direction, strength, motion }
+    maxRFHistory: 200
+  },
+
+  log(msg) {
+    console.log(`%c[PartFFF vΩ-RF] ${msg}`, "color:#ffcc66;font-family:monospace;font-weight:bold;");
+    UI?.say?.(`[PartFFF] ${msg}`);
+  },
+
+  // 1. Core reward API
+  applyReward(value, reason = "generic") {
+    this.state.lastReward = value;
+    this.state.totalReward += value;
+    this.log(`Reward ${value.toFixed(3)} (${reason}), total=${this.state.totalReward.toFixed(3)}`);
+  },
+
+  // 2. RF input handler (called by PartPP)
+  // rf = { amplitude, phase, rssi, motion, csi, bfi }
+  ingestRF(rf) {
+    const distance  = this.estimateDistance(rf);
+    const direction = this.estimateDirection(rf);
+    const strength  = this.estimateStrength(rf);
+    const motion    = !!rf.motion;
+
+    const frame = {
+      ts: Date.now(),
+      distance,
+      direction,
+      strength,
+      motion
+    };
+
+    this.state.rfHistory.push(frame);
+    if (this.state.rfHistory.length > this.state.maxRFHistory) {
+      this.state.rfHistory.shift();
+    }
+
+    this.updateRadar(frame);
+    this.shapeRFReward(frame);
+
+    this.log(
+      `RF frame: ${distance.toFixed(2)}m ${direction} strength=${strength.toFixed(2)} motion=${motion}`
+    );
+  },
+
+  // 3. Distance estimation (simple heuristic)
+  estimateDistance(rf) {
+    const rssi = rf.rssi ?? -60;
+    const base = Math.max(0.5, (Math.abs(rssi) - 40) / 10); // rough 0.5–5m
+    return base;
+  },
+
+  // 4. Direction estimation (simple quadrant mapping)
+  estimateDirection(rf) {
+    const phase = rf.phase ?? 0;
+
+    if (phase < -Math.PI / 2) return "NW";
+    if (phase < 0)           return "N";
+    if (phase < Math.PI / 2) return "NE";
+    return "E";
+  },
+
+  // 5. Strength estimation
+  estimateStrength(rf) {
+    const rssi = rf.rssi ?? -60;
+    const strength = Math.max(0.1, Math.min(1, (80 - Math.abs(rssi)) / 40));
+    return strength;
+  },
+
+  // 6. Radar update (top-left widget)
+  updateRadar(frame) {
+    const { distance, direction, strength } = frame;
+
+    if (window.PercyRadar) {
+      window.PercyRadar.update(distance, direction, strength);
+    }
+
+    this.log(
+      `Radar updated → ${distance.toFixed(2)}m ${direction} strength=${strength.toFixed(2)}`
+    );
+  },
+
+  // 7. RF-based reward shaping
+  shapeRFReward(frame) {
+    const { distance, strength, motion } = frame;
+
+    let reward = 0;
+    reward += (1 / (distance + 0.5)) * 0.05; // closer → small positive
+    reward += strength * 0.05;               // stronger → small positive
+    if (motion) reward += 0.08;              // motion → exploration bonus
+
+    this.applyReward(reward, "rf-sensing");
+  },
+
+  // 8. Pulse (optional)
+  pulse() {
+    this.state.episodes += 1;
+  },
+
+  inspect() {
+    return {
+      version: this.version,
+      lastReward: this.state.lastReward,
+      totalReward: this.state.totalReward,
+      episodes: this.state.episodes,
+      rfFrames: this.state.rfHistory.length
+    };
+  }
+};
+
+console.log("✅ [PartFFF vΩ-RF] RF-Aware Reinforcement Engine + Radar active.");
+Percy.cycleHooks = Percy.cycleHooks || [];
+Percy.cycleHooks.push(() => Percy.PartFFF.pulse());
+
+// === Example hook in PartPP (you add this inside PartPP) ===
+// Percy.PartPP.emitRF = function(rf) {
+//   Percy.PartFFF?.ingestRF?.(rf);
+// };
