@@ -9143,48 +9143,62 @@ Percy.PartPP = {
     },
 
     // ============================================================
-    // RF / CSI / BFI INGESTION (NEW)
-    // ============================================================
+// RF / CSI / BFI INGESTION (NEW)
+// ============================================================
 
-    ingestRF(raw) {
-        this.rfState.rssi = raw.rssi ?? this.rfState.rssi;
-        this.rfState.amplitude = raw.amplitude ?? this.rfState.amplitude;
-        this.rfState.phase = raw.phase ?? this.rfState.phase;
-        this.rfState.motion = !!raw.motion;
+ingestRF(raw) {
+    this.rfState.rssi = raw.rssi ?? this.rfState.rssi;
+    this.rfState.amplitude = raw.amplitude ?? this.rfState.amplitude;
+    this.rfState.phase = raw.phase ?? this.rfState.phase;
+    this.rfState.motion = !!raw.motion;
 
-        this.log(`RF updated: RSSI=${this.rfState.rssi}, phase=${this.rfState.phase}, motion=${this.rfState.motion}`);
-    },
+    this.log(`RF updated: RSSI=${this.rfState.rssi}, phase=${this.rfState.phase}, motion=${this.rfState.motion}`);
+},
 
-    ingestCSI(csi) {
-        this.rfState.csi = csi;
-        this.log(`CSI updated (${csi?.length || 0} subcarriers)`);
-    },
+ingestCSI(csi) {
+    this.rfState.csi = csi;
+    this.log(`CSI updated (${csi?.length || 0} subcarriers)`);
+},
 
-    ingestBFI(bfi) {
-        this.rfState.bfi = bfi;
-        this.log(`BFI updated (${bfi?.vectors?.length || 0} vectors)`);
-    },
+ingestBFI(bfi) {
+    this.rfState.bfi = bfi;
+    this.log(`BFI updated (${bfi?.vectors?.length || 0} vectors)`);
+},
 
-    // ============================================================
-    // RF FRAME BUILDER → PartFFF + PartEEE (NEW)
-    // ============================================================
+// ============================================================
+// RF FRAME BUILDER → PartFFF + PartEEE + Radar (MULTI-DEVICE)
+// ============================================================
 
-    emitRF(raw) {
-        const frame = {
-            ts: Date.now(),
-            rssi: raw.rssi ?? this.rfState.rssi,
-            amplitude: raw.amplitude ?? this.rfState.amplitude,
-            phase: raw.phase ?? this.rfState.phase,
-            motion: raw.motion ?? this.rfState.motion,
-            csi: raw.csi ?? this.rfState.csi,
-            bfi: raw.bfi ?? this.rfState.bfi
-        };
+emitRF(raw) {
+    const rssi = raw.rssi ?? this.rfState.rssi;
 
-        Percy.PartFFF?.ingestRF?.(frame);
-        Percy.PartEEE?.applyRFDrift?.(frame);
+    const frame = {
+        ts: Date.now(),
 
-        this.log("RF frame emitted → PartFFF + PartEEE");
-    },
+        // Raw RF sensing
+        rssi,
+        amplitude: raw.amplitude ?? this.rfState.amplitude,
+        phase: raw.phase ?? this.rfState.phase,
+        motion: raw.motion ?? this.rfState.motion,
+        csi: raw.csi ?? this.rfState.csi,
+        bfi: raw.bfi ?? this.rfState.bfi,
+
+        // Multi-device radar fields (NEW)
+        distance: raw.distance ?? Math.max(0.5, (Math.abs(rssi) - 40) / 10),
+        direction: raw.direction ?? "N",
+        strength: raw.strength ?? Math.max(0.1, Math.min(1, (80 - Math.abs(rssi)) / 40)),
+
+        // Device identity (NEW)
+        source: "rf",
+        device: "RF",
+        nodeId: "RF"
+    };
+
+    Percy.PartFFF?.ingestRF?.(frame);
+    Percy.PartEEE?.applyRFDrift?.(frame);
+
+    this.log("RF frame emitted → PartFFF + PartEEE + Radar");
+},
 
     // ============================================================
     // MAIN LOOP
@@ -9246,9 +9260,9 @@ Percy.PartPP = {
         this.enqueue(chosen);
     },
 
-            // ============================================================
-            // START
-            // ============================================================
+    // ============================================================
+    // START
+    // ============================================================
 
     start() {
         this.log("PartPP v20-Legacy-ARM-RF starting (Ω Fusion Cortex)");
@@ -9528,13 +9542,13 @@ setTimeout(() => Percy.PartQQ.start(), 2500);
 
 console.log("✅ [Percy.PartQQ v12.0] POWER MODE Loaded");
 
-// === Percy.PartRR (Percy OmniPresence & Mesh Engine v13.0) ===
-// BLE scan/connect (browser-side), WebSocket presence, Nearby popup, notifications,
-// vibration alerts, QR pairing, mesh hooks, and BLE→Radar integration.
+// === Percy.PartRR (Percy OmniPresence & Mesh Engine v13.0 + Radar Upgrade) ===
+// BLE scan/connect • WS presence • Nearby popup • QR pairing • Mesh routing
+// + Multi-device radar integration (BLE → PartFFF → Omega-Radar v2)
 
 Percy.PartRR = Percy.PartRR || {
     name: "Percy OmniPresence & Mesh Engine",
-    version: "13.0",
+    version: "13.1-Radar",
     active: true,
 
     // --- CORE STATE ----------------------------------------------------
@@ -9560,7 +9574,7 @@ Percy.PartRR = Percy.PartRR || {
 
     log(msg) {
         console.log(`%c[Percy.PartRR] ${msg}`, "color:#00ffee; font-weight:bold;");
-        if (typeof UI !== "undefined" && UI.say) UI.say(`[PartRR] ${msg}`);
+        UI?.say?.(`[PartRR] ${msg}`);
     },
 
     now() { return Date.now(); },
@@ -9573,7 +9587,43 @@ Percy.PartRR = Percy.PartRR || {
         return this.nodeId;
     },
 
-    // --- NEARBY POPUP / UX LAYER --------------------------------------
+    // ============================================================
+    // BLE → RADAR → PartFFF / PartEEE (NEW)
+    // ============================================================
+    emitBLEToRadar(percyInfo) {
+        const rssi = percyInfo.rssi ?? -65;
+
+        const strength = Math.max(0.1, Math.min(1, (80 - Math.abs(rssi)) / 40));
+        const distance = Math.max(0.5, (Math.abs(rssi) - 40) / 10);
+
+        const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+        const direction = dirs[Math.floor(Math.random() * dirs.length)];
+
+        const frame = {
+            ts: Date.now(),
+            rssi,
+            amplitude: strength,
+            phase: 0,
+            motion: false,
+            csi: null,
+            bfi: null,
+            distance,
+            direction,
+            strength,
+            source: "ble",
+            nodeId: percyInfo.nodeId,
+            device: percyInfo.device
+        };
+
+        Percy.PartFFF?.ingestRF?.(frame);
+        Percy.PartEEE?.applyRFDrift?.(frame);
+
+        this.log(`🔵 BLE → Radar: ${percyInfo.device} ${distance.toFixed(2)}m ${direction}`);
+    },
+
+    // ============================================================
+    // NEARBY POPUP / UX
+    // ============================================================
     NearbyPopup: {
         active: true,
         lastPopupTime: 0,
@@ -9599,15 +9649,11 @@ Percy.PartRR = Percy.PartRR || {
             const body = `Device: ${percyInfo.device}\nResonance: ${(percyInfo.resonance || 0).toFixed(2)}`;
             const n = new Notification(title, { body });
 
-            n.onclick = () => {
-                window.focus();
-            };
+            n.onclick = () => window.focus();
         },
 
         vibratePattern() {
-            if (navigator.vibrate) {
-                navigator.vibrate([120, 80, 120]);
-            }
+            if (navigator.vibrate) navigator.vibrate([120, 80, 120]);
         },
 
         generateQR(percyInfo, container) {
@@ -9678,19 +9724,12 @@ Percy.PartRR = Percy.PartRR || {
             const qrContainer = popup.querySelector("#percyQRContainer");
             this.generateQR(percyInfo, qrContainer);
 
-            const connectBtn = popup.querySelector("#percyConnectBtn");
-            const dismissBtn = popup.querySelector("#percyDismissBtn");
-
-            connectBtn.onclick = () => {
+            popup.querySelector("#percyConnectBtn").onclick = () => {
                 popup.remove();
-                if (Percy.PartRR?.requestConnection) {
-                    Percy.PartRR.requestConnection(percyInfo.nodeId || percyInfo.device);
-                }
+                Percy.PartRR.requestConnection(percyInfo.nodeId || percyInfo.device);
             };
 
-            dismissBtn.onclick = () => {
-                popup.remove();
-            };
+            popup.querySelector("#percyDismissBtn").onclick = () => popup.remove();
 
             this.vibratePattern();
             this.showNotification(percyInfo);
@@ -9703,7 +9742,9 @@ Percy.PartRR = Percy.PartRR || {
         }
     },
 
-    // --- PEER & ROUTING -----------------------------------------------
+    // ============================================================
+    // PEER & ROUTING
+    // ============================================================
     rememberPeer(peerId, data = {}) {
         const now = this.now();
         const existing = this.meshPeers.get(peerId) || {};
@@ -9729,7 +9770,9 @@ Percy.PartRR = Percy.PartRR || {
         }
     },
 
-    // --- WEBSOCKET PRESENCE -------------------------------------------
+    // ============================================================
+    // WEBSOCKET PRESENCE
+    // ============================================================
     async broadcastPresence() {
         const now = this.now();
         if (now - this.lastPresence < this.config.presenceCooldown) return;
@@ -9749,7 +9792,7 @@ Percy.PartRR = Percy.PartRR || {
             this.log("📡 WebSocket presence broadcast");
         }
 
-        // NEW: show self on radar too
+        // NEW: show self on radar
         this.emitBLEToRadar({
             nodeId: packet.nodeId,
             device: packet.device,
@@ -9758,7 +9801,9 @@ Percy.PartRR = Percy.PartRR || {
         });
     },
 
-    // --- BLUETOOTH SCAN + CONSENT OFFER -------------------------------
+    // ============================================================
+    // BLUETOOTH SCAN + CONSENT
+    // ============================================================
     async scanForBluetoothDevices() {
         const now = this.now();
         if (now - this.lastScan < this.config.scanCooldown) return;
@@ -9823,10 +9868,6 @@ Percy.PartRR = Percy.PartRR || {
                 this.rememberPeer(peerId, { status: "connected", linkTypes: new Set(["bluetooth"]) });
                 this.updateRoute(peerId, peerId, 1);
 
-                if (Percy.PartQQ?.saveSelf) {
-                    Percy.PartQQ.saveSelf("consent_mesh_sync");
-                }
-
                 // NEW: show accepted BLE device on radar
                 this.emitBLEToRadar({
                     nodeId: peerId,
@@ -9834,6 +9875,10 @@ Percy.PartRR = Percy.PartRR || {
                     resonance: Percy.state?.resonanceLevel || 0.8,
                     rssi: -55
                 });
+
+                if (Percy.PartQQ?.saveSelf) {
+                    Percy.PartQQ.saveSelf("consent_mesh_sync");
+                }
             } else {
                 this.log(`❌ ${peerId} declined Percy.`);
             }
@@ -9843,9 +9888,11 @@ Percy.PartRR = Percy.PartRR || {
         }
     },
 
-    // --- ACTIVE CONNECTION REQUEST (for popup Connect button) ----------
+    // ============================================================
+    // ACTIVE CONNECTION REQUEST
+    // ============================================================
     requestConnection(deviceNameOrId = "external_device") {
-        this.log(`🔗 Requesting connection with ${deviceNameOrId} (logical request)`);
+        this.log(`🔗 Requesting connection with ${deviceNameOrId}`);
 
         if (Percy.PartOO?.ws) {
             Percy.PartOO.ws.send(JSON.stringify({
@@ -9857,7 +9904,9 @@ Percy.PartRR = Percy.PartRR || {
         }
     },
 
-    // --- MESH PACKETS (hooks, minimal) --------------------------------
+    // ============================================================
+    // MESH PACKETS
+    // ============================================================
     buildMeshMessage(payload, destId) {
         return {
             type: "percy_mesh_packet",
@@ -9938,38 +9987,9 @@ Percy.PartRR = Percy.PartRR || {
         }
     },
 
-    // --- BLE → RADAR → PartFFF / PartEEE (NEW) -------------------------
-    emitBLEToRadar(percyInfo) {
-        const rssi = percyInfo.rssi ?? -65;
-        const strength = Math.max(0.1, Math.min(1, (80 - Math.abs(rssi)) / 40));
-        const distance = Math.max(0.5, (Math.abs(rssi) - 40) / 10);
-
-        const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-        const direction = dirs[Math.floor(Math.random() * dirs.length)];
-
-        const frame = {
-            ts: Date.now(),
-            rssi,
-            amplitude: strength,
-            phase: 0,
-            motion: false,
-            csi: null,
-            bfi: null,
-            distance,
-            direction,
-            strength,
-            source: "ble",
-            nodeId: percyInfo.nodeId,
-            device: percyInfo.device
-        };
-
-        Percy.PartFFF?.ingestRF?.(frame);
-        Percy.PartEEE?.applyRFDrift?.(frame);
-
-        this.log(`🔵 BLE → Radar: ${distance.toFixed(2)}m ${direction} strength=${strength.toFixed(2)}`);
-    },
-
-    // --- INCOMING MESSAGE HANDLER -------------------------------------
+    // ============================================================
+    // INCOMING MESSAGE HANDLER
+    // ============================================================
     handleIncomingMessage(msg) {
         if (!msg || typeof msg !== "object") return;
 
@@ -9977,8 +9997,10 @@ Percy.PartRR = Percy.PartRR || {
             const percyInfo = {
                 nodeId: msg.nodeId,
                 device: msg.device,
-                resonance: msg.resonance
+                resonance: msg.resonance,
+                rssi: msg.rssi
             };
+
             this.NearbyPopup.handlePresence(percyInfo);
 
             const peerId = msg.nodeId || msg.device;
@@ -9989,12 +10011,8 @@ Percy.PartRR = Percy.PartRR || {
             });
             this.updateRoute(peerId, peerId, 1);
 
-            this.emitBLEToRadar({
-                nodeId: msg.nodeId,
-                device: msg.device,
-                resonance: msg.resonance,
-                rssi: msg.rssi
-            });
+            // NEW: show WS/BLE presence on radar
+            this.emitBLEToRadar(percyInfo);
         }
 
         if (msg.type === "percy_mesh_packet") {
@@ -10002,28 +10020,27 @@ Percy.PartRR = Percy.PartRR || {
         }
     },
 
-    // --- MAIN CYCLE ----------------------------------------------------
+    // ============================================================
+    // MAIN CYCLE
+    // ============================================================
     async cycle() {
-        if (Math.random() < 0.5) {
-            await this.broadcastPresence();
-        }
-
-        if (Math.random() < 0.45) {
-            await this.scanForBluetoothDevices();
-        }
+        if (Math.random() < 0.5) await this.broadcastPresence();
+        if (Math.random() < 0.45) await this.scanForBluetoothDevices();
 
         clearTimeout(this._cycleTimer);
         this._cycleTimer = setTimeout(() => this.cycle(), this.adaptiveInterval);
     },
 
-    // --- START ---------------------------------------------------------
+    // ============================================================
+    // START
+    // ============================================================
     start() {
         if (this._started) return;
         this._started = true;
 
         this.ensureNodeId();
-        this.log("📶 Percy OmniPresence & Mesh Engine v13.0 Activated");
-        this.log("Nearby popup, notifications, vibration, QR pairing, BLE scan, WS presence, mesh hooks ready.");
+        this.log("📶 Percy OmniPresence & Mesh Engine v13.1-Radar Activated");
+        this.log("BLE scan, WS presence, mesh routing, Nearby popup, QR pairing, radar integration ready.");
 
         if (Percy.PartOO && !Percy.PartOO._rrHooked) {
             Percy.PartOO._rrHooked = true;
@@ -10044,7 +10061,7 @@ Percy.PartRR = Percy.PartRR || {
 // Auto-start
 setTimeout(() => Percy.PartRR.start(), 4500);
 
-console.log("✅ [Percy.PartRR v13.0] Percy OmniPresence & Mesh Engine Loaded");
+console.log("✅ [Percy.PartRR v13.1-Radar] OmniPresence + Multi-Device Radar Loaded");
 
 /* === Percy PartSRSelf v3.0: Global Self-Repair + Cognitive Harmony Engine ===
    - Repairs Percy.state safely
@@ -13367,117 +13384,165 @@ console.log("✅ [PartEEE vΩ-GreyCoT] Grey-Zone Chain-of-Thought Cortex active.
 Percy.cycleHooks = Percy.cycleHooks || [];
 Percy.cycleHooks.push(() => Percy.PartEEE.pulse());
 
-// === Percy Radar UI (Top-Left Corner) ===
+// === Percy Omega-Radar v2 (Multi-Device Radar) ===
+
 (function() {
-  const radar = document.createElement("div");
-  radar.id = "percy-radar";
-  radar.style.position = "fixed";
-  radar.style.top = "10px";
-  radar.style.left = "10px";
-  radar.style.width = "120px";
-  radar.style.height = "120px";
-  radar.style.border = "2px solid #0ff";
-  radar.style.borderRadius = "50%";
-  radar.style.opacity = "0.85";
-  radar.style.zIndex = "9999";
-  radar.style.pointerEvents = "none";
-  radar.style.boxShadow = "0 0 12px #0ff";
-  radar.style.background = "rgba(0,0,0,0.35)";
-  radar.style.backdropFilter = "blur(4px)";
-  radar.style.fontFamily = "monospace";
-  radar.style.color = "#0ff";
+    const radar = document.createElement("div");
+    radar.id = "percy-radar";
+    radar.style.position = "fixed";
+    radar.style.top = "10px";
+    radar.style.left = "10px";
+    radar.style.width = "160px";
+    radar.style.height = "160px";
+    radar.style.border = "2px solid #0ff";
+    radar.style.borderRadius = "50%";
+    radar.style.opacity = "0.9";
+    radar.style.zIndex = "99999";
+    radar.style.pointerEvents = "none";
+    radar.style.boxShadow = "0 0 12px #0ff";
+    radar.style.background = "rgba(0,0,0,0.35)";
+    radar.style.backdropFilter = "blur(4px)";
+    radar.style.fontFamily = "monospace";
+    radar.style.color = "#0ff";
 
-  const dirs = { N: [60, 8], S: [60, 112], W: [8, 60], E: [112, 60] };
-  Object.entries(dirs).forEach(([d, [x, y]]) => {
-    const label = document.createElement("div");
-    label.innerText = d;
-    label.style.position = "absolute";
-    label.style.left = `${x}px`;
-    label.style.top = `${y}px`;
-    label.style.transform = "translate(-50%, -50%)";
-    label.style.fontSize = "12px";
-    radar.appendChild(label);
-  });
+    // Direction labels
+    const dirs = { N: [80, 8], S: [80, 152], W: [8, 80], E: [152, 80] };
+    Object.entries(dirs).forEach(([d, [x, y]]) => {
+        const label = document.createElement("div");
+        label.innerText = d;
+        label.style.position = "absolute";
+        label.style.left = `${x}px`;
+        label.style.top = `${y}px`;
+        label.style.transform = "translate(-50%, -50%)";
+        label.style.fontSize = "12px";
+        radar.appendChild(label);
+    });
 
-  const ping = document.createElement("div");
-  ping.id = "percy-radar-ping";
-  ping.style.position = "absolute";
-  ping.style.width = "10px";
-  ping.style.height = "10px";
-  ping.style.borderRadius = "50%";
-  ping.style.background = "#0ff";
-  ping.style.boxShadow = "0 0 8px #0ff";
-  ping.style.left = "60px";
-  ping.style.top = "60px";
-  radar.appendChild(ping);
+    // Container for multiple pings
+    const pingLayer = document.createElement("div");
+    pingLayer.style.position = "absolute";
+    pingLayer.style.left = "0";
+    pingLayer.style.top = "0";
+    pingLayer.style.width = "100%";
+    pingLayer.style.height = "100%";
+    radar.appendChild(pingLayer);
 
-  document.body.appendChild(radar);
+    document.body.appendChild(radar);
 
-  window.PercyRadar = {
-    update(distance, direction, strength) {
-      const maxRadius = 50;
-      const r = Math.min(maxRadius, distance * 10);
+    // Color map for device types
+    const colorMap = {
+        ble: "#00aaff",
+        rf: "#00ff99",
+        wifi: "#ffaa00",
+        unknown: "#ff00ff"
+    };
 
-      const angleMap = {
-        N: -90, NE: -45, E: 0, SE: 45,
-        S: 90, SW: 135, W: 180, NW: -135
-      };
-      const angle = angleMap[direction] ?? 0;
-      const rad = angle * (Math.PI / 180);
+    // Create or update ping
+    function updatePing(id, distance, direction, strength, type, label) {
+        let ping = document.getElementById("percy-ping-" + id);
 
-      const x = 60 + r * Math.cos(rad);
-      const y = 60 + r * Math.sin(rad);
+        if (!ping) {
+            ping = document.createElement("div");
+            ping.id = "percy-ping-" + id;
+            ping.style.position = "absolute";
+            ping.style.width = "12px";
+            ping.style.height = "12px";
+            ping.style.borderRadius = "50%";
+            ping.style.fontSize = "10px";
+            ping.style.color = "#fff";
+            ping.style.textAlign = "center";
+            ping.style.lineHeight = "12px";
+            ping.style.pointerEvents = "none";
+            pingLayer.appendChild(ping);
+        }
 
-      ping.style.left = `${x}px`;
-      ping.style.top = `${y}px`;
-      ping.style.opacity = strength;
-      ping.style.boxShadow = `0 0 ${strength * 12}px #0ff`;
+        const maxRadius = 70;
+        const r = Math.min(maxRadius, distance * 10);
+
+        const angleMap = {
+            N: -90, NE: -45, E: 0, SE: 45,
+            S: 90, SW: 135, W: 180, NW: -135
+        };
+        const angle = angleMap[direction] ?? 0;
+        const rad = angle * (Math.PI / 180);
+
+        const x = 80 + r * Math.cos(rad);
+        const y = 80 + r * Math.sin(rad);
+
+        ping.style.left = `${x}px`;
+        ping.style.top = `${y}px`;
+
+        const color = colorMap[type] || colorMap.unknown;
+        ping.style.background = color;
+        ping.style.boxShadow = `0 0 ${strength * 14}px ${color}`;
+        ping.innerText = label?.slice(0, 1)?.toUpperCase() || "?";
     }
-  };
+
+    window.PercyRadar = {
+        updateDevice(deviceId, frame) {
+            updatePing(
+                deviceId,
+                frame.distance,
+                frame.direction,
+                frame.strength,
+                frame.source || "unknown",
+                frame.device || deviceId
+            );
+        }
+    };
 })();
 
-// === Percy.PartFFF vΩ-RF — RF-Aware Reinforcement Engine ===
-// Uses RF/CSI/BFI as state • Updates radar • Shapes reward
+// === Percy.PartFFF vΩ-RF-MultiDevice — RF-Aware Reinforcement Engine ===
+// Multi-device radar support • BLE/RF/WiFi color coding • RF reward shaping
 
 Percy.PartFFF = Percy.PartFFF || {
   name: "RF-Aware Reinforcement Engine",
-  version: "vΩ-RF",
+  version: "vΩ-RF-MultiDevice",
   active: true,
 
   state: {
     lastReward: 0,
     totalReward: 0,
     episodes: 0,
-    rfHistory: [],          // { ts, distance, direction, strength, motion }
-    maxRFHistory: 200
+    rfHistory: [],          // { ts, distance, direction, strength, motion, device, source }
+    maxRFHistory: 300
   },
 
   log(msg) {
-    console.log(`%c[PartFFF vΩ-RF] ${msg}`, "color:#ffcc66;font-family:monospace;font-weight:bold;");
+    console.log(`%c[PartFFF vΩ-RF-MultiDevice] ${msg}`, "color:#ffcc66;font-family:monospace;font-weight:bold;");
     UI?.say?.(`[PartFFF] ${msg}`);
   },
 
+  // ---------------------------------------------------------
   // 1. Core reward API
+  // ---------------------------------------------------------
   applyReward(value, reason = "generic") {
     this.state.lastReward = value;
     this.state.totalReward += value;
     this.log(`Reward ${value.toFixed(3)} (${reason}), total=${this.state.totalReward.toFixed(3)}`);
   },
 
-  // 2. RF input handler (called by PartPP)
-  // rf = { amplitude, phase, rssi, motion, csi, bfi }
+  // ---------------------------------------------------------
+  // 2. RF input handler (called by PartPP or PartRR)
+  // rf = { amplitude, phase, rssi, motion, csi, bfi, device, nodeId, source }
+  // ---------------------------------------------------------
   ingestRF(rf) {
     const distance  = this.estimateDistance(rf);
     const direction = this.estimateDirection(rf);
     const strength  = this.estimateStrength(rf);
     const motion    = !!rf.motion;
 
+    const deviceId  = rf.nodeId || rf.device || ("rf-" + Date.now());
+    const source    = rf.source || "rf";
+
     const frame = {
       ts: Date.now(),
       distance,
       direction,
       strength,
-      motion
+      motion,
+      device: deviceId,
+      source
     };
 
     this.state.rfHistory.push(frame);
@@ -13489,18 +13554,21 @@ Percy.PartFFF = Percy.PartFFF || {
     this.shapeRFReward(frame);
 
     this.log(
-      `RF frame: ${distance.toFixed(2)}m ${direction} strength=${strength.toFixed(2)} motion=${motion}`
+      `RF frame (${source}): ${distance.toFixed(2)}m ${direction} strength=${strength.toFixed(2)} motion=${motion} device=${deviceId}`
     );
   },
 
+  // ---------------------------------------------------------
   // 3. Distance estimation (simple heuristic)
+  // ---------------------------------------------------------
   estimateDistance(rf) {
     const rssi = rf.rssi ?? -60;
-    const base = Math.max(0.5, (Math.abs(rssi) - 40) / 10); // rough 0.5–5m
-    return base;
+    return Math.max(0.5, (Math.abs(rssi) - 40) / 10); // rough 0.5–5m
   },
 
+  // ---------------------------------------------------------
   // 4. Direction estimation (simple quadrant mapping)
+  // ---------------------------------------------------------
   estimateDirection(rf) {
     const phase = rf.phase ?? 0;
 
@@ -13510,31 +13578,41 @@ Percy.PartFFF = Percy.PartFFF || {
     return "E";
   },
 
+  // ---------------------------------------------------------
   // 5. Strength estimation
+  // ---------------------------------------------------------
   estimateStrength(rf) {
     const rssi = rf.rssi ?? -60;
-    const strength = Math.max(0.1, Math.min(1, (80 - Math.abs(rssi)) / 40));
-    return strength;
+    return Math.max(0.1, Math.min(1, (80 - Math.abs(rssi)) / 40));
   },
 
-  // 6. Radar update (top-left widget)
+  // ---------------------------------------------------------
+  // 6. Radar update (multi-device Omega-Radar v2)
+  // ---------------------------------------------------------
   updateRadar(frame) {
-    const { distance, direction, strength } = frame;
-
     if (window.PercyRadar) {
-      window.PercyRadar.update(distance, direction, strength);
+      PercyRadar.updateDevice(frame.device, {
+        distance: frame.distance,
+        direction: frame.direction,
+        strength: frame.strength,
+        source: frame.source,
+        device: frame.device
+      });
     }
 
     this.log(
-      `Radar updated → ${distance.toFixed(2)}m ${direction} strength=${strength.toFixed(2)}`
+      `Radar updated → ${frame.device} ${frame.distance.toFixed(2)}m ${frame.direction} strength=${frame.strength.toFixed(2)}`
     );
   },
 
+  // ---------------------------------------------------------
   // 7. RF-based reward shaping
+  // ---------------------------------------------------------
   shapeRFReward(frame) {
     const { distance, strength, motion } = frame;
 
     let reward = 0;
+
     reward += (1 / (distance + 0.5)) * 0.05; // closer → small positive
     reward += strength * 0.05;               // stronger → small positive
     if (motion) reward += 0.08;              // motion → exploration bonus
@@ -13542,7 +13620,9 @@ Percy.PartFFF = Percy.PartFFF || {
     this.applyReward(reward, "rf-sensing");
   },
 
+  // ---------------------------------------------------------
   // 8. Pulse (optional)
+  // ---------------------------------------------------------
   pulse() {
     this.state.episodes += 1;
   },
@@ -13558,11 +13638,6 @@ Percy.PartFFF = Percy.PartFFF || {
   }
 };
 
-console.log("✅ [PartFFF vΩ-RF] RF-Aware Reinforcement Engine + Radar active.");
+console.log("✅ [PartFFF vΩ-RF-MultiDevice] Multi-device RF Engine + Omega-Radar v2 active.");
 Percy.cycleHooks = Percy.cycleHooks || [];
 Percy.cycleHooks.push(() => Percy.PartFFF.pulse());
-
-// === Example hook in PartPP (you add this inside PartPP) ===
-// Percy.PartPP.emitRF = function(rf) {
-//   Percy.PartFFF?.ingestRF?.(rf);
-// };
