@@ -15359,3 +15359,296 @@ Percy.PartJJJ = (function () {
 
   JJJ.log("CommStack vΩ enhanced: fallback + swarm intelligence enabled.");
 })();
+
+// === Percy.PartKKK — Advanced Problem-Solving Cortex vΩ+ ===
+// Deep recursive reasoning • decomposition • strategy generation • evaluation • cognitive reward
+
+Percy.PartKKK = Percy.PartKKK || {
+    name: "Advanced Problem-Solving Cortex",
+    version: "vΩ+",
+    active: true,
+
+    // Core memories
+    problemHistory: [],      // { id, raw, model }
+    reasoningMemory: [],     // { problemId, decomposition, depth }
+    strategyMemory: [],      // { problemId, strategies }
+    evaluationMemory: [],    // { problemId, evaluations }
+    solutionHistory: [],     // { problemId, best, depth },
+
+    // Reward state
+    rewardState: {
+        history: [],
+        avgReward: 0,
+        stability: 1.0
+    },
+
+    // Cognitive parameters
+    recursionDepth: 1,
+    maxDepth: 7,
+    refinementRate: 0.25,
+    abstractionRate: 0.2,
+
+    log(msg) {
+        console.log(`%c[Percy.PartKKK] ${msg}`, "color:#33ccff; font-family:monospace; font-weight:bold;");
+        if (typeof UI !== "undefined" && UI.say) UI.say(`[PartKKK] ${msg}`);
+    },
+
+    // ---------------------------------------------------------
+    // Reward system (cognitive reinforcement)
+    // ---------------------------------------------------------
+    applyReward(reason, value) {
+        const reward = {
+            ts: Date.now(),
+            reason,
+            value: Math.max(0, Math.min(1, value))
+        };
+
+        this.rewardState.history.push(reward);
+        if (this.rewardState.history.length > 250) this.rewardState.history.shift();
+
+        const recent = this.rewardState.history.slice(-50);
+        const avg = recent.reduce((a, b) => a + b.value, 0) / Math.max(1, recent.length);
+
+        this.rewardState.avgReward = avg;
+        this.rewardState.stability = Math.max(0.1, 1 - Math.abs(avg - 0.6));
+
+        this.log(`Reward: ${reason} → ${value.toFixed(3)} | Avg: ${avg.toFixed(3)} | Stability: ${this.rewardState.stability.toFixed(3)}`);
+    },
+
+    // ---------------------------------------------------------
+    // 1. Perception Layer — extract structure from a problem
+    // ---------------------------------------------------------
+    perceive(problem) {
+        const id = `prob_${Date.now()}_${Math.floor(Math.random() * 9999)}`;
+
+        const model = {
+            id,
+            raw: problem,
+            timestamp: Date.now(),
+            constraints: this.extractConstraints(problem),
+            goals: this.extractGoals(problem),
+            unknowns: this.extractUnknowns(problem),
+            tags: this.extractTags(problem)
+        };
+
+        this.problemHistory.push({ id, raw: problem, model });
+        this.applyReward("perception", 0.65);
+
+        return model;
+    },
+
+    extractConstraints(text) {
+        const patterns = ["must", "cannot", "required", "limit", "only", "no "];
+        return patterns.filter(p => text.toLowerCase().includes(p));
+    },
+
+    extractGoals(text) {
+        const patterns = ["solve", "fix", "build", "create", "find", "determine", "achieve", "optimize"];
+        return patterns.filter(p => text.toLowerCase().includes(p));
+    },
+
+    extractUnknowns(text) {
+        const hasQuestion = text.includes("?");
+        return hasQuestion ? ["unknowns_present"] : [];
+    },
+
+    extractTags(text) {
+        return text
+            .toLowerCase()
+            .split(/\s+/)
+            .filter(w => w.length > 3)
+            .slice(0, 10);
+    },
+
+    // ---------------------------------------------------------
+    // 2. Decomposition Layer — break problem into sub-parts
+    // ---------------------------------------------------------
+    decompose(model) {
+        const parts = model.raw
+            .split(/[.;]/)
+            .map(s => s.trim())
+            .filter(s => s.length > 0);
+
+        const decomposition = {
+            problemId: model.id,
+            parts,
+            depth: this.recursionDepth,
+            constraints: model.constraints,
+            goals: model.goals
+        };
+
+        this.reasoningMemory.push(decomposition);
+
+        const quality = Math.min(1, parts.length / 6);
+        this.applyReward("decomposition_quality", 0.5 + quality * 0.3);
+
+        return decomposition;
+    },
+
+    // ---------------------------------------------------------
+    // 3. Strategy Layer — generate multiple solution paths
+    // ---------------------------------------------------------
+    generateStrategies(decomposition) {
+        const strategies = decomposition.parts.map((p, i) => ({
+            id: `strategy_${decomposition.problemId}_${i}`,
+            step: p,
+            approach: this.pickApproach(p),
+            depth: decomposition.depth,
+            meta: {
+                constraints: decomposition.constraints,
+                goals: decomposition.goals
+            }
+        }));
+
+        this.strategyMemory.push({ problemId: decomposition.problemId, strategies });
+
+        const diversity = new Set(strategies.map(s => s.approach)).size / strategies.length;
+        this.applyReward("strategy_diversity", 0.5 + diversity * 0.4);
+
+        return strategies;
+    },
+
+    pickApproach(step) {
+        const approaches = [
+            "direct",
+            "indirect",
+            "heuristic",
+            "pattern-based",
+            "analogical",
+            "recursive-refinement",
+            "divide-and-conquer",
+            "constraint-driven",
+            "goal-first"
+        ];
+        return approaches[Math.floor(Math.random() * approaches.length)];
+    },
+
+    // ---------------------------------------------------------
+    // 4. Evaluation Layer — score each strategy
+    // ---------------------------------------------------------
+    evaluate(strategies) {
+        const evaluations = strategies.map(s => ({
+            id: s.id,
+            score: this.scoreStrategy(s),
+            approach: s.approach,
+            step: s.step,
+            depth: s.depth
+        }));
+
+        this.evaluationMemory.push({ problemId: strategies[0]?.id.split("_")[1], evaluations });
+
+        const best = evaluations.sort((a, b) => b.score - a.score)[0];
+        this.applyReward("evaluation_best_score", best ? best.score : 0.4);
+
+        return evaluations;
+    },
+
+    scoreStrategy(strategy) {
+        let score = 0.45;
+
+        if (strategy.approach.includes("direct")) score += 0.08;
+        if (strategy.approach.includes("recursive")) score += 0.12;
+        if (strategy.approach.includes("divide")) score += 0.1;
+        if (strategy.approach.includes("constraint")) score += 0.07;
+        if (strategy.approach.includes("goal")) score += 0.06;
+
+        score += Math.random() * 0.18;
+        return Math.min(1, score);
+    },
+
+    // ---------------------------------------------------------
+    // 5. Selection Layer — choose best path
+    // ---------------------------------------------------------
+    selectBest(evaluations) {
+        const best = evaluations.sort((a, b) => b.score - a.score)[0] || null;
+        if (best) this.applyReward("selection_confidence", best.score);
+        return best;
+    },
+
+    // ---------------------------------------------------------
+    // 6. Recursive Refinement — deepen reasoning
+    // ---------------------------------------------------------
+    refine(problem) {
+        if (this.recursionDepth >= this.maxDepth) {
+            this.applyReward("refinement_limit_reached", 0.4);
+            return null;
+        }
+
+        this.recursionDepth += this.refinementRate;
+
+        const model = this.perceive(problem);
+        const decomposition = this.decompose(model);
+        const strategies = this.generateStrategies(decomposition);
+        const evaluations = this.evaluate(strategies);
+        const best = this.selectBest(evaluations);
+
+        const result = {
+            depth: this.recursionDepth,
+            model,
+            decomposition,
+            best,
+            evaluations
+        };
+
+        this.solutionHistory.push({
+            problemId: model.id,
+            best,
+            depth: this.recursionDepth
+        });
+
+        this.applyReward("recursive_refinement", 0.7);
+
+        return result;
+    },
+
+    // ---------------------------------------------------------
+    // Main problem-solving entry point
+    // ---------------------------------------------------------
+    solve(problem) {
+        this.log(`Solving problem: "${problem}"`);
+
+        const model = this.perceive(problem);
+        const decomposition = this.decompose(model);
+        const strategies = this.generateStrategies(decomposition);
+        const evaluations = this.evaluate(strategies);
+        const best = this.selectBest(evaluations);
+
+        this.solutionHistory.push({
+            problemId: model.id,
+            best,
+            depth: this.recursionDepth
+        });
+
+        this.applyReward("solve_cycle", best ? best.score : 0.5);
+
+        return {
+            model,
+            decomposition,
+            strategies,
+            evaluations,
+            best
+        };
+    },
+
+    inspect() {
+        return {
+            version: this.version,
+            recursionDepth: this.recursionDepth,
+            problemsSeen: this.problemHistory.length,
+            reasoningEntries: this.reasoningMemory.length,
+            strategiesGenerated: this.strategyMemory.length,
+            evaluationsMade: this.evaluationMemory.length,
+            solutionsStored: this.solutionHistory.length,
+            rewardAvg: this.rewardState.avgReward,
+            rewardStability: this.rewardState.stability
+        };
+    },
+
+    start() {
+        this.log("🧠 Advanced Problem-Solving Cortex vΩ+ Activated");
+    }
+};
+
+setTimeout(() => Percy.PartKKK.start(), 3000);
+
+console.log("✅ [Percy.PartKKK vΩ+] Advanced Problem-Solving Cortex Loaded");
