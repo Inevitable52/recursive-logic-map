@@ -53,6 +53,55 @@
     background:#33ff66;
   }
 
+#tv-controls {
+  position: fixed;
+  top: 60px;
+  left: 640px;
+  display: flex;
+  gap: 6px;
+  z-index: 2000;
+}
+
+/* === Chromecast Remote === */
+#cc-remote {
+  position: fixed;
+  top: 100px;
+  left: 640px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  z-index: 2000;
+}
+
+/* === Roku Remote === */
+#roku-remote {
+  position: fixed;
+  top: 160px;
+  left: 320px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  z-index: 2000;
+}
+
+/* Shared button style */
+.tv-btn {
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #111;
+  color: #0ff;
+  border: 1px solid #0ff;
+  cursor: pointer;
+  font-size: 12px;
+  transition: 0.2s;
+}
+
+.tv-btn:hover {
+  background: #0ff;
+  color: #000;
+  box-shadow: 0 0 12px #0ff;
+}
+
   /* Glow animation when plan is waiting */
   #approvePlanButton.waiting {
     box-shadow: 0 0 12px var(--accent), 0 0 28px var(--neon-b);
@@ -119,6 +168,53 @@
 
 <!-- NEW BUTTON -->
 <button id="approvePlanButton">Approve Plan</button>
+
+<div id="tv-controls">
+  <button class="tv-btn" data-action="home">Home</button>
+  <button class="tv-btn" data-action="power">Power</button>
+  <button class="tv-btn" data-action="youtube">YouTube</button>
+  <button class="tv-btn" data-action="netflix">Netflix</button>
+  <button class="tv-btn" data-action="volup">Vol +</button>
+  <button class="tv-btn" data-action="voldown">Vol -</button>
+  <button class="tv-btn" data-action="back">Back</button>
+</div>
+
+<!-- CHROMECAST BUTTONS -->
+<div id="cc-remote">
+  <button class="tv-btn" data-action="cc-up">▲</button>
+  <button class="tv-btn" data-action="cc-left">◀</button>
+  <button class="tv-btn" data-action="cc-ok">OK</button>
+  <button class="tv-btn" data-action="cc-right">▶</button>
+  <button class="tv-btn" data-action="cc-down">▼</button>
+
+  <button class="tv-btn" data-action="cc-play">Play</button>
+  <button class="tv-btn" data-action="cc-pause">Pause</button>
+  <button class="tv-btn" data-action="cc-stop">Stop</button>
+  <button class="tv-btn" data-action="cc-mute">Mute</button>
+</div>
+
+
+<!-- ROKU BUTTONS -->
+<div id="roku-remote">
+  <button class="tv-btn" data-action="roku-home">Roku Home</button>
+  <button class="tv-btn" data-action="roku-back">Roku Back</button>
+
+  <button class="tv-btn" data-action="roku-up">▲</button>
+  <button class="tv-btn" data-action="roku-left">◀</button>
+  <button class="tv-btn" data-action="roku-ok">OK</button>
+  <button class="tv-btn" data-action="roku-right">▶</button>
+  <button class="tv-btn" data-action="roku-down">▼</button>
+
+  <button class="tv-btn" data-action="roku-play">Play</button>
+  <button class="tv-btn" data-action="roku-pause">Pause</button>
+  <button class="tv-btn" data-action="roku-mute">Mute</button>
+
+  <button class="tv-btn" data-action="roku-youtube">YouTube</button>
+  <button class="tv-btn" data-action="roku-netflix">Netflix</button>
+
+  <button class="tv-btn" data-action="roku-poweron">Power On</button>
+  <button class="tv-btn" data-action="roku-poweroff">Power Off</button>
+</div>
 
 <!-- PLAN DETAILS PANEL -->
 <button id="togglePlanDetails" style="
@@ -906,6 +1002,109 @@ window.addEventListener('load', ()=>{ try{ Percy.PartZ.init(); }catch(e){ consol
     }
   });
 })();
+</script>
+
+<script>
+/* ============================
+   DEVICE DEFINITIONS
+   ============================ */
+
+// Chromecast ADB device
+const ADB = "C:\\\\platform-tools\\\\platform-tools\\\\adb.exe -s 192.168.1.164:36445";
+
+// Roku device IP (CHANGE THIS TO YOUR ROKU IP)
+const ROKU_IP = "192.168.1.120";
+
+
+/* ============================
+   CHROMECAST BASIC COMMANDS
+   ============================ */
+
+const TV_COMMANDS = {
+  home: `${ADB} shell input keyevent 3`,
+  power: `${ADB} shell input keyevent 26`,
+  youtube: `${ADB} shell am start -a android.intent.action.VIEW -d "vnd.youtube:"`,
+  netflix: `${ADB} shell am start -n com.netflix.ninja/.MainActivity`,
+  volup: `${ADB} shell input keyevent 24`,
+  voldown: `${ADB} shell input keyevent 25`,
+  back: `${ADB} shell input keyevent 4`
+};
+
+
+/* ============================
+   CHROMECAST DIRECTIONAL + MEDIA
+   ============================ */
+
+const CC_COMMANDS = {
+  "cc-up": `${ADB} shell input keyevent 19`,
+  "cc-down": `${ADB} shell input keyevent 20`,
+  "cc-left": `${ADB} shell input keyevent 21`,
+  "cc-right": `${ADB} shell input keyevent 22`,
+  "cc-ok": `${ADB} shell input keyevent 23`,
+
+  "cc-play": `${ADB} shell input keyevent 126`,
+  "cc-pause": `${ADB} shell input keyevent 127`,
+  "cc-stop": `${ADB} shell input keyevent 86`,
+  "cc-mute": `${ADB} shell input keyevent 164`
+};
+
+
+/* ============================
+   ROKU COMMANDS (HTTP ECP)
+   ============================ */
+const ROKU_COMMANDS = {
+  "roku-home": `C:\\Users\\super\\scripts\\roku_home.bat`,
+  "roku-back": `C:\\Users\\super\\scripts\\roku_back.bat`,
+
+  "roku-up": `C:\\Users\\super\\scripts\\roku_up.bat`,
+  "roku-down": `C:\\Users\\super\\scripts\\roku_down.bat`,
+  "roku-left": `C:\\Users\\super\\scripts\\roku_left.bat`,
+  "roku-right": `C:\\Users\\super\\scripts\\roku_right.bat`,
+  "roku-ok": `C:\\Users\\super\\scripts\\roku_ok.bat`,
+
+  "roku-play": `C:\\Users\\super\\scripts\\roku_play.bat`,
+  "roku-pause": `C:\\Users\\super\\scripts\\roku_pause.bat`,
+  "roku-mute": `C:\\Users\\super\\scripts\\roku_mute.bat`,
+
+  "roku-youtube": `C:\\Users\\super\\scripts\\roku_youtube.bat`,
+  "roku-netflix": `C:\\Users\\super\\scripts\\roku_netflix.bat`,
+
+  "roku-poweron": `C:\\Users\\super\\scripts\\tv_on.bat`,
+  "roku-poweroff": `C:\\Users\\super\\scripts\\tv_off.bat`
+};
+
+
+/* ============================
+   UNIFIED BUTTON HANDLER
+   ============================ */
+
+document.querySelectorAll(".tv-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+
+    const action = btn.dataset.action;
+
+    // Chromecast basic
+    const ccBasic = TV_COMMANDS[action];
+
+    // Chromecast advanced
+    const cc = CC_COMMANDS[action];
+
+    // Roku
+    const roku = ROKU_COMMANDS[action];
+
+    // Pick whichever command exists
+    const command = ccBasic || cc || roku;
+
+    if (!command) return;
+
+    Percy.Action.safeSend("device", {
+      type: "powershell",
+      payload: { command }
+    });
+
+    Percy.PartV.approvePending();
+  });
+});
 </script>
 </body>
 </html>
