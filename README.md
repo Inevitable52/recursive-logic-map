@@ -1,7 +1,7 @@
 P.E.R.C.Y Protocol for Emergent Recursive Cognitive Yield
 # ⚠️ NOTICE: Percy Personal AI
 
-Copyright © 2025 Fabian Villarreal  
+Copyright © 2026 Fabian Villarreal  
 All rights reserved.
 
 **This repository is for viewing and educational reference only.**
